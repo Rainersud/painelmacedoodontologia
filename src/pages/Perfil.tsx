@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Phone, Mail, Save, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { profileUpdateSchema, validateForm } from '@/lib/validations';
 
 export default function Perfil() {
   const { user, fullName, role } = useAuth();
@@ -38,9 +39,19 @@ export default function Perfil() {
 
   const updateProfile = useMutation({
     mutationFn: async (data: { full_name: string; phone: string }) => {
+      // Validate input before database operation
+      const validation = validateForm(profileUpdateSchema, data);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update(data)
+        .update({
+          full_name: validation.data!.full_name.trim(),
+          phone: validation.data!.phone?.trim() || null,
+        })
         .eq('user_id', user?.id);
       
       if (error) throw error;
@@ -50,8 +61,8 @@ export default function Perfil() {
       setIsEditing(false);
       toast.success('Perfil atualizado com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao atualizar perfil');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao atualizar perfil');
     },
   });
 

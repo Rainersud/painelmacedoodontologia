@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Phone, MessageCircle, DollarSign, X } from 'lucide-react';
+import { Phone, DollarSign } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { callLogSchema, closingDealSchema, validateForm } from '@/lib/validations';
 
 interface RegisterInteractionDialogProps {
   leadId: string;
@@ -45,6 +46,13 @@ export function RegisterInteractionDialog({
 
   const registerCall = useMutation({
     mutationFn: async () => {
+      // Validate input before database operation
+      const validation = validateForm(callLogSchema, callData);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
       const durationSeconds = 
         (parseInt(callData.duration_minutes) || 0) * 60 + 
         (parseInt(callData.duration_seconds) || 0);
@@ -55,7 +63,7 @@ export function RegisterInteractionDialog({
         call_type: callData.call_type,
         duration_seconds: durationSeconds,
         result: callData.result,
-        notes: callData.notes,
+        notes: callData.notes?.slice(0, 5000) || null, // Enforce max length
       });
 
       if (error) throw error;
@@ -65,7 +73,7 @@ export function RegisterInteractionDialog({
         lead_id: leadId,
         user_id: user?.id,
         type: callData.call_type === 'inbound' ? 'ligacao_recebida' : 'ligacao_realizada',
-        content: callData.notes,
+        content: callData.notes?.slice(0, 5000) || null,
         duration_seconds: durationSeconds,
       });
     },
@@ -76,31 +84,42 @@ export function RegisterInteractionDialog({
       resetForm();
       toast.success('Ligação registrada com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao registrar ligação');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao registrar ligação');
     },
   });
 
   const closeDeal = useMutation({
     mutationFn: async () => {
+      // Validate input before database operation
+      const validation = validateForm(closingDealSchema, closingData);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
+      const treatmentValue = parseFloat(closingData.treatment_value);
+      
       const { error } = await supabase
         .from('leads')
         .update({
           status: 'fechado',
-          treatment_value: parseFloat(closingData.treatment_value) || 0,
-          payment_method: closingData.payment_method || null,
+          treatment_value: treatmentValue,
+          payment_method: closingData.payment_method,
           closed_at: new Date().toISOString(),
         })
         .eq('id', leadId);
 
       if (error) throw error;
 
-      // Add interaction
+      // Add interaction with sanitized content
+      const interactionContent = `Tratamento fechado: R$ ${treatmentValue.toLocaleString('pt-BR')} (${closingData.payment_method === 'avista' ? 'À vista' : 'Parcelado'}). ${(closingData.notes || '').slice(0, 5000)}`;
+      
       await supabase.from('lead_interactions').insert({
         lead_id: leadId,
         user_id: user?.id,
         type: 'nota',
-        content: `Tratamento fechado: R$ ${closingData.treatment_value} (${closingData.payment_method === 'avista' ? 'À vista' : 'Parcelado'}). ${closingData.notes}`,
+        content: interactionContent,
       });
     },
     onSuccess: () => {
@@ -110,8 +129,8 @@ export function RegisterInteractionDialog({
       resetForm();
       toast.success('Tratamento fechado com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao fechar tratamento');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao fechar tratamento');
     },
   });
 

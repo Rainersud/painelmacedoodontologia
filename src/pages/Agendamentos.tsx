@@ -26,6 +26,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { appointmentSchema, revenueSchema, validateForm } from '@/lib/validations';
 
 type AppointmentStatus = 'agendado' | 'confirmado' | 'compareceu' | 'nao_compareceu' | 'cancelado';
 
@@ -89,8 +90,18 @@ export default function Agendamentos() {
 
   const createAppointment = useMutation({
     mutationFn: async (data: typeof newAppointment) => {
+      // Validate input before database operation
+      const validation = validateForm(appointmentSchema, data);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
       const { error } = await supabase.from('appointments').insert({
-        ...data,
+        lead_id: validation.data!.lead_id,
+        scheduled_at: validation.data!.scheduled_at,
+        treatment_type: validation.data!.treatment_type || null,
+        notes: validation.data!.notes || null,
         agent_id: user?.id,
       });
       if (error) throw error;
@@ -108,8 +119,8 @@ export default function Agendamentos() {
       setNewAppointment({ lead_id: '', scheduled_at: '', treatment_type: '', notes: '' });
       toast.success('Agendamento criado com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao criar agendamento');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar agendamento');
     },
   });
 
@@ -366,6 +377,11 @@ export default function Agendamentos() {
                                 onClick={() => {
                                   const revenue = prompt('Valor da consulta (R$):');
                                   if (revenue) {
+                                    const validation = revenueSchema.safeParse(revenue);
+                                    if (!validation.success) {
+                                      toast.error('Valor inválido. Use um número positivo.');
+                                      return;
+                                    }
                                     updateAppointmentStatus.mutate({ 
                                       id: app.id, 
                                       action: 'attend',

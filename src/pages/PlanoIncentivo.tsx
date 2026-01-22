@@ -22,7 +22,7 @@ import {
   Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { incentivePlanSchema, validateForm } from '@/lib/validations';
 
 type TargetType = 'agendamentos' | 'comparecimentos' | 'resgatados' | 'fechados';
 type Period = 'diario' | 'semanal' | 'mensal';
@@ -67,12 +67,19 @@ export default function PlanoIncentivo() {
 
   const createPlan = useMutation({
     mutationFn: async (data: typeof newPlan) => {
+      // Validate input before database operation
+      const validation = validateForm(incentivePlanSchema, data);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
       const { error } = await supabase.from('incentive_plans').insert({
-        name: data.name,
-        period: data.period,
-        target_type: data.target_type,
-        target_value: parseInt(data.target_value),
-        bonus_value: parseFloat(data.bonus_value),
+        name: validation.data!.name.trim(),
+        period: validation.data!.period,
+        target_type: validation.data!.target_type,
+        target_value: parseInt(validation.data!.target_value),
+        bonus_value: parseFloat(validation.data!.bonus_value),
         created_by: user?.id,
       });
 
@@ -84,8 +91,8 @@ export default function PlanoIncentivo() {
       setNewPlan({ name: '', period: '' as Period, target_type: '' as TargetType, target_value: '', bonus_value: '' });
       toast.success('Plano de incentivo criado!');
     },
-    onError: () => {
-      toast.error('Erro ao criar plano');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar plano');
     },
   });
 

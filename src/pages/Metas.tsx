@@ -36,6 +36,8 @@ const goalTypeConfig: Record<GoalType, { label: string; icon: React.ElementType;
   taxa_conversao: { label: 'Taxa de Conversão', icon: TrendingUp, unit: '%' },
   taxa_comparecimento: { label: 'Comparecimento', icon: UserCheck, unit: '%' },
   receita: { label: 'Receita', icon: DollarSign, unit: 'R$' },
+  resgatados: { label: 'Resgatados', icon: Users, unit: 'resgatados' },
+  fechados: { label: 'Fechados', icon: DollarSign, unit: 'fechados' },
 };
 
 const periodLabels: Record<GoalPeriod, string> = {

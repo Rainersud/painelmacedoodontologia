@@ -38,7 +38,11 @@ import {
   MessageSquare,
   MoreHorizontal,
   Calendar,
-  User
+  User,
+  Users,
+  UserPlus,
+  TrendingUp,
+  CheckCircle2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -106,14 +110,14 @@ const mockLeads = [
   },
 ];
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  novo_lead: { label: 'Novo Lead', color: 'bg-blue-100 text-blue-700' },
-  em_atendimento: { label: 'Em Atendimento', color: 'bg-yellow-100 text-yellow-700' },
-  consulta_agendada: { label: 'Agendado', color: 'bg-purple-100 text-purple-700' },
-  confirmado: { label: 'Confirmado', color: 'bg-green-100 text-green-700' },
-  compareceu: { label: 'Compareceu', color: 'bg-emerald-100 text-emerald-700' },
-  nao_compareceu: { label: 'Não Compareceu', color: 'bg-red-100 text-red-700' },
-  nao_convertido: { label: 'Não Convertido', color: 'bg-gray-100 text-gray-700' },
+const statusLabels: Record<string, { label: string; className: string }> = {
+  novo_lead: { label: 'Novo Lead', className: 'bg-chart-2/10 text-chart-2' },
+  em_atendimento: { label: 'Em Atendimento', className: 'bg-warning/10 text-warning' },
+  consulta_agendada: { label: 'Agendado', className: 'bg-primary/10 text-primary' },
+  confirmado: { label: 'Confirmado', className: 'bg-success/10 text-success' },
+  compareceu: { label: 'Compareceu', className: 'bg-success/20 text-success' },
+  nao_compareceu: { label: 'Não Compareceu', className: 'bg-destructive/10 text-destructive' },
+  nao_convertido: { label: 'Não Convertido', className: 'bg-muted text-muted-foreground' },
 };
 
 const sourceLabels: Record<string, string> = {
@@ -162,24 +166,31 @@ const Leads = () => {
     }).format(value);
   };
 
+  const statsCards = [
+    { title: 'Total de Leads', value: mockLeads.length.toString(), icon: Users, color: 'text-primary' },
+    { title: 'Novos Hoje', value: '12', icon: UserPlus, color: 'text-chart-2' },
+    { title: 'Em Atendimento', value: '8', icon: TrendingUp, color: 'text-warning' },
+    { title: 'Convertidos Hoje', value: '5', icon: CheckCircle2, color: 'text-success' },
+  ];
+
   return (
     <AppLayout title="Leads">
       <div className="space-y-6">
         {/* Header with filters */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-1 gap-3">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-1 gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome, telefone ou email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-card border-0 shadow-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-[180px] bg-card border-0 shadow-sm">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -190,7 +201,7 @@ const Leads = () => {
               </SelectContent>
             </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-card border-0 shadow-sm">
                 <SelectValue placeholder="Origem" />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +214,7 @@ const Leads = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="shadow-md">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Lead
               </Button>
@@ -267,72 +278,45 @@ const Leads = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Leads
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{mockLeads.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Novos Hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Em Atendimento
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Convertidos Hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-5 md:grid-cols-4">
+          {statsCards.map((stat) => (
+            <Card key={stat.title} className="border-0 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Leads Table */}
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Agente</TableHead>
-                  <TableHead>Valor Est.</TableHead>
-                  <TableHead>Data</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="font-semibold">Lead</TableHead>
+                  <TableHead className="font-semibold">Contato</TableHead>
+                  <TableHead className="font-semibold">Origem</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Agente</TableHead>
+                  <TableHead className="font-semibold">Valor Est.</TableHead>
+                  <TableHead className="font-semibold">Data</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLeads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/30">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium text-primary">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-primary">
                             {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </span>
                         </div>
@@ -341,15 +325,15 @@ const Leads = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm">{lead.phone}</span>
+                        <span className="text-sm font-medium">{lead.phone}</span>
                         <span className="text-xs text-muted-foreground">{lead.email}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{sourceLabels[lead.source]}</Badge>
+                      <Badge variant="outline" className="font-medium">{sourceLabels[lead.source]}</Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusLabels[lead.status].color}`}>
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusLabels[lead.status].className}`}>
                         {statusLabels[lead.status].label}
                       </span>
                     </TableCell>
@@ -359,7 +343,7 @@ const Leads = () => {
                         <span className="text-sm">{lead.agent}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-semibold">
                       {formatCurrency(lead.estimatedValue)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -368,7 +352,7 @@ const Leads = () => {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

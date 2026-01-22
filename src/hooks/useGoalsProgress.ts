@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
+export type GoalType = 'leads_atendidos' | 'consultas_agendadas' | 'taxa_conversao' | 'taxa_comparecimento' | 'receita' | 'resgatados' | 'fechados';
+
 export interface GoalProgress {
-  type: 'leads_atendidos' | 'consultas_agendadas' | 'taxa_conversao' | 'taxa_comparecimento' | 'receita';
+  type: GoalType;
   period: 'diario' | 'semanal' | 'mensal';
   target: number;
   current: number;
@@ -124,6 +126,26 @@ export function useGoalsProgress() {
               .lte('attended_at', end.toISOString());
             
             current = appointments?.reduce((sum, app) => sum + (app.revenue || 0), 0) || 0;
+            break;
+          }
+          case 'resgatados': {
+            const { count } = await supabase
+              .from('leads')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'resgatado')
+              .gte('rescued_at', start.toISOString())
+              .lte('rescued_at', end.toISOString());
+            current = count || 0;
+            break;
+          }
+          case 'fechados': {
+            const { count } = await supabase
+              .from('leads')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'fechado')
+              .gte('closed_at', start.toISOString())
+              .lte('closed_at', end.toISOString());
+            current = count || 0;
             break;
           }
         }

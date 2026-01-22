@@ -164,9 +164,29 @@ export default function Relatorios() {
     };
   }).sort((a, b) => b.revenue - a.revenue) || [];
 
+  // Sanitize CSV values to prevent formula injection attacks
+  const sanitizeCSVValue = (value: unknown): string => {
+    const str = String(value ?? '');
+    // Escape formulas by prefixing dangerous characters with single quote
+    // Characters =, +, -, @, tab, carriage return can trigger formula execution in Excel/Sheets
+    if (/^[=+\-@\t\r]/.test(str)) {
+      return "'" + str;
+    }
+    // Escape quotes and wrap if contains comma, newline, or quotes
+    if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  };
+
   const exportToCSV = (data: any[], filename: string) => {
-    const headers = Object.keys(data[0] || {}).join(',');
-    const rows = data.map(row => Object.values(row).join(',')).join('\n');
+    if (!data || data.length === 0) {
+      return;
+    }
+    const headers = Object.keys(data[0]).map(sanitizeCSVValue).join(',');
+    const rows = data.map(row => 
+      Object.values(row).map(sanitizeCSVValue).join(',')
+    ).join('\n');
     const csv = `${headers}\n${rows}`;
     
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

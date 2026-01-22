@@ -14,7 +14,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGoalsProgress, GoalProgress } from '@/hooks/useGoalsProgress';
 import { 
   Plus, 
-  Target, 
   TrendingUp, 
   Calendar, 
   Users, 
@@ -26,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Database } from '@/integrations/supabase/types';
+import { goalSchema, validateForm } from '@/lib/validations';
 
 type GoalType = Database['public']['Enums']['goal_type'];
 type GoalPeriod = Database['public']['Enums']['goal_period'];
@@ -137,6 +137,13 @@ export default function Metas() {
 
   const createGoal = useMutation({
     mutationFn: async (data: typeof newGoal) => {
+      // Validate input before database operation
+      const validation = validateForm(goalSchema, data);
+      if (!validation.success) {
+        const firstError = Object.values(validation.errors || {})[0];
+        throw new Error(firstError || 'Dados inválidos');
+      }
+
       const now = new Date();
       let start_date: string, end_date: string;
 
@@ -161,10 +168,12 @@ export default function Metas() {
           throw new Error('Invalid period');
       }
 
+      const targetValue = parseFloat(data.target_value);
+
       const { error } = await supabase.from('goals').insert({
         type: data.type,
         period: data.period,
-        target_value: parseFloat(data.target_value),
+        target_value: targetValue,
         start_date,
         end_date,
         created_by: user?.id,
@@ -179,8 +188,8 @@ export default function Metas() {
       setNewGoal({ type: '' as GoalType, period: '' as GoalPeriod, target_value: '' });
       toast.success('Meta criada com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao criar meta');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar meta');
     },
   });
 

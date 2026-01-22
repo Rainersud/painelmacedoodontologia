@@ -1,28 +1,27 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, Calendar, User, Clock, DollarSign } from 'lucide-react';
+import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
 
-type LeadStatus = 
-  | 'novo_lead'
-  | 'em_atendimento'
-  | 'consulta_agendada'
-  | 'confirmado'
-  | 'compareceu'
-  | 'nao_compareceu'
-  | 'nao_convertido';
+type LeadStatus = Database['public']['Enums']['lead_status'];
+type LeadSource = Database['public']['Enums']['lead_source'];
 
 interface Lead {
   id: string;
   name: string;
   phone: string;
-  source: string;
+  source: LeadSource;
   status: LeadStatus;
-  agent: string;
-  createdAt: string;
-  estimatedValue: number;
+  assigned_agent_id: string | null;
+  created_at: string;
+  estimated_value: number | null;
+  profiles?: { full_name: string } | null;
 }
 
 const funnelStages: { key: LeadStatus; label: string; color: string; bgColor: string }[] = [
@@ -32,32 +31,53 @@ const funnelStages: { key: LeadStatus; label: string; color: string; bgColor: st
   { key: 'confirmado', label: 'Confirmado', color: 'bg-success', bgColor: 'bg-success/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/20' },
   { key: 'nao_compareceu', label: 'Não Compareceu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'resgatado', label: 'Resgatado', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'fechado', label: 'Fechado', color: 'bg-success', bgColor: 'bg-success/30' },
   { key: 'nao_convertido', label: 'Não Convertido', color: 'bg-muted-foreground', bgColor: 'bg-muted' },
 ];
 
-const mockLeads: Lead[] = [
-  { id: '1', name: 'Maria Silva', phone: '(11) 99999-1234', source: 'WhatsApp', status: 'novo_lead', agent: 'João Santos', createdAt: '10 min', estimatedValue: 2500 },
-  { id: '2', name: 'Carlos Lima', phone: '(11) 98888-5678', source: 'Telefone', status: 'novo_lead', agent: 'Ana Costa', createdAt: '25 min', estimatedValue: 1800 },
-  { id: '3', name: 'Pedro Oliveira', phone: '(11) 97777-9012', source: 'Instagram', status: 'em_atendimento', agent: 'João Santos', createdAt: '1h', estimatedValue: 3200 },
-  { id: '4', name: 'Juliana Alves', phone: '(11) 96666-3456', source: 'Google Ads', status: 'em_atendimento', agent: 'Maria Fernanda', createdAt: '2h', estimatedValue: 4500 },
-  { id: '5', name: 'Ana Costa', phone: '(11) 95555-7890', source: 'Indicação', status: 'consulta_agendada', agent: 'Ana Costa', createdAt: '1 dia', estimatedValue: 2100 },
-  { id: '6', name: 'Roberto Santos', phone: '(11) 94444-1234', source: 'WhatsApp', status: 'consulta_agendada', agent: 'João Santos', createdAt: '1 dia', estimatedValue: 3800 },
-  { id: '7', name: 'Fernanda Lima', phone: '(11) 93333-5678', source: 'Site', status: 'confirmado', agent: 'Maria Fernanda', createdAt: '2 dias', estimatedValue: 5200 },
-  { id: '8', name: 'Bruno Almeida', phone: '(11) 92222-9012', source: 'Telefone', status: 'compareceu', agent: 'Ana Costa', createdAt: '3 dias', estimatedValue: 4100 },
-  { id: '9', name: 'Camila Rocha', phone: '(11) 91111-3456', source: 'Instagram', status: 'nao_compareceu', agent: 'João Santos', createdAt: '2 dias', estimatedValue: 2800 },
-  { id: '10', name: 'Diego Martins', phone: '(11) 90000-7890', source: 'Google Ads', status: 'nao_convertido', agent: 'Maria Fernanda', createdAt: '5 dias', estimatedValue: 1500 },
-];
-
 const sourceColors: Record<string, string> = {
-  'WhatsApp': 'bg-success/10 text-success',
-  'Telefone': 'bg-chart-2/10 text-chart-2',
-  'Instagram': 'bg-chart-5/10 text-chart-5',
-  'Google Ads': 'bg-warning/10 text-warning',
-  'Indicação': 'bg-primary/10 text-primary',
-  'Site': 'bg-muted text-muted-foreground',
+  'whatsapp': 'bg-success/10 text-success',
+  'telefone': 'bg-chart-2/10 text-chart-2',
+  'instagram': 'bg-chart-5/10 text-chart-5',
+  'facebook': 'bg-primary/10 text-primary',
+  'google_ads': 'bg-warning/10 text-warning',
+  'indicacao': 'bg-primary/10 text-primary',
+  'site': 'bg-muted text-muted-foreground',
+  'outro': 'bg-muted text-muted-foreground',
 };
 
-const LeadCard = ({ lead }: { lead: Lead }) => {
+const sourceLabels: Record<string, string> = {
+  'whatsapp': 'WhatsApp',
+  'telefone': 'Telefone',
+  'instagram': 'Instagram',
+  'facebook': 'Facebook',
+  'google_ads': 'Google Ads',
+  'indicacao': 'Indicação',
+  'site': 'Site',
+  'outro': 'Outro',
+};
+
+const formatTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `${diffMins} min`;
+  if (diffHours < 24) return `${diffHours}h`;
+  return `${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+};
+
+const LeadCard = ({ 
+  lead, 
+  onDragStart 
+}: { 
+  lead: Lead; 
+  onDragStart: (e: React.DragEvent, lead: Lead) => void;
+}) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -66,13 +86,17 @@ const LeadCard = ({ lead }: { lead: Lead }) => {
   };
 
   return (
-    <Card className="mb-3 cursor-grab hover:shadow-lg transition-all duration-200 active:cursor-grabbing border-0 shadow-sm">
+    <Card 
+      draggable
+      onDragStart={(e) => onDragStart(e, lead)}
+      className="mb-3 cursor-grab hover:shadow-lg transition-all duration-200 active:cursor-grabbing border-0 shadow-sm"
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-sm font-semibold text-primary">
-                {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div>
@@ -80,19 +104,22 @@ const LeadCard = ({ lead }: { lead: Lead }) => {
               <p className="text-xs text-muted-foreground">{lead.phone}</p>
             </div>
           </div>
-          <Badge variant="outline" className={`text-[10px] font-medium border-0 ${sourceColors[lead.source] || 'bg-muted text-muted-foreground'}`}>
-            {lead.source}
+          <Badge 
+            variant="outline" 
+            className={`text-[10px] font-medium border-0 ${sourceColors[lead.source] || 'bg-muted text-muted-foreground'}`}
+          >
+            {sourceLabels[lead.source] || lead.source}
           </Badge>
         </div>
         
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
           <div className="flex items-center gap-1.5">
             <User className="h-3.5 w-3.5" />
-            <span>{lead.agent}</span>
+            <span>{lead.profiles?.full_name || 'Sem agente'}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            <span>{lead.createdAt}</span>
+            <span>{formatTimeAgo(lead.created_at)}</span>
           </div>
         </div>
 
@@ -100,14 +127,24 @@ const LeadCard = ({ lead }: { lead: Lead }) => {
           <div className="flex items-center gap-1.5">
             <DollarSign className="h-4 w-4 text-success" />
             <span className="font-bold text-sm text-foreground">
-              {formatCurrency(lead.estimatedValue)}
+              {formatCurrency(lead.estimated_value || 0)}
             </span>
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+              onClick={() => window.open(`tel:${lead.phone}`, '_blank')}
+            >
               <Phone className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-success/10 hover:text-success">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-success/10 hover:text-success"
+              onClick={() => window.open(`https://wa.me/${lead.phone.replace(/\D/g, '')}`, '_blank')}
+            >
               <MessageSquare className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-chart-2/10 hover:text-chart-2">
@@ -121,12 +158,99 @@ const LeadCard = ({ lead }: { lead: Lead }) => {
 };
 
 const Funil = () => {
+  const queryClient = useQueryClient();
+  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+
+  const { data: leads, isLoading } = useQuery({
+    queryKey: ['funnel-leads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+
+      // Fetch agent names separately
+      const agentIds = [...new Set(data?.map(l => l.assigned_agent_id).filter(Boolean))];
+      
+      let agentMap: Record<string, string> = {};
+      if (agentIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', agentIds);
+        
+        if (profiles) {
+          agentMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
+        }
+      }
+
+      return data?.map(lead => ({
+        ...lead,
+        profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
+      })) as Lead[];
+    },
+  });
+
+  const updateLeadStatus = useMutation({
+    mutationFn: async ({ leadId, newStatus }: { leadId: string; newStatus: LeadStatus }) => {
+      const updates: Record<string, unknown> = { status: newStatus };
+      
+      // Add timestamp fields based on status
+      if (newStatus === 'resgatado') {
+        updates.rescued_at = new Date().toISOString();
+      } else if (newStatus === 'fechado') {
+        updates.closed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', leadId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast.success('Lead movido com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao mover lead');
+    },
+  });
+
+  const handleDragStart = (e: React.DragEvent, lead: Lead) => {
+    setDraggedLead(lead);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: LeadStatus) => {
+    e.preventDefault();
+    
+    if (draggedLead && draggedLead.status !== newStatus) {
+      updateLeadStatus.mutate({ leadId: draggedLead.id, newStatus });
+    }
+    
+    setDraggedLead(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLead(null);
+  };
+
   const getLeadsByStatus = (status: LeadStatus) => {
-    return mockLeads.filter(lead => lead.status === status);
+    return leads?.filter(lead => lead.status === status) || [];
   };
 
   const getTotalValueByStatus = (status: LeadStatus) => {
-    return getLeadsByStatus(status).reduce((sum, lead) => sum + lead.estimatedValue, 0);
+    return getLeadsByStatus(status).reduce((sum, lead) => sum + (lead.estimated_value || 0), 0);
   };
 
   const formatCurrency = (value: number) => {
@@ -136,6 +260,16 @@ const Funil = () => {
     }).format(value);
   };
 
+  if (isLoading) {
+    return (
+      <AppLayout title="Funil de Vendas">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Funil de Vendas">
       <div className="h-[calc(100vh-8rem)] overflow-x-auto">
@@ -143,13 +277,18 @@ const Funil = () => {
           {funnelStages.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalValueByStatus(stage.key);
+            const isDropTarget = draggedLead && draggedLead.status !== stage.key;
             
             return (
               <div 
                 key={stage.key}
                 className="w-80 flex-shrink-0"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.key)}
               >
-                <Card className="border-0 shadow-sm h-full">
+                <Card className={`border-0 shadow-sm h-full transition-all duration-200 ${
+                  isDropTarget ? 'ring-2 ring-primary ring-offset-2' : ''
+                }`}>
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3 mb-2">
                       <div className={`h-3 w-3 rounded-full ${stage.color}`} />
@@ -167,12 +306,21 @@ const Funil = () => {
                   <CardContent className="pt-0">
                     <div className="space-y-0 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
                       {stageLeads.map((lead) => (
-                        <LeadCard key={lead.id} lead={lead} />
+                        <LeadCard 
+                          key={lead.id} 
+                          lead={lead} 
+                          onDragStart={handleDragStart}
+                        />
                       ))}
                       {stageLeads.length === 0 && (
-                        <div className={`text-center py-10 rounded-xl ${stage.bgColor}`}>
+                        <div 
+                          className={`text-center py-10 rounded-xl ${stage.bgColor} ${
+                            isDropTarget ? 'border-2 border-dashed border-primary' : ''
+                          }`}
+                          onDragEnd={handleDragEnd}
+                        >
                           <p className="text-sm text-muted-foreground">
-                            Nenhum lead nesta etapa
+                            {isDropTarget ? 'Solte aqui' : 'Nenhum lead nesta etapa'}
                           </p>
                         </div>
                       )}

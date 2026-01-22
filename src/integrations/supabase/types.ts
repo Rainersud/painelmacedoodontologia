@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_daily_metrics: {
+        Row: {
+          agent_id: string
+          appointments_confirmed: number | null
+          appointments_scheduled: number | null
+          attended_appointments: number | null
+          avg_response_time_seconds: number | null
+          calls_answered: number | null
+          calls_made: number | null
+          closed: number | null
+          created_at: string
+          id: string
+          leads_attended: number | null
+          leads_received: number | null
+          metric_date: string
+          no_shows: number | null
+          rescued: number | null
+          revenue: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          appointments_confirmed?: number | null
+          appointments_scheduled?: number | null
+          attended_appointments?: number | null
+          avg_response_time_seconds?: number | null
+          calls_answered?: number | null
+          calls_made?: number | null
+          closed?: number | null
+          created_at?: string
+          id?: string
+          leads_attended?: number | null
+          leads_received?: number | null
+          metric_date?: string
+          no_shows?: number | null
+          rescued?: number | null
+          revenue?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          appointments_confirmed?: number | null
+          appointments_scheduled?: number | null
+          attended_appointments?: number | null
+          avg_response_time_seconds?: number | null
+          calls_answered?: number | null
+          calls_made?: number | null
+          closed?: number | null
+          created_at?: string
+          id?: string
+          leads_attended?: number | null
+          leads_received?: number | null
+          metric_date?: string
+          no_shows?: number | null
+          rescued?: number | null
+          revenue?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alerts: {
         Row: {
           created_at: string
@@ -108,6 +168,47 @@ export type Database = {
           },
         ]
       }
+      call_logs: {
+        Row: {
+          agent_id: string
+          call_type: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          result: string | null
+        }
+        Insert: {
+          agent_id: string
+          call_type: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          result?: string | null
+        }
+        Update: {
+          agent_id?: string
+          call_type?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           created_at: string
@@ -141,6 +242,42 @@ export type Database = {
           target_value?: number
           type?: Database["public"]["Enums"]["goal_type"]
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      incentive_plans: {
+        Row: {
+          bonus_value: number
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          period: Database["public"]["Enums"]["goal_period"]
+          target_type: string
+          target_value: number
+        }
+        Insert: {
+          bonus_value?: number
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          period: Database["public"]["Enums"]["goal_period"]
+          target_type: string
+          target_value: number
+        }
+        Update: {
+          bonus_value?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          period?: Database["public"]["Enums"]["goal_period"]
+          target_type?: string
+          target_value?: number
         }
         Relationships: []
       }
@@ -185,6 +322,7 @@ export type Database = {
       leads: {
         Row: {
           assigned_agent_id: string | null
+          closed_at: string | null
           converted_at: string | null
           created_at: string
           email: string | null
@@ -193,13 +331,17 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          payment_method: string | null
           phone: string
+          rescued_at: string | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
+          treatment_value: number | null
           updated_at: string
         }
         Insert: {
           assigned_agent_id?: string | null
+          closed_at?: string | null
           converted_at?: string | null
           created_at?: string
           email?: string | null
@@ -208,13 +350,17 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          payment_method?: string | null
           phone: string
+          rescued_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
+          treatment_value?: number | null
           updated_at?: string
         }
         Update: {
           assigned_agent_id?: string | null
+          closed_at?: string | null
           converted_at?: string | null
           created_at?: string
           email?: string | null
@@ -223,9 +369,12 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          payment_method?: string | null
           phone?: string
+          rescued_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
+          treatment_value?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -281,6 +430,50 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_messages: {
+        Row: {
+          agent_id: string | null
+          content: string | null
+          created_at: string
+          direction: string
+          id: string
+          lead_id: string | null
+          message_type: string
+          status: string | null
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          content?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          lead_id?: string | null
+          message_type: string
+          status?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          content?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          lead_id?: string | null
+          message_type?: string
+          status?: string | null
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -309,6 +502,8 @@ export type Database = {
         | "taxa_conversao"
         | "taxa_comparecimento"
         | "receita"
+        | "resgatados"
+        | "fechados"
       interaction_type:
         | "whatsapp_recebido"
         | "whatsapp_enviado"
@@ -335,6 +530,8 @@ export type Database = {
         | "compareceu"
         | "nao_compareceu"
         | "nao_convertido"
+        | "resgatado"
+        | "fechado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -476,6 +673,8 @@ export const Constants = {
         "taxa_conversao",
         "taxa_comparecimento",
         "receita",
+        "resgatados",
+        "fechados",
       ],
       interaction_type: [
         "whatsapp_recebido",
@@ -505,6 +704,8 @@ export const Constants = {
         "compareceu",
         "nao_compareceu",
         "nao_convertido",
+        "resgatado",
+        "fechado",
       ],
     },
   },

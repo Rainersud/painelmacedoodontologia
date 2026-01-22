@@ -4,9 +4,10 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, Loader2 } from 'lucide-react';
+import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, Loader2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { LeadEvolutionDialog } from '@/components/leads/LeadEvolutionDialog';
 import type { Database } from '@/integrations/supabase/types';
 
 type LeadStatus = Database['public']['Enums']['lead_status'];
@@ -73,10 +74,12 @@ const formatTimeAgo = (dateString: string) => {
 
 const LeadCard = ({ 
   lead, 
-  onDragStart 
+  onDragStart,
+  onOpenEvolution,
 }: { 
   lead: Lead; 
   onDragStart: (e: React.DragEvent, lead: Lead) => void;
+  onOpenEvolution: (lead: Lead) => void;
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -89,7 +92,8 @@ const LeadCard = ({
     <Card 
       draggable
       onDragStart={(e) => onDragStart(e, lead)}
-      className="mb-3 cursor-grab hover:shadow-lg transition-all duration-200 active:cursor-grabbing border-0 shadow-sm"
+      onClick={() => onOpenEvolution(lead)}
+      className="mb-3 cursor-pointer hover:shadow-lg transition-all duration-200 active:cursor-grabbing border-0 shadow-sm group"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
@@ -134,8 +138,22 @@ const LeadCard = ({
             <Button 
               variant="ghost" 
               size="icon" 
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenEvolution(lead);
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
               className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-              onClick={() => window.open(`tel:${lead.phone}`, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`tel:${lead.phone}`, '_blank');
+              }}
             >
               <Phone className="h-4 w-4" />
             </Button>
@@ -143,11 +161,19 @@ const LeadCard = ({
               variant="ghost" 
               size="icon" 
               className="h-8 w-8 hover:bg-success/10 hover:text-success"
-              onClick={() => window.open(`https://wa.me/${lead.phone.replace(/\D/g, '')}`, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://wa.me/${lead.phone.replace(/\D/g, '')}`, '_blank');
+              }}
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-chart-2/10 hover:text-chart-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-chart-2/10 hover:text-chart-2"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Calendar className="h-4 w-4" />
             </Button>
           </div>
@@ -160,6 +186,8 @@ const LeadCard = ({
 const Funil = () => {
   const queryClient = useQueryClient();
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [evolutionDialogOpen, setEvolutionDialogOpen] = useState(false);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ['funnel-leads'],
@@ -245,6 +273,11 @@ const Funil = () => {
     setDraggedLead(null);
   };
 
+  const handleOpenEvolution = (lead: Lead) => {
+    setSelectedLead(lead);
+    setEvolutionDialogOpen(true);
+  };
+
   const getLeadsByStatus = (status: LeadStatus) => {
     return leads?.filter(lead => lead.status === status) || [];
   };
@@ -310,6 +343,7 @@ const Funil = () => {
                           key={lead.id} 
                           lead={lead} 
                           onDragStart={handleDragStart}
+                          onOpenEvolution={handleOpenEvolution}
                         />
                       ))}
                       {stageLeads.length === 0 && (
@@ -332,6 +366,12 @@ const Funil = () => {
           })}
         </div>
       </div>
+
+      <LeadEvolutionDialog
+        lead={selectedLead}
+        open={evolutionDialogOpen}
+        onOpenChange={setEvolutionDialogOpen}
+      />
     </AppLayout>
   );
 };

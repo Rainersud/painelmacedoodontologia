@@ -41,7 +41,7 @@ const periodLabels: Record<Period, string> = {
 };
 
 export default function PlanoIncentivo() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, roleLoading } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newPlan, setNewPlan] = useState({
@@ -121,6 +121,16 @@ export default function PlanoIncentivo() {
       toast.success('Plano removido!');
     },
   });
+
+  if (roleLoading) {
+    return (
+      <AppLayout title="Plano de Incentivo">
+        <div className="flex items-center justify-center h-64">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!isAdmin) {
     return (

@@ -8,7 +8,9 @@ import {
   DollarSign,
   UserCheck,
   Clock,
-  Target
+  Target,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -47,11 +49,11 @@ const conversionByMonth = [
 ];
 
 const leadsBySource = [
-  { name: 'WhatsApp', value: 45, color: '#25D366' },
-  { name: 'Telefone', value: 25, color: '#3B82F6' },
-  { name: 'Instagram', value: 15, color: '#E4405F' },
-  { name: 'Google Ads', value: 10, color: '#FBBC05' },
-  { name: 'Indicação', value: 5, color: '#8B5CF6' },
+  { name: 'WhatsApp', value: 45, color: 'hsl(142, 70%, 45%)' },
+  { name: 'Telefone', value: 25, color: 'hsl(199, 89%, 48%)' },
+  { name: 'Instagram', value: 15, color: 'hsl(340, 75%, 55%)' },
+  { name: 'Google Ads', value: 10, color: 'hsl(38, 92%, 50%)' },
+  { name: 'Indicação', value: 5, color: 'hsl(262, 80%, 55%)' },
 ];
 
 const kpiCards = [
@@ -126,25 +128,32 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Dashboard">
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* KPI Cards Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {kpiCards.map((kpi) => (
-            <Card key={kpi.title} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card key={kpi.title} className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {kpi.title}
                 </CardTitle>
-                <kpi.icon className="h-4 w-4 text-muted-foreground" />
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <kpi.icon className="h-5 w-5 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{kpi.value}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-xs font-medium ${
+                <div className="text-3xl font-bold tracking-tight">{kpi.value}</div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
                     kpi.changeType === 'positive' 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
+                      ? 'bg-success/10 text-success' 
+                      : 'bg-destructive/10 text-destructive'
                   }`}>
+                    {kpi.changeType === 'positive' ? (
+                      <ArrowUpRight className="h-3 w-3" />
+                    ) : (
+                      <ArrowDownRight className="h-3 w-3" />
+                    )}
                     {kpi.change}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -159,47 +168,52 @@ const Dashboard = () => {
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Leads vs Consultas Chart */}
-          <Card>
-            <CardHeader>
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
                 Leads vs Consultas (Semana)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={leadsOverTime}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     />
                     <YAxis 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                       }}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="leads" 
                       stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))' }}
+                      strokeWidth={3}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 4 }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
                       name="Leads"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="consultas" 
-                      stroke="#22c55e" 
-                      strokeWidth={2}
-                      dot={{ fill: '#22c55e' }}
+                      stroke="hsl(var(--success))" 
+                      strokeWidth={3}
+                      dot={{ fill: 'hsl(var(--success))', strokeWidth: 0, r: 4 }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
                       name="Consultas"
                     />
                   </LineChart>
@@ -209,39 +223,43 @@ const Dashboard = () => {
           </Card>
 
           {/* Conversion Rate Chart */}
-          <Card>
-            <CardHeader>
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
                 Taxa de Conversão Mensal (%)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={conversionByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis 
                       dataKey="name" 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     />
                     <YAxis 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                       domain={[0, 100]}
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                       }}
                       formatter={(value) => [`${value}%`, 'Taxa']}
                     />
                     <Bar 
                       dataKey="taxa" 
                       fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]}
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={50}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -253,24 +271,25 @@ const Dashboard = () => {
         {/* Bottom Row */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Lead Sources Pie Chart */}
-          <Card>
-            <CardHeader>
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
                 Origem dos Leads
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px]">
+              <div className="h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={leadsBySource}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
+                      innerRadius={55}
                       outerRadius={80}
-                      paddingAngle={5}
+                      paddingAngle={4}
                       dataKey="value"
+                      strokeWidth={0}
                     >
                       {leadsBySource.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -278,26 +297,27 @@ const Dashboard = () => {
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                       }}
                       formatter={(value) => [`${value}%`, '']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-2.5">
                 {leadsBySource.map((source) => (
                   <div key={source.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <div 
                         className="h-3 w-3 rounded-full" 
                         style={{ backgroundColor: source.color }}
                       />
                       <span className="text-muted-foreground">{source.name}</span>
                     </div>
-                    <span className="font-medium">{source.value}%</span>
+                    <span className="font-semibold">{source.value}%</span>
                   </div>
                 ))}
               </div>
@@ -305,14 +325,14 @@ const Dashboard = () => {
           </Card>
 
           {/* Recent Leads */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
+          <Card className="lg:col-span-2 border-0 shadow-sm">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">
                 Leads Recentes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
                   { name: 'Maria Silva', source: 'WhatsApp', time: '2 min', status: 'novo_lead' },
                   { name: 'João Santos', source: 'Telefone', time: '15 min', status: 'em_atendimento' },
@@ -322,25 +342,25 @@ const Dashboard = () => {
                 ].map((lead, index) => (
                   <div 
                     key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-medium text-primary">
+                    <div className="flex items-center gap-4">
+                      <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-primary">
                           {lead.name.split(' ').map(n => n[0]).join('')}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-sm">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{lead.source} • {lead.time}</p>
+                        <p className="font-medium">{lead.name}</p>
+                        <p className="text-sm text-muted-foreground">{lead.source} • {lead.time}</p>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      lead.status === 'novo_lead' ? 'bg-blue-100 text-blue-700' :
-                      lead.status === 'em_atendimento' ? 'bg-yellow-100 text-yellow-700' :
-                      lead.status === 'consulta_agendada' ? 'bg-purple-100 text-purple-700' :
-                      lead.status === 'confirmado' ? 'bg-green-100 text-green-700' :
-                      'bg-emerald-100 text-emerald-700'
+                    <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                      lead.status === 'novo_lead' ? 'bg-chart-2/10 text-chart-2' :
+                      lead.status === 'em_atendimento' ? 'bg-warning/10 text-warning' :
+                      lead.status === 'consulta_agendada' ? 'bg-primary/10 text-primary' :
+                      lead.status === 'confirmado' ? 'bg-success/10 text-success' :
+                      'bg-success/20 text-success'
                     }`}>
                       {lead.status === 'novo_lead' ? 'Novo' :
                        lead.status === 'em_atendimento' ? 'Atendendo' :

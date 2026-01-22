@@ -8,7 +8,6 @@ import {
   FileText, 
   Settings,
   LogOut,
-  ChevronDown,
   UserCircle
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -24,7 +23,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -54,8 +52,6 @@ const adminNavItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === 'collapsed';
   const location = useLocation();
   const { fullName, role, signOut, isAdmin } = useAuth();
 
@@ -68,40 +64,40 @@ export function AppSidebar() {
         <NavLink 
           to={item.url} 
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
             isActive(item.url) 
-              ? "bg-primary text-primary-foreground" 
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+              : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
-          <item.icon className="h-4 w-4" />
-          {!collapsed && <span>{item.title}</span>}
+          <item.icon className="h-5 w-5" />
+          <span>{item.title}</span>
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border p-4">
+    <Sidebar className="border-r-0">
+      <SidebarHeader className="border-b border-sidebar-border px-6 py-5">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-primary-foreground">DC</span>
+          <div className="h-10 w-10 rounded-xl bg-sidebar-primary flex items-center justify-center shadow-lg">
+            <span className="text-base font-bold text-sidebar-primary-foreground">DC</span>
           </div>
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-semibold text-foreground">Dental CRM</span>
-              <span className="text-xs text-muted-foreground">Call Center</span>
-            </div>
-          )}
+          <div className="flex flex-col">
+            <span className="font-semibold text-sidebar-foreground text-base">Dental CRM</span>
+            <span className="text-xs text-sidebar-muted">Call Center</span>
+          </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-4 py-6">
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
+            Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {mainNavItems.map((item) => (
                 <NavItem key={item.title} item={item} />
               ))}
@@ -109,10 +105,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Gestão</SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
+            Gestão
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {managementNavItems.map((item) => (
                 <NavItem key={item.title} item={item} />
               ))}
@@ -121,10 +119,12 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administração</SidebarGroupLabel>
+          <SidebarGroup className="mt-6">
+            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
+              Administração
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1">
                 {adminNavItems.map((item) => (
                   <NavItem key={item.title} item={item} />
                 ))}
@@ -134,28 +134,23 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border p-2">
+      <SidebarFooter className="border-t border-sidebar-border p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/10 text-primary text-sm">
+            <button className="flex w-full items-center gap-3 rounded-lg p-3 hover:bg-sidebar-accent transition-colors">
+              <Avatar className="h-10 w-10 ring-2 ring-sidebar-primary/30">
+                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              {!collapsed && (
-                <>
-                  <div className="flex flex-col items-start flex-1 min-w-0">
-                    <span className="text-sm font-medium truncate w-full text-left">
-                      {fullName || 'Usuário'}
-                    </span>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {role === 'admin' ? 'Administrador' : 'Agente'}
-                    </span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </>
-              )}
+              <div className="flex flex-col items-start flex-1 min-w-0">
+                <span className="text-sm font-medium truncate w-full text-left text-sidebar-foreground">
+                  {fullName || 'Usuário'}
+                </span>
+                <span className="text-xs text-sidebar-muted capitalize">
+                  {role === 'admin' ? 'Administrador' : 'Agente'}
+                </span>
+              </div>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

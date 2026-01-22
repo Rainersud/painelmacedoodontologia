@@ -1,5 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GoalsWidget } from '@/components/goals/GoalsWidget';
 import { 
   Users, 
   Phone, 
@@ -270,6 +271,9 @@ const Dashboard = () => {
 
         {/* Bottom Row */}
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Goals Widget - Metas em Tempo Real */}
+          <GoalsWidget />
+
           {/* Lead Sources Pie Chart */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-2">

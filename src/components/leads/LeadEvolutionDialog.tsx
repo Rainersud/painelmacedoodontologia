@@ -211,9 +211,12 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
           {/* Status Evolution Tab */}
           <TabsContent value="status" className="space-y-4">
             <div className="space-y-2">
-              <Label>Novo Status</Label>
-              <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as LeadStatus)}>
-                <SelectTrigger>
+              <Label htmlFor="new-status">Novo Status</Label>
+              <Select 
+                value={selectedStatus || undefined} 
+                onValueChange={(v) => setSelectedStatus(v as LeadStatus)}
+              >
+                <SelectTrigger id="new-status">
                   <SelectValue placeholder="Selecione o novo status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,11 +239,13 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Observações (opcional)</Label>
+              <Label htmlFor="status-notes">Observações (opcional)</Label>
               <Textarea
+                id="status-notes"
+                name="status-notes"
                 placeholder="Motivo da mudança de status..."
                 value={interactionData.notes}
-                onChange={(e) => setInteractionData({ ...interactionData, notes: e.target.value })}
+                onChange={(e) => setInteractionData(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
             <Button
@@ -271,7 +276,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
                     type="button"
                     variant={interactionData.type === type.key ? 'default' : 'outline'}
                     className="flex flex-col h-auto py-3 gap-1"
-                    onClick={() => setInteractionData({ ...interactionData, type: type.key as any })}
+                    onClick={() => setInteractionData(prev => ({ ...prev, type: type.key as 'ligacao' | 'whatsapp' | 'email' | 'presencial' }))}
                   >
                     <type.icon className="h-5 w-5" />
                     <span className="text-xs">{type.label}</span>
@@ -280,11 +285,13 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Notas da Interação</Label>
+              <Label htmlFor="interaction-notes">Notas da Interação</Label>
               <Textarea
+                id="interaction-notes"
+                name="interaction-notes"
                 placeholder="Descreva o que foi conversado..."
                 value={interactionData.notes}
-                onChange={(e) => setInteractionData({ ...interactionData, notes: e.target.value })}
+                onChange={(e) => setInteractionData(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
             <Button
@@ -300,21 +307,26 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
           <TabsContent value="close" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Valor do Tratamento (R$)</Label>
+                <Label htmlFor="treatment-value">Valor do Tratamento (R$)</Label>
                 <Input
+                  id="treatment-value"
+                  name="treatment-value"
                   type="number"
+                  min="0"
+                  step="0.01"
                   placeholder="0,00"
                   value={closingData.treatment_value}
-                  onChange={(e) => setClosingData({ ...closingData, treatment_value: e.target.value })}
+                  onChange={(e) => setClosingData(prev => ({ ...prev, treatment_value: e.target.value }))}
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
+                <Label htmlFor="payment-method">Forma de Pagamento</Label>
                 <Select 
-                  value={closingData.payment_method} 
-                  onValueChange={(v) => setClosingData({ ...closingData, payment_method: v as 'avista' | 'parcelado' })}
+                  value={closingData.payment_method || undefined} 
+                  onValueChange={(v) => setClosingData(prev => ({ ...prev, payment_method: v as 'avista' | 'parcelado' }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="payment-method">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,11 +337,13 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Observações (opcional)</Label>
+              <Label htmlFor="closing-notes">Observações (opcional)</Label>
               <Textarea
+                id="closing-notes"
+                name="closing-notes"
                 placeholder="Detalhes do fechamento..."
                 value={closingData.notes}
-                onChange={(e) => setClosingData({ ...closingData, notes: e.target.value })}
+                onChange={(e) => setClosingData(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
             <Button

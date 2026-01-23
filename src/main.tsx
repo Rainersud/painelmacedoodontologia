@@ -2,10 +2,28 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Helper to check if an error is an AbortError (safe to ignore during cleanup)
+function isAbortError(error: unknown): boolean {
+  if (!error) return false;
+  if (error instanceof Error) {
+    return error.name === 'AbortError' || error.message.includes('aborted');
+  }
+  if (typeof error === 'object' && 'name' in error) {
+    return (error as { name: string }).name === 'AbortError';
+  }
+  return false;
+}
+
 // Prevent silent white-screen crashes by surfacing runtime errors in console.
 // (The UI is protected by ErrorBoundary in App.tsx.)
 
 function showFatalOverlay(title: string, detail: unknown) {
+  // Don't show overlay for AbortErrors - they're expected during cleanup
+  if (isAbortError(detail)) {
+    console.debug("Suppressed AbortError (expected during cleanup):", detail);
+    return;
+  }
+
   try {
     const id = "lovable-fatal-overlay";
     const existing = document.getElementById(id);
@@ -58,13 +76,28 @@ function showFatalOverlay(title: string, detail: unknown) {
 }
 
 window.addEventListener("error", (event) => {
+  if (isAbortError(event.error)) {
+    event.preventDefault();
+    return;
+  }
   console.error("Global error:", event.error || event.message, event);
   showFatalOverlay("Erro global (window.error)", event.error || event.message);
 });
 
 window.addEventListener("unhandledrejection", (event) => {
+  if (isAbortError(event.reason)) {
+    event.preventDefault();
+    return;
+  }
   console.error("Unhandled promise rejection:", event.reason, event);
   showFatalOverlay("Promise rejeitada (unhandledrejection)", event.reason);
+});
+
+// Suppress ResizeObserver loop errors (benign browser warnings)
+window.addEventListener("error", (e) => {
+  if (e.message?.includes?.("ResizeObserver")) {
+    e.stopImmediatePropagation();
+  }
 });
 
 createRoot(document.getElementById("root")!).render(<App />);

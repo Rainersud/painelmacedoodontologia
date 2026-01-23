@@ -29,8 +29,12 @@ export const useAuth = () => {
 
 // Helper to check if an error is an AbortError (safe to ignore)
 function isAbortError(error: unknown): boolean {
+  if (!error) return false;
   if (error instanceof Error) {
     return error.name === 'AbortError' || error.message.includes('aborted');
+  }
+  if (typeof error === 'object' && 'name' in error) {
+    return (error as { name: string }).name === 'AbortError';
   }
   return false;
 }

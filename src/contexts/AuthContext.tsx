@@ -27,6 +27,14 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper to check if an error is an AbortError (safe to ignore)
+function isAbortError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.name === 'AbortError' || error.message.includes('aborted');
+  }
+  return false;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -35,15 +43,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, signal?: AbortSignal) => {
     setRoleLoading(true);
     try {
       // Fetch user role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
+      
+      // Check abort after await
+      if (signal?.aborted) return;
+
+      if (roleError && !isAbortError(roleError)) {
+        console.error('Error fetching role:', roleError);
+      }
       
       if (roleData) {
         setRole(roleData.role as AppRole);
@@ -52,45 +67,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Fetch profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('user_id', userId)
         .maybeSingle();
       
+      // Check abort after await
+      if (signal?.aborted) return;
+
+      if (profileError && !isAbortError(profileError)) {
+        console.error('Error fetching profile:', profileError);
+      }
+      
       if (profileData) {
         setFullName(profileData.full_name);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      // Suppress AbortError (happens during unmount/strict mode)
+      if (!isAbortError(error)) {
+        console.error('Error fetching user data:', error);
+      }
     } finally {
-      setRoleLoading(false);
+      if (!signal?.aborted) {
+        setRoleLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
     let isMounted = true;
 
     // Check for existing session first
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
-        if (!isMounted) return;
+        if (abortController.signal.aborted || !isMounted) return;
+
+        // Handle refresh token errors gracefully (user will need to re-login)
+        if (error) {
+          if (!isAbortError(error)) {
+            console.warn('Session error (user may need to re-login):', error.message);
+          }
+          setSession(null);
+          setUser(null);
+          setRoleLoading(false);
+          setLoading(false);
+          return;
+        }
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         
-        if (session?.user) {
-          await fetchUserData(session.user.id);
+        if (currentSession?.user) {
+          await fetchUserData(currentSession.user.id, abortController.signal);
         } else {
           setRoleLoading(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMounted) setRoleLoading(false);
+        if (!isAbortError(error)) {
+          console.error('Error initializing auth:', error);
+        }
+        if (isMounted && !abortController.signal.aborted) {
+          setRoleLoading(false);
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted && !abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -98,14 +144,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state listener for subsequent changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return;
+      async (event, newSession) => {
+        if (!isMounted || abortController.signal.aborted) return;
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        // Handle sign out or token refresh failures
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !newSession) {
+          setSession(null);
+          setUser(null);
+          setRole(null);
+          setFullName(null);
+          setRoleLoading(false);
+          return;
+        }
         
-        if (session?.user) {
-          await fetchUserData(session.user.id);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user) {
+          // Use a new abort controller for this callback
+          await fetchUserData(newSession.user.id);
         } else {
           setRole(null);
           setFullName(null);
@@ -116,34 +173,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
+      abortController.abort();
       subscription.unsubscribe();
     };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: fullName,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
-    return { error };
+      });
+      return { error };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Erro desconhecido') };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Erro desconhecido') };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      if (!isAbortError(error)) {
+        console.error('Error signing out:', error);
+      }
+    }
     setRole(null);
     setFullName(null);
   };

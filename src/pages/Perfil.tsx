@@ -16,6 +16,10 @@ export default function Perfil() {
   const { user, fullName, role } = useAuth();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    phone: '',
+  });
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['my-profile', user?.id],
@@ -30,11 +34,6 @@ export default function Perfil() {
       return data;
     },
     enabled: !!user,
-  });
-
-  const [formData, setFormData] = useState({
-    full_name: '',
-    phone: '',
   });
 
   const updateProfile = useMutation({
@@ -112,37 +111,56 @@ export default function Perfil() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
+              <Label htmlFor="full_name" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Nome Completo
               </Label>
-              <Input
-                value={isEditing ? formData.full_name : profile?.full_name || ''}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                disabled={!isEditing}
-              />
+              {isEditing ? (
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                  autoComplete="name"
+                />
+              ) : (
+                <Input
+                  value={profile?.full_name || ''}
+                  disabled
+                />
+              )}
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 E-mail
               </Label>
-              <Input value={user?.email || ''} disabled />
+              <Input id="email" value={user?.email || ''} disabled />
               <p className="text-xs text-muted-foreground">
                 O e-mail não pode ser alterado
               </p>
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
+              <Label htmlFor="phone" className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Telefone
               </Label>
-              <Input
-                value={isEditing ? formData.phone : profile?.phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                disabled={!isEditing}
-                placeholder="(11) 99999-9999"
-              />
+              {isEditing ? (
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="(11) 99999-9999"
+                  autoComplete="tel"
+                />
+              ) : (
+                <Input
+                  value={profile?.phone || ''}
+                  disabled
+                  placeholder="(11) 99999-9999"
+                />
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">

@@ -187,78 +187,106 @@ export default function PlanoIncentivo() {
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Nome do Plano</Label>
+                  <Label htmlFor="plan-name">Nome do Plano</Label>
                   <Input
+                    id="plan-name"
+                    name="plan-name"
                     value={newPlan.name}
-                    onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+                    onChange={(e) => setNewPlan(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Ex: Bônus por Agendamento"
+                    autoComplete="off"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tipo de Meta</Label>
+                    <Label htmlFor="target-type">Tipo de Meta</Label>
                     <Select
-                      value={newPlan.target_type}
-                      onValueChange={(v) => setNewPlan({ ...newPlan, target_type: v as TargetType })}
+                      value={newPlan.target_type || undefined}
+                      onValueChange={(v) => setNewPlan(prev => ({ ...prev, target_type: v as TargetType }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="target-type">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(targetTypeConfig).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            <div className="flex items-center gap-2">
-                              <config.icon className="h-4 w-4" />
-                              {config.label}
-                            </div>
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="agendamentos">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            Agendamentos
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="comparecimentos">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4" />
+                            Comparecimentos
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="resgatados">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Resgatados
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="fechados">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4" />
+                            Fechados
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Período</Label>
+                    <Label htmlFor="period">Período</Label>
                     <Select
-                      value={newPlan.period}
-                      onValueChange={(v) => setNewPlan({ ...newPlan, period: v as Period })}
+                      value={newPlan.period || undefined}
+                      onValueChange={(v) => setNewPlan(prev => ({ ...prev, period: v as Period }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="period">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(periodLabels).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>{label}</SelectItem>
-                        ))}
+                        <SelectItem value="diario">Diário</SelectItem>
+                        <SelectItem value="semanal">Semanal</SelectItem>
+                        <SelectItem value="mensal">Mensal</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Meta (quantidade)</Label>
+                    <Label htmlFor="target-value">Meta (quantidade)</Label>
                     <Input
+                      id="target-value"
+                      name="target-value"
                       type="number"
+                      min="1"
                       value={newPlan.target_value}
-                      onChange={(e) => setNewPlan({ ...newPlan, target_value: e.target.value })}
+                      onChange={(e) => setNewPlan(prev => ({ ...prev, target_value: e.target.value }))}
                       placeholder="Ex: 10"
+                      autoComplete="off"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Bônus (R$)</Label>
+                    <Label htmlFor="bonus-value">Bônus (R$)</Label>
                     <Input
+                      id="bonus-value"
+                      name="bonus-value"
                       type="number"
+                      min="0.01"
+                      step="0.01"
                       value={newPlan.bonus_value}
-                      onChange={(e) => setNewPlan({ ...newPlan, bonus_value: e.target.value })}
+                      onChange={(e) => setNewPlan(prev => ({ ...prev, bonus_value: e.target.value }))}
                       placeholder="Ex: 50.00"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
                 <Button 
                   className="w-full" 
                   onClick={() => createPlan.mutate(newPlan)}
-                  disabled={!newPlan.name || !newPlan.target_type || !newPlan.period || !newPlan.target_value || !newPlan.bonus_value}
+                  disabled={!newPlan.name || !newPlan.target_type || !newPlan.period || !newPlan.target_value || !newPlan.bonus_value || createPlan.isPending}
                 >
-                  Criar Plano
+                  {createPlan.isPending ? 'Criando...' : 'Criar Plano'}
                 </Button>
               </div>
             </DialogContent>

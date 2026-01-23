@@ -10,8 +10,10 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Dashboard from "./pages/Dashboard";
 import DashboardCallCenter from "./pages/DashboardCallCenter";
+import CRMDashboard from "./pages/CRMDashboard";
 import Leads from "./pages/Leads";
 import Funil from "./pages/Funil";
+import Tarefas from "./pages/Tarefas";
 import Agendamentos from "./pages/Agendamentos";
 import Metas from "./pages/Metas";
 import PlanoIncentivo from "./pages/PlanoIncentivo";
@@ -36,8 +38,10 @@ const App = () => (
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/call-center" element={<ProtectedRoute><DashboardCallCenter /></ProtectedRoute>} />
+              <Route path="/crm" element={<ProtectedRoute><CRMDashboard /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
               <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
+              <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
               <Route path="/agendamentos" element={<ProtectedRoute><Agendamentos /></ProtectedRoute>} />
               <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
               <Route path="/incentivos" element={<ProtectedRoute><PlanoIncentivo /></ProtectedRoute>} />

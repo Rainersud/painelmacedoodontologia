@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          activity_type: string
+          agent_id: string
+          created_at: string
+          description: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          title: string
+        }
+        Insert: {
+          activity_type: string
+          agent_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          agent_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_daily_metrics: {
         Row: {
           agent_id: string
@@ -323,58 +370,103 @@ export type Database = {
         Row: {
           assigned_agent_id: string | null
           closed_at: string | null
+          completed_at: string | null
           converted_at: string | null
           created_at: string
           email: string | null
           estimated_value: number | null
           first_response_at: string | null
           id: string
+          interest_product: string | null
+          interest_rating: number | null
           name: string
           notes: string | null
           payment_method: string | null
           phone: string
           rescued_at: string | null
+          scheduled_appointment_at: string | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
           treatment_value: number | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           assigned_agent_id?: string | null
           closed_at?: string | null
+          completed_at?: string | null
           converted_at?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
           first_response_at?: string | null
           id?: string
+          interest_product?: string | null
+          interest_rating?: number | null
           name: string
           notes?: string | null
           payment_method?: string | null
           phone: string
           rescued_at?: string | null
+          scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           treatment_value?: number | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           assigned_agent_id?: string | null
           closed_at?: string | null
+          completed_at?: string | null
           converted_at?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
           first_response_at?: string | null
           id?: string
+          interest_product?: string | null
+          interest_rating?: number | null
           name?: string
           notes?: string | null
           payment_method?: string | null
           phone?: string
           rescued_at?: string | null
+          scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           treatment_value?: number | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      meta_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: number
           updated_at?: string
         }
         Relationships: []
@@ -408,6 +500,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          agent_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          lead_id: string | null
+          priority: string | null
+          scheduled_at: string
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string | null
+          scheduled_at: string
+          status?: string
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string | null
+          scheduled_at?: string
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -532,6 +677,16 @@ export type Database = {
         | "nao_convertido"
         | "resgatado"
         | "fechado"
+        | "followup_1"
+        | "followup_2"
+        | "followup_3"
+        | "followup_4"
+        | "agendou"
+        | "faltou"
+        | "potencial"
+        | "acompanhamento"
+        | "pos_venda"
+        | "sem_interesse"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -706,6 +861,16 @@ export const Constants = {
         "nao_convertido",
         "resgatado",
         "fechado",
+        "followup_1",
+        "followup_2",
+        "followup_3",
+        "followup_4",
+        "agendou",
+        "faltou",
+        "potencial",
+        "acompanhamento",
+        "pos_venda",
+        "sem_interesse",
       ],
     },
   },

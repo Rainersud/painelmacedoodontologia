@@ -42,7 +42,8 @@ import {
   Users,
   UserPlus,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,65 +51,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-// Mock data for leads
-const mockLeads = [
-  {
-    id: '1',
-    name: 'Maria Silva',
-    phone: '(11) 99999-1234',
-    email: 'maria@email.com',
-    source: 'whatsapp',
-    status: 'novo_lead',
-    agent: 'João Santos',
-    createdAt: '2024-01-15T10:30:00',
-    estimatedValue: 2500,
-  },
-  {
-    id: '2',
-    name: 'Pedro Oliveira',
-    phone: '(11) 98888-5678',
-    email: 'pedro@email.com',
-    source: 'telefone',
-    status: 'em_atendimento',
-    agent: 'Ana Costa',
-    createdAt: '2024-01-15T09:15:00',
-    estimatedValue: 3800,
-  },
-  {
-    id: '3',
-    name: 'Ana Costa',
-    phone: '(11) 97777-9012',
-    email: 'ana.costa@email.com',
-    source: 'instagram',
-    status: 'consulta_agendada',
-    agent: 'João Santos',
-    createdAt: '2024-01-14T16:45:00',
-    estimatedValue: 1500,
-  },
-  {
-    id: '4',
-    name: 'Carlos Lima',
-    phone: '(11) 96666-3456',
-    email: 'carlos@email.com',
-    source: 'google_ads',
-    status: 'confirmado',
-    agent: 'Maria Fernanda',
-    createdAt: '2024-01-14T14:20:00',
-    estimatedValue: 5200,
-  },
-  {
-    id: '5',
-    name: 'Juliana Alves',
-    phone: '(11) 95555-7890',
-    email: 'juliana@email.com',
-    source: 'indicacao',
-    status: 'compareceu',
-    agent: 'Ana Costa',
-    createdAt: '2024-01-13T11:00:00',
-    estimatedValue: 4100,
-  },
-];
+import { useCRMLeads } from '@/hooks/useCRMLeads';
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   novo_lead: { label: 'Novo Lead', className: 'bg-chart-2/10 text-chart-2' },
@@ -136,12 +79,14 @@ const Leads = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const { data: leads = [], isLoading } = useCRMLeads();
 
-  const filteredLeads = mockLeads.filter((lead) => {
+  const filteredLeads = leads.filter((lead) => {
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.includes(searchTerm) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
     const matchesSource = sourceFilter === 'all' || lead.source === sourceFilter;
@@ -166,11 +111,22 @@ const Leads = () => {
     }).format(value);
   };
 
+  const newLeadsToday = leads.filter(l => {
+    const today = new Date().toDateString();
+    return new Date(l.created_at).toDateString() === today;
+  }).length;
+
+  const inProgress = leads.filter(l => l.status === 'em_atendimento').length;
+  const closedToday = leads.filter(l => {
+    const today = new Date().toDateString();
+    return l.status === 'fechado' && l.closed_at && new Date(l.closed_at).toDateString() === today;
+  }).length;
+
   const statsCards = [
-    { title: 'Total de Leads', value: mockLeads.length.toString(), icon: Users, color: 'text-primary' },
-    { title: 'Novos Hoje', value: '12', icon: UserPlus, color: 'text-chart-2' },
-    { title: 'Em Atendimento', value: '8', icon: TrendingUp, color: 'text-warning' },
-    { title: 'Convertidos Hoje', value: '5', icon: CheckCircle2, color: 'text-success' },
+    { title: 'Total de Leads', value: leads.length.toString(), icon: Users, color: 'text-primary' },
+    { title: 'Novos Hoje', value: newLeadsToday.toString(), icon: UserPlus, color: 'text-chart-2' },
+    { title: 'Em Atendimento', value: inProgress.toString(), icon: TrendingUp, color: 'text-warning' },
+    { title: 'Convertidos Hoje', value: closedToday.toString(), icon: CheckCircle2, color: 'text-success' },
   ];
 
   return (
@@ -340,14 +296,14 @@ const Leads = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{lead.agent}</span>
+                        <span className="text-sm">{lead.profiles?.full_name || 'Sem agente'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold">
-                      {formatCurrency(lead.estimatedValue)}
+                      {formatCurrency(lead.estimated_value || 0)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(lead.createdAt)}
+                      {formatDate(lead.created_at)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

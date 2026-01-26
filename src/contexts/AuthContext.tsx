@@ -49,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserData = async (userId: string, signal?: AbortSignal) => {
     setRoleLoading(true);
+   console.log('[AuthContext] Fetching user data for:', userId);
     try {
       // Fetch user role
       const { data: roleData, error: roleError } = await supabase
@@ -65,8 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (roleData) {
+       console.log('[AuthContext] Role found:', roleData.role);
         setRole(roleData.role as AppRole);
       } else {
+       console.log('[AuthContext] No role found for user');
         setRole(null);
       }
 
@@ -85,7 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (profileData) {
+       console.log('[AuthContext] Profile found:', profileData.full_name);
         setFullName(profileData.full_name);
+     } else {
+       console.log('[AuthContext] No profile found for user');
       }
     } catch (error) {
       // Suppress AbortError (happens during unmount/strict mode)
@@ -94,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } finally {
       if (!signal?.aborted) {
+       console.log('[AuthContext] Role loading complete');
         setRoleLoading(false);
       }
     }
@@ -102,10 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
+   console.log('[AuthContext] Initializing auth...');
 
     // Check for existing session first
     const initializeAuth = async () => {
       try {
+       console.log('[AuthContext] Getting session...');
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (abortController.signal.aborted || !isMounted) return;
@@ -122,12 +131,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
+       console.log('[AuthContext] Session:', currentSession ? 'found' : 'not found');
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
           await fetchUserData(currentSession.user.id, abortController.signal);
         } else {
+         console.log('[AuthContext] No user session, completing loading');
           setRoleLoading(false);
         }
       } catch (error) {
@@ -139,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } finally {
         if (isMounted && !abortController.signal.aborted) {
+         console.log('[AuthContext] Auth initialization complete');
           setLoading(false);
         }
       }

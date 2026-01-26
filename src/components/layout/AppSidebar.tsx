@@ -43,8 +43,9 @@ const mainNavItems = [
 ];
 
 const managementNavItems = [
-  { title: 'Metas', url: '/metas', icon: Target },
-  { title: 'Incentivos', url: '/incentivos', icon: Target },
+  { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target },
+  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target },
+  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target },
   { title: 'Alertas', url: '/alertas', icon: Bell },
   { title: 'Relatórios', url: '/relatorios', icon: FileText },
 ];

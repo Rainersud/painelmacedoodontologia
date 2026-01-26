@@ -192,3 +192,27 @@ export function useUpdateLead() {
     },
   });
 }
+
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast.success('Lead excluído com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir lead');
+    },
+  });
+}

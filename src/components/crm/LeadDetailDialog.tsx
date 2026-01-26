@@ -5,6 +5,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
-import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating } from '@/hooks/useCRMLeads';
+import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
@@ -28,6 +39,7 @@ import {
   StickyNote,
   Save,
   User,
+  Trash2,
 } from 'lucide-react';
 
 interface LeadDetailDialogProps {
@@ -41,6 +53,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
   const updateRating = useUpdateLeadRating();
+  const deleteLead = useDeleteLead();
   const createTask = useCreateTask();
 
   const [activeTab, setActiveTab] = useState('info');
@@ -137,6 +150,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     });
   };
 
+  const handleDeleteLead = () => {
+    deleteLead.mutate(lead.id, {
+      onSuccess: () => onOpenChange(false),
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
@@ -180,11 +199,41 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
                 }}
               >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Lead</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir o lead <strong>{lead.name}</strong>? 
+                    Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteLead}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={deleteLead.isPending}
+                  >
+                    {deleteLead.isPending ? 'Excluindo...' : 'Excluir'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </DialogTitle>
+      </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid w-full grid-cols-4">

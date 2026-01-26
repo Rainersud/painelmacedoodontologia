@@ -40,12 +40,11 @@ const mondayColors = {
 };
 
 const metricConfig: Record<string, { icon: React.ElementType; color: string }> = {
-  leads_received: { icon: Users, color: mondayColors.blue },
-  leads_attended: { icon: TrendingUp, color: mondayColors.purple },
-  appointments: { icon: Calendar, color: mondayColors.green },
-  comparecimentos: { icon: UserCheck, color: mondayColors.teal },
-  rescued: { icon: Sparkles, color: mondayColors.orange },
-  closed: { icon: DollarSign, color: mondayColors.pink },
+  novos_leads: { icon: Users, color: mondayColors.blue },
+  agendamentos: { icon: Calendar, color: mondayColors.purple },
+  comparecimentos: { icon: UserCheck, color: mondayColors.green },
+  resgatados: { icon: Sparkles, color: mondayColors.orange },
+  fechados: { icon: DollarSign, color: mondayColors.pink },
 };
 
 export default function BonusMetas() {

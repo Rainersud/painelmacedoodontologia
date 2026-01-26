@@ -47,13 +47,13 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <ErrorBoundary>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
@@ -77,11 +77,11 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </ErrorBoundary>
       </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+    </BrowserRouter>
+  </QueryClientProvider>
 );
 
 export default App;

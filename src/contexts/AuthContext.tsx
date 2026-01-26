@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,9 +39,6 @@ function isAbortError(error: unknown): boolean {
   return false;
 }
 
-// Safety timeout constant
-const AUTH_TIMEOUT_MS = 8000;
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -49,131 +46,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
-  const initRef = useRef(false);
 
-  const fetchUserData = async (userId: string, signal?: AbortSignal) => {
+  const fetchUserData = async (userId: string) => {
     setRoleLoading(true);
-   console.log('[AuthContext] Fetching user data for:', userId);
     try {
-     const startTime = Date.now();
-     console.log('[AuthContext] Querying user_roles table...');
-     
-       // Fetch user role with timeout
-       let roleData = null;
-       let roleError = null;
-       
-       try {
-         const result = await Promise.race([
-           supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
-           new Promise((_, reject) => setTimeout(() => reject(new Error('Role query timeout')), 5000))
-         ]);
-         roleData = (result as any).data;
-         roleError = (result as any).error;
-       } catch (err) {
-         console.error('[AuthContext] Role query failed or timeout:', err);
-         roleError = err;
-       }
+      // Fetch user role with timeout
+      const rolePromise = supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
+      const roleTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
       
-     console.log('[AuthContext] user_roles query took:', Date.now() - startTime, 'ms');
-     console.log('[AuthContext] roleData:', roleData, 'roleError:', roleError);
-     
-      // Check abort after await
-      if (signal?.aborted) return;
+      const { data: roleData, error: roleError } = await Promise.race([
+        rolePromise,
+        roleTimeout
+      ]) as any;
 
-      if (roleError && !isAbortError(roleError)) {
-        console.error('Error fetching role:', roleError);
-       // If role fetch fails, default to null but continue
-       setRole(null);
-     } else if (roleData) {
-       console.log('[AuthContext] Role found:', roleData.role);
+      if (roleData?.role) {
         setRole(roleData.role as AppRole);
       } else {
-       console.log('[AuthContext] No role found for user');
         setRole(null);
       }
 
-     const profileStartTime = Date.now();
-     console.log('[AuthContext] Querying profiles table...');
-     
-       // Fetch profile with timeout
-       let profileData = null;
-       let profileError = null;
-       
-       try {
-         const result = await Promise.race([
-           supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle(),
-           new Promise((_, reject) => setTimeout(() => reject(new Error('Profile query timeout')), 5000))
-         ]);
-         profileData = (result as any).data;
-         profileError = (result as any).error;
-       } catch (err) {
-         console.error('[AuthContext] Profile query failed or timeout:', err);
-         profileError = err;
-       }
+      // Fetch profile with timeout
+      const profilePromise = supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
+      const profileTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 3000)
+      );
       
-     console.log('[AuthContext] profiles query took:', Date.now() - profileStartTime, 'ms');
-     console.log('[AuthContext] profileData:', profileData, 'profileError:', profileError);
-     
-      // Check abort after await
-      if (signal?.aborted) return;
+      const { data: profileData, error: profileError } = await Promise.race([
+        profilePromise,
+        profileTimeout
+      ]) as any;
 
-      if (profileError && !isAbortError(profileError)) {
-        console.error('Error fetching profile:', profileError);
-       // If profile fetch fails, use email as fallback
-       setFullName(null);
-     } else if (profileData) {
-       console.log('[AuthContext] Profile found:', profileData.full_name);
+      if (profileData?.full_name) {
         setFullName(profileData.full_name);
-     } else {
-       console.log('[AuthContext] No profile found for user');
-       setFullName(null);
+      } else {
+        setFullName(null);
       }
     } catch (error) {
-      // Suppress AbortError (happens during unmount/strict mode)
       if (!isAbortError(error)) {
         console.error('Error fetching user data:', error);
       }
-     // On any error, ensure we don't get stuck
-     setRole(null);
-     setFullName(null);
+      setRole(null);
+      setFullName(null);
     } finally {
-      if (!signal?.aborted) {
-       console.log('[AuthContext] Role loading complete');
-        setRoleLoading(false);
-      }
+      setRoleLoading(false);
     }
   };
 
   useEffect(() => {
-    // Prevent double initialization in strict mode
-    if (initRef.current) return;
-    initRef.current = true;
-
-    const abortController = new AbortController();
     let isMounted = true;
-    console.log('[AuthContext] Initializing auth...');
-
-    // Safety timeout - force complete loading after timeout
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        console.warn('[AuthContext] Safety timeout triggered, forcing load complete');
-        setLoading(false);
-        setRoleLoading(false);
-      }
-    }, AUTH_TIMEOUT_MS);
+    let initTimeout: NodeJS.Timeout;
 
     // Check for existing session first
     const initializeAuth = async () => {
       try {
-        console.log('[AuthContext] Getting session...');
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (abortController.signal.aborted || !isMounted) return;
+        // Set a safety timeout
+        initTimeout = setTimeout(() => {
+          if (isMounted) {
+            console.warn('[AuthContext] Init timeout, completing load');
+            setLoading(false);
+            setRoleLoading(false);
+          }
+        }, 5000);
 
-        // Handle refresh token errors gracefully (user will need to re-login)
+        const sessionPromise = supabase.auth.getSession();
+        const sessionTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 4000)
+        );
+        
+        const { data: { session: currentSession }, error } = await Promise.race([
+          sessionPromise,
+          sessionTimeout
+        ]) as any;
+        
+        if (!isMounted) return;
+        clearTimeout(initTimeout);
+
         if (error) {
           if (!isAbortError(error)) {
-            console.warn('Session error (user may need to re-login):', error.message);
+            console.error('Session error:', error);
           }
           setSession(null);
           setUser(null);
@@ -182,19 +134,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-        console.log('[AuthContext] Session:', currentSession ? 'found' : 'not found');
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          // Fetch user data but don't block on it
-          fetchUserData(currentSession.user.id, abortController.signal).finally(() => {
-            if (isMounted) {
-              setLoading(false);
-            }
-          });
+          setLoading(false);
+          fetchUserData(currentSession.user.id);
         } else {
-          console.log('[AuthContext] No user session, completing loading');
           setRoleLoading(false);
           setLoading(false);
         }
@@ -202,7 +148,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!isAbortError(error)) {
           console.error('Error initializing auth:', error);
         }
-        if (isMounted && !abortController.signal.aborted) {
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
           setRoleLoading(false);
           setLoading(false);
         }
@@ -214,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener for subsequent changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        if (!isMounted || abortController.signal.aborted) return;
+        if (!isMounted) return;
         
         // Handle sign out or token refresh failures
         if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !newSession) {
@@ -230,7 +178,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(newSession?.user ?? null);
         
         if (newSession?.user) {
-          // Use a new abort controller for this callback
           await fetchUserData(newSession.user.id);
         } else {
           setRole(null);
@@ -242,8 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
-      clearTimeout(safetyTimeout);
-      abortController.abort();
+      clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
   }, []);

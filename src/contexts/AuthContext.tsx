@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,6 +39,9 @@ function isAbortError(error: unknown): boolean {
   return false;
 }
 
+// Safety timeout constant
+const AUTH_TIMEOUT_MS = 8000;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -46,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
+  const initRef = useRef(false);
 
   const fetchUserData = async (userId: string, signal?: AbortSignal) => {
     setRoleLoading(true);
@@ -141,14 +145,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Prevent double initialization in strict mode
+    if (initRef.current) return;
+    initRef.current = true;
+
     const abortController = new AbortController();
     let isMounted = true;
-   console.log('[AuthContext] Initializing auth...');
+    console.log('[AuthContext] Initializing auth...');
+
+    // Safety timeout - force complete loading after timeout
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn('[AuthContext] Safety timeout triggered, forcing load complete');
+        setLoading(false);
+        setRoleLoading(false);
+      }
+    }, AUTH_TIMEOUT_MS);
 
     // Check for existing session first
     const initializeAuth = async () => {
       try {
-       console.log('[AuthContext] Getting session...');
+        console.log('[AuthContext] Getting session...');
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (abortController.signal.aborted || !isMounted) return;
@@ -165,15 +182,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-       console.log('[AuthContext] Session:', currentSession ? 'found' : 'not found');
+        console.log('[AuthContext] Session:', currentSession ? 'found' : 'not found');
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          await fetchUserData(currentSession.user.id, abortController.signal);
+          // Fetch user data but don't block on it
+          fetchUserData(currentSession.user.id, abortController.signal).finally(() => {
+            if (isMounted) {
+              setLoading(false);
+            }
+          });
         } else {
-         console.log('[AuthContext] No user session, completing loading');
+          console.log('[AuthContext] No user session, completing loading');
           setRoleLoading(false);
+          setLoading(false);
         }
       } catch (error) {
         if (!isAbortError(error)) {
@@ -181,10 +204,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (isMounted && !abortController.signal.aborted) {
           setRoleLoading(false);
-        }
-      } finally {
-        if (isMounted && !abortController.signal.aborted) {
-         console.log('[AuthContext] Auth initialization complete');
           setLoading(false);
         }
       }
@@ -223,6 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimeout);
       abortController.abort();
       subscription.unsubscribe();
     };

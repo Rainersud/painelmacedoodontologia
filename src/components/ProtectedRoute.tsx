@@ -1,7 +1,7 @@
-import { Navigate, useLocation } from 'react-router-dom';
+ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState, memo } from 'react';
+ import { memo } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,26 +22,10 @@ LoadingScreen.displayName = 'LoadingScreen';
 function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const { user, loading, roleLoading, isAdmin } = useAuth();
   const location = useLocation();
-  const [timeoutReached, setTimeoutReached] = useState(false);
 
-  // Safety timeout: if loading takes more than 8 seconds, assume no auth
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading || roleLoading) {
-        console.warn('[ProtectedRoute] Auth loading timeout reached');
-        setTimeoutReached(true);
-      }
-    }, 8000);
-
-    return () => clearTimeout(timer);
-  }, [loading, roleLoading]);
-
-  // If timeout is reached and still loading, redirect to login
-  if (timeoutReached && (loading || roleLoading)) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  if (loading || roleLoading) {
+   // Only wait for initial auth loading, not roleLoading
+   // This allows users to access the app even if role/profile queries are slow
+   if (loading) {
     return <LoadingScreen />;
   }
 
@@ -49,8 +33,14 @@ function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps)
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (requireAdmin && !isAdmin) {
-    return <Navigate to="/" replace />;
+   // If requiring admin, wait for role to load
+   if (requireAdmin) {
+     if (roleLoading) {
+       return <LoadingScreen />;
+     }
+     if (!isAdmin) {
+       return <Navigate to="/" replace />;
+     }
   }
 
   return <>{children}</>;

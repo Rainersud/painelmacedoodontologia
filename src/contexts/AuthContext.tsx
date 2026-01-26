@@ -51,21 +51,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRoleLoading(true);
    console.log('[AuthContext] Fetching user data for:', userId);
     try {
-      // Fetch user role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+     const startTime = Date.now();
+     console.log('[AuthContext] Querying user_roles table...');
+     
+       // Fetch user role with timeout
+       let roleData = null;
+       let roleError = null;
+       
+       try {
+         const result = await Promise.race([
+           supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
+           new Promise((_, reject) => setTimeout(() => reject(new Error('Role query timeout')), 5000))
+         ]);
+         roleData = (result as any).data;
+         roleError = (result as any).error;
+       } catch (err) {
+         console.error('[AuthContext] Role query failed or timeout:', err);
+         roleError = err;
+       }
       
+     console.log('[AuthContext] user_roles query took:', Date.now() - startTime, 'ms');
+     console.log('[AuthContext] roleData:', roleData, 'roleError:', roleError);
+     
       // Check abort after await
       if (signal?.aborted) return;
 
       if (roleError && !isAbortError(roleError)) {
         console.error('Error fetching role:', roleError);
-      }
-      
-      if (roleData) {
+       // If role fetch fails, default to null but continue
+       setRole(null);
+     } else if (roleData) {
        console.log('[AuthContext] Role found:', roleData.role);
         setRole(roleData.role as AppRole);
       } else {
@@ -73,31 +88,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRole(null);
       }
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', userId)
-        .maybeSingle();
+     const profileStartTime = Date.now();
+     console.log('[AuthContext] Querying profiles table...');
+     
+       // Fetch profile with timeout
+       let profileData = null;
+       let profileError = null;
+       
+       try {
+         const result = await Promise.race([
+           supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle(),
+           new Promise((_, reject) => setTimeout(() => reject(new Error('Profile query timeout')), 5000))
+         ]);
+         profileData = (result as any).data;
+         profileError = (result as any).error;
+       } catch (err) {
+         console.error('[AuthContext] Profile query failed or timeout:', err);
+         profileError = err;
+       }
       
+     console.log('[AuthContext] profiles query took:', Date.now() - profileStartTime, 'ms');
+     console.log('[AuthContext] profileData:', profileData, 'profileError:', profileError);
+     
       // Check abort after await
       if (signal?.aborted) return;
 
       if (profileError && !isAbortError(profileError)) {
         console.error('Error fetching profile:', profileError);
-      }
-      
-      if (profileData) {
+       // If profile fetch fails, use email as fallback
+       setFullName(null);
+     } else if (profileData) {
        console.log('[AuthContext] Profile found:', profileData.full_name);
         setFullName(profileData.full_name);
      } else {
        console.log('[AuthContext] No profile found for user');
+       setFullName(null);
       }
     } catch (error) {
       // Suppress AbortError (happens during unmount/strict mode)
       if (!isAbortError(error)) {
         console.error('Error fetching user data:', error);
       }
+     // On any error, ensure we don't get stuck
+     setRole(null);
+     setFullName(null);
     } finally {
       if (!signal?.aborted) {
        console.log('[AuthContext] Role loading complete');

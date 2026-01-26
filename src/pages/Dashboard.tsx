@@ -1,6 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { 
   Users, 
@@ -12,7 +12,8 @@ import {
   Clock,
   Target,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  MoreHorizontal
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -26,11 +27,14 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Area,
+  AreaChart
 } from 'recharts';
-import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 type Period = 'diario' | 'semanal' | 'mensal';
 
@@ -40,8 +44,19 @@ const periodLabels: Record<Period, string> = {
   mensal: 'Este Mês',
 };
 
+// Monday.com style colors
+const mondayColors = {
+  blue: 'hsl(213 94% 58%)',
+  green: 'hsl(156 72% 45%)',
+  purple: 'hsl(270 75% 60%)',
+  orange: 'hsl(32 95% 55%)',
+  pink: 'hsl(340 82% 60%)',
+  teal: 'hsl(180 70% 50%)',
+  yellow: 'hsl(45 93% 58%)',
+  red: 'hsl(0 84% 60%)',
+};
+
 const Dashboard = () => {
-  const { isAdmin } = useAuth();
   const [period, setPeriod] = useState<Period>('mensal');
   const { data: metrics, isLoading } = useDashboardMetrics(period);
 
@@ -53,6 +68,8 @@ const Dashboard = () => {
       icon: Users,
       description: periodLabels[period],
       format: (v: number) => v.toString(),
+      color: mondayColors.blue,
+      bgClass: 'bg-[hsl(213_94%_58%)]',
     },
     {
       title: 'Leads Atendidos',
@@ -61,6 +78,8 @@ const Dashboard = () => {
       icon: Phone,
       description: `Taxa de ${metrics?.newLeads ? Math.round((metrics.attendedLeads / metrics.newLeads) * 100) : 0}%`,
       format: (v: number) => v.toString(),
+      color: mondayColors.green,
+      bgClass: 'bg-[hsl(156_72%_45%)]',
     },
     {
       title: 'Consultas Agendadas',
@@ -69,6 +88,8 @@ const Dashboard = () => {
       icon: Calendar,
       description: periodLabels[period],
       format: (v: number) => v.toString(),
+      color: mondayColors.purple,
+      bgClass: 'bg-[hsl(270_75%_60%)]',
     },
     {
       title: 'Taxa de Conversão',
@@ -77,6 +98,8 @@ const Dashboard = () => {
       icon: TrendingUp,
       description: 'Meta: 25%',
       format: (v: number) => `${v}%`,
+      color: mondayColors.orange,
+      bgClass: 'bg-[hsl(32_95%_55%)]',
     },
     {
       title: 'Receita Gerada',
@@ -85,6 +108,8 @@ const Dashboard = () => {
       icon: DollarSign,
       description: periodLabels[period],
       format: (v: number) => `R$ ${v.toLocaleString('pt-BR')}`,
+      color: mondayColors.teal,
+      bgClass: 'bg-[hsl(180_70%_50%)]',
     },
     {
       title: 'Taxa Comparecimento',
@@ -93,6 +118,8 @@ const Dashboard = () => {
       icon: UserCheck,
       description: 'Meta: 75%',
       format: (v: number) => `${v}%`,
+      color: mondayColors.pink,
+      bgClass: 'bg-[hsl(340_82%_60%)]',
     },
     {
       title: 'Tempo Médio Resposta',
@@ -102,6 +129,8 @@ const Dashboard = () => {
       description: 'SLA: 5 min',
       format: (v: number) => `${v} min`,
       invertChange: true,
+      color: mondayColors.yellow,
+      bgClass: 'bg-[hsl(45_93%_58%)]',
     },
     {
       title: 'ROI Marketing',
@@ -110,69 +139,92 @@ const Dashboard = () => {
       icon: Target,
       description: 'Retorno sobre investimento',
       format: (v: number) => `${v}x`,
+      color: mondayColors.blue,
+      bgClass: 'bg-[hsl(213_94%_58%)]',
     },
   ];
 
   const getStatusBadge = (lead: { status: string }) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      novo_lead: { label: 'Novo', className: 'bg-chart-2/10 text-chart-2' },
-      em_atendimento: { label: 'Atendendo', className: 'bg-warning/10 text-warning' },
-      consulta_agendada: { label: 'Agendado', className: 'bg-primary/10 text-primary' },
-      confirmado: { label: 'Confirmado', className: 'bg-success/10 text-success' },
-      compareceu: { label: 'Compareceu', className: 'bg-success/20 text-success' },
-      fechado: { label: 'Fechado', className: 'bg-success/30 text-success' },
+    const statusConfig: Record<string, { label: string; bgColor: string }> = {
+      novo_lead: { label: 'Novo', bgColor: mondayColors.blue },
+      em_atendimento: { label: 'Atendendo', bgColor: mondayColors.orange },
+      consulta_agendada: { label: 'Agendado', bgColor: mondayColors.purple },
+      confirmado: { label: 'Confirmado', bgColor: mondayColors.teal },
+      compareceu: { label: 'Compareceu', bgColor: mondayColors.green },
+      fechado: { label: 'Fechado', bgColor: mondayColors.green },
     };
-    return statusConfig[lead.status] || { label: lead.status, className: 'bg-muted text-muted-foreground' };
+    return statusConfig[lead.status] || { label: lead.status, bgColor: mondayColors.blue };
   };
 
   return (
     <AppLayout title="Dashboard">
-      <div className="space-y-8">
-        {/* Period Selector */}
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-            <TabsTrigger value="diario">Hoje</TabsTrigger>
-            <TabsTrigger value="semanal">Semana</TabsTrigger>
-            <TabsTrigger value="mensal">Mês</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="space-y-6">
+        {/* Header with Period Selector */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Visão Geral</h1>
+            <p className="text-muted-foreground">Acompanhe os principais indicadores</p>
+          </div>
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <TabsList className="bg-card border shadow-sm">
+              <TabsTrigger value="diario" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Hoje
+              </TabsTrigger>
+              <TabsTrigger value="semanal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Semana
+              </TabsTrigger>
+              <TabsTrigger value="mensal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Mês
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-        {/* KPI Cards Grid */}
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {kpiCards.map((kpi) => (
-            <Card key={kpi.title} className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {kpi.title}
-                </CardTitle>
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <kpi.icon className="h-5 w-5 text-primary" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <Skeleton className="h-9 w-24" />
-                ) : (
-                  <div className="text-3xl font-bold tracking-tight">{kpi.format(kpi.value)}</div>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  {!isLoading && (
-                    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      (kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0)
-                        ? 'bg-success/10 text-success' 
-                        : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {(kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0) ? (
-                        <ArrowUpRight className="h-3 w-3" />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3" />
+        {/* KPI Cards Grid - Monday.com Style */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {kpiCards.map((kpi, index) => (
+            <Card 
+              key={kpi.title} 
+              className="monday-card overflow-hidden group"
+            >
+              <div 
+                className="h-1.5 w-full" 
+                style={{ backgroundColor: kpi.color }}
+              />
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
+                    {isLoading ? (
+                      <Skeleton className="h-9 w-24" />
+                    ) : (
+                      <p className="text-3xl font-bold">{kpi.format(kpi.value)}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {!isLoading && (
+                        <span className={cn(
+                          "inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full",
+                          (kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0)
+                            ? 'bg-success/15 text-success' 
+                            : 'bg-destructive/15 text-destructive'
+                        )}>
+                          {(kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0) ? (
+                            <ArrowUpRight className="h-3 w-3" />
+                          ) : (
+                            <ArrowDownRight className="h-3 w-3" />
+                          )}
+                          {Math.abs(kpi.change)}%
+                        </span>
                       )}
-                      {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {kpi.description}
-                  </span>
+                      <span className="text-xs text-muted-foreground">{kpi.description}</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={cn("h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform")}
+                    style={{ backgroundColor: kpi.color }}
+                  >
+                    <kpi.icon className="h-6 w-6" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -181,21 +233,32 @@ const Dashboard = () => {
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Leads vs Consultas Chart */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">
-                Leads vs Consultas (Semana)
-              </CardTitle>
+          {/* Leads Performance Chart */}
+          <Card className="monday-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Performance de Leads</CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="h-[320px]">
+              <div className="h-[300px]">
                 {isLoading ? (
-                  <Skeleton className="w-full h-full" />
+                  <Skeleton className="w-full h-full rounded-lg" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={metrics?.leadsOverTime || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <AreaChart data={metrics?.leadsOverTime || []}>
+                      <defs>
+                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={mondayColors.blue} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={mondayColors.blue} stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorConsultas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={mondayColors.green} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={mondayColors.green} stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                       <XAxis 
                         dataKey="name" 
                         axisLine={false}
@@ -211,46 +274,55 @@ const Dashboard = () => {
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)'
                         }}
                       />
-                      <Line 
+                      <Area 
                         type="monotone" 
                         dataKey="leads" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={3}
-                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 4 }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        stroke={mondayColors.blue}
+                        strokeWidth={2}
+                        fill="url(#colorLeads)"
                         name="Leads"
                       />
-                      <Line 
+                      <Area 
                         type="monotone" 
                         dataKey="consultas" 
-                        stroke="hsl(var(--success))" 
-                        strokeWidth={3}
-                        dot={{ fill: 'hsl(var(--success))', strokeWidth: 0, r: 4 }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        stroke={mondayColors.green}
+                        strokeWidth={2}
+                        fill="url(#colorConsultas)"
                         name="Consultas"
                       />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
+              </div>
+              <div className="flex items-center justify-center gap-6 mt-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: mondayColors.blue }} />
+                  <span className="text-sm text-muted-foreground">Leads</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: mondayColors.green }} />
+                  <span className="text-sm text-muted-foreground">Consultas</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Conversion Rate Chart */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">
-                Taxa de Conversão Mensal (%)
-              </CardTitle>
+          <Card className="monday-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Taxa de Conversão Mensal</CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="h-[320px]">
+              <div className="h-[300px]">
                 {isLoading ? (
-                  <Skeleton className="w-full h-full" />
+                  <Skeleton className="w-full h-full rounded-lg" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={metrics?.conversionByMonth || []}>
@@ -271,16 +343,16 @@ const Dashboard = () => {
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)'
                         }}
                         formatter={(value) => [`${value}%`, 'Taxa']}
                       />
                       <Bar 
                         dataKey="taxa" 
-                        fill="hsl(var(--primary))" 
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={50}
+                        fill={mondayColors.purple}
+                        radius={[8, 8, 0, 0]}
+                        maxBarSize={45}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -293,16 +365,17 @@ const Dashboard = () => {
         {/* Bottom Row */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Lead Sources Pie Chart */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">
-                Origem dos Leads
-              </CardTitle>
+          <Card className="monday-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Origem dos Leads</CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="h-[220px]">
+              <div className="h-[200px]">
                 {isLoading ? (
-                  <Skeleton className="w-full h-full" />
+                  <Skeleton className="w-full h-full rounded-lg" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -310,8 +383,8 @@ const Dashboard = () => {
                         data={metrics?.leadsBySource || []}
                         cx="50%"
                         cy="50%"
-                        innerRadius={55}
-                        outerRadius={80}
+                        innerRadius={50}
+                        outerRadius={75}
                         paddingAngle={4}
                         dataKey="value"
                         strokeWidth={0}
@@ -324,8 +397,7 @@ const Dashboard = () => {
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                          borderRadius: '12px',
                         }}
                         formatter={(value) => [`${value}%`, '']}
                       />
@@ -333,17 +405,15 @@ const Dashboard = () => {
                   </ResponsiveContainer>
                 )}
               </div>
-              <div className="mt-4 space-y-2.5">
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 {(metrics?.leadsBySource || []).map((source) => (
-                  <div key={source.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2.5">
-                      <div 
-                        className="h-3 w-3 rounded-full" 
-                        style={{ backgroundColor: source.color }}
-                      />
-                      <span className="text-muted-foreground">{source.name}</span>
-                    </div>
-                    <span className="font-semibold">{source.value}%</span>
+                  <div key={source.name} className="flex items-center gap-2 text-sm">
+                    <div 
+                      className="h-2.5 w-2.5 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: source.color }}
+                    />
+                    <span className="text-muted-foreground truncate">{source.name}</span>
+                    <span className="font-semibold ml-auto">{source.value}%</span>
                   </div>
                 ))}
               </div>
@@ -351,38 +421,43 @@ const Dashboard = () => {
           </Card>
 
           {/* Recent Leads */}
-          <Card className="lg:col-span-2 border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">
-                Leads Recentes
-              </CardTitle>
+          <Card className="lg:col-span-2 monday-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Leads Recentes</CardTitle>
+              <Button variant="ghost" size="sm" className="text-primary">
+                Ver todos
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {isLoading ? (
-                  [1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
+                  [1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
                   ))
                 ) : (
-                  (metrics?.recentLeads || []).map((lead, index) => {
+                  (metrics?.recentLeads || []).slice(0, 5).map((lead, index) => {
                     const badge = getStatusBadge(lead);
                     return (
                       <div 
                         key={lead.id || index}
-                        className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-semibold text-primary">
-                              {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                            </span>
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm"
+                            style={{ backgroundColor: badge.bgColor }}
+                          >
+                            {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-medium">{lead.name}</p>
-                            <p className="text-sm text-muted-foreground">{lead.source} • {lead.time}</p>
+                            <p className="font-medium group-hover:text-primary transition-colors">{lead.name}</p>
+                            <p className="text-xs text-muted-foreground">{lead.source} • {lead.time}</p>
                           </div>
                         </div>
-                        <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${badge.className}`}>
+                        <span 
+                          className="text-xs px-3 py-1.5 rounded-full font-medium text-white"
+                          style={{ backgroundColor: badge.bgColor }}
+                        >
                           {badge.label}
                         </span>
                       </div>

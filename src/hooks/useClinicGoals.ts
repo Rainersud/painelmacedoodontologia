@@ -3,17 +3,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
-// Healthy rates configuration
-export const HEALTHY_RATES = {
-  leads: { target: 320, rate: 100, label: 'Leads' },
-  agendamentos: { target: 80, rate: 25, label: 'Agendamentos' },
-  comparecimentos: { target: 60, rate: 75, label: 'Comparecimentos' },
-  fechamentos: { target: 20, rate: 33, label: 'Fechamentos' },
-  ticketMedio: { target: 6500, label: 'Ticket Médio' },
-  faturamento: { target: 130000, label: 'Faturamento' },
-  investimento: { target: 10000, label: 'Investimento' },
-  roi: { target: 11.5, label: 'ROI' },
+// Default healthy rates configuration (used when no DB values exist)
+export const DEFAULT_HEALTHY_RATES = {
+  leads: { target: 628, rate: 100, label: 'Leads' },
+  agendamentos: { target: 157, rate: 25, label: 'Agendamentos' },
+  comparecimentos: { target: 47, rate: 30, label: 'Comparecimentos' },
+  fechamentos: { target: 14, rate: 30, label: 'Fechamentos' },
+  ticketMedio: { target: 12000, label: 'Ticket Médio' },
+  faturamento: { target: 168000, label: 'Faturamento' },
+  investimento: { target: 15700, label: 'Investimento' },
+  roi: { target: 10.7, label: 'ROI' },
 };
+
+// For backwards compatibility
+export const HEALTHY_RATES = DEFAULT_HEALTHY_RATES;
+
+export interface HealthyRates {
+  leads: { target: number; rate: number };
+  agendamentos: { target: number; rate: number };
+  comparecimentos: { target: number; rate: number };
+  fechamentos: { target: number; rate: number };
+  ticketMedio: { target: number };
+  faturamento: { target: number };
+  investimento: { target: number };
+  roi: { target: number };
+}
 
 export interface ClinicGoal {
   key: string;
@@ -29,7 +43,8 @@ export interface ClinicGoal {
 
 export interface ClinicGoalsData {
   goals: ClinicGoal[];
-  funnelData: Array<{ stage: string; value: number; rate: number; color: string }>;
+  funnelData: Array<{ stage: string; value: number; rate: number; targetRate: number; color: string; key: string }>;
+  healthyRates: HealthyRates;
 }
 
 export function useClinicGoals() {
@@ -100,8 +115,26 @@ export function useClinicGoals() {
       const ticketMedioTarget = settingsMap['meta_ticket_medio'] || HEALTHY_RATES.ticketMedio.target;
       const faturamentoTarget = settingsMap['meta_faturamento'] || HEALTHY_RATES.faturamento.target;
       const investimentoValue = settingsMap['investimento_marketing'] || HEALTHY_RATES.investimento.target;
+      const roiTarget = settingsMap['meta_roi'] || HEALTHY_RATES.roi.target;
+
+      // Get target rates from settings or use defaults
+      const agendamentosTargetRate = settingsMap['taxa_agendamentos'] || HEALTHY_RATES.agendamentos.rate;
+      const comparecimentosTargetRate = settingsMap['taxa_comparecimentos'] || HEALTHY_RATES.comparecimentos.rate;
+      const fechamentosTargetRate = settingsMap['taxa_fechamentos'] || HEALTHY_RATES.fechamentos.rate;
 
       const currentROI = investimentoValue > 0 ? parseFloat((totalRevenue / investimentoValue).toFixed(1)) : 0;
+
+      // Build healthy rates object from DB or defaults
+      const healthyRates: HealthyRates = {
+        leads: { target: leadsTarget, rate: 100 },
+        agendamentos: { target: agendamentosTarget, rate: agendamentosTargetRate },
+        comparecimentos: { target: comparecimentosTarget, rate: comparecimentosTargetRate },
+        fechamentos: { target: fechamentosTarget, rate: fechamentosTargetRate },
+        ticketMedio: { target: ticketMedioTarget },
+        faturamento: { target: faturamentoTarget },
+        investimento: { target: investimentoValue },
+        roi: { target: roiTarget },
+      };
 
       const calculateStatus = (current: number, target: number): 'healthy' | 'warning' | 'critical' => {
         const ratio = current / target;
@@ -188,30 +221,31 @@ export function useClinicGoals() {
         {
           key: 'roi',
           label: 'ROI',
-          target: HEALTHY_RATES.roi.target,
+          target: roiTarget,
           current: currentROI,
-          percentage: Math.min(100, Math.round((currentROI / HEALTHY_RATES.roi.target) * 100)),
-          status: calculateStatus(currentROI, HEALTHY_RATES.roi.target),
-          remaining: Math.max(0, HEALTHY_RATES.roi.target - currentROI),
+          percentage: Math.min(100, Math.round((currentROI / roiTarget) * 100)),
+          status: calculateStatus(currentROI, roiTarget),
+          remaining: Math.max(0, roiTarget - currentROI),
+          isEditable: true,
         },
       ];
 
       // Funnel data for visualization
       const funnelData = [
-        { stage: 'Leads', value: leadsCount || 0, rate: 100, color: 'hsl(var(--primary))' },
-        { stage: 'Agendamentos', value: agendamentosCount || 0, rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0, color: 'hsl(var(--chart-1))' },
-        { stage: 'Comparecimentos', value: comparecimentosCount || 0, rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0, color: 'hsl(var(--chart-2))' },
-        { stage: 'Fechamentos', value: fechamentosCount || 0, rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0, color: 'hsl(var(--success))' },
+        { stage: 'Leads', value: leadsCount || 0, rate: 100, targetRate: 100, color: 'hsl(var(--primary))', key: 'leads' },
+        { stage: 'Agendamentos', value: agendamentosCount || 0, rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0, targetRate: agendamentosTargetRate, color: 'hsl(var(--chart-1))', key: 'agendamentos' },
+        { stage: 'Comparecimentos', value: comparecimentosCount || 0, rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0, targetRate: comparecimentosTargetRate, color: 'hsl(var(--chart-2))', key: 'comparecimentos' },
+        { stage: 'Fechamentos', value: fechamentosCount || 0, rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0, targetRate: fechamentosTargetRate, color: 'hsl(var(--success))', key: 'fechamentos' },
       ];
 
-      return { goals, funnelData };
+      return { goals, funnelData, healthyRates };
     },
     enabled: !!user,
     refetchInterval: 30000,
   });
 
   const updateGoal = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: number }) => {
+    mutationFn: async ({ key, value, rate }: { key: string; value: number; rate?: number }) => {
       // Map goal keys to setting keys
       const keyMap: Record<string, string> = {
         leads: 'meta_leads',
@@ -221,11 +255,12 @@ export function useClinicGoals() {
         ticket_medio: 'meta_ticket_medio',
         faturamento: 'meta_faturamento',
         investimento: 'investimento_marketing',
+        roi: 'meta_roi',
       };
       
       const settingKey = keyMap[key] || `meta_${key}`;
       
-      // Check if setting exists
+      // Upsert target value
       const { data: existing } = await supabase
         .from('meta_settings')
         .select('id')
@@ -249,6 +284,67 @@ export function useClinicGoals() {
           });
         if (error) throw error;
       }
+
+      // If rate is provided, also update the rate
+      if (rate !== undefined && ['agendamentos', 'comparecimentos', 'fechamentos'].includes(key)) {
+        const rateKey = `taxa_${key}`;
+        const { data: existingRate } = await supabase
+          .from('meta_settings')
+          .select('id')
+          .eq('setting_key', rateKey)
+          .single();
+
+        if (existingRate) {
+          const { error } = await supabase
+            .from('meta_settings')
+            .update({ setting_value: rate, updated_at: new Date().toISOString() })
+            .eq('setting_key', rateKey);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('meta_settings')
+            .insert({
+              setting_key: rateKey,
+              setting_value: rate,
+              description: `Taxa de conversão de ${key}`,
+              created_by: user?.id,
+            });
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+    },
+  });
+
+  const updateRate = useMutation({
+    mutationFn: async ({ key, rate }: { key: string; rate: number }) => {
+      const rateKey = `taxa_${key}`;
+      
+      const { data: existing } = await supabase
+        .from('meta_settings')
+        .select('id')
+        .eq('setting_key', rateKey)
+        .single();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('meta_settings')
+          .update({ setting_value: rate, updated_at: new Date().toISOString() })
+          .eq('setting_key', rateKey);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('meta_settings')
+          .insert({
+            setting_key: rateKey,
+            setting_value: rate,
+            description: `Taxa de conversão de ${key}`,
+            created_by: user?.id,
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
@@ -260,6 +356,7 @@ export function useClinicGoals() {
     isLoading,
     error,
     updateGoal,
+    updateRate,
     isAdmin,
   };
 }

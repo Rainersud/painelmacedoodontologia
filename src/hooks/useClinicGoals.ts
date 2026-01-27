@@ -212,7 +212,18 @@ export function useClinicGoals() {
 
   const updateGoal = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: number }) => {
-      const settingKey = `meta_${key}`;
+      // Map goal keys to setting keys
+      const keyMap: Record<string, string> = {
+        leads: 'meta_leads',
+        agendamentos: 'meta_agendamentos',
+        comparecimentos: 'meta_comparecimentos',
+        fechamentos: 'meta_fechamentos',
+        ticket_medio: 'meta_ticket_medio',
+        faturamento: 'meta_faturamento',
+        investimento: 'investimento_marketing',
+      };
+      
+      const settingKey = keyMap[key] || `meta_${key}`;
       
       // Check if setting exists
       const { data: existing } = await supabase
@@ -224,7 +235,7 @@ export function useClinicGoals() {
       if (existing) {
         const { error } = await supabase
           .from('meta_settings')
-          .update({ setting_value: value })
+          .update({ setting_value: value, updated_at: new Date().toISOString() })
           .eq('setting_key', settingKey);
         if (error) throw error;
       } else {

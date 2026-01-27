@@ -50,7 +50,7 @@ export function useIncentiveTiers(agentId?: string) {
         .from('profiles')
         .select('*')
         .eq('user_id', targetAgentId)
-        .single();
+        .maybeSingle();
 
       // Get tier settings from meta_settings
       const { data: settings } = await supabase
@@ -59,21 +59,26 @@ export function useIncentiveTiers(agentId?: string) {
         .like('setting_key', 'incentive_tier_%');
 
       const tierPercentages: Record<string, number> = {};
+      const tierTargetRevenues: Record<string, number> = {};
       (settings || []).forEach(s => {
-        const match = s.setting_key.match(/incentive_tier_(\d+)_percentage/);
-        if (match) {
-          tierPercentages[match[1]] = s.setting_value;
+        const percentMatch = s.setting_key.match(/incentive_tier_(\d+)_percentage/);
+        if (percentMatch) {
+          tierPercentages[percentMatch[1]] = s.setting_value;
+        }
+        const targetMatch = s.setting_key.match(/incentive_tier_(\d+)_target/);
+        if (targetMatch) {
+          tierTargetRevenues[targetMatch[1]] = s.setting_value;
         }
       });
 
-      // Get target revenue from meta_settings
+      // Get base target revenue from meta_settings
       const { data: revenueSetting } = await supabase
         .from('meta_settings')
         .select('setting_value')
         .eq('setting_key', 'meta_faturamento')
-        .single();
+        .maybeSingle();
 
-      const targetRevenue = revenueSetting?.setting_value || 130000;
+      const baseTargetRevenue = revenueSetting?.setting_value || 168000;
 
       // Get agent's current revenue
       const { data: revenueData } = await supabase
@@ -87,10 +92,18 @@ export function useIncentiveTiers(agentId?: string) {
 
       const currentRevenue = (revenueData || []).reduce((sum, a) => sum + (a.revenue || 0), 0);
 
+      // Default tier targets (70%, 80%, 90%, 100% of base)
+      const defaultTierTargets = [
+        baseTargetRevenue * 0.7,  // Meta 1: 70%
+        baseTargetRevenue * 0.8,  // Meta 2: 80%
+        baseTargetRevenue * 0.9,  // Meta 3: 90%
+        baseTargetRevenue,        // Super Meta: 100%
+      ];
+
       // Build tiers
       const tiers: IncentiveTier[] = DEFAULT_TIERS.map((tier, index) => {
         const percentage = tierPercentages[String(index + 1)] || tier.percentage;
-        const tierTargetRevenue = targetRevenue * (0.7 + index * 0.1); // 70%, 80%, 90%, 100%
+        const tierTargetRevenue = tierTargetRevenues[String(index + 1)] || defaultTierTargets[index];
         const bonusAmount = currentRevenue * (percentage / 100);
         const isAchieved = currentRevenue >= tierTargetRevenue;
         const progress = Math.min(100, Math.round((currentRevenue / tierTargetRevenue) * 100));
@@ -138,12 +151,12 @@ export function useIncentiveTiers(agentId?: string) {
         .from('meta_settings')
         .select('id')
         .eq('setting_key', settingKey)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         await supabase
           .from('meta_settings')
-          .update({ setting_value: percentage })
+          .update({ setting_value: percentage, updated_at: new Date().toISOString() })
           .eq('setting_key', settingKey);
       } else {
         await supabase
@@ -161,10 +174,42 @@ export function useIncentiveTiers(agentId?: string) {
     },
   });
 
+  const updateTierTarget = useMutation({
+    mutationFn: async ({ tierIndex, targetRevenue }: { tierIndex: number; targetRevenue: number }) => {
+      const settingKey = `incentive_tier_${tierIndex}_target`;
+      
+      const { data: existing } = await supabase
+        .from('meta_settings')
+        .select('id')
+        .eq('setting_key', settingKey)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('meta_settings')
+          .update({ setting_value: targetRevenue, updated_at: new Date().toISOString() })
+          .eq('setting_key', settingKey);
+      } else {
+        await supabase
+          .from('meta_settings')
+          .insert({
+            setting_key: settingKey,
+            setting_value: targetRevenue,
+            description: `Meta de faturamento da ${DEFAULT_TIERS[tierIndex - 1]?.name || 'Meta'}`,
+            created_by: user?.id,
+          });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incentive-tiers'] });
+    },
+  });
+
   return {
     data,
     isLoading,
     updateTierPercentage,
+    updateTierTarget,
     isAdmin,
   };
 }
@@ -190,9 +235,9 @@ export function useAllAgentsIncentives() {
         .from('meta_settings')
         .select('setting_value')
         .eq('setting_key', 'meta_faturamento')
-        .single();
+        .maybeSingle();
 
-      const targetRevenue = revenueSetting?.setting_value || 130000;
+      const targetRevenue = revenueSetting?.setting_value || 168000;
 
       const agentsData: AgentIncentiveData[] = [];
 

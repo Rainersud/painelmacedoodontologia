@@ -16,8 +16,6 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -35,6 +33,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { KeyMetricsWidget } from '@/components/dashboard/KeyMetricsWidget';
+import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
 
 type Period = 'diario' | 'semanal' | 'mensal';
 
@@ -360,6 +360,24 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Key Metrics Row */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <KeyMetricsWidget 
+            cpl={25}
+            custoAgendamento={100}
+            custoFechamento={430}
+            breakEven={2}
+          />
+          <ClinicGoalsWidget 
+            currentLeads={metrics?.newLeads || 0}
+            currentAgendamentos={metrics?.scheduledAppointments || 0}
+            currentComparecimentos={0}
+            currentFechamentos={0}
+            currentFaturamento={metrics?.revenue || 0}
+            period={period}
+          />
         </div>
 
         {/* Bottom Row */}

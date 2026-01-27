@@ -265,7 +265,7 @@ export function useClinicGoals() {
         .from('meta_settings')
         .select('id')
         .eq('setting_key', settingKey)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
@@ -292,7 +292,7 @@ export function useClinicGoals() {
           .from('meta_settings')
           .select('id')
           .eq('setting_key', rateKey)
-          .single();
+          .maybeSingle();
 
         if (existingRate) {
           const { error } = await supabase
@@ -326,7 +326,7 @@ export function useClinicGoals() {
         .from('meta_settings')
         .select('id')
         .eq('setting_key', rateKey)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase

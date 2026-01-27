@@ -43,16 +43,28 @@ const tierConfig = [
 
 export default function PlanoIncentivoV2() {
   const { isAdmin } = useAuth();
-  const { data, isLoading, updateTierPercentage } = useIncentiveTiers();
+  const { data, isLoading, updateTierPercentage, updateTierTarget } = useIncentiveTiers();
   const { data: allAgents } = useAllAgentsIncentives();
-  const [editingTier, setEditingTier] = useState<{ index: number; percentage: number } | null>(null);
+  const [editingTier, setEditingTier] = useState<{ 
+    index: number; 
+    percentage: number; 
+    targetRevenue: number;
+  } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleSaveTier = async () => {
     if (!editingTier) return;
     try {
-      await updateTierPercentage.mutateAsync({ tierIndex: editingTier.index, percentage: editingTier.percentage });
-      toast.success('Percentual atualizado!');
+      // Update both percentage and target
+      await updateTierPercentage.mutateAsync({ 
+        tierIndex: editingTier.index, 
+        percentage: editingTier.percentage 
+      });
+      await updateTierTarget.mutateAsync({ 
+        tierIndex: editingTier.index, 
+        targetRevenue: editingTier.targetRevenue 
+      });
+      toast.success('Meta atualizada!');
       setEditingTier(null);
       setIsDialogOpen(false);
     } catch (error) {
@@ -204,8 +216,12 @@ export default function PlanoIncentivoV2() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8"
-                                onClick={() => setEditingTier({ index: index + 1, percentage: tier.percentage })}
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setEditingTier({ 
+                                  index: index + 1, 
+                                  percentage: tier.percentage,
+                                  targetRevenue: tier.targetRevenue
+                                })}
                               >
                                 <Settings className="h-4 w-4" />
                               </Button>
@@ -216,15 +232,37 @@ export default function PlanoIncentivoV2() {
                               </DialogHeader>
                               <div className="space-y-4 mt-4">
                                 <div className="space-y-2">
-                                  <Label>Percentual (%)</Label>
+                                  <Label>Meta de Faturamento (R$)</Label>
+                                  <Input 
+                                    type="number" 
+                                    value={editingTier?.targetRevenue || 0} 
+                                    onChange={(e) => setEditingTier(prev => prev ? { ...prev, targetRevenue: parseFloat(e.target.value) || 0 } : null)} 
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    Valor de faturamento necessário para atingir esta meta
+                                  </p>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Percentual de Bônus (%)</Label>
                                   <Input 
                                     type="number" 
                                     step="0.1" 
+                                    min="0"
+                                    max="100"
                                     value={editingTier?.percentage || 0} 
-                                    onChange={(e) => setEditingTier(prev => prev ? { ...prev, percentage: parseFloat(e.target.value) } : null)} 
+                                    onChange={(e) => setEditingTier(prev => prev ? { ...prev, percentage: parseFloat(e.target.value) || 0 } : null)} 
                                   />
+                                  <p className="text-xs text-muted-foreground">
+                                    Percentual do faturamento que será pago como bônus
+                                  </p>
                                 </div>
-                                <Button className="w-full" onClick={handleSaveTier}>Salvar</Button>
+                                <Button 
+                                  className="w-full" 
+                                  onClick={handleSaveTier}
+                                  disabled={updateTierPercentage.isPending || updateTierTarget.isPending}
+                                >
+                                  {(updateTierPercentage.isPending || updateTierTarget.isPending) ? 'Salvando...' : 'Salvar Meta'}
+                                </Button>
                               </div>
                             </DialogContent>
                           </Dialog>

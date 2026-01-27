@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, Users, Calendar, UserCheck, DollarSign, TrendingUp } from 'lucide-react';
+import { Target, Users, Calendar, UserCheck, DollarSign, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Metas mensais base (conforme especificado)
@@ -25,59 +25,186 @@ const PERIOD_DIVISORS = {
 interface GoalRowProps {
   icon: React.ElementType;
   label: string;
-  qty: number;
+  targetQty: number;
   conversion: number;
   color: string;
-  current?: number;
+  current: number;
 }
 
-function GoalRow({ icon: Icon, label, qty, conversion, color, current = 0 }: GoalRowProps) {
-  const percentage = qty > 0 ? Math.min(Math.round((current / qty) * 100), 100) : 0;
-  const isAchieved = current >= qty;
+function GoalRow({ icon: Icon, label, targetQty, conversion, color, current }: GoalRowProps) {
+  const remaining = Math.max(0, targetQty - current);
+  const percentage = targetQty > 0 ? Math.min(Math.round((current / targetQty) * 100), 100) : 0;
+  const isAchieved = current >= targetQty;
+  const isClose = percentage >= 70 && !isAchieved;
 
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div 
-        className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-        style={{ backgroundColor: `${color}20` }}
-      >
-        <Icon className="h-4 w-4" style={{ color }} />
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium truncate">{label}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold">{Math.round(qty)}</span>
+    <div className={cn(
+      "p-3 rounded-xl border transition-all",
+      isAchieved 
+        ? "bg-success/10 border-success/30" 
+        : isClose 
+          ? "bg-warning/10 border-warning/30"
+          : "bg-card border-border"
+    )}>
+      <div className="flex items-center gap-3 mb-3">
+        <div 
+          className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: isAchieved ? 'hsl(var(--success))' : `${color}` }}
+        >
+          {isAchieved ? (
+            <CheckCircle className="h-5 w-5 text-white" />
+          ) : (
+            <Icon className="h-5 w-5 text-white" />
+          )}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold truncate">{label}</span>
             <Badge 
               variant="outline" 
-              className="text-[10px] px-1.5 py-0"
+              className="text-[10px] px-1.5 py-0 shrink-0"
               style={{ 
                 borderColor: color, 
                 color,
-                backgroundColor: `${color}10`
+                backgroundColor: `${color}15`
               }}
             >
               {conversion}%
             </Badge>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Progress 
-            value={percentage} 
-            className={cn(
-              "h-1.5 flex-1",
-              isAchieved ? '[&>div]:bg-success' : ''
-            )}
-            style={{ 
-              '--progress-color': color,
-            } as React.CSSProperties}
-          />
-          <span className="text-[10px] text-muted-foreground w-8 text-right">
-            {current}/{Math.round(qty)}
-          </span>
+      </div>
+      
+      {/* Progress bar */}
+      <div className="mb-3">
+        <Progress 
+          value={percentage} 
+          className={cn(
+            "h-2",
+            isAchieved 
+              ? '[&>div]:bg-success' 
+              : isClose 
+                ? '[&>div]:bg-warning'
+                : '[&>div]:bg-primary'
+          )}
+        />
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="p-2 rounded-lg bg-muted/50">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Meta</p>
+          <p className="text-lg font-bold" style={{ color }}>{Math.round(targetQty)}</p>
         </div>
+        <div className={cn(
+          "p-2 rounded-lg",
+          isAchieved ? "bg-success/20" : "bg-primary/10"
+        )}>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Realizado</p>
+          <p className={cn(
+            "text-lg font-bold",
+            isAchieved ? "text-success" : "text-primary"
+          )}>{current}</p>
+        </div>
+        <div className={cn(
+          "p-2 rounded-lg",
+          isAchieved ? "bg-success/20" : remaining > 0 ? "bg-destructive/10" : "bg-muted/50"
+        )}>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Faltam</p>
+          <p className={cn(
+            "text-lg font-bold",
+            isAchieved ? "text-success" : remaining > 0 ? "text-destructive" : "text-muted-foreground"
+          )}>
+            {isAchieved ? '✓' : Math.round(remaining)}
+          </p>
+        </div>
+      </div>
+
+      {/* Percentage indicator */}
+      <div className="mt-2 flex items-center justify-center">
+        <span className={cn(
+          "text-xs font-semibold px-2 py-0.5 rounded-full",
+          isAchieved 
+            ? "bg-success/20 text-success" 
+            : isClose 
+              ? "bg-warning/20 text-warning"
+              : "bg-muted text-muted-foreground"
+        )}>
+          {percentage}% concluído
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface FaturamentoRowProps {
+  target: number;
+  current: number;
+  color: string;
+  periodLabel: string;
+}
+
+function FaturamentoRow({ target, current, color, periodLabel }: FaturamentoRowProps) {
+  const remaining = Math.max(0, target - current);
+  const percentage = target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0;
+  const isAchieved = current >= target;
+
+  return (
+    <div className={cn(
+      "p-4 rounded-xl border transition-all",
+      isAchieved ? "bg-success/10 border-success/30" : "bg-card border-border"
+    )}>
+      <div className="flex items-center gap-3 mb-3">
+        <div 
+          className="h-10 w-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: isAchieved ? 'hsl(var(--success))' : color }}
+        >
+          {isAchieved ? (
+            <CheckCircle className="h-5 w-5 text-white" />
+          ) : (
+            <DollarSign className="h-5 w-5 text-white" />
+          )}
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Faturamento {periodLabel}</p>
+          <p className="text-xs text-muted-foreground">CPL Médio: R$ {MONTHLY_GOALS.cpl}</p>
+        </div>
+      </div>
+
+      <Progress 
+        value={percentage} 
+        className={cn("h-2 mb-3", isAchieved ? '[&>div]:bg-success' : '')}
+      />
+
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="p-2 rounded-lg bg-muted/50">
+          <p className="text-[10px] text-muted-foreground uppercase">Meta</p>
+          <p className="text-sm font-bold" style={{ color }}>
+            R$ {Math.round(target).toLocaleString('pt-BR')}
+          </p>
+        </div>
+        <div className={cn("p-2 rounded-lg", isAchieved ? "bg-success/20" : "bg-primary/10")}>
+          <p className="text-[10px] text-muted-foreground uppercase">Realizado</p>
+          <p className={cn("text-sm font-bold", isAchieved ? "text-success" : "text-primary")}>
+            R$ {current.toLocaleString('pt-BR')}
+          </p>
+        </div>
+        <div className={cn("p-2 rounded-lg", isAchieved ? "bg-success/20" : "bg-destructive/10")}>
+          <p className="text-[10px] text-muted-foreground uppercase">Faltam</p>
+          <p className={cn("text-sm font-bold", isAchieved ? "text-success" : "text-destructive")}>
+            {isAchieved ? '✓' : `R$ ${Math.round(remaining).toLocaleString('pt-BR')}`}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2 flex items-center justify-center">
+        <span className={cn(
+          "text-xs font-semibold px-2 py-0.5 rounded-full",
+          isAchieved ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+        )}>
+          {percentage}% do faturamento
+        </span>
       </div>
     </div>
   );
@@ -119,73 +246,78 @@ export function ClinicGoalsWidget({
     faturamento: 'hsl(180 70% 50%)',
   };
 
+  const periodLabels = {
+    diario: 'Diário',
+    semanal: 'Semanal',
+    mensal: 'Mensal',
+  };
+
   const renderGoalsContent = (period: 'diario' | 'semanal' | 'mensal') => {
     const goals = getGoalsForPeriod(period);
-    const periodLabel = {
-      diario: 'Diária',
-      semanal: 'Semanal',
-      mensal: 'Mensal',
-    }[period];
+
+    // Ajustar current values baseado no período (proporcionalmente)
+    // Para simulação, usamos os valores passados divididos pelo mesmo divisor
+    const periodDivisor = PERIOD_DIVISORS[period];
+    const adjustedCurrentLeads = period === 'mensal' ? currentLeads : Math.round(currentLeads / periodDivisor);
+    const adjustedCurrentAgendamentos = period === 'mensal' ? currentAgendamentos : Math.round(currentAgendamentos / periodDivisor);
+    const adjustedCurrentComparecimentos = period === 'mensal' ? currentComparecimentos : Math.round(currentComparecimentos / periodDivisor);
+    const adjustedCurrentFechamentos = period === 'mensal' ? currentFechamentos : Math.round(currentFechamentos / periodDivisor);
+    const adjustedCurrentFaturamento = period === 'mensal' ? currentFaturamento : Math.round(currentFaturamento / periodDivisor);
 
     return (
-      <div className="space-y-1">
-        <GoalRow 
-          icon={Users} 
-          label="Leads Gerados" 
-          qty={goals.leads.qty} 
-          conversion={goals.leads.conversion}
-          color={colors.leads}
-          current={currentLeads}
-        />
-        <GoalRow 
-          icon={Calendar} 
-          label="Agendamentos" 
-          qty={goals.agendamentos.qty} 
-          conversion={goals.agendamentos.conversion}
-          color={colors.agendamentos}
-          current={currentAgendamentos}
-        />
-        <GoalRow 
-          icon={UserCheck} 
-          label="Comparecimentos" 
-          qty={goals.comparecimentos.qty} 
-          conversion={goals.comparecimentos.conversion}
-          color={colors.comparecimentos}
-          current={currentComparecimentos}
-        />
-        <GoalRow 
-          icon={TrendingUp} 
-          label="Fechamentos" 
-          qty={goals.fechamentos.qty} 
-          conversion={goals.fechamentos.conversion}
-          color={colors.fechamentos}
-          current={currentFechamentos}
-        />
+      <div className="space-y-3">
+        {/* Header com resumo */}
+        <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+          <span className="text-xs font-medium text-muted-foreground">
+            Período: {periodLabels[period]}
+          </span>
+          <Badge variant="outline" className="text-[10px]">
+            {period === 'diario' ? '1 dia útil' : period === 'semanal' ? '5 dias úteis' : '22 dias úteis'}
+          </Badge>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <GoalRow 
+            icon={Users} 
+            label="Leads Gerados" 
+            targetQty={goals.leads.qty} 
+            conversion={goals.leads.conversion}
+            color={colors.leads}
+            current={adjustedCurrentLeads}
+          />
+          <GoalRow 
+            icon={Calendar} 
+            label="Agendamentos" 
+            targetQty={goals.agendamentos.qty} 
+            conversion={goals.agendamentos.conversion}
+            color={colors.agendamentos}
+            current={adjustedCurrentAgendamentos}
+          />
+          <GoalRow 
+            icon={UserCheck} 
+            label="Comparecimentos" 
+            targetQty={goals.comparecimentos.qty} 
+            conversion={goals.comparecimentos.conversion}
+            color={colors.comparecimentos}
+            current={adjustedCurrentComparecimentos}
+          />
+          <GoalRow 
+            icon={TrendingUp} 
+            label="Fechamentos" 
+            targetQty={goals.fechamentos.qty} 
+            conversion={goals.fechamentos.conversion}
+            color={colors.fechamentos}
+            current={adjustedCurrentFechamentos}
+          />
+        </div>
         
         {/* Faturamento */}
-        <div className="pt-2 mt-2 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div 
-                className="h-9 w-9 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${colors.faturamento}20` }}
-              >
-                <DollarSign className="h-4 w-4" style={{ color: colors.faturamento }} />
-              </div>
-              <span className="text-sm font-medium">Faturamento {periodLabel}</span>
-            </div>
-            <span className="text-lg font-bold" style={{ color: colors.faturamento }}>
-              R$ {Math.round(goals.faturamento).toLocaleString('pt-BR')}
-            </span>
-          </div>
-          
-          <div className="mt-2 p-2 rounded-lg bg-muted/30">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">CPL Médio:</span>
-              <span className="font-semibold text-success">R$ {MONTHLY_GOALS.cpl}</span>
-            </div>
-          </div>
-        </div>
+        <FaturamentoRow 
+          target={goals.faturamento}
+          current={adjustedCurrentFaturamento}
+          color={colors.faturamento}
+          periodLabel={periodLabels[period]}
+        />
       </div>
     );
   };
@@ -196,19 +328,22 @@ export function ClinicGoalsWidget({
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
           Metas da Clínica
+          <Badge variant="secondary" className="ml-auto text-[10px]">
+            Acompanhamento em Tempo Real
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={externalPeriod || "mensal"} className="w-full">
           <TabsList className="w-full grid grid-cols-3 mb-4">
-            <TabsTrigger value="diario" className="text-xs">
-              Diário
+            <TabsTrigger value="diario" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              📅 Diário
             </TabsTrigger>
-            <TabsTrigger value="semanal" className="text-xs">
-              Semanal
+            <TabsTrigger value="semanal" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              📆 Semanal
             </TabsTrigger>
-            <TabsTrigger value="mensal" className="text-xs">
-              Mensal
+            <TabsTrigger value="mensal" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              🗓️ Mensal
             </TabsTrigger>
           </TabsList>
           

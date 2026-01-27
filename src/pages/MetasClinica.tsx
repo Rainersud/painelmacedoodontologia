@@ -3,10 +3,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useClinicGoals, HEALTHY_RATES } from '@/hooks/useClinicGoals';
+import { EditableRate } from '@/components/clinic-goals/EditableRate';
+import { FunnelStageCard } from '@/components/clinic-goals/FunnelStageCard';
 import { 
   Target, 
   TrendingUp,
@@ -54,20 +55,53 @@ const goalConfig: Record<string, { icon: React.ElementType; color: string }> = {
 };
 
 export default function MetasClinica() {
-  const { data, isLoading, updateGoal, isAdmin } = useClinicGoals();
-  const [editingGoal, setEditingGoal] = useState<{ key: string; value: number } | null>(null);
+  const { data, isLoading, updateGoal, updateRate, isAdmin } = useClinicGoals();
+  const [editingGoal, setEditingGoal] = useState<{ key: string; value: number; rate?: number } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const healthyRates = data?.healthyRates || {
+    leads: { target: HEALTHY_RATES.leads.target, rate: 100 },
+    agendamentos: { target: HEALTHY_RATES.agendamentos.target, rate: HEALTHY_RATES.agendamentos.rate },
+    comparecimentos: { target: HEALTHY_RATES.comparecimentos.target, rate: HEALTHY_RATES.comparecimentos.rate },
+    fechamentos: { target: HEALTHY_RATES.fechamentos.target, rate: HEALTHY_RATES.fechamentos.rate },
+    ticketMedio: { target: HEALTHY_RATES.ticketMedio.target },
+    faturamento: { target: HEALTHY_RATES.faturamento.target },
+    investimento: { target: HEALTHY_RATES.investimento.target },
+    roi: { target: HEALTHY_RATES.roi.target },
+  };
 
   const handleSaveGoal = async () => {
     if (!editingGoal) return;
     
     try {
-      await updateGoal.mutateAsync({ key: editingGoal.key, value: editingGoal.value });
+      await updateGoal.mutateAsync({ 
+        key: editingGoal.key, 
+        value: editingGoal.value,
+        rate: editingGoal.rate 
+      });
       toast.success('Meta atualizada com sucesso!');
       setIsDialogOpen(false);
       setEditingGoal(null);
     } catch (error) {
       toast.error('Erro ao atualizar meta');
+    }
+  };
+
+  const handleSaveHealthyRate = async (key: string, value: number, rate?: number) => {
+    try {
+      await updateGoal.mutateAsync({ key, value, rate });
+      toast.success('Meta atualizada!');
+    } catch (error) {
+      toast.error('Erro ao atualizar');
+    }
+  };
+
+  const handleSaveFunnelRate = async (key: string, rate: number) => {
+    try {
+      await updateRate.mutateAsync({ key, rate });
+      toast.success('Taxa atualizada!');
+    } catch (error) {
+      toast.error('Erro ao atualizar taxa');
     }
   };
 
@@ -78,6 +112,17 @@ export default function MetasClinica() {
     if (key === 'roi') return `${value}x`;
     return value.toString();
   };
+
+  const healthyRatesConfig = [
+    { key: 'leads', label: 'Leads', value: healthyRates.leads.target, rate: healthyRates.leads.rate, color: mondayColors.blue },
+    { key: 'agendamentos', label: 'Agendamentos', value: healthyRates.agendamentos.target, rate: healthyRates.agendamentos.rate, color: mondayColors.purple },
+    { key: 'comparecimentos', label: 'Comparecimentos', value: healthyRates.comparecimentos.target, rate: healthyRates.comparecimentos.rate, color: mondayColors.green },
+    { key: 'fechamentos', label: 'Fechamentos', value: healthyRates.fechamentos.target, rate: healthyRates.fechamentos.rate, color: mondayColors.teal },
+    { key: 'ticket_medio', label: 'Ticket Médio', value: healthyRates.ticketMedio.target, rate: null, color: mondayColors.orange, isCurrency: true },
+    { key: 'faturamento', label: 'Faturamento', value: healthyRates.faturamento.target, rate: null, color: mondayColors.pink, isCurrency: true },
+    { key: 'investimento', label: 'Investimento', value: healthyRates.investimento.target, rate: null, color: mondayColors.yellow, isCurrency: true },
+    { key: 'roi', label: 'ROI', value: healthyRates.roi.target, rate: null, color: mondayColors.blue, isMultiplier: true },
+  ];
 
   return (
     <AppLayout title="Metas da Clínica">
@@ -100,35 +145,23 @@ export default function MetasClinica() {
           <div className="h-1.5 w-full" style={{ backgroundColor: mondayColors.blue }} />
           <CardContent className="p-6">
             <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wide">
-              Taxas Saudáveis de Referência
+              Taxas Saudáveis de Referência {isAdmin && <span className="text-xs font-normal">(clique para editar)</span>}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
-              {[
-                { label: 'Leads', value: HEALTHY_RATES.leads.target, rate: HEALTHY_RATES.leads.rate, color: mondayColors.blue },
-                { label: 'Agendamentos', value: HEALTHY_RATES.agendamentos.target, rate: HEALTHY_RATES.agendamentos.rate, color: mondayColors.purple },
-                { label: 'Comparecimentos', value: HEALTHY_RATES.comparecimentos.target, rate: HEALTHY_RATES.comparecimentos.rate, color: mondayColors.green },
-                { label: 'Fechamentos', value: HEALTHY_RATES.fechamentos.target, rate: HEALTHY_RATES.fechamentos.rate, color: mondayColors.teal },
-                { label: 'Ticket Médio', value: 'R$ 6.5k', rate: null, color: mondayColors.orange },
-                { label: 'Faturamento', value: 'R$ 130k', rate: null, color: mondayColors.pink },
-                { label: 'Investimento', value: 'R$ 10k', rate: null, color: mondayColors.yellow },
-                { label: 'ROI', value: `${HEALTHY_RATES.roi.target}x`, rate: null, color: mondayColors.blue },
-              ].map((item) => (
-                <div key={item.label} className="text-center">
-                  <div 
-                    className="h-2 w-12 mx-auto rounded-full mb-2"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <p className="text-2xl font-bold">{item.value}</p>
-                  <p className="text-xs text-muted-foreground">{item.label}</p>
-                  {item.rate !== null && (
-                    <span 
-                      className="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-                      style={{ backgroundColor: item.color }}
-                    >
-                      {item.rate}%
-                    </span>
-                  )}
-                </div>
+              {healthyRatesConfig.map((item) => (
+                <EditableRate
+                  key={item.key}
+                  label={item.label}
+                  value={item.value}
+                  rate={item.rate}
+                  color={item.color}
+                  isAdmin={isAdmin}
+                  onSave={(value, rate) => handleSaveHealthyRate(item.key, value, rate)}
+                  isPending={updateGoal.isPending}
+                  showRate={item.rate !== null}
+                  isCurrency={item.isCurrency}
+                  isMultiplier={item.isMultiplier}
+                />
               ))}
             </div>
           </CardContent>
@@ -138,23 +171,25 @@ export default function MetasClinica() {
         <Card className="monday-card">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold">Fluxo de Conversão</CardTitle>
-            <CardDescription>Visualização do pipeline de leads até fechamento</CardDescription>
+            <CardDescription>
+              Visualização do pipeline de leads até fechamento
+              {isAdmin && <span className="text-xs ml-2">(clique nas etapas para editar taxas)</span>}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between overflow-x-auto pb-4 gap-2">
               {(data?.funnelData || []).map((stage, index, arr) => (
                 <div key={stage.stage} className="flex items-center flex-1 min-w-[140px]">
                   <div className="flex-1">
-                    <div 
-                      className="rounded-xl p-4 text-center text-white transition-all hover:scale-105"
-                      style={{ backgroundColor: stage.color }}
-                    >
-                      <p className="text-3xl font-bold">{stage.value}</p>
-                      <p className="text-sm font-medium opacity-90">{stage.stage}</p>
-                      <div className="mt-2 inline-block bg-white/20 rounded-full px-3 py-1">
-                        <span className="text-sm font-semibold">{stage.rate}%</span>
-                      </div>
-                    </div>
+                    <FunnelStageCard
+                      stage={stage.stage}
+                      value={stage.value}
+                      rate={stage.targetRate}
+                      color={stage.color}
+                      isAdmin={isAdmin}
+                      onSaveRate={(rate) => handleSaveFunnelRate(stage.key, rate)}
+                      isPending={updateRate.isPending}
+                    />
                   </div>
                   {index < arr.length - 1 && (
                     <ArrowRight className="h-6 w-6 text-muted-foreground mx-2 flex-shrink-0" />
@@ -223,7 +258,11 @@ export default function MetasClinica() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => setEditingGoal({ key: goal.key, value: goal.target })}
+                                onClick={() => setEditingGoal({ 
+                                  key: goal.key, 
+                                  value: goal.target,
+                                  rate: goal.rate 
+                                })}
                                 title="Editar meta"
                               >
                                 <Settings className="h-4 w-4" />
@@ -235,19 +274,39 @@ export default function MetasClinica() {
                               </DialogHeader>
                               <div className="space-y-4 mt-4">
                                 <div className="space-y-2">
-                                  <Label>Valor da Meta {['ticket_medio', 'faturamento', 'investimento'].includes(goal.key) ? '(R$)' : ''}</Label>
+                                  <Label>Valor da Meta {['ticket_medio', 'faturamento', 'investimento'].includes(goal.key) ? '(R$)' : goal.key === 'roi' ? '(multiplicador)' : ''}</Label>
                                   <Input
                                     type="number"
                                     value={editingGoal?.value || 0}
                                     onChange={(e) => setEditingGoal(prev => prev ? { ...prev, value: parseFloat(e.target.value) || 0 } : null)}
                                     min={0}
+                                    step={goal.key === 'roi' ? 0.1 : 1}
                                   />
                                   <p className="text-xs text-muted-foreground">
                                     {['ticket_medio', 'faturamento', 'investimento'].includes(goal.key) 
                                       ? 'Digite o valor em reais (sem formatação)'
+                                      : goal.key === 'roi'
+                                      ? 'Digite o multiplicador de ROI esperado'
                                       : 'Digite a quantidade mensal desejada'}
                                   </p>
                                 </div>
+                                
+                                {['agendamentos', 'comparecimentos', 'fechamentos'].includes(goal.key) && (
+                                  <div className="space-y-2">
+                                    <Label>Taxa de Conversão Esperada (%)</Label>
+                                    <Input
+                                      type="number"
+                                      value={editingGoal?.rate || 0}
+                                      onChange={(e) => setEditingGoal(prev => prev ? { ...prev, rate: parseFloat(e.target.value) || 0 } : null)}
+                                      min={0}
+                                      max={100}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      Defina a taxa de conversão ideal para esta etapa
+                                    </p>
+                                  </div>
+                                )}
+                                
                                 <Button 
                                   className="w-full" 
                                   onClick={handleSaveGoal}

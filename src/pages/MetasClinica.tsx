@@ -222,8 +222,9 @@ export default function MetasClinica() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() => setEditingGoal({ key: goal.key, value: goal.target })}
+                                title="Editar meta"
                               >
                                 <Settings className="h-4 w-4" />
                               </Button>
@@ -234,19 +235,25 @@ export default function MetasClinica() {
                               </DialogHeader>
                               <div className="space-y-4 mt-4">
                                 <div className="space-y-2">
-                                  <Label>Valor da Meta</Label>
+                                  <Label>Valor da Meta {['ticket_medio', 'faturamento', 'investimento'].includes(goal.key) ? '(R$)' : ''}</Label>
                                   <Input
                                     type="number"
                                     value={editingGoal?.value || 0}
-                                    onChange={(e) => setEditingGoal(prev => prev ? { ...prev, value: parseFloat(e.target.value) } : null)}
+                                    onChange={(e) => setEditingGoal(prev => prev ? { ...prev, value: parseFloat(e.target.value) || 0 } : null)}
+                                    min={0}
                                   />
+                                  <p className="text-xs text-muted-foreground">
+                                    {['ticket_medio', 'faturamento', 'investimento'].includes(goal.key) 
+                                      ? 'Digite o valor em reais (sem formatação)'
+                                      : 'Digite a quantidade mensal desejada'}
+                                  </p>
                                 </div>
                                 <Button 
                                   className="w-full" 
                                   onClick={handleSaveGoal}
                                   disabled={updateGoal.isPending}
                                 >
-                                  {updateGoal.isPending ? 'Salvando...' : 'Salvar'}
+                                  {updateGoal.isPending ? 'Salvando...' : 'Salvar Meta'}
                                 </Button>
                               </div>
                             </DialogContent>

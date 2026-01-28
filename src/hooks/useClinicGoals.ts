@@ -4,15 +4,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 // Default healthy rates configuration (used when no DB values exist)
+// MENSAL: 300 leads, 90 comparecimentos (30%), 23 fechamentos
+// SEMANAL: 75 leads, 22-23 comparecimentos, 5-6 fechamentos  
+// DIÁRIO: 15 leads, 4-5 comparecimentos, 1-2 fechamentos
 export const DEFAULT_HEALTHY_RATES = {
-  leads: { target: 628, rate: 100, label: 'Leads' },
-  agendamentos: { target: 157, rate: 25, label: 'Agendamentos' },
-  comparecimentos: { target: 47, rate: 30, label: 'Comparecimentos' },
-  fechamentos: { target: 14, rate: 30, label: 'Fechamentos' },
+  // Metas Mensais
+  leads: { target: 300, rate: 100, label: 'Leads' },
+  agendamentos: { target: 90, rate: 30, label: 'Agendamentos' }, // 30% de conversão
+  comparecimentos: { target: 90, rate: 100, label: 'Comparecimentos' }, // 100% dos agendados
+  fechamentos: { target: 23, rate: 26, label: 'Fechamentos' }, // ~26% de fechamento
   ticketMedio: { target: 12000, label: 'Ticket Médio' },
-  faturamento: { target: 168000, label: 'Faturamento' },
+  faturamento: { target: 276000, label: 'Faturamento' }, // 23 vendas * R$12.000
   investimento: { target: 15700, label: 'Investimento' },
-  roi: { target: 10.7, label: 'ROI' },
+  roi: { target: 17.6, label: 'ROI' }, // 276000 / 15700
+  
+  // Metas Semanais (4 semanas)
+  leads_semanal: { target: 75, label: 'Leads/Semana' },
+  agendamentos_semanal: { target: 23, label: 'Agendamentos/Semana' },
+  comparecimentos_semanal: { target: 23, label: 'Comparecimentos/Semana' },
+  fechamentos_semanal: { target: 6, label: 'Fechamentos/Semana' },
+  
+  // Metas Diárias (20 dias úteis)
+  leads_diario: { target: 15, label: 'Leads/Dia' },
+  agendamentos_diario: { target: 5, label: 'Agendamentos/Dia' },
+  comparecimentos_diario: { target: 5, label: 'Comparecimentos/Dia' },
+  fechamentos_diario: { target: 1, label: 'Fechamentos/Dia' },
 };
 
 // For backwards compatibility

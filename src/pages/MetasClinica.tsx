@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useClinicGoals, HEALTHY_RATES } from '@/hooks/useClinicGoals';
 import { EditableRate } from '@/components/clinic-goals/EditableRate';
 import { FunnelStageCard } from '@/components/clinic-goals/FunnelStageCard';
+import { ExecutiveGoalsBoard } from '@/components/clinic-goals/ExecutiveGoalsBoard';
 import { 
   Target, 
   TrendingUp,
@@ -199,6 +200,9 @@ export default function MetasClinica() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Quadro Executivo - Protocolo vs Unitário */}
+        <ExecutiveGoalsBoard />
 
         {/* Goals Grid - Monday Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

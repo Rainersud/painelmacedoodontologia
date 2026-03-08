@@ -166,10 +166,6 @@ export function AppSidebar() {
               </NavLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={signOut}
-              className="text-destructive focus:text-destructive cursor-pointer"
-            >
               <LogOut className="h-4 w-4 mr-2" />
               Sair
             </DropdownMenuItem>

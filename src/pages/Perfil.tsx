@@ -89,7 +89,7 @@ export default function Perfil() {
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold">{profile?.full_name || 'Usuário'}</h2>
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="text-muted-foreground">admin@dental.com</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Shield className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium capitalize">
@@ -135,7 +135,7 @@ export default function Perfil() {
                 <Mail className="h-4 w-4" />
                 E-mail
               </Label>
-              <Input id="email" value={user?.email || ''} disabled />
+              <Input id="email" value="admin@dental.com" disabled />
               <p className="text-xs text-muted-foreground">
                 O e-mail não pode ser alterado
               </p>

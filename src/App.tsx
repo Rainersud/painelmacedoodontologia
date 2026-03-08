@@ -4,14 +4,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 // Lazy load pages for better performance
-const Login = lazy(() => import("./pages/Login"));
-const Cadastro = lazy(() => import("./pages/Cadastro"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
@@ -56,24 +53,22 @@ const App = () => (
             <Sonner />
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/cadastro" element={<Cadastro />} />
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/call-center" element={<ProtectedRoute><DashboardCallCenter /></ProtectedRoute>} />
-                <Route path="/crm" element={<ProtectedRoute><CRMDashboard /></ProtectedRoute>} />
-                <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-                <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
-                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
-                <Route path="/agendamentos" element={<ProtectedRoute><Agendamentos /></ProtectedRoute>} />
-                <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
-                <Route path="/metas-clinica" element={<ProtectedRoute><MetasClinica /></ProtectedRoute>} />
-                <Route path="/bonus-metas" element={<ProtectedRoute><BonusMetas /></ProtectedRoute>} />
-                <Route path="/plano-incentivo" element={<ProtectedRoute><PlanoIncentivoV2 /></ProtectedRoute>} />
-                <Route path="/incentivos" element={<ProtectedRoute><PlanoIncentivo /></ProtectedRoute>} />
-                <Route path="/alertas" element={<ProtectedRoute><Alertas /></ProtectedRoute>} />
-                <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-                <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-                <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/call-center" element={<DashboardCallCenter />} />
+                <Route path="/crm" element={<CRMDashboard />} />
+                <Route path="/leads" element={<Leads />} />
+                <Route path="/funil" element={<Funil />} />
+                <Route path="/tarefas" element={<Tarefas />} />
+                <Route path="/agendamentos" element={<Agendamentos />} />
+                <Route path="/metas" element={<Metas />} />
+                <Route path="/metas-clinica" element={<MetasClinica />} />
+                <Route path="/bonus-metas" element={<BonusMetas />} />
+                <Route path="/plano-incentivo" element={<PlanoIncentivoV2 />} />
+                <Route path="/incentivos" element={<PlanoIncentivo />} />
+                <Route path="/alertas" element={<Alertas />} />
+                <Route path="/relatorios" element={<Relatorios />} />
+                <Route path="/configuracoes" element={<Configuracoes />} />
+                <Route path="/perfil" element={<Perfil />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

@@ -3,7 +3,6 @@ import { AppSidebar } from './AppSidebar';
 import { Bell, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface AppLayoutProps {
@@ -12,8 +11,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, title }: AppLayoutProps) {
-  const { fullName } = useAuth();
-  const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
+  const fullName = 'Administrador';
+  const initials = 'AD';
 
   return (
     <SidebarProvider>

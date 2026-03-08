@@ -11,7 +11,7 @@ import {
   UserCircle
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+
 import {
   Sidebar,
   SidebarContent,
@@ -56,7 +56,9 @@ const adminNavItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { fullName, role, signOut, isAdmin } = useAuth();
+  const fullName = 'Administrador';
+  const role = 'admin';
+  const isAdmin = true;
 
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
@@ -162,14 +164,6 @@ export function AppSidebar() {
                 <UserCircle className="h-4 w-4" />
                 Meu Perfil
               </NavLink>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={signOut}
-              className="text-destructive focus:text-destructive cursor-pointer"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

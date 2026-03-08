@@ -166,7 +166,6 @@ export function AppSidebar() {
               </NavLink>
             </DropdownMenuItem>
           </DropdownMenuContent>
-          </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
     </Sidebar>

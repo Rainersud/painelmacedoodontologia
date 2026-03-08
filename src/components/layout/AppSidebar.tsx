@@ -56,7 +56,9 @@ const adminNavItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { fullName, role, signOut, isAdmin } = useAuth();
+  const fullName = 'Administrador';
+  const role = 'admin';
+  const isAdmin = true;
 
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';

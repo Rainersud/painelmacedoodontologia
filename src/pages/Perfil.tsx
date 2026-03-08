@@ -89,7 +89,7 @@ export default function Perfil() {
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold">{profile?.full_name || 'Usuário'}</h2>
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="text-muted-foreground">admin@dental.com</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Shield className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium capitalize">

@@ -135,7 +135,7 @@ export default function Perfil() {
                 <Mail className="h-4 w-4" />
                 E-mail
               </Label>
-              <Input id="email" value={user?.email || ''} disabled />
+              <Input id="email" value="admin@dental.com" disabled />
               <p className="text-xs text-muted-foreground">
                 O e-mail não pode ser alterado
               </p>

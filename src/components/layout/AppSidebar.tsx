@@ -165,10 +165,7 @@ export function AppSidebar() {
                 Meu Perfil
               </NavLink>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </DropdownMenuItem>
+          </DropdownMenuContent>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>

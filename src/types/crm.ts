@@ -125,8 +125,8 @@ export interface FunnelStage {
 
 export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
-  { key: 'em_atendimento', label: 'Contato Iniciado', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
-  { key: 'qualificado', label: 'Qualificado', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'qualificado', label: 'Qualificado', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
@@ -135,10 +135,10 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'outro_momento', label: 'Outro Momento', color: 'bg-chart-4', bgColor: 'bg-chart-4/20' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
   { key: 'tratamento_andamento', label: 'Tratamento em Andamento', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'concluido', label: 'Concluído', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'pos_venda', label: 'Pós Venda', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
 ];
 
 export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }> = {

@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useReferralDashboard } from '@/hooks/useReferrals';
 import { 
   Users, 
   Phone, 
@@ -13,7 +14,10 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
-  MoreHorizontal
+  MoreHorizontal,
+  Gift,
+  UserPlus,
+  HeartHandshake
 } from 'lucide-react';
 import { 
   XAxis, 

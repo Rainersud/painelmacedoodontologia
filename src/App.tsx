@@ -59,6 +59,7 @@ const App = () => (
                 <Route path="/crm" element={<CRMDashboard />} />
                 
                 <Route path="/funil" element={<Funil />} />
+                <Route path="/indicacoes" element={<Indicacoes />} />
                 <Route path="/tarefas" element={<Tarefas />} />
                 <Route path="/agendamentos" element={<Agendamentos />} />
                 <Route path="/metas" element={<Metas />} />

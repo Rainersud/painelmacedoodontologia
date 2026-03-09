@@ -2,6 +2,9 @@
 
 export type LeadStatus = 
   | 'novo_lead' 
+  | 'contatos_indicados'
+  | 'nutricao'
+  | 'descartados'
   | 'followup_1' 
   | 'followup_2' 
   | 'followup_3' 
@@ -19,7 +22,9 @@ export type LeadStatus =
   | 'pos_venda'
   | 'resgatado'
   | 'sem_interesse'
-  | 'nao_convertido';
+  | 'nao_convertido'
+  | 'orcamentos_abertos'
+  | 'outro_momento';
 
 export type LeadSource = 
   | 'whatsapp'

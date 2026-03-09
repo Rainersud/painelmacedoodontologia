@@ -86,6 +86,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         whatsapp: cleanPhone,
         source: form.source as any,
         status: 'novo_lead' as any,
+        interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
       });

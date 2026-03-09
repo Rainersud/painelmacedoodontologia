@@ -65,12 +65,41 @@ export default function Agendamentos() {
         .from('appointments')
         .select(`
           *,
-          leads:lead_id (name, phone, email)
+          leads:lead_id (name, phone, email, source)
         `)
         .order('scheduled_at', { ascending: true });
       
       if (error) throw error;
-      return data;
+
+      // Fetch referral info for all leads in appointments
+      const leadIds = (data || []).map(a => a.lead_id).filter(Boolean);
+      let referralMap: Record<string, string> = {};
+      
+      if (leadIds.length > 0) {
+        const { data: referrals } = await supabase
+          .from('referrals')
+          .select('referred_lead_id, referrer_lead_id')
+          .in('referred_lead_id', leadIds);
+
+        if (referrals?.length) {
+          const referrerIds = referrals.map(r => r.referrer_lead_id);
+          const { data: referrerLeads } = await supabase
+            .from('leads')
+            .select('id, name')
+            .in('id', referrerIds);
+
+          const referrerNameMap = Object.fromEntries((referrerLeads || []).map(l => [l.id, l.name]));
+          referrals.forEach(r => {
+            referralMap[r.referred_lead_id] = referrerNameMap[r.referrer_lead_id] || '';
+          });
+        }
+      }
+
+      return (data || []).map(app => ({
+        ...app,
+        _referrerName: referralMap[app.lead_id] || null,
+        _isReferral: app.leads?.source === 'indicacao' || !!referralMap[app.lead_id],
+      }));
     },
   });
 

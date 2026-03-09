@@ -3,7 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StarRating } from './StarRating';
+import { ReferralTags } from './ReferralTags';
 import { useUpdateLeadRating } from '@/hooks/useCRMLeads';
+import { useLeadReferralTags } from '@/hooks/useReferrals';
 import { SOURCE_CONFIG, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,6 +29,7 @@ export function LeadCard({
   compact = false,
 }: LeadCardProps) {
   const updateRating = useUpdateLeadRating();
+  const { data: refTags } = useLeadReferralTags(lead.id);
   const hasTask = lead.tasks && lead.tasks.length > 0;
 
   const formatCurrency = (value: number) => {
@@ -100,6 +103,19 @@ export function LeadCard({
             {SOURCE_CONFIG[lead.source]?.label || lead.source}
           </Badge>
         </div>
+
+        {/* Referral Tags */}
+        {refTags && (refTags.isReferred || refTags.isReferrer) && (
+          <div className="mb-1.5">
+            <ReferralTags
+              isReferred={refTags.isReferred}
+              isReferrer={refTags.isReferrer}
+              hasDiscount={refTags.hasDiscount}
+              attendanceDiscountApplied={refTags.attendanceDiscountApplied}
+              leadStatus={lead.status}
+            />
+          </div>
+        )}
 
         {/* Star Rating */}
         <div className="mb-2">

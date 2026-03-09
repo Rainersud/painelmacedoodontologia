@@ -2,6 +2,7 @@ import {
   LayoutDashboard, 
   Users, 
   Phone, 
+  Gift,
   Calendar, 
   Target, 
   Bell, 
@@ -39,6 +40,7 @@ const mainNavItems = [
   { title: 'Call Center', url: '/call-center', icon: Phone },
   
   { title: 'Funil de Vendas', url: '/funil', icon: Phone },
+  { title: 'Indicações', url: '/indicacoes', icon: Gift },
   { title: 'Agendamentos', url: '/agendamentos', icon: Calendar },
 ];
 

@@ -55,6 +55,7 @@ export function useCRMLeads() {
         status: lead.status as LeadStatus,
         source: lead.source as LeadSource,
         attendance_discount_status: (lead as any).attendance_discount_status as Lead['attendance_discount_status'],
+        discount_percentage: (lead as any).discount_percentage as number ?? 5,
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));

@@ -374,6 +374,7 @@ export type Database = {
           completed_at: string | null
           converted_at: string | null
           created_at: string
+          discount_percentage: number
           email: string | null
           estimated_value: number | null
           first_response_at: string | null
@@ -400,6 +401,7 @@ export type Database = {
           completed_at?: string | null
           converted_at?: string | null
           created_at?: string
+          discount_percentage?: number
           email?: string | null
           estimated_value?: number | null
           first_response_at?: string | null
@@ -426,6 +428,7 @@ export type Database = {
           completed_at?: string | null
           converted_at?: string | null
           created_at?: string
+          discount_percentage?: number
           email?: string | null
           estimated_value?: number | null
           first_response_at?: string | null

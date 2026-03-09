@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS discount_percentage numeric NOT NULL DEFAULT 5;

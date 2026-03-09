@@ -65,6 +65,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     email: '',
     whatsapp: '',
     notes: '',
+    attendance_discount_status: 'elegivel' as 'elegivel' | 'liberado' | 'cancelado',
+    discount_percentage: '5',
   });
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
@@ -91,6 +93,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         email: lead.email || '',
         whatsapp: lead.whatsapp || '',
         notes: lead.notes || '',
+        attendance_discount_status: (lead.attendance_discount_status || 'elegivel') as 'elegivel' | 'liberado' | 'cancelado',
+        discount_percentage: String(lead.discount_percentage ?? 5),
       });
       setNewStatus('');
       setStatusNotes('');
@@ -114,6 +118,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         email: formData.email || null,
         whatsapp: formData.whatsapp || null,
         notes: formData.notes || null,
+        attendance_discount_status: formData.attendance_discount_status,
+        discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
       },
     });
   };
@@ -316,6 +322,61 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   />
                 </div>
               </div>
+              {/* Discount Status */}
+              <div className="p-4 rounded-lg border space-y-4" style={{
+                backgroundColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.05)' :
+                  formData.attendance_discount_status === 'cancelado' ? 'hsl(var(--destructive) / 0.05)' : 'hsl(var(--warning) / 0.05)',
+                borderColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.2)' :
+                  formData.attendance_discount_status === 'cancelado' ? 'hsl(var(--destructive) / 0.2)' : 'hsl(var(--warning) / 0.2)',
+              }}>
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  🎁 Status do Desconto de Comparecimento
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Status do desconto</Label>
+                    <Select
+                      value={formData.attendance_discount_status}
+                      onValueChange={(v) => {
+                        const newStatus = v as 'elegivel' | 'liberado' | 'cancelado';
+                        setFormData(prev => ({
+                          ...prev,
+                          attendance_discount_status: newStatus,
+                          discount_percentage: newStatus === 'cancelado' ? '0' : prev.discount_percentage === '0' ? '5' : prev.discount_percentage,
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="elegivel">🟡 Elegível para desconto</SelectItem>
+                        <SelectItem value="liberado">🟢 Desconto disponível</SelectItem>
+                        <SelectItem value="cancelado">🔴 Cancelado por falta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Porcentagem do desconto (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={formData.discount_percentage}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
+                      disabled={formData.attendance_discount_status === 'cancelado'}
+                      placeholder="5"
+                    />
+                  </div>
+                </div>
+                {formData.attendance_discount_status === 'cancelado' && (
+                  <p className="text-xs text-destructive">
+                    ❌ Desconto removido automaticamente. O paciente perdeu o benefício por falta no comparecimento.
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea

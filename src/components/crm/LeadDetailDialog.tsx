@@ -30,6 +30,7 @@ import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead 
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
+import { ReferralSection } from './ReferralSection';
 import {
   Phone,
   MessageSquare,
@@ -40,6 +41,7 @@ import {
   Save,
   User,
   Trash2,
+  Gift,
 } from 'lucide-react';
 
 interface LeadDetailDialogProps {

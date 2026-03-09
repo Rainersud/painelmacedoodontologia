@@ -39,6 +39,13 @@ const SOURCE_OPTIONS = [
   { value: 'outro', label: 'Outros' },
 ];
 
+const TREATMENT_OPTIONS = [
+  { value: 'implante', label: 'Implante' },
+  { value: 'protese_flexivel', label: 'Prótese Flexível' },
+  { value: 'protese_total', label: 'Prótese Total' },
+  { value: 'outro', label: 'Outro' },
+];
+
 export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -47,12 +54,13 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
+    interest_product: '' as string,
     notes: '',
   });
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim()) {
-      toast.error('Preencha nome e telefone');
+    if (!form.name.trim() || !form.phone.trim() || !form.interest_product) {
+      toast.error('Preencha nome, telefone e interesse de tratamento');
       return;
     }
 
@@ -78,6 +86,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         whatsapp: cleanPhone,
         source: form.source as any,
         status: 'novo_lead' as any,
+        interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
       });
@@ -97,7 +106,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       toast.success('Lead adicionado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      setForm({ name: '', phone: '', source: 'outro', notes: '' });
+      setForm({ name: '', phone: '', source: 'outro', interest_product: '', notes: '' });
       onOpenChange(false);
     } catch (err) {
       toast.error('Erro ao adicionar lead');
@@ -150,6 +159,25 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 {SOURCE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Interesse de Tratamento *</Label>
+            <Select
+              value={form.interest_product}
+              onValueChange={(value) => setForm(prev => ({ ...prev, interest_product: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tratamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {TREATMENT_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>

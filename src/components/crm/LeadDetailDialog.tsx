@@ -266,13 +266,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="interest_product">Produto / Serviço de Interesse</Label>
-                  <Input
-                    id="interest_product"
-                    value={formData.interest_product}
-                    onChange={(e) => setFormData(prev => ({ ...prev, interest_product: e.target.value }))}
-                    placeholder="Ex: Implante, Clareamento..."
-                  />
+                  <Label htmlFor="interest_product">Interesse de Tratamento</Label>
+                  <Select
+                    value={formData.interest_product || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, interest_product: v }))}
+                  >
+                    <SelectTrigger id="interest_product">
+                      <SelectValue placeholder="Selecione o tratamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="implante">Implante</SelectItem>
+                      <SelectItem value="protese_flexivel">Prótese Flexível</SelectItem>
+                      <SelectItem value="protese_total">Prótese Total</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="estimated_value">Valor do Negócio (R$)</Label>

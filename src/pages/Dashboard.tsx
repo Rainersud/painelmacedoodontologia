@@ -66,6 +66,7 @@ const mondayColors = {
 const Dashboard = () => {
   const [period, setPeriod] = useState<Period>('mensal');
   const { data: metrics, isLoading } = useDashboardMetrics(period);
+  const { data: referralMetrics } = useReferralDashboard();
 
   const kpiCards = [
     {

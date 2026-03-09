@@ -45,10 +45,16 @@ const PageLoader = () => (
   </div>
 );
 
+function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  useRealtimeSync();
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
+        <RealtimeProvider>
         <ErrorBoundary>
           <TooltipProvider>
             <Toaster />

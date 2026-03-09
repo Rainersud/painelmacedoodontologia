@@ -238,7 +238,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">
               <User className="h-4 w-4 mr-1" />
               Dados
@@ -246,6 +246,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsTrigger value="status">
               <ArrowRight className="h-4 w-4 mr-1" />
               Status
+            </TabsTrigger>
+            <TabsTrigger value="referral">
+              <Gift className="h-4 w-4 mr-1" />
+              Indicação
             </TabsTrigger>
             <TabsTrigger value="task">
               <Calendar className="h-4 w-4 mr-1" />

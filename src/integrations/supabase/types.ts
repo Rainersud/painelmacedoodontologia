@@ -386,6 +386,7 @@ export type Database = {
           rescued_at: string | null
           scheduled_appointment_at: string | null
           source: Database["public"]["Enums"]["lead_source"]
+          stage_entered_at: string | null
           status: Database["public"]["Enums"]["lead_status"]
           treatment_value: number | null
           updated_at: string
@@ -410,6 +411,7 @@ export type Database = {
           rescued_at?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
+          stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           treatment_value?: number | null
           updated_at?: string
@@ -434,6 +436,7 @@ export type Database = {
           rescued_at?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
+          stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           treatment_value?: number | null
           updated_at?: string
@@ -752,6 +755,9 @@ export type Database = {
         | "orcamentos_abertos"
         | "outro_momento"
         | "indicacoes"
+        | "qualificado"
+        | "tratamento_andamento"
+        | "concluido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -944,6 +950,9 @@ export const Constants = {
         "orcamentos_abertos",
         "outro_momento",
         "indicacoes",
+        "qualificado",
+        "tratamento_andamento",
+        "concluido",
       ],
     },
   },

@@ -37,6 +37,7 @@ import { KeyMetricsWidget } from '@/components/dashboard/KeyMetricsWidget';
 import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
+import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 
 type Period = 'diario' | 'semanal' | 'mensal';
 
@@ -494,6 +495,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Funnel Conversion Analytics */}
+        <FunnelConversionWidget />
 
         {/* Treatment Ranking */}
         <TreatmentRankingWidget />

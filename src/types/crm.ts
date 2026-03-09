@@ -25,7 +25,10 @@ export type LeadStatus =
   | 'sem_interesse'
   | 'nao_convertido'
   | 'orcamentos_abertos'
-  | 'outro_momento';
+  | 'outro_momento'
+  | 'qualificado'
+  | 'tratamento_andamento'
+  | 'concluido';
 
 export type LeadSource = 
   | 'whatsapp'
@@ -60,6 +63,7 @@ export interface Lead {
   completed_at?: string | null;
   closed_at?: string | null;
   rescued_at?: string | null;
+  stage_entered_at?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -120,18 +124,21 @@ export interface FunnelStage {
 }
 
 export const FUNNEL_STAGES: FunnelStage[] = [
-  { key: 'novo_lead', label: 'Entrada no CRM', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
-  { key: 'indicacoes', label: 'Indicações', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
-  { key: 'contatos_indicados', label: 'Contatos Indicados', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
-  { key: 'nutricao', label: 'Nutrição', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'descartados', label: 'Descartados', color: 'bg-muted-foreground', bgColor: 'bg-muted' },
-  { key: 'agendou', label: 'Agendamentos', color: 'bg-primary', bgColor: 'bg-primary/10' },
-  { key: 'faltou', label: 'Faltosos', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
-  { key: 'compareceu', label: 'Comparecimentos', color: 'bg-success', bgColor: 'bg-success/10' },
-  { key: 'orcamentos_abertos', label: 'Orçamentos Abertos', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'em_atendimento', label: 'Contato Iniciado', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
+  { key: 'qualificado', label: 'Qualificado', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
+  { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'orcamentos_abertos', label: 'Orçamento Apresentado', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'followup_1', label: 'Follow-up 1', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'outro_momento', label: 'Outro Momento', color: 'bg-chart-4', bgColor: 'bg-chart-4/20' },
-  { key: 'fechado', label: 'Vendas Realizadas', color: 'bg-success', bgColor: 'bg-success/20' },
-  { key: 'potencial', label: 'Potencial', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
+  { key: 'tratamento_andamento', label: 'Tratamento em Andamento', color: 'bg-primary', bgColor: 'bg-primary/10' },
+  { key: 'concluido', label: 'Concluído', color: 'bg-success', bgColor: 'bg-success/10' },
 ];
 
 export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }> = {
@@ -158,3 +165,18 @@ export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: strin
   alta: { label: 'Alta', color: 'bg-warning/10 text-warning' },
   urgente: { label: 'Urgente', color: 'bg-destructive/10 text-destructive' },
 };
+
+// Helper to get days in current stage
+export function getDaysInStage(stageEnteredAt: string | null | undefined): number {
+  if (!stageEnteredAt) return 0;
+  const entered = new Date(stageEnteredAt);
+  const now = new Date();
+  return Math.floor((now.getTime() - entered.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// Get stage alert level based on days
+export function getStageAlertLevel(days: number): 'normal' | 'attention' | 'critical' {
+  if (days >= 6) return 'critical';
+  if (days >= 3) return 'attention';
+  return 'normal';
+}

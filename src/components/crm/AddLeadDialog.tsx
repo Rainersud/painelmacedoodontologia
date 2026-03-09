@@ -39,6 +39,13 @@ const SOURCE_OPTIONS = [
   { value: 'outro', label: 'Outros' },
 ];
 
+const TREATMENT_OPTIONS = [
+  { value: 'implante', label: 'Implante' },
+  { value: 'protese_flexivel', label: 'Prótese Flexível' },
+  { value: 'protese_total', label: 'Prótese Total' },
+  { value: 'outro', label: 'Outro' },
+];
+
 export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -47,6 +54,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
+    interest_product: '' as string,
     notes: '',
   });
 

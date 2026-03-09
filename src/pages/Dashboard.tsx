@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { KeyMetricsWidget } from '@/components/dashboard/KeyMetricsWidget';
 import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
+import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 
 type Period = 'diario' | 'semanal' | 'mensal';
 
@@ -492,6 +493,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Referral Ranking */}
+        <ReferralRankingWidget />
       </div>
     </AppLayout>
   );

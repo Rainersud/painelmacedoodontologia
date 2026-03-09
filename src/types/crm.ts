@@ -3,6 +3,7 @@
 export type LeadStatus = 
   | 'novo_lead' 
   | 'contatos_indicados'
+  | 'indicacoes'
   | 'nutricao'
   | 'descartados'
   | 'followup_1' 
@@ -120,6 +121,7 @@ export interface FunnelStage {
 
 export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'novo_lead', label: 'Entrada no CRM', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'indicacoes', label: 'Indicações', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'contatos_indicados', label: 'Contatos Indicados', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
   { key: 'nutricao', label: 'Nutrição', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'descartados', label: 'Descartados', color: 'bg-muted-foreground', bgColor: 'bg-muted' },

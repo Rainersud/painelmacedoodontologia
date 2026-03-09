@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import type { Lead } from '@/types/crm';
 
 interface ReferralTagsProps {
   isReferred: boolean;
@@ -7,6 +6,7 @@ interface ReferralTagsProps {
   hasDiscount: boolean;
   attendanceDiscountApplied?: boolean;
   leadStatus: string;
+  referrerName?: string;
   compact?: boolean;
 }
 
@@ -16,12 +16,13 @@ export function ReferralTags({
   hasDiscount,
   attendanceDiscountApplied,
   leadStatus,
+  referrerName,
   compact = true,
 }: ReferralTagsProps) {
   const tags: { label: string; className: string }[] = [];
 
   if (isReferred) {
-    tags.push({ label: '🟢 Indicado', className: 'bg-primary/10 text-primary border-0' });
+    tags.push({ label: '🏷️ Indicação', className: 'bg-chart-5/10 text-chart-5 border-0' });
   }
   if (isReferrer) {
     tags.push({ label: '🎁 Indicador', className: 'bg-warning/10 text-warning border-0' });
@@ -39,12 +40,19 @@ export function ReferralTags({
   if (tags.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1">
-      {tags.map((tag, i) => (
-        <Badge key={i} variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${tag.className}`}>
-          {tag.label}
-        </Badge>
-      ))}
+    <div className="space-y-1">
+      <div className="flex flex-wrap gap-1">
+        {tags.map((tag, i) => (
+          <Badge key={i} variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${tag.className}`}>
+            {tag.label}
+          </Badge>
+        ))}
+      </div>
+      {isReferred && referrerName && (
+        <p className="text-[9px] text-muted-foreground truncate">
+          Indicado por: <strong>{referrerName}</strong>
+        </p>
+      )}
     </div>
   );
 }

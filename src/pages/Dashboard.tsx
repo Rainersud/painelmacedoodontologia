@@ -496,6 +496,9 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Funnel Conversion Analytics */}
+        <FunnelConversionWidget />
+
         {/* Treatment Ranking */}
         <TreatmentRankingWidget />
 

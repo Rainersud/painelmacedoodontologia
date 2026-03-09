@@ -37,12 +37,12 @@ export function useReferralsByLead(leadId: string | undefined) {
         ...(referredData ? [referredData.referrer_lead_id] : []),
       ];
 
-      let leadMap: Record<string, { name: string; phone: string; status: string }> = {};
+      let leadMap: Record<string, { name: string; phone: string; status: string; treatment_value: number }> = {};
       if (allLeadIds.length > 0) {
         const { data: leads } = await supabase
-          .from('leads').select('id, name, phone, status').in('id', allLeadIds);
+          .from('leads').select('id, name, phone, status, treatment_value, interest_product').in('id', allLeadIds);
         if (leads) {
-          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone, status: l.status }]));
+          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone, status: l.status, treatment_value: Number(l.treatment_value || 0), interest_product: l.interest_product }]));
         }
       }
 

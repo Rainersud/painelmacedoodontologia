@@ -2,10 +2,12 @@ import { useState, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Plus } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +19,7 @@ const Funil = () => {
   const [dropTargetStatus, setDropTargetStatus] = useState<LeadStatus | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -31,7 +34,6 @@ const Funil = () => {
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if leaving the column entirely
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const { clientX, clientY } = e;
     if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
@@ -94,7 +96,18 @@ const Funil = () => {
 
   return (
     <AppLayout title="Funil de Vendas">
-      <div className="h-[calc(100vh-8rem)] overflow-x-auto">
+      {/* Header with Add button */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">
+          {leads?.length || 0} contatos no funil
+        </p>
+        <Button onClick={() => setAddLeadOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          Adicionar Lead
+        </Button>
+      </div>
+
+      <div className="h-[calc(100vh-10rem)] overflow-x-auto">
         <div className="flex gap-3 min-w-max pb-4">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
@@ -128,7 +141,7 @@ const Funil = () => {
                     </p>
                   </CardHeader>
                   <CardContent className="pt-0 px-2 pb-2">
-                    <div className="space-y-2 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
                       {stageLeads.map((lead) => (
                         <div
                           key={lead.id}
@@ -136,6 +149,7 @@ const Funil = () => {
                           onDragStart={(e) => handleDragStart(e, lead)}
                           onDragEnd={handleDragEnd}
                           className={cn(
+                            "cursor-grab active:cursor-grabbing",
                             draggedLeadId === lead.id && 'opacity-40'
                           )}
                         >
@@ -172,6 +186,11 @@ const Funil = () => {
         lead={selectedLead}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
+
+      <AddLeadDialog
+        open={addLeadOpen}
+        onOpenChange={setAddLeadOpen}
       />
     </AppLayout>
   );

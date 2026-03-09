@@ -76,7 +76,7 @@ export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProp
             {ranking.map((r, i) => (
               <div
                 key={r.leadId}
-                onClick={() => onLeadClick?.(r.leadId)}
+                onClick={() => onLeadClick?.(r.leadId, r.name)}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
                   i < 3 && "bg-muted/30"

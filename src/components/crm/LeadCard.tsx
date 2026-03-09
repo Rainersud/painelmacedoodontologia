@@ -118,6 +118,17 @@ export function LeadCard({
           </div>
         )}
 
+        {/* Treatment Interest Tag */}
+        {lead.interest_product && (
+          <div className="mb-1.5">
+            <Badge variant="outline" className="text-[10px] bg-chart-3/10 text-chart-3 border-chart-3/20">
+              🦷 {lead.interest_product === 'implante' ? 'Implante' : 
+                   lead.interest_product === 'protese_flexivel' ? 'Prótese Flexível' :
+                   lead.interest_product === 'protese_total' ? 'Prótese Total' : lead.interest_product}
+            </Badge>
+          </div>
+        )}
+
         {/* Star Rating */}
         <div className="mb-2">
           <StarRating

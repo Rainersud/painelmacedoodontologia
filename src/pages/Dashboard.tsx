@@ -501,6 +501,43 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Attendance Discount Metrics */}
+        <Card className="monday-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Gift className="h-5 w-5 text-warning" />
+              Descontos por Comparecimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {(() => {
+                const allLeads = metrics?.allLeads || [];
+                const liberados = allLeads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
+                const cancelados = allLeads.filter((l: any) => l.attendance_discount_status === 'cancelado').length;
+                const elegiveis = allLeads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;
+                const impacto = allLeads
+                  .filter((l: any) => l.attendance_discount_status === 'liberado')
+                  .reduce((sum: number, l: any) => sum + (Number(l.treatment_value || l.estimated_value || 0) * 0.05), 0);
+                return [
+                  { label: 'Descontos Liberados', value: liberados, icon: UserCheck, color: 'hsl(var(--success))' },
+                  { label: 'Cancelados por Falta', value: cancelados, icon: Target, color: 'hsl(var(--destructive))' },
+                  { label: 'Elegíveis', value: elegiveis, icon: Clock, color: 'hsl(var(--warning))' },
+                  { label: 'Impacto Financeiro', value: `R$ ${impacto.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: DollarSign, color: 'hsl(var(--chart-5))' },
+                ];
+              })().map((item) => (
+                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
+                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
+                  </div>
+                  <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Referral Metrics */}
         <Card className="monday-card">
           <CardHeader className="pb-2">

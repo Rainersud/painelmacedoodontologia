@@ -99,9 +99,11 @@ export function useUpdateLeadStatus() {
         updates.scheduled_appointment_at = new Date().toISOString();
       }
 
-      // Handle attendance discount for referrals
+      // Handle attendance discount for ALL leads
       if (newStatus === 'compareceu') {
-        // Apply 5% attendance discount if referred
+        updates.attendance_discount_status = 'liberado';
+
+        // Also handle referral-specific discount
         const { data: refData } = await supabase
           .from('referrals')
           .update({ attendance_discount_applied: true })
@@ -109,7 +111,6 @@ export function useUpdateLeadStatus() {
           .eq('attendance_discount_eligible', true)
           .select('referrer_lead_id');
 
-        // Notify referrer about attendance
         if (refData?.length && user) {
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
           await supabase.from('alerts').insert({
@@ -121,6 +122,8 @@ export function useUpdateLeadStatus() {
           });
         }
       } else if (newStatus === 'faltou') {
+        updates.attendance_discount_status = 'cancelado';
+
         await supabase
           .from('referrals')
           .update({ attendance_discount_eligible: false, attendance_discount_applied: false })

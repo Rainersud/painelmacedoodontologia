@@ -138,6 +138,24 @@ export function LeadCard({
           />
         </div>
 
+        {/* Attendance Discount Status */}
+        {(() => {
+          const status = lead.attendance_discount_status || 'elegivel';
+          const config = {
+            elegivel: { icon: '🎁', label: 'Elegível para desconto de comparecimento', className: 'bg-warning/10 text-warning' },
+            liberado: { icon: '✅', label: 'Desconto de comparecimento liberado (5%)', className: 'bg-success/10 text-success' },
+            cancelado: { icon: '❌', label: 'Desconto cancelado por falta', className: 'bg-destructive/10 text-destructive' },
+          };
+          const c = config[status];
+          return (
+            <div className="mb-2">
+              <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", c.className)}>
+                {c.icon} {c.label}
+              </Badge>
+            </div>
+          );
+        })()}
+
         {/* Days in stage indicator */}
         {(() => {
           const days = getDaysInStage(lead.stage_entered_at);

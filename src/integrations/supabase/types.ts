@@ -687,6 +687,11 @@ export type Database = {
         | "acompanhamento"
         | "pos_venda"
         | "sem_interesse"
+        | "contatos_indicados"
+        | "nutricao"
+        | "descartados"
+        | "orcamentos_abertos"
+        | "outro_momento"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -871,6 +876,11 @@ export const Constants = {
         "acompanhamento",
         "pos_venda",
         "sem_interesse",
+        "contatos_indicados",
+        "nutricao",
+        "descartados",
+        "orcamentos_abertos",
+        "outro_momento",
       ],
     },
   },

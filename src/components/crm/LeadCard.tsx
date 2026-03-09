@@ -1,15 +1,23 @@
-import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, Edit, StickyNote, CheckSquare } from 'lucide-react';
+import { useState } from 'react';
+import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, StickyNote, CheckSquare, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { StarRating } from './StarRating';
 import { ReferralTags } from './ReferralTags';
-import { useUpdateLeadRating } from '@/hooks/useCRMLeads';
+import { useUpdateLeadRating, useUpdateLead } from '@/hooks/useCRMLeads';
 import { useLeadReferralTags } from '@/hooks/useReferrals';
 import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface LeadCardProps {
   lead: Lead;
@@ -20,6 +28,12 @@ interface LeadCardProps {
   compact?: boolean;
 }
 
+const DISCOUNT_STATUS_CONFIG = {
+  elegivel: { icon: '🟡', label: 'Elegível para desconto', className: 'bg-warning/10 text-warning' },
+  liberado: { icon: '🟢', label: 'Desconto disponível', className: 'bg-success/10 text-success' },
+  cancelado: { icon: '🔴', label: 'Desconto cancelado por falta', className: 'bg-destructive/10 text-destructive' },
+} as const;
+
 export function LeadCard({ 
   lead, 
   onDragStart,
@@ -29,6 +43,7 @@ export function LeadCard({
   compact = false,
 }: LeadCardProps) {
   const updateRating = useUpdateLeadRating();
+  const updateLead = useUpdateLead();
   const { data: refTags } = useLeadReferralTags(lead.id);
   const hasTask = lead.tasks && lead.tasks.length > 0;
 
@@ -51,6 +66,24 @@ export function LeadCard({
     }
   };
 
+  const handleQuickDiscountChange = (newStatus: 'elegivel' | 'liberado' | 'cancelado') => {
+    const updates: Partial<Lead> = {
+      attendance_discount_status: newStatus,
+    };
+    if (newStatus === 'cancelado') {
+      updates.discount_percentage = 0;
+    } else if (newStatus === 'liberado' && (!lead.discount_percentage || lead.discount_percentage === 0)) {
+      updates.discount_percentage = 5;
+    }
+    updateLead.mutate({ leadId: lead.id, updates }, {
+      onSuccess: () => toast.success('Status do desconto atualizado!'),
+    });
+  };
+
+  const discountStatus = (lead.attendance_discount_status || 'elegivel') as keyof typeof DISCOUNT_STATUS_CONFIG;
+  const discountConfig = DISCOUNT_STATUS_CONFIG[discountStatus];
+  const discountPct = lead.discount_percentage ?? 5;
+
   return (
     <Card 
       draggable={!!onDragStart}
@@ -61,7 +94,6 @@ export function LeadCard({
         onDragStart && "active:cursor-grabbing"
       )}
     >
-      {/* Task indicator */}
       {hasTask && (
         <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-warning flex items-center justify-center shadow-sm">
           <CheckSquare className="h-3 w-3 text-white" />
@@ -69,36 +101,25 @@ export function LeadCard({
       )}
 
       <CardContent className={cn("p-3", compact && "p-2")}>
-        {/* Header: Avatar + Name + Source */}
+        {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className={cn(
               "rounded-full bg-primary/10 flex items-center justify-center shrink-0",
               compact ? "h-8 w-8" : "h-10 w-10"
             )}>
-              <span className={cn(
-                "font-semibold text-primary",
-                compact ? "text-xs" : "text-sm"
-              )}>
+              <span className={cn("font-semibold text-primary", compact ? "text-xs" : "text-sm")}>
                 {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className={cn(
-                "font-semibold truncate",
-                compact ? "text-xs" : "text-sm"
-              )}>
-                {lead.name}
-              </p>
+              <p className={cn("font-semibold truncate", compact ? "text-xs" : "text-sm")}>{lead.name}</p>
               <p className="text-xs text-muted-foreground truncate">{lead.phone}</p>
             </div>
           </div>
           <Badge 
             variant="outline" 
-            className={cn(
-              "text-[10px] font-medium border-0 shrink-0",
-              SOURCE_CONFIG[lead.source]?.color || 'bg-muted text-muted-foreground'
-            )}
+            className={cn("text-[10px] font-medium border-0 shrink-0", SOURCE_CONFIG[lead.source]?.color || 'bg-muted text-muted-foreground')}
           >
             {SOURCE_CONFIG[lead.source]?.label || lead.source}
           </Badge>
@@ -118,7 +139,7 @@ export function LeadCard({
           </div>
         )}
 
-        {/* Treatment Interest Tag */}
+        {/* Treatment Interest */}
         {lead.interest_product && (
           <div className="mb-1.5">
             <Badge variant="outline" className="text-[10px] bg-chart-3/10 text-chart-3 border-chart-3/20">
@@ -138,25 +159,45 @@ export function LeadCard({
           />
         </div>
 
-        {/* Attendance Discount Status */}
-        {(() => {
-          const status = lead.attendance_discount_status || 'elegivel';
-          const config = {
-            elegivel: { icon: '🎁', label: 'Elegível para desconto de comparecimento', className: 'bg-warning/10 text-warning' },
-            liberado: { icon: '✅', label: 'Desconto de comparecimento liberado (5%)', className: 'bg-success/10 text-success' },
-            cancelado: { icon: '❌', label: 'Desconto cancelado por falta', className: 'bg-destructive/10 text-destructive' },
-          };
-          const c = config[status];
-          return (
-            <div className="mb-2">
-              <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", c.className)}>
-                {c.icon} {c.label}
-              </Badge>
-            </div>
-          );
-        })()}
+        {/* Attendance Discount Status with Quick Edit */}
+        <div className="mb-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <button className="w-full text-left">
+                <Badge 
+                  variant="outline" 
+                  className={cn("text-[10px] border-0 font-medium cursor-pointer hover:opacity-80 transition-opacity", discountConfig.className)}
+                >
+                  {discountConfig.icon} {discountConfig.label}
+                  {discountStatus === 'liberado' && ` – ${discountPct}%`}
+                  <ChevronDown className="h-3 w-3 ml-1 inline" />
+                </Badge>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem 
+                onClick={() => handleQuickDiscountChange('elegivel')}
+                disabled={discountStatus === 'elegivel'}
+              >
+                🟡 Elegível para desconto
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleQuickDiscountChange('liberado')}
+                disabled={discountStatus === 'liberado'}
+              >
+                🟢 Desconto disponível
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleQuickDiscountChange('cancelado')}
+                disabled={discountStatus === 'cancelado'}
+              >
+                🔴 Cancelado por falta
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        {/* Days in stage indicator */}
+        {/* Days in stage */}
         {(() => {
           const days = getDaysInStage(lead.stage_entered_at);
           const alertLevel = getStageAlertLevel(days);
@@ -187,16 +228,13 @@ export function LeadCard({
           </div>
         </div>
 
-        {/* Scheduled date if exists */}
+        {/* Scheduled date */}
         {lead.scheduled_appointment_at && (
           <div className="flex items-center gap-1 text-xs text-primary mb-2">
             <Calendar className="h-3 w-3" />
             <span>
               {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
               })}
             </span>
           </div>
@@ -211,39 +249,16 @@ export function LeadCard({
             </span>
           </div>
           <div className="flex gap-0.5">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-5/10 hover:text-chart-5"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddNote?.(lead);
-              }}
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-5/10 hover:text-chart-5"
+              onClick={(e) => { e.stopPropagation(); onAddNote?.(lead); }}>
               <StickyNote className="h-3.5 w-3.5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-2/10 hover:text-chart-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCall?.(lead);
-                window.open(`tel:${lead.phone}`, '_blank');
-              }}
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-2/10 hover:text-chart-2"
+              onClick={(e) => { e.stopPropagation(); onCall?.(lead); window.open(`tel:${lead.phone}`, '_blank'); }}>
               <Phone className="h-3.5 w-3.5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 hover:bg-success/10 hover:text-success"
-              onClick={(e) => {
-                e.stopPropagation();
-                const phone = lead.whatsapp || lead.phone;
-                window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
-              }}
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-success/10 hover:text-success"
+              onClick={(e) => { e.stopPropagation(); const phone = lead.whatsapp || lead.phone; window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank'); }}>
               <MessageSquare className="h-3.5 w-3.5" />
             </Button>
           </div>

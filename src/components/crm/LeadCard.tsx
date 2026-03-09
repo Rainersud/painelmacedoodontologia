@@ -29,6 +29,7 @@ export function LeadCard({
   compact = false,
 }: LeadCardProps) {
   const updateRating = useUpdateLeadRating();
+  const { data: refTags } = useLeadReferralTags(lead.id);
   const hasTask = lead.tasks && lead.tasks.length > 0;
 
   const formatCurrency = (value: number) => {

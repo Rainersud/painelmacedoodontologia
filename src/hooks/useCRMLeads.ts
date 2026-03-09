@@ -138,6 +138,8 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['referrals'] });
+      queryClient.invalidateQueries({ queryKey: ['referral-tags'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {

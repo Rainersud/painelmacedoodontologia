@@ -118,6 +118,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         email: formData.email || null,
         whatsapp: formData.whatsapp || null,
         notes: formData.notes || null,
+        attendance_discount_status: formData.attendance_discount_status,
+        discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
       },
     });
   };

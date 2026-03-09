@@ -38,8 +38,7 @@ export function ReferrerDetailDialog({
   const totalConverted = referrals.filter(r => r.referred?.status === 'fechado').length;
   const totalRevenue = referrals.reduce((sum, r) => {
     if (r.referred?.status === 'fechado') {
-      // We need treatment_value but it's not in the referred data, so we show 0 for now
-      return sum;
+      return sum + (r.referred.treatment_value || 0);
     }
     return sum;
   }, 0);

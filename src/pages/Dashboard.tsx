@@ -515,10 +515,10 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
                 const leads = allLeads || [];
-                const liberados = allLeads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
-                const cancelados = allLeads.filter((l: any) => l.attendance_discount_status === 'cancelado').length;
-                const elegiveis = allLeads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;
-                const impacto = allLeads
+                const liberados = leads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
+                const cancelados = leads.filter((l: any) => l.attendance_discount_status === 'cancelado').length;
+                const elegiveis = leads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;
+                const impacto = leads
                   .filter((l: any) => l.attendance_discount_status === 'liberado')
                   .reduce((sum: number, l: any) => sum + (Number(l.treatment_value || l.estimated_value || 0) * 0.05), 0);
                 return [

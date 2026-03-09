@@ -98,6 +98,22 @@ export function useUpdateLeadStatus() {
         updates.scheduled_appointment_at = new Date().toISOString();
       }
 
+      // Handle attendance discount for referrals
+      if (newStatus === 'compareceu') {
+        // Apply 5% attendance discount if referred
+        await supabase
+          .from('referrals')
+          .update({ attendance_discount_applied: true } as any)
+          .eq('referred_lead_id', leadId)
+          .eq('attendance_discount_eligible', true);
+      } else if (newStatus === 'faltou') {
+        // Cancel attendance discount
+        await supabase
+          .from('referrals')
+          .update({ attendance_discount_eligible: false, attendance_discount_applied: false } as any)
+          .eq('referred_lead_id', leadId);
+      }
+
       const { error } = await supabase
         .from('leads')
         .update(updates)

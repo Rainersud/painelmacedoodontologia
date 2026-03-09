@@ -15,6 +15,7 @@ const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
 
 const Funil = lazy(() => import("./pages/Funil"));
 const Tarefas = lazy(() => import("./pages/Tarefas"));
+const Indicacoes = lazy(() => import("./pages/Indicacoes"));
 const Agendamentos = lazy(() => import("./pages/Agendamentos"));
 const Metas = lazy(() => import("./pages/Metas"));
 const MetasClinica = lazy(() => import("./pages/MetasClinica"));

@@ -68,6 +68,7 @@ const Dashboard = () => {
   const [period, setPeriod] = useState<Period>('mensal');
   const { data: metrics, isLoading } = useDashboardMetrics(period);
   const { data: referralMetrics } = useReferralDashboard();
+  const { data: allLeads } = useCRMLeads();
 
   const kpiCards = [
     {

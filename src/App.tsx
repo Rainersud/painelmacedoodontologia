@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
-const Leads = lazy(() => import("./pages/Leads"));
+
 const Funil = lazy(() => import("./pages/Funil"));
 const Tarefas = lazy(() => import("./pages/Tarefas"));
 const Agendamentos = lazy(() => import("./pages/Agendamentos"));
@@ -56,7 +56,7 @@ const App = () => (
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/call-center" element={<DashboardCallCenter />} />
                 <Route path="/crm" element={<CRMDashboard />} />
-                <Route path="/leads" element={<Leads />} />
+                
                 <Route path="/funil" element={<Funil />} />
                 <Route path="/tarefas" element={<Tarefas />} />
                 <Route path="/agendamentos" element={<Agendamentos />} />

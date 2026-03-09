@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useReferralDashboard } from '@/hooks/useReferrals';
+import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { 
   Users, 
   Phone, 

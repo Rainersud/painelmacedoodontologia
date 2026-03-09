@@ -514,7 +514,7 @@ const Dashboard = () => {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
-                const allLeads = metrics?.allLeads || [];
+                const leads = allLeads || [];
                 const liberados = allLeads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
                 const cancelados = allLeads.filter((l: any) => l.attendance_discount_status === 'cancelado').length;
                 const elegiveis = allLeads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;

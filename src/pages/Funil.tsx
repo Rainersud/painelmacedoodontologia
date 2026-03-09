@@ -13,32 +13,50 @@ const Funil = () => {
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();
   
-  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
+  const [dropTargetStatus, setDropTargetStatus] = useState<LeadStatus | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
-    setDraggedLead(lead);
+    setDraggedLeadId(lead.id);
+    e.dataTransfer.setData('text/plain', lead.id);
     e.dataTransfer.effectAllowed = 'move';
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, stageKey: LeadStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDropTargetStatus(stageKey);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only clear if leaving the column entirely
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const { clientX, clientY } = e;
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+      setDropTargetStatus(null);
+    }
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent, newStatus: LeadStatus) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (draggedLead && draggedLead.status !== newStatus) {
-      updateStatus.mutate({ leadId: draggedLead.id, newStatus });
+    const leadId = e.dataTransfer.getData('text/plain');
+    const lead = leads?.find(l => l.id === leadId);
+    
+    if (lead && lead.status !== newStatus) {
+      updateStatus.mutate({ leadId: lead.id, newStatus });
     }
     
-    setDraggedLead(null);
-  }, [draggedLead, updateStatus]);
+    setDraggedLeadId(null);
+    setDropTargetStatus(null);
+  }, [leads, updateStatus]);
 
   const handleDragEnd = useCallback(() => {
-    setDraggedLead(null);
+    setDraggedLeadId(null);
+    setDropTargetStatus(null);
   }, []);
 
   const handleOpenDetail = useCallback((lead: Lead) => {
@@ -81,15 +99,15 @@ const Funil = () => {
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalValueByStatus(stage.key);
-            const isDropTarget = draggedLead && draggedLead.status !== stage.key;
+            const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             
             return (
               <div 
                 key={stage.key}
                 className="w-72 flex-shrink-0"
-                onDragOver={handleDragOver}
+                onDragOver={(e) => handleDragOver(e, stage.key)}
+                onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}
-                onDragEnd={handleDragEnd}
               >
                 <Card className={cn(
                   "border-0 shadow-sm h-full transition-all duration-200",
@@ -112,13 +130,21 @@ const Funil = () => {
                   <CardContent className="pt-0 px-2 pb-2">
                     <div className="space-y-2 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
                       {stageLeads.map((lead) => (
-                        <LeadCard 
-                          key={lead.id} 
-                          lead={lead} 
-                          onDragStart={handleDragStart}
-                          onClick={handleOpenDetail}
-                          compact
-                        />
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, lead)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            draggedLeadId === lead.id && 'opacity-40'
+                          )}
+                        >
+                          <LeadCard 
+                            lead={lead} 
+                            onClick={handleOpenDetail}
+                            compact
+                          />
+                        </div>
                       ))}
                       {stageLeads.length === 0 && (
                         <div 
@@ -129,7 +155,7 @@ const Funil = () => {
                           )}
                         >
                           <p className="text-xs text-muted-foreground">
-                            {isDropTarget ? 'Solte aqui' : 'Nenhum lead'}
+                            {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
                           </p>
                         </div>
                       )}

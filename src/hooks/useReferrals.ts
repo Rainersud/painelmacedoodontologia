@@ -14,8 +14,8 @@ export interface Referral {
   attendance_discount_applied: boolean;
   created_at: string;
   updated_at: string;
-  referrer?: { name: string; phone: string } | null;
-  referred?: { name: string; phone: string; status: string } | null;
+  referrer?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;
+  referred?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;
 }
 
 export function useReferralsByLead(leadId: string | undefined) {

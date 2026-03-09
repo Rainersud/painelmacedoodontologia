@@ -125,6 +125,7 @@ export function useUpdateLeadStatus() {
         }
       } else if (newStatus === 'faltou') {
         updates.attendance_discount_status = 'cancelado';
+        updates.discount_percentage = 0;
 
         await supabase
           .from('referrals')

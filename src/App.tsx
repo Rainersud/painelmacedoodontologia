@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -44,10 +45,16 @@ const PageLoader = () => (
   </div>
 );
 
+function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  useRealtimeSync();
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
+        <RealtimeProvider>
         <ErrorBoundary>
           <TooltipProvider>
             <Toaster />
@@ -76,6 +83,7 @@ const App = () => (
             </Suspense>
           </TooltipProvider>
         </ErrorBoundary>
+        </RealtimeProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>

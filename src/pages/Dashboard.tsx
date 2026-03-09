@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useReferralDashboard } from '@/hooks/useReferrals';
 import { 
   Users, 
   Phone, 
@@ -13,7 +14,10 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
-  MoreHorizontal
+  MoreHorizontal,
+  Gift,
+  UserPlus,
+  HeartHandshake
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -62,6 +66,7 @@ const mondayColors = {
 const Dashboard = () => {
   const [period, setPeriod] = useState<Period>('mensal');
   const { data: metrics, isLoading } = useDashboardMetrics(period);
+  const { data: referralMetrics } = useReferralDashboard();
 
   const kpiCards = [
     {
@@ -495,6 +500,35 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Referral Metrics */}
+        <Card className="monday-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <HeartHandshake className="h-5 w-5 text-chart-5" />
+              Desempenho das Indicações
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[
+                { label: 'Indicações no Mês', value: referralMetrics?.totalReferralsMonth || 0, icon: UserPlus, color: 'hsl(var(--chart-5))' },
+                { label: 'Total Indicações', value: referralMetrics?.totalReferralsAll || 0, icon: Users, color: 'hsl(var(--primary))' },
+                { label: 'Convertidas em Venda', value: referralMetrics?.convertedByReferral || 0, icon: TrendingUp, color: 'hsl(var(--success))' },
+                { label: 'Recompensas Pagas', value: `R$ ${(referralMetrics?.totalRewardsPaid || 0).toLocaleString('pt-BR')}`, icon: Gift, color: 'hsl(var(--warning))' },
+                { label: 'Faturamento Indicações', value: `R$ ${(referralMetrics?.revenueFromReferrals || 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: 'hsl(var(--success))' },
+              ].map((item) => (
+                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
+                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
+                  </div>
+                  <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Funnel Conversion Analytics */}
         <FunnelConversionWidget />

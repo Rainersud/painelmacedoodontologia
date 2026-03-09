@@ -119,19 +119,17 @@ export interface FunnelStage {
 }
 
 export const FUNNEL_STAGES: FunnelStage[] = [
-  { key: 'novo_lead', label: 'Lead', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
-  { key: 'followup_1', label: 'Follow-up 1', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'agendou', label: 'Agendou', color: 'bg-primary', bgColor: 'bg-primary/10' },
-  { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
-  { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'novo_lead', label: 'Entrada no CRM', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'contatos_indicados', label: 'Contatos Indicados', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
+  { key: 'nutricao', label: 'Nutrição', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'descartados', label: 'Descartados', color: 'bg-muted-foreground', bgColor: 'bg-muted' },
+  { key: 'agendou', label: 'Agendamentos', color: 'bg-primary', bgColor: 'bg-primary/10' },
+  { key: 'faltou', label: 'Faltosos', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'compareceu', label: 'Comparecimentos', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'orcamentos_abertos', label: 'Orçamentos Abertos', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'outro_momento', label: 'Outro Momento', color: 'bg-chart-4', bgColor: 'bg-chart-4/20' },
+  { key: 'fechado', label: 'Vendas Realizadas', color: 'bg-success', bgColor: 'bg-success/20' },
   { key: 'potencial', label: 'Potencial', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
-  { key: 'acompanhamento', label: 'Acompanhamento', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
-  { key: 'fechado', label: 'Fechou', color: 'bg-success', bgColor: 'bg-success/20' },
-  { key: 'pos_venda', label: 'Pós-venda', color: 'bg-primary', bgColor: 'bg-primary/20' },
-  { key: 'sem_interesse', label: 'Sem Interesse', color: 'bg-muted-foreground', bgColor: 'bg-muted' },
 ];
 
 export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }> = {

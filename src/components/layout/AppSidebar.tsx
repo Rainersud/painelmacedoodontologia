@@ -37,7 +37,7 @@ import { cn } from '@/lib/utils';
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Call Center', url: '/call-center', icon: Phone },
-  { title: 'Leads', url: '/leads', icon: Users },
+  
   { title: 'Funil de Vendas', url: '/funil', icon: Phone },
   { title: 'Agendamentos', url: '/agendamentos', icon: Calendar },
 ];

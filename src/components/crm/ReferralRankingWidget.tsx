@@ -15,7 +15,7 @@ const PERIOD_OPTIONS = [
 ];
 
 interface ReferralRankingWidgetProps {
-  onLeadClick?: (leadId: string) => void;
+  onLeadClick?: (leadId: string, name?: string) => void;
 }
 
 export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProps) {

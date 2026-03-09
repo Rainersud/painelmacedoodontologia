@@ -475,6 +475,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </Button>
             </TabsContent>
 
+            {/* Referral Tab */}
+            <TabsContent value="referral" className="m-0">
+              <ReferralSection leadId={lead.id} leadName={lead.name} />
+            </TabsContent>
+
             {/* History Tab */}
             <TabsContent value="history" className="m-0">
               <LeadTimeline leadId={lead.id} />

@@ -104,6 +104,19 @@ export function LeadCard({
           </Badge>
         </div>
 
+        {/* Referral Tags */}
+        {refTags && (refTags.isReferred || refTags.isReferrer) && (
+          <div className="mb-1.5">
+            <ReferralTags
+              isReferred={refTags.isReferred}
+              isReferrer={refTags.isReferrer}
+              hasDiscount={refTags.hasDiscount}
+              attendanceDiscountApplied={refTags.attendanceDiscountApplied}
+              leadStatus={lead.status}
+            />
+          </div>
+        )}
+
         {/* Star Rating */}
         <div className="mb-2">
           <StarRating

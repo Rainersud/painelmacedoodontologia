@@ -495,6 +495,9 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Treatment Ranking */}
+        <TreatmentRankingWidget />
+
         {/* Referral Ranking */}
         <ReferralRankingWidget />
       </div>

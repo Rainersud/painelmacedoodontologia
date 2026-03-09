@@ -501,6 +501,63 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          attendance_discount_applied: boolean
+          attendance_discount_eligible: boolean
+          created_at: string
+          discount_type: string
+          discount_value: number
+          id: string
+          referred_lead_id: string
+          referrer_lead_id: string
+          reward_type: string
+          reward_value: number
+          updated_at: string
+        }
+        Insert: {
+          attendance_discount_applied?: boolean
+          attendance_discount_eligible?: boolean
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          referred_lead_id: string
+          referrer_lead_id: string
+          reward_type?: string
+          reward_value?: number
+          updated_at?: string
+        }
+        Update: {
+          attendance_discount_applied?: boolean
+          attendance_discount_eligible?: boolean
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          referred_lead_id?: string
+          referrer_lead_id?: string
+          reward_type?: string
+          reward_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_lead_id_fkey"
+            columns: ["referred_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_lead_id_fkey"
+            columns: ["referrer_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           agent_id: string

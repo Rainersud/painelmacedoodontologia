@@ -384,6 +384,18 @@ export default function Agendamentos() {
                                 Tratamento: {app.treatment_type}
                               </p>
                             )}
+                            {(app as any)._isReferral && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-[10px] bg-chart-5/10 text-chart-5 border-0">
+                                  🏷️ Indicação
+                                </Badge>
+                                {(app as any)._referrerName && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Indicado por: <strong>{(app as any)._referrerName}</strong>
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         

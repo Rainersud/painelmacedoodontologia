@@ -144,6 +144,9 @@ export default function Agendamentos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
       setIsDialogOpen(false);
       setNewAppointment({ lead_id: '', scheduled_at: '', treatment_type: '', notes: '' });
       toast.success('Agendamento criado com sucesso!');

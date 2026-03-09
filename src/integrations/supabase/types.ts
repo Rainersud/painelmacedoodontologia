@@ -369,6 +369,7 @@ export type Database = {
       leads: {
         Row: {
           assigned_agent_id: string | null
+          attendance_discount_status: string
           closed_at: string | null
           completed_at: string | null
           converted_at: string | null
@@ -394,6 +395,7 @@ export type Database = {
         }
         Insert: {
           assigned_agent_id?: string | null
+          attendance_discount_status?: string
           closed_at?: string | null
           completed_at?: string | null
           converted_at?: string | null
@@ -419,6 +421,7 @@ export type Database = {
         }
         Update: {
           assigned_agent_id?: string | null
+          attendance_discount_status?: string
           closed_at?: string | null
           completed_at?: string | null
           converted_at?: string | null

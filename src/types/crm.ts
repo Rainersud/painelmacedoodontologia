@@ -64,6 +64,7 @@ export interface Lead {
   closed_at?: string | null;
   rescued_at?: string | null;
   stage_entered_at?: string | null;
+  attendance_discount_status?: 'elegivel' | 'liberado' | 'cancelado';
   created_at: string;
   updated_at: string;
   // Joined data

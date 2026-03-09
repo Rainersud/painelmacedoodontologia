@@ -2,6 +2,7 @@ import {
   LayoutDashboard, 
   Users, 
   Phone, 
+  Gift,
   Calendar, 
   Target, 
   Bell, 

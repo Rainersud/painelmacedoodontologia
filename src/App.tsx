@@ -83,6 +83,7 @@ const App = () => (
             </Suspense>
           </TooltipProvider>
         </ErrorBoundary>
+        </RealtimeProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>

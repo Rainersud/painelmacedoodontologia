@@ -85,6 +85,7 @@ export function useUpdateLeadStatus() {
 
       const updates: Record<string, unknown> = { 
         status: newStatus,
+        stage_entered_at: new Date().toISOString(),
         ...additionalData,
       };
       

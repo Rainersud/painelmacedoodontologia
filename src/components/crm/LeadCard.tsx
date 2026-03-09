@@ -138,6 +138,25 @@ export function LeadCard({
           />
         </div>
 
+        {/* Days in stage indicator */}
+        {(() => {
+          const days = getDaysInStage(lead.stage_entered_at);
+          const alertLevel = getStageAlertLevel(days);
+          const alertColors = {
+            normal: 'bg-success/10 text-success',
+            attention: 'bg-warning/10 text-warning',
+            critical: 'bg-destructive/10 text-destructive',
+          };
+          const alertIcons = { normal: '🟢', attention: '🟡', critical: '🔴' };
+          return (
+            <div className="mb-2">
+              <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", alertColors[alertLevel])}>
+                {alertIcons[alertLevel]} ⏳ {days} {days === 1 ? 'dia' : 'dias'} nesta etapa
+              </Badge>
+            </div>
+          );
+        })()}
+
         {/* Agent + Time */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
           <div className="flex items-center gap-1 truncate">

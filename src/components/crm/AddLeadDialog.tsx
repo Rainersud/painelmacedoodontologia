@@ -121,7 +121,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         <DialogHeader>
           <DialogTitle>Adicionar Lead</DialogTitle>
           <DialogDescription>
-            O lead será adicionado na coluna "Entrada no CRM" e na Base de Contatos.
+            O lead será adicionado na coluna "Novos Leads" e na Base de Contatos.
           </DialogDescription>
         </DialogHeader>
 

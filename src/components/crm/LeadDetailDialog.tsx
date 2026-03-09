@@ -93,6 +93,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         email: lead.email || '',
         whatsapp: lead.whatsapp || '',
         notes: lead.notes || '',
+        attendance_discount_status: (lead.attendance_discount_status || 'elegivel') as 'elegivel' | 'liberado' | 'cancelado',
+        discount_percentage: String(lead.discount_percentage ?? 5),
       });
       setNewStatus('');
       setStatusNotes('');

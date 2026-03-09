@@ -696,6 +696,8 @@ export type Database = {
         | "meta_nao_atingida"
         | "lembrete_followup"
         | "kpi_baixo"
+        | "indicacao_compareceu"
+        | "indicacao_converteu"
       app_role: "admin" | "agente"
       goal_period: "diario" | "semanal" | "mensal"
       goal_type:
@@ -882,6 +884,8 @@ export const Constants = {
         "meta_nao_atingida",
         "lembrete_followup",
         "kpi_baixo",
+        "indicacao_compareceu",
+        "indicacao_converteu",
       ],
       app_role: ["admin", "agente"],
       goal_period: ["diario", "semanal", "mensal"],

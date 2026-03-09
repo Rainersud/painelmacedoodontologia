@@ -493,6 +493,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Referral Ranking */}
+        <ReferralRankingWidget />
       </div>
     </AppLayout>
   );

@@ -113,6 +113,7 @@ export function LeadCard({
               hasDiscount={refTags.hasDiscount}
               attendanceDiscountApplied={refTags.attendanceDiscountApplied}
               leadStatus={lead.status}
+              referrerName={refTags.referrerName}
             />
           </div>
         )}

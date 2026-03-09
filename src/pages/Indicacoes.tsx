@@ -1,5 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ReferralDashboard } from '@/components/crm/ReferralDashboard';
+import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 
 const Indicacoes = () => {
   return (
@@ -10,6 +11,7 @@ const Indicacoes = () => {
           <p className="text-sm text-muted-foreground">Métricas do programa de indicações e benefícios</p>
         </div>
         <ReferralDashboard />
+        <ReferralRankingWidget />
       </div>
     </AppLayout>
   );

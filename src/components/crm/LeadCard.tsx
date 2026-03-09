@@ -6,7 +6,7 @@ import { StarRating } from './StarRating';
 import { ReferralTags } from './ReferralTags';
 import { useUpdateLeadRating } from '@/hooks/useCRMLeads';
 import { useLeadReferralTags } from '@/hooks/useReferrals';
-import { SOURCE_CONFIG, type Lead } from '@/types/crm';
+import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

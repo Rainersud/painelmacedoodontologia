@@ -168,6 +168,25 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           </div>
 
           <div className="space-y-2">
+            <Label>Interesse de Tratamento *</Label>
+            <Select
+              value={form.interest_product}
+              onValueChange={(value) => setForm(prev => ({ ...prev, interest_product: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tratamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {TREATMENT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
             <Textarea
               id="notes"

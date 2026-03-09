@@ -45,6 +45,16 @@ const alertTypeConfig: Record<AlertType, { label: string; icon: React.ElementTyp
     icon: TrendingDown, 
     color: 'bg-destructive/10 text-destructive border-destructive/20' 
   },
+  indicacao_compareceu: {
+    label: 'Indicação Compareceu',
+    icon: Bell,
+    color: 'bg-chart-4/10 text-chart-4 border-chart-4/20'
+  },
+  indicacao_converteu: {
+    label: 'Indicação Converteu',
+    icon: TrendingDown,
+    color: 'bg-chart-5/10 text-chart-5 border-chart-5/20'
+  },
 };
 
 export default function Alertas() {

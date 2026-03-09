@@ -101,17 +101,52 @@ export function useUpdateLeadStatus() {
       // Handle attendance discount for referrals
       if (newStatus === 'compareceu') {
         // Apply 5% attendance discount if referred
-        await supabase
+        const { data: refData } = await supabase
           .from('referrals')
-          .update({ attendance_discount_applied: true } as any)
+          .update({ attendance_discount_applied: true })
           .eq('referred_lead_id', leadId)
-          .eq('attendance_discount_eligible', true);
+          .eq('attendance_discount_eligible', true)
+          .select('referrer_lead_id');
+
+        // Notify referrer about attendance
+        if (refData?.length && user) {
+          const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
+          await supabase.from('alerts').insert({
+            type: 'indicacao_compareceu' as any,
+            title: '📅 Indicação compareceu!',
+            message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'você'}) compareceu à consulta. Desconto de 5% aplicado!`,
+            user_id: null,
+            lead_id: leadId,
+          });
+        }
       } else if (newStatus === 'faltou') {
-        // Cancel attendance discount
         await supabase
           .from('referrals')
-          .update({ attendance_discount_eligible: false, attendance_discount_applied: false } as any)
+          .update({ attendance_discount_eligible: false, attendance_discount_applied: false })
           .eq('referred_lead_id', leadId);
+      }
+
+      // Notify referrer when referral converts (fechado)
+      if (newStatus === 'fechado') {
+        const { data: refConvert } = await supabase
+          .from('referrals')
+          .select('referrer_lead_id, reward_type, reward_value')
+          .eq('referred_lead_id', leadId);
+        
+        if (refConvert?.length && user) {
+          const ref = refConvert[0];
+          const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
+          const rewardText = ref.reward_type === 'dinheiro' 
+            ? `R$${ref.reward_value} em dinheiro` 
+            : `R$${ref.reward_value} em crédito`;
+          await supabase.from('alerts').insert({
+            type: 'indicacao_converteu' as any,
+            title: '🎉 Indicação convertida!',
+            message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou! Recompensa: ${rewardText}.`,
+            user_id: null,
+            lead_id: leadId,
+          });
+        }
       }
 
       const { error } = await supabase

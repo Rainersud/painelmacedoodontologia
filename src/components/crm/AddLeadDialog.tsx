@@ -85,7 +85,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         phone: cleanPhone,
         whatsapp: cleanPhone,
         source: form.source as any,
-        status: 'novo_lead' as any,
+        status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,

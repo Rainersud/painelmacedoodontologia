@@ -14,8 +14,8 @@ export interface Referral {
   attendance_discount_applied: boolean;
   created_at: string;
   updated_at: string;
-  referrer?: { name: string; phone: string } | null;
-  referred?: { name: string; phone: string; status: string } | null;
+  referrer?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;
+  referred?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;
 }
 
 export function useReferralsByLead(leadId: string | undefined) {
@@ -37,12 +37,12 @@ export function useReferralsByLead(leadId: string | undefined) {
         ...(referredData ? [referredData.referrer_lead_id] : []),
       ];
 
-      let leadMap: Record<string, { name: string; phone: string; status: string }> = {};
+      let leadMap: Record<string, { name: string; phone: string; status: string; treatment_value: number }> = {};
       if (allLeadIds.length > 0) {
         const { data: leads } = await supabase
-          .from('leads').select('id, name, phone, status').in('id', allLeadIds);
+          .from('leads').select('id, name, phone, status, treatment_value, interest_product').in('id', allLeadIds);
         if (leads) {
-          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone, status: l.status }]));
+          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone, status: l.status, treatment_value: Number(l.treatment_value || 0), interest_product: l.interest_product }]));
         }
       }
 

@@ -38,9 +38,9 @@ export function ReferrerDetailDialog({
   const totalAttended = referrals.filter(
     r => r.referred?.status === 'compareceu' || r.referred?.status === 'fechado'
   ).length;
-  const totalConverted = referrals.filter(r => r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento').length;
+  const totalConverted = referrals.filter(r => r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento' || r.referred?.status === 'concluido').length;
   const totalRevenue = referrals.reduce((sum, r) => {
-    if (r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento') {
+    if (r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento' || r.referred?.status === 'concluido') {
       return sum + (r.referred.treatment_value || 0);
     }
     return sum;
@@ -145,7 +145,7 @@ export function ReferrerDetailDialog({
                     </thead>
                     <tbody>
                       {referrals.map((ref) => {
-                        const isConverted = ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento';
+                        const isConverted = ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento' || ref.referred?.status === 'concluido';
                         return (
                           <tr key={ref.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="py-2.5 px-3">

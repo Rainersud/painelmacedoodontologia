@@ -392,7 +392,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
                   {(ref as any).bonus_status === 'pago' && (
                     <Badge className="bg-success/10 text-success border-0 text-[10px]">✅ Pago</Badge>
                   )}
-                  {(ref as any).bonus_status !== 'pago' && Number(ref.reward_value) > 0 && (ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento') && (
+                  {(ref as any).bonus_status !== 'pago' && Number(ref.reward_value) > 0 && (ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento' || ref.referred?.status === 'concluido') && (
                     <Badge className="bg-warning/10 text-warning border-0 text-[10px]">⏳ Pendente</Badge>
                   )}
                   {ref.referred?.status === 'compareceu' && (

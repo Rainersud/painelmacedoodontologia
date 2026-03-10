@@ -11,12 +11,15 @@ interface ReferralTagsProps {
   isReferrer: boolean;
   hasDiscount: boolean;
   discountValue?: number;
+  discountType?: string;
   attendanceDiscountApplied?: boolean;
   leadStatus: string;
   referrerName?: string;
   rewardValue?: number;
   rewardType?: string;
   pendingBonuses?: PendingBonus[];
+  referralCount?: number;
+  convertedCount?: number;
   compact?: boolean;
 }
 
@@ -25,52 +28,66 @@ export function ReferralTags({
   isReferrer,
   hasDiscount,
   discountValue,
+  discountType,
   attendanceDiscountApplied,
   leadStatus,
   referrerName,
   rewardValue,
   rewardType,
   pendingBonuses = [],
+  referralCount = 0,
+  convertedCount = 0,
   compact = true,
 }: ReferralTagsProps) {
-  const tags: { label: string; className: string }[] = [];
-
-  if (isReferred) {
-    tags.push({ label: '🏷️ Indicação', className: 'bg-chart-5/10 text-chart-5 border-0' });
-  }
-  if (isReferrer) {
-    tags.push({ label: '🎁 Indicador', className: 'bg-warning/10 text-warning border-0' });
-  }
-  if (hasDiscount && discountValue) {
-    tags.push({ label: `💰 Desconto: ${discountValue}%`, className: 'bg-success/10 text-success border-0' });
-  }
-  if (isReferrer && rewardValue && rewardValue > 0) {
-    const label = rewardType === 'credito' ? `🎁 Crédito: R$${rewardValue}` : `🎁 Bônus: R$${rewardValue}`;
-    tags.push({ label, className: 'bg-chart-4/10 text-chart-4 border-0' });
-  }
-  if (leadStatus === 'compareceu' && attendanceDiscountApplied) {
-    tags.push({ label: '📅 +5%', className: 'bg-success/10 text-success border-0' });
-  }
-  if (leadStatus === 'faltou') {
-    tags.push({ label: '⚠️ Sem benefício', className: 'bg-destructive/10 text-destructive border-0' });
-  }
-
-  if (tags.length === 0 && pendingBonuses.length === 0) return null;
+  if (!isReferred && !isReferrer && pendingBonuses.length === 0) return null;
 
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap gap-1">
-        {tags.map((tag, i) => (
-          <Badge key={i} variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${tag.className}`}>
-            {tag.label}
+      {/* === REFERRED LEAD (indicado) === */}
+      {isReferred && (
+        <div className="space-y-0.5">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-chart-5/10 text-chart-5 border-0">
+            🏷️ Indicação
           </Badge>
-        ))}
-      </div>
-      {isReferred && referrerName && (
-        <p className="text-[9px] text-muted-foreground truncate">
-          👤 Indicado por: <strong>{referrerName}</strong>
-        </p>
+          {referrerName && (
+            <p className="text-[9px] text-muted-foreground truncate">
+              👤 Indicado por: <strong>{referrerName}</strong>
+            </p>
+          )}
+          {/* Referral discount */}
+          {hasDiscount && discountValue && discountValue > 0 && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-success/10 text-success border-0">
+              🎁 Desconto por indicação: {discountType === 'fixo' ? `R$${discountValue}` : `${discountValue}%`}
+            </Badge>
+          )}
+          {/* Attendance discount */}
+          {leadStatus === 'compareceu' && attendanceDiscountApplied && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-success/10 text-success border-0">
+              ✔ Compareceu — 🎁 Desconto de comparecimento: 5%
+            </Badge>
+          )}
+          {leadStatus === 'faltou' && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-destructive/10 text-destructive border-0">
+              ❌ Faltou — Desconto de comparecimento removido
+            </Badge>
+          )}
+        </div>
       )}
+
+      {/* === REFERRER LEAD (indicador) === */}
+      {isReferrer && (
+        <div className="space-y-0.5">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-warning/10 text-warning border-0">
+            🎁 Indicador ({referralCount} indicaç{referralCount === 1 ? 'ão' : 'ões'})
+          </Badge>
+          {convertedCount > 0 && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-success/10 text-success border-0">
+              ✅ {convertedCount} fecharam tratamento
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Pending bonus alerts for referrers */}
       {pendingBonuses.length > 0 && (
         <div className="space-y-0.5">
@@ -85,6 +102,7 @@ export function ReferralTags({
               <p className="text-[9px] text-warning font-semibold">
                 💰 Bonificação: R${bonus.rewardValue}
               </p>
+              <p className="text-[9px] text-muted-foreground">Status: Pendente</p>
             </div>
           ))}
         </div>

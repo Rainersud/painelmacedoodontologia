@@ -419,6 +419,35 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
             {/* Status Tab */}
             <TabsContent value="status" className="space-y-4 m-0">
+              {/* Change Status - kept at top */}
+              <div className="space-y-2">
+                <Label>Alterar Status</Label>
+                <Select
+                  value={newStatus || undefined}
+                  onValueChange={(v) => setNewStatus(v as LeadStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o novo status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FUNNEL_STAGES.map((stage) => (
+                      <SelectItem 
+                        key={stage.key} 
+                        value={stage.key}
+                        disabled={stage.key === lead.status}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${stage.color}`} />
+                          {stage.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <hr className="border-border" />
+
               {/* Universal Scheduled Appointment - editable from any stage */}
               <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
@@ -485,8 +514,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </div>
                 </div>
               )}
-
-              <hr className="border-border" />
 
               {/* Change Status */}
               <div className="space-y-2">

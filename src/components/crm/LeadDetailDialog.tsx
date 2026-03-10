@@ -71,6 +71,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     notes: '',
     attendance_discount_status: 'elegivel' as 'elegivel' | 'liberado' | 'cancelado',
     discount_percentage: '5',
+    scheduled_appointment_at: '',
   });
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');

@@ -120,18 +120,19 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);
 
   const handleSaveInfo = () => {
-    updateLead.mutate({
-      leadId: lead.id,
-      updates: {
-        interest_product: formData.interest_product || null,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
-        email: formData.email || null,
-        whatsapp: formData.whatsapp || null,
-        notes: formData.notes || null,
-        attendance_discount_status: formData.attendance_discount_status,
-        discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
-      },
-    });
+    const updates: Partial<Lead> = {
+      interest_product: formData.interest_product || null,
+      estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+      email: formData.email || null,
+      whatsapp: formData.whatsapp || null,
+      notes: formData.notes || null,
+      attendance_discount_status: formData.attendance_discount_status,
+      discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
+    };
+    if (formData.scheduled_appointment_at) {
+      updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
+    }
+    updateLead.mutate({ leadId: lead.id, updates });
   };
 
   const handleChangeStatus = () => {

@@ -162,26 +162,11 @@ export function ReferrerDetailDialog({
                               ) : null}
                             </td>
                             <td className="py-2.5 px-3">
-                              {isConverted ? (
-                                <Select
-                                  value={String(ref.reward_value || 0)}
-                                  onValueChange={(v) => handleUpdateBonusValue(ref.id, Number(v))}
-                                >
-                                  <SelectTrigger className="h-7 text-xs w-24">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="100">R$ 100</SelectItem>
-                                    <SelectItem value="200">R$ 200</SelectItem>
-                                    <SelectItem value="300">R$ 300</SelectItem>
-                                    <SelectItem value="500">R$ 500</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  {ref.reward_value > 0 ? formatCurrency(ref.reward_value) : '—'}
-                                </span>
-                              )}
+                              <RewardEditor
+                                value={ref.reward_value}
+                                onSave={(v) => handleUpdateBonusValue(ref.id, v)}
+                                editable={isConverted || ref.bonus_status !== 'pago'}
+                              />
                             </td>
                             <td className="py-2.5 px-3">
                               {ref.bonus_status === 'pago' ? (

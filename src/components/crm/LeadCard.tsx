@@ -12,7 +12,7 @@ import {
 import { StarRating } from './StarRating';
 import { ReferralTags } from './ReferralTags';
 import { useUpdateLeadRating, useUpdateLead } from '@/hooks/useCRMLeads';
-import { useLeadReferralTags } from '@/hooks/useReferrals';
+import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -44,7 +44,7 @@ export function LeadCard({
 }: LeadCardProps) {
   const updateRating = useUpdateLeadRating();
   const updateLead = useUpdateLead();
-  const { data: refTags } = useLeadReferralTags(lead.id);
+  const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const hasTask = lead.tasks && lead.tasks.length > 0;
 
   const formatCurrency = (value: number) => {
@@ -125,16 +125,19 @@ export function LeadCard({
           </Badge>
         </div>
 
-        {/* Referral Tags */}
+        {/* Referral Tags - Enhanced */}
         {refTags && (refTags.isReferred || refTags.isReferrer) && (
           <div className="mb-1.5">
             <ReferralTags
               isReferred={refTags.isReferred}
               isReferrer={refTags.isReferrer}
               hasDiscount={refTags.hasDiscount}
+              discountValue={refTags.discountValue}
               attendanceDiscountApplied={refTags.attendanceDiscountApplied}
               leadStatus={lead.status}
               referrerName={refTags.referrerName}
+              rewardValue={refTags.rewardValue}
+              rewardType={refTags.rewardType}
             />
           </div>
         )}
@@ -228,15 +231,18 @@ export function LeadCard({
           </div>
         </div>
 
-        {/* Scheduled date */}
+        {/* Scheduled date - Enhanced */}
         {lead.scheduled_appointment_at && (
-          <div className="flex items-center gap-1 text-xs text-primary mb-2">
-            <Calendar className="h-3 w-3" />
-            <span>
-              {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', {
-                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-              })}
-            </span>
+          <div className="flex items-center gap-2 text-xs text-primary mb-2 p-1.5 rounded bg-primary/5">
+            <Calendar className="h-3.5 w-3.5" />
+            <div>
+              <span className="font-medium">
+                📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </span>
+              <span className="ml-1.5">
+                ⏰ {new Date(lead.scheduled_appointment_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
           </div>
         )}
 

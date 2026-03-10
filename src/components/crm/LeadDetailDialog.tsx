@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
+import { StageHistoryPanel } from './StageHistoryPanel';
 import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ import {
   User,
   Trash2,
   Gift,
+  Clock,
 } from 'lucide-react';
 
 interface LeadDetailDialogProps {
@@ -70,6 +72,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   });
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [closingData, setClosingData] = useState({
     treatment_value: '',
     payment_method: '' as 'avista' | 'parcelado' | '',
@@ -98,6 +101,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       });
       setNewStatus('');
       setStatusNotes('');
+      setScheduledAt('');
       setClosingData({ treatment_value: '', payment_method: '' });
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
@@ -131,6 +135,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (newStatus === 'fechado' && closingData.treatment_value) {
       additionalData.treatment_value = parseFloat(closingData.treatment_value);
       additionalData.payment_method = closingData.payment_method || null;
+    }
+    if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
+      additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
 
     updateStatus.mutate({
@@ -244,7 +251,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="info">
               <User className="h-4 w-4 mr-1" />
               Dados
@@ -260,6 +267,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsTrigger value="task">
               <Calendar className="h-4 w-4 mr-1" />
               Tarefa
+            </TabsTrigger>
+            <TabsTrigger value="funnel">
+              <Clock className="h-4 w-4 mr-1" />
+              Funil
             </TabsTrigger>
             <TabsTrigger value="history">
               <StickyNote className="h-4 w-4 mr-1" />
@@ -322,6 +333,23 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   />
                 </div>
               </div>
+
+              {/* Scheduled Appointment */}
+              {lead.scheduled_appointment_at && (
+                <div className="p-3 rounded-lg border bg-primary/5 border-primary/20">
+                  <h4 className="font-medium text-sm flex items-center gap-2 mb-1">
+                    📅 Consulta Agendada
+                  </h4>
+                  <p className="text-sm">
+                    {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', {
+                      day: '2-digit', month: '2-digit', year: 'numeric',
+                    })} às {new Date(lead.scheduled_appointment_at).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              )}
+
               {/* Discount Status */}
               <div className="p-4 rounded-lg border space-y-4" style={{
                 backgroundColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.05)' :
@@ -425,6 +453,25 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </Select>
               </div>
 
+              {/* Schedule fields when status is agendou */}
+              {(newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-4">
+                  <h4 className="font-medium text-primary flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data da Consulta
+                  </h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="scheduled_at">Data e Horário</Label>
+                    <Input
+                      id="scheduled_at"
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Closing fields when status is fechado */}
               {newStatus === 'fechado' && (
                 <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-4">
@@ -515,9 +562,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="scheduled_at">Data/Hora</Label>
+                  <Label htmlFor="scheduled_at_task">Data/Hora</Label>
                   <Input
-                    id="scheduled_at"
+                    id="scheduled_at_task"
                     type="datetime-local"
                     value={taskData.scheduled_at}
                     onChange={(e) => setTaskData(prev => ({ ...prev, scheduled_at: e.target.value }))}
@@ -547,6 +594,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             {/* Referral Tab */}
             <TabsContent value="referral" className="m-0">
               <ReferralSection leadId={lead.id} leadName={lead.name} />
+            </TabsContent>
+
+            {/* Funnel History Tab */}
+            <TabsContent value="funnel" className="m-0">
+              <StageHistoryPanel leadId={lead.id} />
             </TabsContent>
 
             {/* History Tab */}

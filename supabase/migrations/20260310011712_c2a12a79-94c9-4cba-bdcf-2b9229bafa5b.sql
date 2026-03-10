@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS no_show_count integer NOT NULL DEFAULT 0;

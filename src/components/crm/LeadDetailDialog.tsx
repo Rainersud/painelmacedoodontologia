@@ -29,6 +29,7 @@ import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
 import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
+import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
@@ -45,6 +46,7 @@ import {
   Gift,
   Clock,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface LeadDetailDialogProps {
   lead: Lead | null;
@@ -59,6 +61,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const updateRating = useUpdateLeadRating();
   const deleteLead = useDeleteLead();
   const createTask = useCreateTask();
+  const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
 
   const [activeTab, setActiveTab] = useState('info');
   const [formData, setFormData] = useState({
@@ -69,6 +72,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     notes: '',
     attendance_discount_status: 'elegivel' as 'elegivel' | 'liberado' | 'cancelado',
     discount_percentage: '5',
+    scheduled_appointment_at: '',
   });
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
@@ -98,6 +102,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         notes: lead.notes || '',
         attendance_discount_status: (lead.attendance_discount_status || 'elegivel') as 'elegivel' | 'liberado' | 'cancelado',
         discount_percentage: String(lead.discount_percentage ?? 5),
+        scheduled_appointment_at: lead.scheduled_appointment_at 
+          ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
+          : '',
       });
       setNewStatus('');
       setStatusNotes('');
@@ -114,18 +121,19 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);
 
   const handleSaveInfo = () => {
-    updateLead.mutate({
-      leadId: lead.id,
-      updates: {
-        interest_product: formData.interest_product || null,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
-        email: formData.email || null,
-        whatsapp: formData.whatsapp || null,
-        notes: formData.notes || null,
-        attendance_discount_status: formData.attendance_discount_status,
-        discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
-      },
-    });
+    const updates: Partial<Lead> = {
+      interest_product: formData.interest_product || null,
+      estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+      email: formData.email || null,
+      whatsapp: formData.whatsapp || null,
+      notes: formData.notes || null,
+      attendance_discount_status: formData.attendance_discount_status,
+      discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
+    };
+    if (formData.scheduled_appointment_at) {
+      updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
+    }
+    updateLead.mutate({ leadId: lead.id, updates });
   };
 
   const handleChangeStatus = () => {
@@ -334,19 +342,46 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               </div>
 
-              {/* Scheduled Appointment */}
-              {lead.scheduled_appointment_at && (
-                <div className="p-3 rounded-lg border bg-primary/5 border-primary/20">
-                  <h4 className="font-medium text-sm flex items-center gap-2 mb-1">
-                    📅 Consulta Agendada
-                  </h4>
-                  <p className="text-sm">
-                    {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', {
-                      day: '2-digit', month: '2-digit', year: 'numeric',
-                    })} às {new Date(lead.scheduled_appointment_at).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit', minute: '2-digit',
-                    })}
+              {/* Universal Scheduled Appointment - editable from any stage */}
+              <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  📅 Consulta Agendada
+                </h4>
+                <Input
+                  type="datetime-local"
+                  value={formData.scheduled_appointment_at}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }))}
+                />
+                {(lead.no_show_count || 0) > 0 && (
+                  <p className="text-xs text-destructive font-medium">
+                    ❌ Faltas registradas: {lead.no_show_count}
                   </p>
+                )}
+              </div>
+
+              {/* Appointment History */}
+              {appointmentHistory && appointmentHistory.length > 0 && (
+                <div className="p-3 rounded-lg border space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    📋 Histórico de Agendamentos
+                  </h4>
+                  <div className="space-y-1">
+                    {appointmentHistory.map((apt, idx) => {
+                      const status = apt.cancelled_at ? 'Cancelado' : apt.attended_at ? 'Compareceu' : apt.confirmed_at ? 'Confirmado' : 'Agendado';
+                      const statusColor = apt.cancelled_at ? 'text-destructive' : apt.attended_at ? 'text-success' : 'text-primary';
+                      return (
+                        <div key={apt.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
+                          <span className="text-muted-foreground">{idx + 1}º agendamento</span>
+                          <span>
+                            {new Date(apt.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            {' '}
+                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className={cn("font-medium", statusColor)}>{status}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

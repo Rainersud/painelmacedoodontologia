@@ -57,6 +57,7 @@ export function useCRMLeads() {
         source: lead.source as LeadSource,
         attendance_discount_status: lead.attendance_discount_status as Lead['attendance_discount_status'],
         discount_percentage: lead.discount_percentage as number ?? 5,
+        no_show_count: (lead as any).no_show_count ?? 0,
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));
@@ -129,6 +130,14 @@ export function useUpdateLeadStatus() {
       } else if (newStatus === 'faltou') {
         updates.attendance_discount_status = 'cancelado';
         updates.discount_percentage = 0;
+
+        // Increment no_show_count
+        const { data: currentLead } = await supabase
+          .from('leads')
+          .select('no_show_count')
+          .eq('id', leadId)
+          .maybeSingle();
+        updates.no_show_count = ((currentLead as any)?.no_show_count || 0) + 1;
 
         await supabase
           .from('referrals')

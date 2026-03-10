@@ -420,6 +420,7 @@ export type Database = {
           interest_product: string | null
           interest_rating: number | null
           name: string
+          no_show_count: number
           notes: string | null
           payment_method: string | null
           phone: string
@@ -447,6 +448,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           name: string
+          no_show_count?: number
           notes?: string | null
           payment_method?: string | null
           phone: string
@@ -474,6 +476,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           name?: string
+          no_show_count?: number
           notes?: string | null
           payment_method?: string | null
           phone?: string

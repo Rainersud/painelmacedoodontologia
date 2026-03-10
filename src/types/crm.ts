@@ -66,6 +66,7 @@ export interface Lead {
   stage_entered_at?: string | null;
   attendance_discount_status?: 'elegivel' | 'liberado' | 'cancelado';
   discount_percentage?: number;
+  no_show_count?: number;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -178,7 +179,14 @@ export function getDaysInStage(stageEnteredAt: string | null | undefined): numbe
 
 // Get stage alert level based on days
 export function getStageAlertLevel(days: number): 'normal' | 'attention' | 'critical' {
-  if (days >= 6) return 'critical';
-  if (days >= 3) return 'attention';
+  if (days >= 7) return 'critical';
+  if (days >= 5) return 'attention';
   return 'normal';
+}
+
+export function getStagnationLabel(days: number): string {
+  if (days >= 7) return '🔴 Lead esquecido';
+  if (days >= 5) return '🟠 Lead parado';
+  if (days >= 3) return '🟡 Atenção';
+  return '';
 }

@@ -629,6 +629,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Appointment Metrics */}
+        <AppointmentMetricsWidget />
+
         {/* Funnel Conversion Analytics */}
         <FunnelConversionWidget />
 

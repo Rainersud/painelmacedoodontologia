@@ -38,7 +38,7 @@ export function ReferrerDetailDialog({
   const totalAttended = referrals.filter(
     r => r.referred?.status === 'compareceu' || r.referred?.status === 'fechado'
   ).length;
-  const totalConverted = referrals.filter(r => r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento').length;
+  const totalConverted = referrals.filter(r => r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento' || r.referred?.status === 'concluido').length;
   const totalRevenue = referrals.reduce((sum, r) => {
     if (r.referred?.status === 'fechado' || r.referred?.status === 'tratamento_andamento') {
       return sum + (r.referred.treatment_value || 0);

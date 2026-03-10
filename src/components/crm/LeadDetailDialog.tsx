@@ -29,6 +29,7 @@ import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
 import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
+import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';

@@ -1,5 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 
+interface PendingBonus {
+  referredName: string;
+  rewardValue: number;
+  referralId: string;
+}
+
 interface ReferralTagsProps {
   isReferred: boolean;
   isReferrer: boolean;
@@ -10,6 +16,7 @@ interface ReferralTagsProps {
   referrerName?: string;
   rewardValue?: number;
   rewardType?: string;
+  pendingBonuses?: PendingBonus[];
   compact?: boolean;
 }
 
@@ -23,6 +30,7 @@ export function ReferralTags({
   referrerName,
   rewardValue,
   rewardType,
+  pendingBonuses = [],
   compact = true,
 }: ReferralTagsProps) {
   const tags: { label: string; className: string }[] = [];
@@ -47,7 +55,7 @@ export function ReferralTags({
     tags.push({ label: '⚠️ Sem benefício', className: 'bg-destructive/10 text-destructive border-0' });
   }
 
-  if (tags.length === 0) return null;
+  if (tags.length === 0 && pendingBonuses.length === 0) return null;
 
   return (
     <div className="space-y-1">
@@ -62,6 +70,24 @@ export function ReferralTags({
         <p className="text-[9px] text-muted-foreground truncate">
           👤 Indicado por: <strong>{referrerName}</strong>
         </p>
+      )}
+      {/* Pending bonus alerts for referrers */}
+      {pendingBonuses.length > 0 && (
+        <div className="space-y-0.5">
+          {pendingBonuses.map((bonus, i) => (
+            <div key={i} className="rounded bg-warning/10 px-1.5 py-0.5 border border-warning/20">
+              <p className="text-[9px] text-warning font-medium">
+                💰 Bonificação pendente
+              </p>
+              <p className="text-[9px] text-muted-foreground truncate">
+                Indicação convertida: {bonus.referredName}
+              </p>
+              <p className="text-[9px] text-warning font-semibold">
+                💰 Bonificação: R${bonus.rewardValue}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

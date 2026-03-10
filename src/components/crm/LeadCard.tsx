@@ -138,6 +138,7 @@ export function LeadCard({
               referrerName={refTags.referrerName}
               rewardValue={refTags.rewardValue}
               rewardType={refTags.rewardType}
+              pendingBonuses={refTags.pendingBonuses}
             />
           </div>
         )}

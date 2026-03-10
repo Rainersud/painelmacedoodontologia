@@ -156,14 +156,14 @@ export function useUpdateLeadStatus() {
           const ref = refConvert[0];
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
           
-          if (newStatus === 'fechado') {
+          if (newStatus === 'fechado' || newStatus === 'concluido') {
             const rewardText = ref.reward_type === 'dinheiro' 
               ? `R$${ref.reward_value} em dinheiro` 
               : `R$${ref.reward_value} em crédito`;
             await supabase.from('alerts').insert({
               type: 'indicacao_converteu' as any,
               title: '🎉 Indicação convertida!',
-              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou! Recompensa: ${rewardText}.`,
+              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou tratamento!\n\n💰 Bonificação disponível para pagamento\nValor: ${rewardText}`,
               user_id: null,
               lead_id: leadId,
             });

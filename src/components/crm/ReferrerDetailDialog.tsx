@@ -145,7 +145,7 @@ export function ReferrerDetailDialog({
                     </thead>
                     <tbody>
                       {referrals.map((ref) => {
-                        const isConverted = ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento';
+                        const isConverted = ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento' || ref.referred?.status === 'concluido';
                         return (
                           <tr key={ref.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
                             <td className="py-2.5 px-3">

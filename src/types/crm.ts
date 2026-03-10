@@ -140,7 +140,7 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
   { key: 'tratamento_andamento', label: 'Tratamento em Andamento', color: 'bg-primary', bgColor: 'bg-primary/10' },
-  { key: 'concluido', label: 'Concluído', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'concluido', label: 'Fechou Tratamento', color: 'bg-success', bgColor: 'bg-success/10' },
   { key: 'pos_venda', label: 'Pós Venda', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
 ];
 

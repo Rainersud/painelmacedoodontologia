@@ -226,8 +226,14 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       queryClient.invalidateQueries({ queryKey: ['referrals'] });
       queryClient.invalidateQueries({ queryKey: ['referral-tags'] });
+      queryClient.invalidateQueries({ queryKey: ['referral-tags-enhanced'] });
+      queryClient.invalidateQueries({ queryKey: ['referral-ranking'] });
+      queryClient.invalidateQueries({ queryKey: ['referral-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['stage-history'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {

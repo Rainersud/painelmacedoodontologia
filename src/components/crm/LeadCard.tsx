@@ -133,12 +133,15 @@ export function LeadCard({
               isReferrer={refTags.isReferrer}
               hasDiscount={refTags.hasDiscount}
               discountValue={refTags.discountValue}
+              discountType={refTags.discountType}
               attendanceDiscountApplied={refTags.attendanceDiscountApplied}
               leadStatus={lead.status}
               referrerName={refTags.referrerName}
               rewardValue={refTags.rewardValue}
               rewardType={refTags.rewardType}
               pendingBonuses={refTags.pendingBonuses}
+              referralCount={refTags.referralCount}
+              convertedCount={refTags.convertedCount}
             />
           </div>
         )}

@@ -24,6 +24,50 @@ interface ReferrerDetailDialogProps {
   onViewLead?: (leadId: string) => void;
 }
 
+function RewardEditor({ value, onSave, editable }: { value: number; onSave: (v: number) => void; editable: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [customValue, setCustomValue] = useState(String(value || ''));
+  const fmtCur = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
+
+  if (!editable) return <span className="text-xs text-muted-foreground">{value > 0 ? fmtCur(value) : '—'}</span>;
+
+  if (editing) {
+    return (
+      <div className="flex gap-1 items-center">
+        <Input
+          className="h-7 text-xs w-20"
+          type="number"
+          min="0"
+          value={customValue}
+          onChange={(e) => setCustomValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onSave(Number(customValue) || 0); setEditing(false); } }}
+          autoFocus
+        />
+        <Button size="sm" variant="ghost" className="h-7 text-xs px-1" onClick={() => { onSave(Number(customValue) || 0); setEditing(false); }}>OK</Button>
+      </div>
+    );
+  }
+
+  return (
+    <Select
+      value={String(value || 0)}
+      onValueChange={(v) => {
+        if (v === 'custom') { setCustomValue(String(value || '')); setEditing(true); }
+        else onSave(Number(v));
+      }}
+    >
+      <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="100">R$ 100</SelectItem>
+        <SelectItem value="200">R$ 200</SelectItem>
+        <SelectItem value="300">R$ 300</SelectItem>
+        <SelectItem value="500">R$ 500</SelectItem>
+        <SelectItem value="custom">Outro valor...</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function ReferrerDetailDialog({
   open,
   onOpenChange,

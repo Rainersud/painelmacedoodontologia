@@ -53,12 +53,16 @@ export function useReferralsByLead(leadId: string | undefined) {
           ...r,
           reward_type: r.reward_type as 'dinheiro' | 'credito',
           discount_type: r.discount_type as 'percentual' | 'fixo',
+          bonus_status: (r as any).bonus_status as 'pendente' | 'pago' || 'pendente',
+          bonus_paid_at: (r as any).bonus_paid_at || null,
           referred: leadMap[r.referred_lead_id] || null,
         })),
         asReferred: referredData ? {
           ...referredData,
           reward_type: referredData.reward_type as 'dinheiro' | 'credito',
           discount_type: referredData.discount_type as 'percentual' | 'fixo',
+          bonus_status: (referredData as any).bonus_status as 'pendente' | 'pago' || 'pendente',
+          bonus_paid_at: (referredData as any).bonus_paid_at || null,
           referrer: leadMap[referredData.referrer_lead_id] || null,
         } : null,
       };

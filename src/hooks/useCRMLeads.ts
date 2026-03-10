@@ -131,6 +131,14 @@ export function useUpdateLeadStatus() {
         updates.attendance_discount_status = 'cancelado';
         updates.discount_percentage = 0;
 
+        // Increment no_show_count
+        const { data: currentLead } = await supabase
+          .from('leads')
+          .select('no_show_count')
+          .eq('id', leadId)
+          .maybeSingle();
+        updates.no_show_count = ((currentLead as any)?.no_show_count || 0) + 1;
+
         await supabase
           .from('referrals')
           .update({ attendance_discount_eligible: false, attendance_discount_applied: false })

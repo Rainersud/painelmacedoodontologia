@@ -65,9 +65,61 @@ const mondayColors = {
   red: 'hsl(0 84% 60%)',
 };
 
+function AppointmentMetricsWidget() {
+  const { data } = useAppointmentMetrics();
+  if (!data) return null;
+  
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-primary" />
+          Métricas de Agendamentos
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-muted/30 text-center">
+            <p className="text-2xl font-bold">{data.totalAppointments}</p>
+            <p className="text-xs text-muted-foreground">Total Agendados</p>
+          </div>
+          <div className="p-4 rounded-xl bg-success/10 text-center">
+            <p className="text-2xl font-bold text-success">{data.attended}</p>
+            <p className="text-xs text-muted-foreground">Compareceram</p>
+          </div>
+          <div className="p-4 rounded-xl bg-destructive/10 text-center">
+            <p className="text-2xl font-bold text-destructive">{data.noShows}</p>
+            <p className="text-xs text-muted-foreground">Faltaram</p>
+          </div>
+          <div className="p-4 rounded-xl bg-primary/10 text-center">
+            <p className="text-2xl font-bold text-primary">{data.attendanceRate}%</p>
+            <p className="text-xs text-muted-foreground">Taxa Comparecimento</p>
+          </div>
+        </div>
+        {data.leadsWithNoShows.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Pacientes com mais faltas</p>
+            <div className="space-y-1">
+              {data.leadsWithNoShows.map((l: any) => (
+                <div key={l.id} className="flex items-center justify-between text-sm py-1">
+                  <span className="truncate">{l.name}</span>
+                  <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-0">
+                    ❌ {l.no_show_count} faltas
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 const Dashboard = () => {
   const [period, setPeriod] = useState<Period>('mensal');
   const { data: metrics, isLoading } = useDashboardMetrics(period);
+  useStagnationAlerts();
   const { data: referralMetrics } = useReferralDashboard();
   const { data: allLeads } = useCRMLeads();
 

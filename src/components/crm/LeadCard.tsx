@@ -13,7 +13,7 @@ import { StarRating } from './StarRating';
 import { ReferralTags } from './ReferralTags';
 import { useUpdateLeadRating, useUpdateLead } from '@/hooks/useCRMLeads';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
-import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
+import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, getStagnationLabel, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

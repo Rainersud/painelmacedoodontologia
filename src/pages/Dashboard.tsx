@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
+import { useStagnationAlerts, useAppointmentMetrics } from '@/hooks/useStagnationAlerts';
 import { 
   Users, 
   Phone, 

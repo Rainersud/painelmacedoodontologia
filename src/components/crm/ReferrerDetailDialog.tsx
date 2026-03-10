@@ -8,6 +8,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReferralsByLead, useUpdateReferral } from '@/hooks/useReferrals';
 import { FUNNEL_STAGES } from '@/types/crm';
@@ -21,6 +22,50 @@ interface ReferrerDetailDialogProps {
   referrerId: string | null;
   referrerName: string;
   onViewLead?: (leadId: string) => void;
+}
+
+function RewardEditor({ value, onSave, editable }: { value: number; onSave: (v: number) => void; editable: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [customValue, setCustomValue] = useState(String(value || ''));
+  const fmtCur = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
+
+  if (!editable) return <span className="text-xs text-muted-foreground">{value > 0 ? fmtCur(value) : '—'}</span>;
+
+  if (editing) {
+    return (
+      <div className="flex gap-1 items-center">
+        <Input
+          className="h-7 text-xs w-20"
+          type="number"
+          min="0"
+          value={customValue}
+          onChange={(e) => setCustomValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onSave(Number(customValue) || 0); setEditing(false); } }}
+          autoFocus
+        />
+        <Button size="sm" variant="ghost" className="h-7 text-xs px-1" onClick={() => { onSave(Number(customValue) || 0); setEditing(false); }}>OK</Button>
+      </div>
+    );
+  }
+
+  return (
+    <Select
+      value={String(value || 0)}
+      onValueChange={(v) => {
+        if (v === 'custom') { setCustomValue(String(value || '')); setEditing(true); }
+        else onSave(Number(v));
+      }}
+    >
+      <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="100">R$ 100</SelectItem>
+        <SelectItem value="200">R$ 200</SelectItem>
+        <SelectItem value="300">R$ 300</SelectItem>
+        <SelectItem value="500">R$ 500</SelectItem>
+        <SelectItem value="custom">Outro valor...</SelectItem>
+      </SelectContent>
+    </Select>
+  );
 }
 
 export function ReferrerDetailDialog({
@@ -161,26 +206,11 @@ export function ReferrerDetailDialog({
                               ) : null}
                             </td>
                             <td className="py-2.5 px-3">
-                              {isConverted ? (
-                                <Select
-                                  value={String(ref.reward_value || 0)}
-                                  onValueChange={(v) => handleUpdateBonusValue(ref.id, Number(v))}
-                                >
-                                  <SelectTrigger className="h-7 text-xs w-24">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="100">R$ 100</SelectItem>
-                                    <SelectItem value="200">R$ 200</SelectItem>
-                                    <SelectItem value="300">R$ 300</SelectItem>
-                                    <SelectItem value="500">R$ 500</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  {ref.reward_value > 0 ? formatCurrency(ref.reward_value) : '—'}
-                                </span>
-                              )}
+                              <RewardEditor
+                                value={ref.reward_value}
+                                onSave={(v) => handleUpdateBonusValue(ref.id, v)}
+                                editable={isConverted || ref.bonus_status !== 'pago'}
+                              />
                             </td>
                             <td className="py-2.5 px-3">
                               {ref.bonus_status === 'pago' ? (

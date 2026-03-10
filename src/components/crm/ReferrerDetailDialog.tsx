@@ -220,9 +220,11 @@ export function ReferrerDetailDialog({
                             </td>
                             <td className="py-2.5 px-3">
                               {ref.bonus_status === 'pago' ? (
-                                <Badge className="bg-success/10 text-success border-0 text-[10px]">
-                                  ✅ Pago
-                                </Badge>
+                                <button onClick={() => handleMarkAsPending(ref.id)} className="cursor-pointer" disabled={updateReferral.isPending}>
+                                  <Badge className="bg-success/10 text-success border-0 text-[10px] cursor-pointer hover:opacity-80">
+                                    ✅ Pago
+                                  </Badge>
+                                </button>
                               ) : isConverted && ref.reward_value > 0 ? (
                                 <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
                                   ⏳ Pendente
@@ -230,7 +232,7 @@ export function ReferrerDetailDialog({
                               ) : (
                                 <span className="text-[10px] text-muted-foreground">—</span>
                               )}
-                              {ref.bonus_paid_at && (
+                              {ref.bonus_paid_at && ref.bonus_status === 'pago' && (
                                 <p className="text-[9px] text-muted-foreground mt-0.5">
                                   {formatDate(ref.bonus_paid_at)}
                                 </p>
@@ -247,6 +249,17 @@ export function ReferrerDetailDialog({
                                 >
                                   <CheckCircle className="h-3 w-3" />
                                   Pagar
+                                </Button>
+                              )}
+                              {ref.bonus_status === 'pago' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 text-warning hover:text-warning"
+                                  onClick={() => handleMarkAsPending(ref.id)}
+                                  disabled={updateReferral.isPending}
+                                >
+                                  ↩ Desfazer
                                 </Button>
                               )}
                               <Button

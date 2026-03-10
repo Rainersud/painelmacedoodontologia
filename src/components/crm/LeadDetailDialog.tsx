@@ -419,6 +419,76 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
             {/* Status Tab */}
             <TabsContent value="status" className="space-y-4 m-0">
+              {/* Universal Scheduled Appointment - editable from any stage */}
+              <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  📅 Consulta Agendada
+                </h4>
+                <Input
+                  type="datetime-local"
+                  value={formData.scheduled_appointment_at}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }))}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  disabled={!formData.scheduled_appointment_at || updateLead.isPending}
+                  onClick={() => {
+                    const updates: Partial<Lead> = {};
+                    if (formData.scheduled_appointment_at) {
+                      updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
+                    }
+                    updateLead.mutate({ leadId: lead.id, updates });
+                  }}
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Salvar Agendamento
+                </Button>
+              </div>
+
+              {/* No-show count */}
+              <div className="p-3 rounded-lg border space-y-1">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  ❌ Faltas Registradas
+                </h4>
+                <p className="text-2xl font-bold text-destructive">
+                  {lead.no_show_count || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Faltas são registradas automaticamente ao mover o lead para "Faltou"
+                </p>
+              </div>
+
+              {/* Appointment History */}
+              {appointmentHistory && appointmentHistory.length > 0 && (
+                <div className="p-3 rounded-lg border space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    📋 Histórico de Agendamentos
+                  </h4>
+                  <div className="space-y-1">
+                    {appointmentHistory.map((apt, idx) => {
+                      const status = apt.cancelled_at ? 'Cancelado' : apt.attended_at ? 'Compareceu' : apt.confirmed_at ? 'Confirmado' : 'Agendado';
+                      const statusColor = apt.cancelled_at ? 'text-destructive' : apt.attended_at ? 'text-success' : 'text-primary';
+                      return (
+                        <div key={apt.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
+                          <span className="text-muted-foreground">{idx + 1}º agendamento</span>
+                          <span>
+                            {new Date(apt.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            {' '}
+                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className={cn("font-medium", statusColor)}>{status}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <hr className="border-border" />
+
+              {/* Change Status */}
               <div className="space-y-2">
                 <Label>Alterar Status</Label>
                 <Select

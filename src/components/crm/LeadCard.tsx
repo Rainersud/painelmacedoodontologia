@@ -1,23 +1,15 @@
-import { useState } from 'react';
-import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, StickyNote, CheckSquare, ChevronDown } from 'lucide-react';
+import { Phone, MessageSquare, Calendar, User, Clock, DollarSign, StickyNote, CheckSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { StarRating } from './StarRating';
-import { ReferralTags } from './ReferralTags';
-import { useUpdateLeadRating, useUpdateLead } from '@/hooks/useCRMLeads';
+import { ReferralPopover } from './ReferralPopover';
+import { useUpdateLeadRating } from '@/hooks/useCRMLeads';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { SOURCE_CONFIG, getDaysInStage, getStageAlertLevel, getStagnationLabel, type Lead } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { toast } from 'sonner';
 
 interface LeadCardProps {
   lead: Lead;
@@ -28,12 +20,6 @@ interface LeadCardProps {
   compact?: boolean;
 }
 
-const DISCOUNT_STATUS_CONFIG = {
-  elegivel: { icon: '🟡', label: 'Elegível para desconto', className: 'bg-warning/10 text-warning' },
-  liberado: { icon: '🟢', label: 'Desconto disponível', className: 'bg-success/10 text-success' },
-  cancelado: { icon: '🔴', label: 'Desconto cancelado por falta', className: 'bg-destructive/10 text-destructive' },
-} as const;
-
 export function LeadCard({ 
   lead, 
   onDragStart,
@@ -43,7 +29,6 @@ export function LeadCard({
   compact = false,
 }: LeadCardProps) {
   const updateRating = useUpdateLeadRating();
-  const updateLead = useUpdateLead();
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const hasTask = lead.tasks && lead.tasks.length > 0;
 
@@ -57,32 +42,13 @@ export function LeadCard({
 
   const formatTimeAgo = (dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), { 
-        addSuffix: false, 
-        locale: ptBR 
-      });
+      return formatDistanceToNow(new Date(dateString), { addSuffix: false, locale: ptBR });
     } catch {
       return '';
     }
   };
 
-  const handleQuickDiscountChange = (newStatus: 'elegivel' | 'liberado' | 'cancelado') => {
-    const updates: Partial<Lead> = {
-      attendance_discount_status: newStatus,
-    };
-    if (newStatus === 'cancelado') {
-      updates.discount_percentage = 0;
-    } else if (newStatus === 'liberado' && (!lead.discount_percentage || lead.discount_percentage === 0)) {
-      updates.discount_percentage = 5;
-    }
-    updateLead.mutate({ leadId: lead.id, updates }, {
-      onSuccess: () => toast.success('Status do desconto atualizado!'),
-    });
-  };
-
-  const discountStatus = (lead.attendance_discount_status || 'elegivel') as keyof typeof DISCOUNT_STATUS_CONFIG;
-  const discountConfig = DISCOUNT_STATUS_CONFIG[discountStatus];
-  const discountPct = lead.discount_percentage ?? 5;
+  const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
 
   return (
     <Card 
@@ -117,34 +83,19 @@ export function LeadCard({
               <p className="text-xs text-muted-foreground truncate">{lead.phone}</p>
             </div>
           </div>
-          <Badge 
-            variant="outline" 
-            className={cn("text-[10px] font-medium border-0 shrink-0", SOURCE_CONFIG[lead.source]?.color || 'bg-muted text-muted-foreground')}
-          >
-            {SOURCE_CONFIG[lead.source]?.label || lead.source}
-          </Badge>
-        </div>
-
-        {/* Referral Tags - Enhanced */}
-        {refTags && (refTags.isReferred || refTags.isReferrer) && (
-          <div className="mb-1.5">
-            <ReferralTags
-              isReferred={refTags.isReferred}
-              isReferrer={refTags.isReferrer}
-              hasDiscount={refTags.hasDiscount}
-              discountValue={refTags.discountValue}
-              discountType={refTags.discountType}
-              attendanceDiscountApplied={refTags.attendanceDiscountApplied}
-              leadStatus={lead.status}
-              referrerName={refTags.referrerName}
-              rewardValue={refTags.rewardValue}
-              rewardType={refTags.rewardType}
-              pendingBonuses={refTags.pendingBonuses}
-              referralCount={refTags.referralCount}
-              convertedCount={refTags.convertedCount}
-            />
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Discrete referral icons + popover */}
+            {hasReferralData && refTags && (
+              <ReferralPopover lead={lead} refTags={refTags} />
+            )}
+            <Badge 
+              variant="outline" 
+              className={cn("text-[10px] font-medium border-0", SOURCE_CONFIG[lead.source]?.color || 'bg-muted text-muted-foreground')}
+            >
+              {SOURCE_CONFIG[lead.source]?.label || lead.source}
+            </Badge>
           </div>
-        )}
+        </div>
 
         {/* Treatment Interest */}
         {lead.interest_product && (
@@ -164,44 +115,6 @@ export function LeadCard({
             onChange={(rating) => updateRating.mutate({ leadId: lead.id, rating })}
             size="sm"
           />
-        </div>
-
-        {/* Attendance Discount Status with Quick Edit */}
-        <div className="mb-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <button className="w-full text-left">
-                <Badge 
-                  variant="outline" 
-                  className={cn("text-[10px] border-0 font-medium cursor-pointer hover:opacity-80 transition-opacity", discountConfig.className)}
-                >
-                  {discountConfig.icon} {discountConfig.label}
-                  {discountStatus === 'liberado' && ` – ${discountPct}%`}
-                  <ChevronDown className="h-3 w-3 ml-1 inline" />
-                </Badge>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem 
-                onClick={() => handleQuickDiscountChange('elegivel')}
-                disabled={discountStatus === 'elegivel'}
-              >
-                🟡 Elegível para desconto
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleQuickDiscountChange('liberado')}
-                disabled={discountStatus === 'liberado'}
-              >
-                🟢 Desconto disponível
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleQuickDiscountChange('cancelado')}
-                disabled={discountStatus === 'cancelado'}
-              >
-                🔴 Cancelado por falta
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Days in stage + Stagnation alert */}
@@ -249,7 +162,7 @@ export function LeadCard({
           </div>
         </div>
 
-        {/* Scheduled date - Enhanced */}
+        {/* Scheduled date */}
         {lead.scheduled_appointment_at && (
           <div className="flex items-center gap-2 text-xs text-primary mb-2 p-1.5 rounded bg-primary/5">
             <Calendar className="h-3.5 w-3.5" />

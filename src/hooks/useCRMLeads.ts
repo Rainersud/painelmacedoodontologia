@@ -145,8 +145,8 @@ export function useUpdateLeadStatus() {
           .eq('referred_lead_id', leadId);
       }
 
-      // Auto-trigger bonificação when referred lead reaches tratamento_andamento or fechado
-      if (newStatus === 'tratamento_andamento' || newStatus === 'fechado') {
+      // Auto-trigger bonificação when referred lead reaches tratamento_andamento, fechado or concluido
+      if (newStatus === 'tratamento_andamento' || newStatus === 'fechado' || newStatus === 'concluido') {
         const { data: refConvert } = await supabase
           .from('referrals')
           .select('id, referrer_lead_id, reward_type, reward_value')

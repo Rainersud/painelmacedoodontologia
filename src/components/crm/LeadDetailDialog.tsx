@@ -46,6 +46,7 @@ import {
   Gift,
   Clock,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface LeadDetailDialogProps {
   lead: Lead | null;

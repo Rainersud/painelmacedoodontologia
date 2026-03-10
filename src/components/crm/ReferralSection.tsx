@@ -383,17 +383,26 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
                     {formatDistanceToNow(new Date(ref.created_at), { addSuffix: true, locale: ptBR })}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   {Number(ref.reward_value) > 0 && (
                     <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">
                       🎁 R$ {Number(ref.reward_value).toFixed(2)}
                     </Badge>
+                  )}
+                  {(ref as any).bonus_status === 'pago' && (
+                    <Badge className="bg-success/10 text-success border-0 text-[10px]">✅ Pago</Badge>
+                  )}
+                  {(ref as any).bonus_status !== 'pago' && Number(ref.reward_value) > 0 && (ref.referred?.status === 'fechado' || ref.referred?.status === 'tratamento_andamento') && (
+                    <Badge className="bg-warning/10 text-warning border-0 text-[10px]">⏳ Pendente</Badge>
                   )}
                   {ref.referred?.status === 'compareceu' && (
                     <Badge className="bg-success/10 text-success border-0 text-[10px]">Compareceu</Badge>
                   )}
                   {ref.referred?.status === 'fechado' && (
                     <Badge className="bg-success/10 text-success border-0 text-[10px]">Convertido</Badge>
+                  )}
+                  {ref.referred?.status === 'tratamento_andamento' && (
+                    <Badge className="bg-chart-2/10 text-chart-2 border-0 text-[10px]">Em Tratamento</Badge>
                   )}
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleStartEdit(ref)}>
                     <Edit2 className="h-3 w-3" />

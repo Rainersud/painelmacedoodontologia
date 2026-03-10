@@ -101,6 +101,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         notes: lead.notes || '',
         attendance_discount_status: (lead.attendance_discount_status || 'elegivel') as 'elegivel' | 'liberado' | 'cancelado',
         discount_percentage: String(lead.discount_percentage ?? 5),
+        scheduled_appointment_at: lead.scheduled_appointment_at 
+          ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
+          : '',
       });
       setNewStatus('');
       setStatusNotes('');

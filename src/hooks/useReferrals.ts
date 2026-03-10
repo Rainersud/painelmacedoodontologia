@@ -12,6 +12,8 @@ export interface Referral {
   discount_value: number;
   attendance_discount_eligible: boolean;
   attendance_discount_applied: boolean;
+  bonus_status: 'pendente' | 'pago';
+  bonus_paid_at: string | null;
   created_at: string;
   updated_at: string;
   referrer?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;
@@ -51,12 +53,16 @@ export function useReferralsByLead(leadId: string | undefined) {
           ...r,
           reward_type: r.reward_type as 'dinheiro' | 'credito',
           discount_type: r.discount_type as 'percentual' | 'fixo',
+          bonus_status: (r as any).bonus_status as 'pendente' | 'pago' || 'pendente',
+          bonus_paid_at: (r as any).bonus_paid_at || null,
           referred: leadMap[r.referred_lead_id] || null,
         })),
         asReferred: referredData ? {
           ...referredData,
           reward_type: referredData.reward_type as 'dinheiro' | 'credito',
           discount_type: referredData.discount_type as 'percentual' | 'fixo',
+          bonus_status: (referredData as any).bonus_status as 'pendente' | 'pago' || 'pendente',
+          bonus_paid_at: (referredData as any).bonus_paid_at || null,
           referrer: leadMap[referredData.referrer_lead_id] || null,
         } : null,
       };
@@ -129,11 +135,19 @@ export function useReferralDashboard() {
         }
       }
 
+      const totalBonusPending = (allReferrals || [])
+        .filter(r => (r as any).bonus_status !== 'pago' && Number(r.reward_value) > 0)
+        .reduce((sum, r) => sum + Number(r.reward_value), 0);
+      const totalBonusPaid = (allReferrals || [])
+        .filter(r => (r as any).bonus_status === 'pago')
+        .reduce((sum, r) => sum + Number(r.reward_value), 0);
+
       return {
         totalReferralsMonth: monthReferrals.length,
         totalReferralsAll: (allReferrals || []).length,
         convertedByReferral: convertedCount,
-        totalRewardsPaid: (allReferrals || []).reduce((sum, r) => sum + Number(r.reward_value), 0),
+        totalRewardsPaid: totalBonusPaid,
+        totalBonusPending,
         revenueFromReferrals,
       };
     },

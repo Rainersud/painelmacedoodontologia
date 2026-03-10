@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useReferralDashboard } from '@/hooks/useReferrals';
-import { Users, UserCheck, Gift, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, UserCheck, Gift, TrendingUp, Clock, Loader2 } from 'lucide-react';
 
 export function ReferralDashboard() {
   const { data, isLoading } = useReferralDashboard();
@@ -32,11 +32,12 @@ export function ReferralDashboard() {
       bg: 'bg-success/10',
     },
     {
-      title: 'Total em Recompensas',
+      title: 'Bonificações Pagas',
       value: formatCurrency(data?.totalRewardsPaid || 0),
       icon: Gift,
-      color: 'text-warning',
-      bg: 'bg-warning/10',
+      color: 'text-success',
+      bg: 'bg-success/10',
+      subtitle: data?.totalBonusPending ? `${formatCurrency(data.totalBonusPending)} pendente` : undefined,
     },
     {
       title: 'Faturamento por Indicações',
@@ -59,6 +60,9 @@ export function ReferralDashboard() {
               <div>
                 <p className="text-xs text-muted-foreground">{m.title}</p>
                 <p className="text-lg font-bold">{m.value}</p>
+                {'subtitle' in m && m.subtitle && (
+                  <p className="text-[10px] text-warning">{m.subtitle}</p>
+                )}
               </div>
             </div>
           </CardContent>

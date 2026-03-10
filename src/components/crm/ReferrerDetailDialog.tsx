@@ -114,6 +114,12 @@ export function ReferrerDetailDialog({
     });
   };
 
+  const handleMarkAsPending = (refId: string) => {
+    updateReferral.mutate({ id: refId, updates: { bonus_status: 'pendente', bonus_paid_at: null } as any }, {
+      onSuccess: () => toast.success('Status alterado para Pendente!'),
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">

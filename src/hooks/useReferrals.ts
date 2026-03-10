@@ -135,11 +135,19 @@ export function useReferralDashboard() {
         }
       }
 
+      const totalBonusPending = (allReferrals || [])
+        .filter(r => (r as any).bonus_status !== 'pago' && Number(r.reward_value) > 0)
+        .reduce((sum, r) => sum + Number(r.reward_value), 0);
+      const totalBonusPaid = (allReferrals || [])
+        .filter(r => (r as any).bonus_status === 'pago')
+        .reduce((sum, r) => sum + Number(r.reward_value), 0);
+
       return {
         totalReferralsMonth: monthReferrals.length,
         totalReferralsAll: (allReferrals || []).length,
         convertedByReferral: convertedCount,
-        totalRewardsPaid: (allReferrals || []).reduce((sum, r) => sum + Number(r.reward_value), 0),
+        totalRewardsPaid: totalBonusPaid,
+        totalBonusPending,
         revenueFromReferrals,
       };
     },

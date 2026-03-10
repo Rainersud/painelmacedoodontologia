@@ -342,49 +342,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               </div>
 
-              {/* Universal Scheduled Appointment - editable from any stage */}
-              <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  📅 Consulta Agendada
-                </h4>
-                <Input
-                  type="datetime-local"
-                  value={formData.scheduled_appointment_at}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }))}
-                />
-                {(lead.no_show_count || 0) > 0 && (
-                  <p className="text-xs text-destructive font-medium">
-                    ❌ Faltas registradas: {lead.no_show_count}
-                  </p>
-                )}
-              </div>
-
-              {/* Appointment History */}
-              {appointmentHistory && appointmentHistory.length > 0 && (
-                <div className="p-3 rounded-lg border space-y-2">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    📋 Histórico de Agendamentos
-                  </h4>
-                  <div className="space-y-1">
-                    {appointmentHistory.map((apt, idx) => {
-                      const status = apt.cancelled_at ? 'Cancelado' : apt.attended_at ? 'Compareceu' : apt.confirmed_at ? 'Confirmado' : 'Agendado';
-                      const statusColor = apt.cancelled_at ? 'text-destructive' : apt.attended_at ? 'text-success' : 'text-primary';
-                      return (
-                        <div key={apt.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
-                          <span className="text-muted-foreground">{idx + 1}º agendamento</span>
-                          <span>
-                            {new Date(apt.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                            {' '}
-                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className={cn("font-medium", statusColor)}>{status}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* Discount Status */}
               <div className="p-4 rounded-lg border space-y-4" style={{
                 backgroundColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.05)' :

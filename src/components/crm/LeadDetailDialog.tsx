@@ -382,7 +382,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     })}
                   </div>
                 </div>
-              )
+              )}
 
               {/* Discount Status */}
               <div className="p-4 rounded-lg border space-y-4" style={{

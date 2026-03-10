@@ -200,24 +200,38 @@ export function LeadCard({
           </DropdownMenu>
         </div>
 
-        {/* Days in stage */}
+        {/* Days in stage + Stagnation alert */}
         {(() => {
           const days = getDaysInStage(lead.stage_entered_at);
           const alertLevel = getStageAlertLevel(days);
+          const stagnationLabel = getStagnationLabel(days);
           const alertColors = {
             normal: 'bg-success/10 text-success',
             attention: 'bg-warning/10 text-warning',
             critical: 'bg-destructive/10 text-destructive',
           };
-          const alertIcons = { normal: '🟢', attention: '🟡', critical: '🔴' };
           return (
-            <div className="mb-2">
+            <div className="mb-2 flex flex-wrap gap-1">
               <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", alertColors[alertLevel])}>
-                {alertIcons[alertLevel]} ⏳ {days} {days === 1 ? 'dia' : 'dias'} nesta etapa
+                ⏳ {days} {days === 1 ? 'dia' : 'dias'} nesta etapa
               </Badge>
+              {stagnationLabel && (
+                <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", alertColors[alertLevel])}>
+                  {stagnationLabel}
+                </Badge>
+              )}
             </div>
           );
         })()}
+
+        {/* No-show count */}
+        {(lead.no_show_count || 0) > 0 && (
+          <div className="mb-2">
+            <Badge variant="outline" className="text-[10px] border-0 font-medium bg-destructive/10 text-destructive">
+              ❌ Faltas: {lead.no_show_count}
+            </Badge>
+          </div>
+        )}
 
         {/* Agent + Time */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">

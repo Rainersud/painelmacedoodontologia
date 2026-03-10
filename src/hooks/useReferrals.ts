@@ -12,6 +12,8 @@ export interface Referral {
   discount_value: number;
   attendance_discount_eligible: boolean;
   attendance_discount_applied: boolean;
+  bonus_status: 'pendente' | 'pago';
+  bonus_paid_at: string | null;
   created_at: string;
   updated_at: string;
   referrer?: { name: string; phone: string; status: string; treatment_value?: number; interest_product?: string } | null;

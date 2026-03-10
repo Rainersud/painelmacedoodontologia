@@ -554,7 +554,7 @@ const Dashboard = () => {
                 { label: 'Indicações no Mês', value: referralMetrics?.totalReferralsMonth || 0, icon: UserPlus, color: 'hsl(var(--chart-5))' },
                 { label: 'Total Indicações', value: referralMetrics?.totalReferralsAll || 0, icon: Users, color: 'hsl(var(--primary))' },
                 { label: 'Convertidas em Venda', value: referralMetrics?.convertedByReferral || 0, icon: TrendingUp, color: 'hsl(var(--success))' },
-                { label: 'Recompensas Pagas', value: `R$ ${(referralMetrics?.totalRewardsPaid || 0).toLocaleString('pt-BR')}`, icon: Gift, color: 'hsl(var(--warning))' },
+                { label: 'Bonificações Pagas', value: `R$ ${(referralMetrics?.totalRewardsPaid || 0).toLocaleString('pt-BR')}`, icon: Gift, color: 'hsl(var(--warning))' },
                 { label: 'Faturamento Indicações', value: `R$ ${(referralMetrics?.revenueFromReferrals || 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: 'hsl(var(--success))' },
               ].map((item) => (
                 <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
@@ -562,6 +562,65 @@ const Dashboard = () => {
                     <item.icon className="h-5 w-5" style={{ color: item.color }} />
                   </div>
                   <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Strategic Time Metrics */}
+        <Card className="monday-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Métricas Estratégicas de Tempo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {(() => {
+                const leads = allLeads || [];
+                const scheduledLeads = leads.filter(l => l.scheduled_appointment_at);
+                const closedLeads = leads.filter(l => l.status === 'fechado' && l.closed_at);
+                
+                // Avg time to schedule (created_at → scheduled_appointment_at)
+                const avgTimeToSchedule = scheduledLeads.length > 0
+                  ? Math.round(scheduledLeads.reduce((sum, l) => {
+                      const diff = new Date(l.scheduled_appointment_at!).getTime() - new Date(l.created_at).getTime();
+                      return sum + diff / (1000 * 60 * 60 * 24);
+                    }, 0) / scheduledLeads.length)
+                  : 0;
+
+                // Avg time to close (created_at → closed_at)
+                const avgTimeToClose = closedLeads.length > 0
+                  ? Math.round(closedLeads.reduce((sum, l) => {
+                      const diff = new Date(l.closed_at!).getTime() - new Date(l.created_at).getTime();
+                      return sum + diff / (1000 * 60 * 60 * 24);
+                    }, 0) / closedLeads.length)
+                  : 0;
+
+                // Avg time in current stage
+                const avgStageTime = leads.length > 0
+                  ? Math.round(leads.reduce((sum, l) => {
+                      if (!l.stage_entered_at) return sum;
+                      const diff = new Date().getTime() - new Date(l.stage_entered_at).getTime();
+                      return sum + diff / (1000 * 60 * 60 * 24);
+                    }, 0) / leads.filter(l => l.stage_entered_at).length)
+                  : 0;
+
+                return [
+                  { label: 'Tempo Médio até Agendamento', value: `${avgTimeToSchedule} dias`, icon: Calendar, color: 'hsl(var(--primary))' },
+                  { label: 'Tempo Médio até Venda', value: `${avgTimeToClose} dias`, icon: TrendingUp, color: 'hsl(var(--success))' },
+                  { label: 'Tempo Médio na Etapa Atual', value: `${avgStageTime} dias`, icon: Clock, color: 'hsl(var(--warning))' },
+                  { label: 'Leads Ativos no Funil', value: leads.filter(l => !['fechado', 'concluido', 'sem_interesse', 'nao_convertido', 'descartados'].includes(l.status)).length, icon: Users, color: 'hsl(var(--chart-5))' },
+                ];
+              })().map((item) => (
+                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
+                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
+                  </div>
+                  <p className="text-xl font-bold">{item.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
                 </div>
               ))}

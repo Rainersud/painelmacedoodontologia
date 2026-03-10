@@ -42,6 +42,9 @@ export function useRealtimeSync() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, () => {
         queryClient.invalidateQueries({ queryKey: ['alerts'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_stage_history' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['stage-history'] });
+      })
       .subscribe();
 
     return () => {

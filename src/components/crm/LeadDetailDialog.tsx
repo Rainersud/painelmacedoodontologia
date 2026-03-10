@@ -515,32 +515,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Change Status */}
-              <div className="space-y-2">
-                <Label>Alterar Status</Label>
-                <Select
-                  value={newStatus || undefined}
-                  onValueChange={(v) => setNewStatus(v as LeadStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o novo status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FUNNEL_STAGES.map((stage) => (
-                      <SelectItem 
-                        key={stage.key} 
-                        value={stage.key}
-                        disabled={stage.key === lead.status}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${stage.color}`} />
-                          {stage.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               {/* Schedule fields when status is agendou */}
               {(newStatus === 'agendou' || newStatus === 'consulta_agendada') && (

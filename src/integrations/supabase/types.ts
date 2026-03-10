@@ -555,6 +555,8 @@ export type Database = {
         Row: {
           attendance_discount_applied: boolean
           attendance_discount_eligible: boolean
+          bonus_paid_at: string | null
+          bonus_status: string
           created_at: string
           discount_type: string
           discount_value: number
@@ -568,6 +570,8 @@ export type Database = {
         Insert: {
           attendance_discount_applied?: boolean
           attendance_discount_eligible?: boolean
+          bonus_paid_at?: string | null
+          bonus_status?: string
           created_at?: string
           discount_type?: string
           discount_value?: number
@@ -581,6 +585,8 @@ export type Database = {
         Update: {
           attendance_discount_applied?: boolean
           attendance_discount_eligible?: boolean
+          bonus_paid_at?: string | null
+          bonus_status?: string
           created_at?: string
           discount_type?: string
           discount_value?: number

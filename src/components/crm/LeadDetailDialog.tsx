@@ -60,6 +60,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const updateRating = useUpdateLeadRating();
   const deleteLead = useDeleteLead();
   const createTask = useCreateTask();
+  const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
 
   const [activeTab, setActiveTab] = useState('info');
   const [formData, setFormData] = useState({

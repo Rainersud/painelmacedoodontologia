@@ -8,6 +8,7 @@ import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
+import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,10 @@ const Funil = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
+  
+  // Scheduling dialog state
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -49,12 +54,32 @@ const Funil = () => {
     const lead = leads?.find(l => l.id === leadId);
     
     if (lead && lead.status !== newStatus) {
-      updateStatus.mutate({ leadId: lead.id, newStatus });
+      // If dropping to "agendou", open schedule dialog
+      if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
+        setPendingScheduleLead(lead);
+        setScheduleDialogOpen(true);
+      } else {
+        updateStatus.mutate({ leadId: lead.id, newStatus });
+      }
     }
     
     setDraggedLeadId(null);
     setDropTargetStatus(null);
   }, [leads, updateStatus]);
+
+  const handleScheduleConfirm = useCallback((scheduledAt: string) => {
+    if (!pendingScheduleLead) return;
+    updateStatus.mutate({
+      leadId: pendingScheduleLead.id,
+      newStatus: 'agendou',
+      additionalData: { scheduled_appointment_at: scheduledAt },
+    }, {
+      onSuccess: () => {
+        setScheduleDialogOpen(false);
+        setPendingScheduleLead(null);
+      },
+    });
+  }, [pendingScheduleLead, updateStatus]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedLeadId(null);
@@ -191,6 +216,17 @@ const Funil = () => {
       <AddLeadDialog
         open={addLeadOpen}
         onOpenChange={setAddLeadOpen}
+      />
+
+      <ScheduleAppointmentDialog
+        open={scheduleDialogOpen}
+        onOpenChange={(open) => {
+          setScheduleDialogOpen(open);
+          if (!open) setPendingScheduleLead(null);
+        }}
+        leadName={pendingScheduleLead?.name || ''}
+        onConfirm={handleScheduleConfirm}
+        isPending={updateStatus.isPending}
       />
     </AppLayout>
   );

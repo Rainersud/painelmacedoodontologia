@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Lead, LeadStatus, LeadSource } from '@/types/crm';
+import { recordStageTransition } from './useStageHistory';
 
 export function useCRMLeads() {
   const { user } = useAuth();
@@ -54,8 +55,8 @@ export function useCRMLeads() {
         ...lead,
         status: lead.status as LeadStatus,
         source: lead.source as LeadSource,
-        attendance_discount_status: (lead as any).attendance_discount_status as Lead['attendance_discount_status'],
-        discount_percentage: (lead as any).discount_percentage as number ?? 5,
+        attendance_discount_status: lead.attendance_discount_status as Lead['attendance_discount_status'],
+        discount_percentage: lead.discount_percentage as number ?? 5,
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));
@@ -98,7 +99,9 @@ export function useUpdateLeadStatus() {
         updates.closed_at = new Date().toISOString();
         updates.completed_at = new Date().toISOString();
       } else if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
-        updates.scheduled_appointment_at = new Date().toISOString();
+        if (!additionalData?.scheduled_appointment_at) {
+          updates.scheduled_appointment_at = new Date().toISOString();
+        }
       }
 
       // Handle attendance discount for ALL leads
@@ -133,27 +136,54 @@ export function useUpdateLeadStatus() {
           .eq('referred_lead_id', leadId);
       }
 
-      // Notify referrer when referral converts (fechado)
-      if (newStatus === 'fechado') {
+      // Auto-trigger bonificação when referred lead reaches tratamento_andamento or fechado
+      if (newStatus === 'tratamento_andamento' || newStatus === 'fechado') {
         const { data: refConvert } = await supabase
           .from('referrals')
-          .select('referrer_lead_id, reward_type, reward_value')
+          .select('id, referrer_lead_id, reward_type, reward_value')
           .eq('referred_lead_id', leadId);
         
         if (refConvert?.length && user) {
           const ref = refConvert[0];
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
-          const rewardText = ref.reward_type === 'dinheiro' 
-            ? `R$${ref.reward_value} em dinheiro` 
-            : `R$${ref.reward_value} em crédito`;
-          await supabase.from('alerts').insert({
-            type: 'indicacao_converteu' as any,
-            title: '🎉 Indicação convertida!',
-            message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou! Recompensa: ${rewardText}.`,
-            user_id: null,
-            lead_id: leadId,
-          });
+          
+          if (newStatus === 'fechado') {
+            const rewardText = ref.reward_type === 'dinheiro' 
+              ? `R$${ref.reward_value} em dinheiro` 
+              : `R$${ref.reward_value} em crédito`;
+            await supabase.from('alerts').insert({
+              type: 'indicacao_converteu' as any,
+              title: '🎉 Indicação convertida!',
+              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou! Recompensa: ${rewardText}.`,
+              user_id: null,
+              lead_id: leadId,
+            });
+          }
+
+          if (newStatus === 'tratamento_andamento') {
+            const rewardText = ref.reward_type === 'dinheiro' 
+              ? `R$${ref.reward_value} em dinheiro` 
+              : `R$${ref.reward_value} em crédito`;
+            await supabase.from('alerts').insert({
+              type: 'indicacao_converteu' as any,
+              title: '🎁 Bonificação liberada!',
+              message: `${oldLead?.name || 'Paciente'} iniciou tratamento. Bonificação de ${rewardText} liberada para ${referrerLead?.name || 'indicador'}.`,
+              user_id: null,
+              lead_id: leadId,
+            });
+          }
         }
+      }
+
+      // Auto-create appointment when moving to agendou
+      if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && user) {
+        const scheduledAt = (additionalData?.scheduled_appointment_at as string) || new Date().toISOString();
+        await supabase.from('appointments').insert({
+          lead_id: leadId,
+          agent_id: user.id,
+          scheduled_at: scheduledAt,
+          notes: `Agendamento criado automaticamente via funil`,
+        });
       }
 
       const { error } = await supabase
@@ -162,6 +192,11 @@ export function useUpdateLeadStatus() {
         .eq('id', leadId);
 
       if (error) throw error;
+
+      // Record stage history
+      if (oldLead && oldLead.status !== newStatus) {
+        await recordStageTransition(leadId, oldLead.status, newStatus);
+      }
 
       // Log activity
       if (user && oldLead) {
@@ -182,6 +217,8 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       queryClient.invalidateQueries({ queryKey: ['referrals'] });
       queryClient.invalidateQueries({ queryKey: ['referral-tags'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['stage-history'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {
@@ -191,7 +228,6 @@ export function useUpdateLeadStatus() {
 }
 
 export function useUpdateLeadRating() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({

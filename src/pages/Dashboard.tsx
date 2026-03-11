@@ -1,698 +1,485 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { useStagnationAlerts, useAppointmentMetrics } from '@/hooks/useStagnationAlerts';
+import { FUNNEL_STAGES } from '@/types/crm';
 import { 
-  Users, 
-  Phone, 
-  Calendar, 
-  TrendingUp, 
-  DollarSign,
-  UserCheck,
-  Clock,
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreHorizontal,
-  Gift,
-  UserPlus,
-  HeartHandshake
+  Users, Calendar, TrendingUp, DollarSign, UserCheck, Target,
+  ArrowRight, Eye, Briefcase, BarChart3, XCircle, CheckCircle,
+  HeartHandshake, ArrowUpRight, ArrowDownRight, Clock, CreditCard
 } from 'lucide-react';
 import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Area,
-  AreaChart
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell
 } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { KeyMetricsWidget } from '@/components/dashboard/KeyMetricsWidget';
-import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
-import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
-import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
-import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
-type Period = 'diario' | 'semanal' | 'mensal';
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
-const periodLabels: Record<Period, string> = {
-  diario: 'Hoje',
-  semanal: 'Esta Semana',
-  mensal: 'Este Mês',
-};
+// ─── Visão Geral Tab ────────────────────────────────────────────────────────
 
-// Monday.com style colors
-const mondayColors = {
-  blue: 'hsl(213 94% 58%)',
-  green: 'hsl(156 72% 45%)',
-  purple: 'hsl(270 75% 60%)',
-  orange: 'hsl(32 95% 55%)',
-  pink: 'hsl(340 82% 60%)',
-  teal: 'hsl(180 70% 50%)',
-  yellow: 'hsl(45 93% 58%)',
-  red: 'hsl(0 84% 60%)',
-};
-
-function AppointmentMetricsWidget() {
-  const { data } = useAppointmentMetrics();
-  if (!data) return null;
-  
-  return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          Métricas de Agendamentos
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-muted/30 text-center">
-            <p className="text-2xl font-bold">{data.totalAppointments}</p>
-            <p className="text-xs text-muted-foreground">Total Agendados</p>
-          </div>
-          <div className="p-4 rounded-xl bg-success/10 text-center">
-            <p className="text-2xl font-bold text-success">{data.attended}</p>
-            <p className="text-xs text-muted-foreground">Compareceram</p>
-          </div>
-          <div className="p-4 rounded-xl bg-destructive/10 text-center">
-            <p className="text-2xl font-bold text-destructive">{data.noShows}</p>
-            <p className="text-xs text-muted-foreground">Faltaram</p>
-          </div>
-          <div className="p-4 rounded-xl bg-primary/10 text-center">
-            <p className="text-2xl font-bold text-primary">{data.attendanceRate}%</p>
-            <p className="text-xs text-muted-foreground">Taxa Comparecimento</p>
-          </div>
-        </div>
-        {data.leadsWithNoShows.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Pacientes com mais faltas</p>
-            <div className="space-y-1">
-              {data.leadsWithNoShows.map((l: any) => (
-                <div key={l.id} className="flex items-center justify-between text-sm py-1">
-                  <span className="truncate">{l.name}</span>
-                  <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-0">
-                    ❌ {l.no_show_count} faltas
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-const Dashboard = () => {
-  const [period, setPeriod] = useState<Period>('mensal');
-  const { data: metrics, isLoading } = useDashboardMetrics(period);
-  useStagnationAlerts();
-  const { data: referralMetrics } = useReferralDashboard();
+function VisaoGeralTab() {
+  const { data: metrics, isLoading } = useDashboardMetrics('mensal');
   const { data: allLeads } = useCRMLeads();
+  const { data: referralMetrics } = useReferralDashboard();
+  const { data: appointmentData } = useAppointmentMetrics();
 
-  const kpiCards = [
+  const computedMetrics = useMemo(() => {
+    const leads = allLeads || [];
+    const comparecimentos = leads.filter(l => l.status === 'compareceu').length + (appointmentData?.attended || 0);
+    const faltas = leads.filter(l => l.status === 'faltou' || l.status === 'nao_compareceu').length;
+    const vendas = leads.filter(l => l.status === 'fechado' || l.status === 'concluido').length;
+    const indicacoes = leads.filter(l => l.source === 'indicacao').length;
+
+    return { comparecimentos, faltas, vendas, indicacoes };
+  }, [allLeads, appointmentData]);
+
+  const cards = [
     {
-      title: 'Leads Recebidos',
+      title: 'Leads do Mês',
       value: metrics?.newLeads || 0,
-      change: metrics?.newLeadsChange || 0,
       icon: Users,
-      description: periodLabels[period],
-      format: (v: number) => v.toString(),
-      color: mondayColors.blue,
-      bgClass: 'bg-[hsl(213_94%_58%)]',
-    },
-    {
-      title: 'Leads Atendidos',
-      value: metrics?.attendedLeads || 0,
-      change: metrics?.attendedLeadsChange || 0,
-      icon: Phone,
-      description: `Taxa de ${metrics?.newLeads ? Math.round((metrics.attendedLeads / metrics.newLeads) * 100) : 0}%`,
-      format: (v: number) => v.toString(),
-      color: mondayColors.green,
-      bgClass: 'bg-[hsl(156_72%_45%)]',
+      color: 'hsl(213 94% 58%)',
+      change: metrics?.newLeadsChange || 0,
     },
     {
       title: 'Consultas Agendadas',
       value: metrics?.scheduledAppointments || 0,
-      change: metrics?.scheduledAppointmentsChange || 0,
       icon: Calendar,
-      description: periodLabels[period],
-      format: (v: number) => v.toString(),
-      color: mondayColors.purple,
-      bgClass: 'bg-[hsl(270_75%_60%)]',
+      color: 'hsl(270 75% 60%)',
+      change: metrics?.scheduledAppointmentsChange || 0,
     },
     {
-      title: 'Taxa de Conversão',
-      value: metrics?.conversionRate || 0,
-      change: metrics?.conversionRateChange || 0,
-      icon: TrendingUp,
-      description: 'Meta: 25%',
-      format: (v: number) => `${v}%`,
-      color: mondayColors.orange,
-      bgClass: 'bg-[hsl(32_95%_55%)]',
+      title: 'Comparecimentos',
+      value: computedMetrics.comparecimentos,
+      icon: CheckCircle,
+      color: 'hsl(156 72% 45%)',
     },
     {
-      title: 'Receita Gerada',
-      value: metrics?.revenue || 0,
-      change: metrics?.revenueChange || 0,
+      title: 'Faltas',
+      value: computedMetrics.faltas,
+      icon: XCircle,
+      color: 'hsl(0 84% 60%)',
+    },
+    {
+      title: 'Vendas Realizadas',
+      value: computedMetrics.vendas,
       icon: DollarSign,
-      description: periodLabels[period],
-      format: (v: number) => `R$ ${v.toLocaleString('pt-BR')}`,
-      color: mondayColors.teal,
-      bgClass: 'bg-[hsl(180_70%_50%)]',
+      color: 'hsl(180 70% 50%)',
     },
     {
-      title: 'Taxa Comparecimento',
-      value: metrics?.attendanceRate || 0,
-      change: metrics?.attendanceRateChange || 0,
-      icon: UserCheck,
-      description: 'Meta: 75%',
-      format: (v: number) => `${v}%`,
-      color: mondayColors.pink,
-      bgClass: 'bg-[hsl(340_82%_60%)]',
-    },
-    {
-      title: 'Tempo Médio Resposta',
-      value: metrics?.avgResponseTime || 0,
-      change: metrics?.avgResponseTimeChange || 0,
-      icon: Clock,
-      description: 'SLA: 5 min',
-      format: (v: number) => `${v} min`,
-      invertChange: true,
-      color: mondayColors.yellow,
-      bgClass: 'bg-[hsl(45_93%_58%)]',
-    },
-    {
-      title: 'ROI Marketing',
-      value: metrics?.marketingROI || 0,
-      change: metrics?.marketingROIChange || 0,
-      icon: Target,
-      description: 'Retorno sobre investimento',
-      format: (v: number) => `${v}x`,
-      color: mondayColors.blue,
-      bgClass: 'bg-[hsl(213_94%_58%)]',
+      title: 'Indicações Recebidas',
+      value: computedMetrics.indicacoes,
+      icon: HeartHandshake,
+      color: 'hsl(262 80% 55%)',
     },
   ];
 
-  const getStatusBadge = (lead: { status: string }) => {
-    const statusConfig: Record<string, { label: string; bgColor: string }> = {
-      novo_lead: { label: 'Novo', bgColor: mondayColors.blue },
-      em_atendimento: { label: 'Atendendo', bgColor: mondayColors.orange },
-      consulta_agendada: { label: 'Agendado', bgColor: mondayColors.purple },
-      confirmado: { label: 'Confirmado', bgColor: mondayColors.teal },
-      compareceu: { label: 'Compareceu', bgColor: mondayColors.green },
-      fechado: { label: 'Fechado', bgColor: mondayColors.green },
-    };
-    return statusConfig[lead.status] || { label: lead.status, bgColor: mondayColors.blue };
-  };
+  return (
+    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      {cards.map((card) => (
+        <Card key={card.title} className="monday-card overflow-hidden group">
+          <div className="h-1.5 w-full" style={{ backgroundColor: card.color }} />
+          <CardContent className="p-5">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div
+                className="h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"
+                style={{ backgroundColor: card.color }}
+              >
+                <card.icon className="h-6 w-6" />
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-9 w-16" />
+              ) : (
+                <p className="text-3xl font-bold">{card.value}</p>
+              )}
+              <p className="text-xs font-medium text-muted-foreground">{card.title}</p>
+              {card.change !== undefined && card.change !== 0 && !isLoading && (
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
+                  card.change >= 0 ? 'bg-success/15 text-success' : 'bg-destructive/15 text-destructive'
+                )}>
+                  {card.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {Math.abs(card.change)}%
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ─── Comercial Tab ──────────────────────────────────────────────────────────
+
+function ComercialTab() {
+  const { data: allLeads, isLoading } = useCRMLeads();
+
+  const funnelData = useMemo(() => {
+    if (!allLeads) return { stages: [], conversions: [] };
+
+    const stageOrder: Array<{ key: string; label: string; color: string }> = [
+      { key: 'novo_lead', label: 'Novos Leads', color: 'hsl(213 94% 58%)' },
+      { key: 'em_atendimento', label: 'Em Contato', color: 'hsl(32 95% 55%)' },
+      { key: 'agendou', label: 'Agendados', color: 'hsl(270 75% 60%)' },
+      { key: 'compareceu', label: 'Compareceram', color: 'hsl(156 72% 45%)' },
+      { key: 'orcamentos_abertos', label: 'Orçamentos', color: 'hsl(180 70% 50%)' },
+      { key: 'fechado', label: 'Fechados', color: 'hsl(142 70% 45%)' },
+      { key: 'followup_1', label: 'Follow-up', color: 'hsl(45 93% 58%)' },
+    ];
+
+    const stages = stageOrder.map(s => {
+      let count: number;
+      if (s.key === 'followup_1') {
+        count = allLeads.filter(l =>
+          ['followup_1', 'followup_2', 'followup_3', 'followup_4'].includes(l.status)
+        ).length;
+      } else {
+        count = allLeads.filter(l => l.status === s.key).length;
+      }
+      return { ...s, count };
+    });
+
+    // Conversion rates between key stages
+    const novos = allLeads.length || 1;
+    const agendados = allLeads.filter(l =>
+      ['agendou', 'consulta_agendada', 'confirmado', 'compareceu', 'orcamentos_abertos', 'fechado', 'concluido', 'tratamento_andamento', 'pos_venda'].includes(l.status)
+    ).length;
+    const compareceram = allLeads.filter(l =>
+      ['compareceu', 'orcamentos_abertos', 'fechado', 'concluido', 'tratamento_andamento', 'pos_venda'].includes(l.status)
+    ).length;
+    const vendas = allLeads.filter(l =>
+      ['fechado', 'concluido', 'tratamento_andamento', 'pos_venda'].includes(l.status)
+    ).length;
+
+    const conversions = [
+      {
+        from: 'Lead',
+        to: 'Agendamento',
+        rate: Math.round((agendados / novos) * 100),
+        color: 'hsl(270 75% 60%)',
+      },
+      {
+        from: 'Agendamento',
+        to: 'Comparecimento',
+        rate: agendados > 0 ? Math.round((compareceram / agendados) * 100) : 0,
+        color: 'hsl(156 72% 45%)',
+      },
+      {
+        from: 'Comparecimento',
+        to: 'Venda',
+        rate: compareceram > 0 ? Math.round((vendas / compareceram) * 100) : 0,
+        color: 'hsl(142 70% 45%)',
+      },
+    ];
+
+    return { stages, conversions };
+  }, [allLeads]);
+
+  if (isLoading) {
+    return <Skeleton className="h-96 w-full rounded-xl" />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Funnel Stage Counts */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+        {funnelData.stages.map((stage) => (
+          <Card key={stage.key} className="monday-card overflow-hidden">
+            <div className="h-1.5 w-full" style={{ backgroundColor: stage.color }} />
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold">{stage.count}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-1">{stage.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Conversion Between Stages */}
+      <Card className="monday-card">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base font-semibold">Taxa de Conversão por Etapa</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {funnelData.conversions.map((conv) => (
+              <div
+                key={conv.from + conv.to}
+                className="relative p-5 rounded-xl bg-muted/30 border border-border/50"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium">{conv.from}</span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{conv.to}</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-bold" style={{ color: conv.color }}>
+                    {conv.rate}%
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="mt-3 h-2 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${conv.rate}%`, backgroundColor: conv.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Funnel Bar Chart */}
+      <Card className="monday-card">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base font-semibold">Distribuição do Funil</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={funnelData.stages} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  width={120}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                  }}
+                />
+                <Bar dataKey="count" radius={[0, 8, 8, 0]} maxBarSize={28} name="Leads">
+                  {funnelData.stages.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Performance Tab ────────────────────────────────────────────────────────
+
+function PerformanceTab() {
+  const { data: allLeads } = useCRMLeads();
+
+  // Revenue by period (today, week, month) from appointments
+  const { data: revenueData, isLoading } = useQuery({
+    queryKey: ['performance-revenue'],
+    queryFn: async () => {
+      const now = new Date();
+      const todayStart = startOfDay(now).toISOString();
+      const todayEnd = endOfDay(now).toISOString();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 }).toISOString();
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 }).toISOString();
+      const monthStart = startOfMonth(now).toISOString();
+      const monthEnd = endOfMonth(now).toISOString();
+
+      const [todayRes, weekRes, monthRes] = await Promise.all([
+        supabase
+          .from('appointments')
+          .select('revenue')
+          .not('attended_at', 'is', null)
+          .gte('attended_at', todayStart)
+          .lte('attended_at', todayEnd),
+        supabase
+          .from('appointments')
+          .select('revenue')
+          .not('attended_at', 'is', null)
+          .gte('attended_at', weekStart)
+          .lte('attended_at', weekEnd),
+        supabase
+          .from('appointments')
+          .select('revenue')
+          .not('attended_at', 'is', null)
+          .gte('attended_at', monthStart)
+          .lte('attended_at', monthEnd),
+      ]);
+
+      const sum = (arr: any[] | null) => (arr || []).reduce((s, a) => s + (a.revenue || 0), 0);
+
+      return {
+        today: sum(todayRes.data),
+        week: sum(weekRes.data),
+        month: sum(monthRes.data),
+      };
+    },
+    refetchInterval: 60000,
+  });
+
+  const performanceMetrics = useMemo(() => {
+    const leads = allLeads || [];
+    const compareceram = leads.filter(l =>
+      ['compareceu', 'orcamentos_abertos', 'fechado', 'concluido', 'tratamento_andamento', 'pos_venda'].includes(l.status)
+    ).length;
+    const vendas = leads.filter(l =>
+      ['fechado', 'concluido', 'tratamento_andamento', 'pos_venda'].includes(l.status)
+    ).length;
+
+    const taxaConversao = compareceram > 0 ? Math.round((vendas / compareceram) * 100) : 0;
+    const faturamento = revenueData?.month || 0;
+    const ticketMedio = vendas > 0 ? Math.round(faturamento / vendas) : 0;
+
+    return { compareceram, vendas, taxaConversao, ticketMedio };
+  }, [allLeads, revenueData]);
+
+  return (
+    <div className="space-y-6">
+      {/* Faturamento Card */}
+      <Card className="monday-card overflow-hidden">
+        <div className="h-1.5 w-full bg-gradient-to-r from-[hsl(156_72%_45%)] to-[hsl(180_70%_50%)]" />
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-success" />
+            <CardTitle className="text-base font-semibold">Faturamento</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              { label: 'Hoje', value: revenueData?.today || 0, color: 'hsl(213 94% 58%)' },
+              { label: 'Semana', value: revenueData?.week || 0, color: 'hsl(270 75% 60%)' },
+              { label: 'Mês', value: revenueData?.month || 0, color: 'hsl(156 72% 45%)' },
+            ].map((item) => (
+              <div key={item.label} className="p-5 rounded-xl bg-muted/30 border border-border/50 text-center">
+                <p className="text-xs font-medium text-muted-foreground mb-2">{item.label}</p>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-32 mx-auto" />
+                ) : (
+                  <p className="text-3xl font-bold" style={{ color: item.color }}>
+                    {formatCurrency(item.value)}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Performance Indicators */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Conversion Rate */}
+        <Card className="monday-card overflow-hidden">
+          <div className="h-1.5 w-full" style={{ backgroundColor: 'hsl(32 95% 55%)' }} />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: 'hsl(32 95% 55%)' }}>
+                <TrendingUp className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">% Atendimento → Venda</p>
+                <p className="text-xs text-muted-foreground">
+                  {performanceMetrics.compareceram} atendidos → {performanceMetrics.vendas} vendas
+                </p>
+              </div>
+            </div>
+            <p className="text-5xl font-bold" style={{ color: 'hsl(32 95% 55%)' }}>
+              {performanceMetrics.taxaConversao}%
+            </p>
+            <div className="mt-4 h-3 rounded-full bg-muted">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.min(performanceMetrics.taxaConversao, 100)}%`, backgroundColor: 'hsl(32 95% 55%)' }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ticket Médio */}
+        <Card className="monday-card overflow-hidden">
+          <div className="h-1.5 w-full" style={{ backgroundColor: 'hsl(180 70% 50%)' }} />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: 'hsl(180 70% 50%)' }}>
+                <CreditCard className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Ticket Médio</p>
+                <p className="text-xs text-muted-foreground">
+                  Faturamento ÷ {performanceMetrics.vendas} vendas
+                </p>
+              </div>
+            </div>
+            <p className="text-5xl font-bold" style={{ color: 'hsl(180 70% 50%)' }}>
+              {formatCurrency(performanceMetrics.ticketMedio)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Dashboard ─────────────────────────────────────────────────────────
+
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState('visao-geral');
+  useStagnationAlerts();
 
   return (
     <AppLayout title="Dashboard">
       <div className="space-y-6">
-        {/* Header with Period Selector */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Visão Geral</h1>
-            <p className="text-muted-foreground">Acompanhe os principais indicadores</p>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Painel estratégico da clínica</p>
           </div>
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="diario" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Hoje
-              </TabsTrigger>
-              <TabsTrigger value="semanal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Semana
-              </TabsTrigger>
-              <TabsTrigger value="mensal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Mês
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
 
-        {/* KPI Cards Grid - Monday.com Style */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {kpiCards.map((kpi, index) => (
-            <Card 
-              key={kpi.title} 
-              className="monday-card overflow-hidden group"
-            >
-              <div 
-                className="h-1.5 w-full" 
-                style={{ backgroundColor: kpi.color }}
-              />
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
-                    {isLoading ? (
-                      <Skeleton className="h-9 w-24" />
-                    ) : (
-                      <p className="text-3xl font-bold">{kpi.format(kpi.value)}</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      {!isLoading && (
-                        <span className={cn(
-                          "inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full",
-                          (kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0)
-                            ? 'bg-success/15 text-success' 
-                            : 'bg-destructive/15 text-destructive'
-                        )}>
-                          {(kpi.invertChange ? kpi.change <= 0 : kpi.change >= 0) ? (
-                            <ArrowUpRight className="h-3 w-3" />
-                          ) : (
-                            <ArrowDownRight className="h-3 w-3" />
-                          )}
-                          {Math.abs(kpi.change)}%
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground">{kpi.description}</span>
-                    </div>
-                  </div>
-                  <div 
-                    className={cn("h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform")}
-                    style={{ backgroundColor: kpi.color }}
-                  >
-                    <kpi.icon className="h-6 w-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-card border shadow-sm">
+            <TabsTrigger value="visao-geral" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5">
+              <Eye className="h-4 w-4" />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="comercial" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5">
+              <Briefcase className="h-4 w-4" />
+              Comercial
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5">
+              <BarChart3 className="h-4 w-4" />
+              Performance
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Charts Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Leads Performance Chart */}
-          <Card className="monday-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Performance de Leads</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                {isLoading ? (
-                  <Skeleton className="w-full h-full rounded-lg" />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics?.leadsOverTime || []}>
-                      <defs>
-                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={mondayColors.blue} stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor={mondayColors.blue} stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorConsultas" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={mondayColors.green} stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor={mondayColors.green} stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)'
-                        }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="leads" 
-                        stroke={mondayColors.blue}
-                        strokeWidth={2}
-                        fill="url(#colorLeads)"
-                        name="Leads"
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="consultas" 
-                        stroke={mondayColors.green}
-                        strokeWidth={2}
-                        fill="url(#colorConsultas)"
-                        name="Consultas"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-              <div className="flex items-center justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: mondayColors.blue }} />
-                  <span className="text-sm text-muted-foreground">Leads</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: mondayColors.green }} />
-                  <span className="text-sm text-muted-foreground">Consultas</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Conversion Rate Chart */}
-          <Card className="monday-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Taxa de Conversão Mensal</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                {isLoading ? (
-                  <Skeleton className="w-full h-full rounded-lg" />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics?.conversionByMonth || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                        domain={[0, 100]}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)'
-                        }}
-                        formatter={(value) => [`${value}%`, 'Taxa']}
-                      />
-                      <Bar 
-                        dataKey="taxa" 
-                        fill={mondayColors.purple}
-                        radius={[8, 8, 0, 0]}
-                        maxBarSize={45}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Key Metrics Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <KeyMetricsWidget 
-            cpl={25}
-            custoAgendamento={100}
-            custoFechamento={430}
-            breakEven={2}
-          />
-          <ClinicGoalsWidget 
-            currentLeads={metrics?.newLeads || 0}
-            currentAgendamentos={metrics?.scheduledAppointments || 0}
-            currentComparecimentos={0}
-            currentFechamentos={0}
-            currentFaturamento={metrics?.revenue || 0}
-            period={period}
-          />
-        </div>
-
-        {/* Bottom Row */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Lead Sources Pie Chart */}
-          <Card className="monday-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Origem dos Leads</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px]">
-                {isLoading ? (
-                  <Skeleton className="w-full h-full rounded-lg" />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={metrics?.leadsBySource || []}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={4}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {(metrics?.leadsBySource || []).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                        }}
-                        formatter={(value) => [`${value}%`, '']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {(metrics?.leadsBySource || []).map((source) => (
-                  <div key={source.name} className="flex items-center gap-2 text-sm">
-                    <div 
-                      className="h-2.5 w-2.5 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: source.color }}
-                    />
-                    <span className="text-muted-foreground truncate">{source.name}</span>
-                    <span className="font-semibold ml-auto">{source.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Leads */}
-          <Card className="lg:col-span-2 monday-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Leads Recentes</CardTitle>
-              <Button variant="ghost" size="sm" className="text-primary">
-                Ver todos
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {isLoading ? (
-                  [1, 2, 3, 4].map((i) => (
-                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
-                  ))
-                ) : (
-                  (metrics?.recentLeads || []).slice(0, 5).map((lead, index) => {
-                    const badge = getStatusBadge(lead);
-                    return (
-                      <div 
-                        key={lead.id || index}
-                        className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm"
-                            style={{ backgroundColor: badge.bgColor }}
-                          >
-                            {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium group-hover:text-primary transition-colors">{lead.name}</p>
-                            <p className="text-xs text-muted-foreground">{lead.source} • {lead.time}</p>
-                          </div>
-                        </div>
-                        <span 
-                          className="text-xs px-3 py-1.5 rounded-full font-medium text-white"
-                          style={{ backgroundColor: badge.bgColor }}
-                        >
-                          {badge.label}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-                {!isLoading && (!metrics?.recentLeads || metrics.recentLeads.length === 0) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Nenhum lead recente</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Attendance Discount Metrics */}
-        <Card className="monday-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Gift className="h-5 w-5 text-warning" />
-              Descontos por Comparecimento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(() => {
-                const leads = allLeads || [];
-                const liberados = leads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
-                const cancelados = leads.filter((l: any) => l.attendance_discount_status === 'cancelado').length;
-                const elegiveis = leads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;
-                const impacto = leads
-                  .filter((l: any) => l.attendance_discount_status === 'liberado')
-                  .reduce((sum: number, l: any) => sum + (Number(l.treatment_value || l.estimated_value || 0) * 0.05), 0);
-                return [
-                  { label: 'Descontos Liberados', value: liberados, icon: UserCheck, color: 'hsl(var(--success))' },
-                  { label: 'Cancelados por Falta', value: cancelados, icon: Target, color: 'hsl(var(--destructive))' },
-                  { label: 'Elegíveis', value: elegiveis, icon: Clock, color: 'hsl(var(--warning))' },
-                  { label: 'Impacto Financeiro', value: `R$ ${impacto.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: DollarSign, color: 'hsl(var(--chart-5))' },
-                ];
-              })().map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
-                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
-                  </div>
-                  <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Referral Metrics */}
-        <Card className="monday-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <HeartHandshake className="h-5 w-5 text-chart-5" />
-              Desempenho das Indicações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { label: 'Indicações no Mês', value: referralMetrics?.totalReferralsMonth || 0, icon: UserPlus, color: 'hsl(var(--chart-5))' },
-                { label: 'Total Indicações', value: referralMetrics?.totalReferralsAll || 0, icon: Users, color: 'hsl(var(--primary))' },
-                { label: 'Convertidas em Venda', value: referralMetrics?.convertedByReferral || 0, icon: TrendingUp, color: 'hsl(var(--success))' },
-                { label: 'Bonificações Pagas', value: `R$ ${(referralMetrics?.totalRewardsPaid || 0).toLocaleString('pt-BR')}`, icon: Gift, color: 'hsl(var(--warning))' },
-                { label: 'Faturamento Indicações', value: `R$ ${(referralMetrics?.revenueFromReferrals || 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: 'hsl(var(--success))' },
-              ].map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
-                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
-                  </div>
-                  <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Strategic Time Metrics */}
-        <Card className="monday-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              Métricas Estratégicas de Tempo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(() => {
-                const leads = allLeads || [];
-                const scheduledLeads = leads.filter(l => l.scheduled_appointment_at);
-                const closedLeads = leads.filter(l => l.status === 'fechado' && l.closed_at);
-                
-                // Avg time to schedule (created_at → scheduled_appointment_at)
-                const avgTimeToSchedule = scheduledLeads.length > 0
-                  ? Math.round(scheduledLeads.reduce((sum, l) => {
-                      const diff = new Date(l.scheduled_appointment_at!).getTime() - new Date(l.created_at).getTime();
-                      return sum + diff / (1000 * 60 * 60 * 24);
-                    }, 0) / scheduledLeads.length)
-                  : 0;
-
-                // Avg time to close (created_at → closed_at)
-                const avgTimeToClose = closedLeads.length > 0
-                  ? Math.round(closedLeads.reduce((sum, l) => {
-                      const diff = new Date(l.closed_at!).getTime() - new Date(l.created_at).getTime();
-                      return sum + diff / (1000 * 60 * 60 * 24);
-                    }, 0) / closedLeads.length)
-                  : 0;
-
-                // Avg time in current stage
-                const avgStageTime = leads.length > 0
-                  ? Math.round(leads.reduce((sum, l) => {
-                      if (!l.stage_entered_at) return sum;
-                      const diff = new Date().getTime() - new Date(l.stage_entered_at).getTime();
-                      return sum + diff / (1000 * 60 * 60 * 24);
-                    }, 0) / leads.filter(l => l.stage_entered_at).length)
-                  : 0;
-
-                return [
-                  { label: 'Tempo Médio até Agendamento', value: `${avgTimeToSchedule} dias`, icon: Calendar, color: 'hsl(var(--primary))' },
-                  { label: 'Tempo Médio até Venda', value: `${avgTimeToClose} dias`, icon: TrendingUp, color: 'hsl(var(--success))' },
-                  { label: 'Tempo Médio na Etapa Atual', value: `${avgStageTime} dias`, icon: Clock, color: 'hsl(var(--warning))' },
-                  { label: 'Leads Ativos no Funil', value: leads.filter(l => !['fechado', 'concluido', 'sem_interesse', 'nao_convertido', 'descartados'].includes(l.status)).length, icon: Users, color: 'hsl(var(--chart-5))' },
-                ];
-              })().map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
-                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
-                  </div>
-                  <p className="text-xl font-bold">{item.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Appointment Metrics */}
-        <AppointmentMetricsWidget />
-
-        {/* Funnel Conversion Analytics */}
-        <FunnelConversionWidget />
-
-        {/* Treatment Ranking */}
-        <TreatmentRankingWidget />
-
-        {/* Referral Ranking */}
-        <ReferralRankingWidget />
+          <TabsContent value="visao-geral" className="mt-6">
+            <VisaoGeralTab />
+          </TabsContent>
+          <TabsContent value="comercial" className="mt-6">
+            <ComercialTab />
+          </TabsContent>
+          <TabsContent value="performance" className="mt-6">
+            <PerformanceTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );

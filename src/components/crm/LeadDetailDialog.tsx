@@ -263,36 +263,45 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="info">
-              <User className="h-4 w-4 mr-1" />
-              Dados
-            </TabsTrigger>
-            <TabsTrigger value="status">
-              <ArrowRight className="h-4 w-4 mr-1" />
-              Status
-            </TabsTrigger>
-            <TabsTrigger value="triage" onClick={() => setTriageOpen(true)}>
-              <FileText className="h-4 w-4 mr-1" />
-              Triagem
-            </TabsTrigger>
-            <TabsTrigger value="referral">
-              <Gift className="h-4 w-4 mr-1" />
-              Indicação
-            </TabsTrigger>
-            <TabsTrigger value="task">
-              <Calendar className="h-4 w-4 mr-1" />
-              Tarefa
-            </TabsTrigger>
-            <TabsTrigger value="funnel">
-              <Clock className="h-4 w-4 mr-1" />
-              Funil
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <StickyNote className="h-4 w-4 mr-1" />
-              Histórico
-            </TabsTrigger>
-          </TabsList>
+          {(() => {
+            const showTriage = lead.status === 'compareceu' || 
+              ['orcamentos_abertos', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado', 'tratamento_andamento', 'concluido', 'pos_venda'].includes(lead.status);
+            const cols = showTriage ? 7 : 6;
+            return (
+              <TabsList className={`grid w-full`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+                <TabsTrigger value="info">
+                  <User className="h-4 w-4 mr-1" />
+                  Dados
+                </TabsTrigger>
+                <TabsTrigger value="status">
+                  <ArrowRight className="h-4 w-4 mr-1" />
+                  Status
+                </TabsTrigger>
+                {showTriage && (
+                  <TabsTrigger value="triage" onClick={() => setTriageOpen(true)}>
+                    <FileText className="h-4 w-4 mr-1" />
+                    Triagem
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="referral">
+                  <Gift className="h-4 w-4 mr-1" />
+                  Indicação
+                </TabsTrigger>
+                <TabsTrigger value="task">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Tarefa
+                </TabsTrigger>
+                <TabsTrigger value="funnel">
+                  <Clock className="h-4 w-4 mr-1" />
+                  Funil
+                </TabsTrigger>
+                <TabsTrigger value="history">
+                  <StickyNote className="h-4 w-4 mr-1" />
+                  Histórico
+                </TabsTrigger>
+              </TabsList>
+            );
+          })()}
 
           <ScrollArea className="flex-1 mt-4">
             {/* Info Tab */}

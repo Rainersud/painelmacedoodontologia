@@ -694,15 +694,6 @@ const Dashboard = () => {
 
         {/* Referral Ranking */}
         <ReferralRankingWidget />
-        </div>
-
-        {/* Credit Approved Patients - Sidebar on xl+, inline on smaller */}
-        <div className="xl:hidden">
-          <CreditApprovedWidget />
-        </div>
-        <div className="hidden xl:block w-72 shrink-0 space-y-4 sticky top-20 self-start">
-          <CreditApprovedWidget />
-        </div>
       </div>
     </AppLayout>
   );

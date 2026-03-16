@@ -22,6 +22,7 @@ export function useRealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['referral-dashboard'] });
         queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
         queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
+        queryClient.invalidateQueries({ queryKey: ['credit-approved-patients'] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => {
         queryClient.invalidateQueries({ queryKey: ['referrals'] });

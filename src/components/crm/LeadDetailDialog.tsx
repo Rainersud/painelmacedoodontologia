@@ -370,7 +370,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 <h4 className="font-medium text-sm flex items-center gap-2">
                   🎁 Status do Desconto de Comparecimento
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label>Status do desconto</Label>
                     <Select

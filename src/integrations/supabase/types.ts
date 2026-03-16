@@ -527,6 +527,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_active: boolean
           phone: string | null
           updated_at: string
           user_id: string
@@ -536,6 +537,7 @@ export type Database = {
           created_at?: string
           full_name: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -545,6 +547,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -666,6 +669,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_permissions: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          id: string
+          module: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

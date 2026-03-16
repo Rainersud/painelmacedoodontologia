@@ -63,6 +63,14 @@ const Funil = () => {
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);
+      } else if (newStatus === 'compareceu') {
+        // Move to compareceu and open triage
+        updateStatus.mutate({ leadId: lead.id, newStatus }, {
+          onSuccess: () => {
+            setTriageLead(lead);
+            setTriageDialogOpen(true);
+          },
+        });
       } else {
         updateStatus.mutate({ leadId: lead.id, newStatus });
       }

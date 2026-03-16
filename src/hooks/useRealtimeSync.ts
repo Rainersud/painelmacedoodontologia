@@ -48,6 +48,10 @@ export function useRealtimeSync() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_stage_history' }, () => {
         queryClient.invalidateQueries({ queryKey: ['stage-history'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_triage' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['patient-triage'] });
+        queryClient.invalidateQueries({ queryKey: ['credit-approved-patients'] });
+      })
       .subscribe();
 
     return () => {

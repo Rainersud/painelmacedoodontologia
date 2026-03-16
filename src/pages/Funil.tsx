@@ -145,8 +145,8 @@ const Funil = () => {
         </Button>
       </div>
 
-      <div className="h-[calc(100vh-10rem)] overflow-x-auto">
-        <div className="flex gap-3 min-w-max pb-4">
+      <div className="h-[calc(100vh-10rem)] overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-3 min-w-max pb-4 px-1">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalValueByStatus(stage.key);

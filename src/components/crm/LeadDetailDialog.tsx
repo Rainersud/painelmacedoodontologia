@@ -186,16 +186,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-base font-semibold text-primary">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+          <DialogTitle className="flex items-start sm:items-center gap-3">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-sm sm:text-base font-semibold text-primary">
                 {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </span>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-lg">{lead.name}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold text-base sm:text-lg truncate">{lead.name}</p>
                 <StarRating
                   rating={lead.interest_rating || 0}
                   onChange={(rating) => updateRating.mutate({ leadId: lead.id, rating })}

@@ -45,6 +45,7 @@ import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
+import { CreditApprovedWidget } from '@/components/dashboard/CreditApprovedWidget';
 
 type Period = 'diario' | 'semanal' | 'mensal';
 
@@ -222,7 +223,8 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Dashboard">
-      <div className="space-y-6">
+      <div className="flex gap-6">
+        <div className="flex-1 min-w-0 space-y-6">
         {/* Header with Period Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
@@ -693,6 +695,12 @@ const Dashboard = () => {
 
         {/* Referral Ranking */}
         <ReferralRankingWidget />
+        </div>
+
+        {/* Sidebar - Credit Approved Patients */}
+        <div className="hidden xl:block w-72 shrink-0 space-y-4 sticky top-20 self-start">
+          <CreditApprovedWidget />
+        </div>
       </div>
     </AppLayout>
   );

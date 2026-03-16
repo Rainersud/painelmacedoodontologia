@@ -67,6 +67,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
 
   const [activeTab, setActiveTab] = useState('info');
+  const [triageOpen, setTriageOpen] = useState(false);
   const [formData, setFormData] = useState({
     interest_product: '',
     estimated_value: '',

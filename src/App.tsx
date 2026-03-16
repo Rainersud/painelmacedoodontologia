@@ -27,6 +27,7 @@ const Alertas = lazy(() => import("./pages/Alertas"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Perfil = lazy(() => import("./pages/Perfil"));
+const CreditoLiberado = lazy(() => import("./pages/CreditoLiberado"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({

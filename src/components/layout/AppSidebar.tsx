@@ -4,6 +4,7 @@ import {
   Phone, 
   Gift,
   Calendar, 
+  CreditCard,
   Target, 
   Bell, 
   FileText, 

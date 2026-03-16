@@ -155,7 +155,7 @@ const Funil = () => {
             return (
               <div 
                 key={stage.key}
-                className="w-72 flex-shrink-0"
+                className="w-64 sm:w-72 flex-shrink-0"
                 onDragOver={(e) => handleDragOver(e, stage.key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}

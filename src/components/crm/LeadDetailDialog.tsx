@@ -680,6 +680,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </TabsContent>
           </ScrollArea>
         </Tabs>
+
+        <TriageFormDialog
+          lead={lead}
+          open={triageOpen}
+          onOpenChange={setTriageOpen}
+        />
       </DialogContent>
     </Dialog>
   );

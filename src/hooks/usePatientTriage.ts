@@ -33,6 +33,8 @@ export interface PatientTriageData {
   mirror_concern?: string | null;
   desired_smile_change?: string | null;
   desired_feeling?: string | null;
+  credit_status?: string | null;
+  credit_approved_value?: number | null;
 }
 
 export function usePatientTriage(leadId: string | undefined) {

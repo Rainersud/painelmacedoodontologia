@@ -204,7 +204,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
               {/* Identification */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary">Identificação</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Seu nome completo</Label>
                     <Input value={form.full_name || ''} onChange={e => updateField('full_name', e.target.value)} placeholder="Nome completo" />

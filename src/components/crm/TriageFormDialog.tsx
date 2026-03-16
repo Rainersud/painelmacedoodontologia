@@ -449,6 +449,50 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 </div>
               </div>
 
+              <Separator />
+
+              {/* Credit Limit */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-primary">Limite de Crédito</h3>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={form.credit_status === 'aprovado'}
+                        onCheckedChange={(checked) => {
+                          updateField('credit_status', checked ? 'aprovado' : 'pendente');
+                        }}
+                      />
+                      <Label className="text-xs font-normal cursor-pointer">Aprovado</Label>
+                    </div>
+                    {form.credit_status === 'aprovado' && (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Label className="text-xs whitespace-nowrap">Valor:</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="h-8 text-xs"
+                          value={form.credit_approved_value || ''}
+                          onChange={e => updateField('credit_approved_value', parseFloat(e.target.value) || 0)}
+                          placeholder="R$ 0,00"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={form.credit_status === 'negado'}
+                        onCheckedChange={(checked) => {
+                          updateField('credit_status', checked ? 'negado' : 'pendente');
+                          if (checked) updateField('credit_approved_value', 0);
+                        }}
+                      />
+                      <Label className="text-xs font-normal cursor-pointer">Negado</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Filled info */}
               {existingTriage?.filled_at && (
                 <div className="text-[10px] text-muted-foreground text-right">

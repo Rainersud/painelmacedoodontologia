@@ -500,7 +500,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {/* Action buttons */}

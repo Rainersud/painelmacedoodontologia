@@ -241,6 +241,15 @@ const Funil = () => {
         onConfirm={handleScheduleConfirm}
         isPending={updateStatus.isPending}
       />
+
+      <TriageFormDialog
+        lead={triageLead}
+        open={triageDialogOpen}
+        onOpenChange={(open) => {
+          setTriageDialogOpen(open);
+          if (!open) setTriageLead(null);
+        }}
+      />
     </AppLayout>
   );
 };

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
@@ -163,8 +163,8 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
+      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] h-[92vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
               <FileText className="h-5 w-5 text-primary" />
@@ -189,8 +189,8 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 pb-4">
-            <div ref={printRef} className="space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4">
+            <div ref={printRef} className="space-y-5 sm:space-y-6">
               {/* Intro text */}
               <div className="bg-primary/5 rounded-lg p-4 text-center">
                 <p className="text-sm font-medium text-primary">
@@ -500,7 +500,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {/* Action buttons */}

@@ -189,8 +189,8 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 pb-4">
-            <div ref={printRef} className="space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4">
+            <div ref={printRef} className="space-y-5 sm:space-y-6">
               {/* Intro text */}
               <div className="bg-primary/5 rounded-lg p-4 text-center">
                 <p className="text-sm font-medium text-primary">

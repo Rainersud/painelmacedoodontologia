@@ -163,7 +163,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -204,7 +204,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
               {/* Identification */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary">Identificação</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Seu nome completo</Label>
                     <Input value={form.full_name || ''} onChange={e => updateField('full_name', e.target.value)} placeholder="Nome completo" />
@@ -445,6 +445,50 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       placeholder="Ex: Confiante, Feliz, Livre..."
                       className="text-xs"
                     />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Credit Limit */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-primary">Limite de Crédito</h3>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={form.credit_status === 'aprovado'}
+                        onCheckedChange={(checked) => {
+                          updateField('credit_status', checked ? 'aprovado' : 'pendente');
+                        }}
+                      />
+                      <Label className="text-xs font-normal cursor-pointer">Aprovado</Label>
+                    </div>
+                    {form.credit_status === 'aprovado' && (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Label className="text-xs whitespace-nowrap">Valor:</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="h-8 text-xs"
+                          value={form.credit_approved_value || ''}
+                          onChange={e => updateField('credit_approved_value', parseFloat(e.target.value) || 0)}
+                          placeholder="R$ 0,00"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={form.credit_status === 'negado'}
+                        onCheckedChange={(checked) => {
+                          updateField('credit_status', checked ? 'negado' : 'pendente');
+                          if (checked) updateField('credit_approved_value', 0);
+                        }}
+                      />
+                      <Label className="text-xs font-normal cursor-pointer">Negado</Label>
+                    </div>
                   </div>
                 </div>
               </div>

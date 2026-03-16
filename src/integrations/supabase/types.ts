@@ -530,6 +530,8 @@ export type Database = {
           completed_at: string | null
           cpf: string | null
           created_at: string
+          credit_approved_value: number | null
+          credit_status: string | null
           desired_feeling: string | null
           desired_smile_change: string | null
           difficulty_chewing: boolean | null
@@ -564,6 +566,8 @@ export type Database = {
           completed_at?: string | null
           cpf?: string | null
           created_at?: string
+          credit_approved_value?: number | null
+          credit_status?: string | null
           desired_feeling?: string | null
           desired_smile_change?: string | null
           difficulty_chewing?: boolean | null
@@ -598,6 +602,8 @@ export type Database = {
           completed_at?: string | null
           cpf?: string | null
           created_at?: string
+          credit_approved_value?: number | null
+          credit_status?: string | null
           desired_feeling?: string | null
           desired_smile_change?: string | null
           difficulty_chewing?: boolean | null

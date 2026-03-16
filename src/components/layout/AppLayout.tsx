@@ -21,7 +21,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="h-full px-8 flex items-center justify-between">
+            <div className="h-full px-4 sm:px-8 flex items-center justify-between">
               <div className="flex items-center gap-6">
                 {title && (
                   <h1 className="text-xl font-semibold text-foreground tracking-tight">{title}</h1>
@@ -61,7 +61,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
             </div>
           </header>
           
-          <div className="flex-1 p-8 bg-muted/30">
+          <div className="flex-1 p-4 sm:p-8 bg-muted/30">
             {children}
           </div>
         </main>

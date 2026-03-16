@@ -521,6 +521,119 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_triage: {
+        Row: {
+          address: string | null
+          ashamed_to_smile: boolean | null
+          birth_date: string | null
+          cep: string | null
+          completed_at: string | null
+          cpf: string | null
+          created_at: string
+          desired_feeling: string | null
+          desired_smile_change: string | null
+          difficulty_chewing: boolean | null
+          discomfort_duration: string | null
+          email: string | null
+          facebook: string | null
+          fear_of_dentist: string | null
+          filled_at: string
+          filled_by: string
+          full_name: string | null
+          id: string
+          instagram: string | null
+          lead_id: string
+          mirror_concern: string | null
+          motivation: string[] | null
+          motivation_other: string | null
+          nickname: string | null
+          phone: string | null
+          previous_implants: boolean | null
+          profession: string | null
+          prosthesis_duration: string | null
+          smile_discomfort_score: number | null
+          triage_completed: boolean
+          updated_at: string
+          uses_prosthesis: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          ashamed_to_smile?: boolean | null
+          birth_date?: string | null
+          cep?: string | null
+          completed_at?: string | null
+          cpf?: string | null
+          created_at?: string
+          desired_feeling?: string | null
+          desired_smile_change?: string | null
+          difficulty_chewing?: boolean | null
+          discomfort_duration?: string | null
+          email?: string | null
+          facebook?: string | null
+          fear_of_dentist?: string | null
+          filled_at?: string
+          filled_by: string
+          full_name?: string | null
+          id?: string
+          instagram?: string | null
+          lead_id: string
+          mirror_concern?: string | null
+          motivation?: string[] | null
+          motivation_other?: string | null
+          nickname?: string | null
+          phone?: string | null
+          previous_implants?: boolean | null
+          profession?: string | null
+          prosthesis_duration?: string | null
+          smile_discomfort_score?: number | null
+          triage_completed?: boolean
+          updated_at?: string
+          uses_prosthesis?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          ashamed_to_smile?: boolean | null
+          birth_date?: string | null
+          cep?: string | null
+          completed_at?: string | null
+          cpf?: string | null
+          created_at?: string
+          desired_feeling?: string | null
+          desired_smile_change?: string | null
+          difficulty_chewing?: boolean | null
+          discomfort_duration?: string | null
+          email?: string | null
+          facebook?: string | null
+          fear_of_dentist?: string | null
+          filled_at?: string
+          filled_by?: string
+          full_name?: string | null
+          id?: string
+          instagram?: string | null
+          lead_id?: string
+          mirror_concern?: string | null
+          motivation?: string[] | null
+          motivation_other?: string | null
+          nickname?: string | null
+          phone?: string | null
+          previous_implants?: boolean | null
+          profession?: string | null
+          prosthesis_duration?: string | null
+          smile_discomfort_score?: number | null
+          triage_completed?: boolean
+          updated_at?: string
+          uses_prosthesis?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_triage_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

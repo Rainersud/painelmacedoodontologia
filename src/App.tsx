@@ -6,14 +6,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-// Lazy load pages for better performance
+const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
-
 const Funil = lazy(() => import("./pages/Funil"));
 const Tarefas = lazy(() => import("./pages/Tarefas"));
 const Indicacoes = lazy(() => import("./pages/Indicacoes"));
@@ -61,23 +61,23 @@ const App = () => (
             <Sonner />
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/call-center" element={<DashboardCallCenter />} />
-                <Route path="/crm" element={<CRMDashboard />} />
-                
-                <Route path="/funil" element={<Funil />} />
-                <Route path="/indicacoes" element={<Indicacoes />} />
-                <Route path="/tarefas" element={<Tarefas />} />
-                <Route path="/agendamentos" element={<Agendamentos />} />
-                <Route path="/metas" element={<Metas />} />
-                <Route path="/metas-clinica" element={<MetasClinica />} />
-                <Route path="/bonus-metas" element={<BonusMetas />} />
-                <Route path="/plano-incentivo" element={<PlanoIncentivoV2 />} />
-                <Route path="/incentivos" element={<PlanoIncentivo />} />
-                <Route path="/alertas" element={<Alertas />} />
-                <Route path="/relatorios" element={<Relatorios />} />
-                <Route path="/configuracoes" element={<Configuracoes />} />
-                <Route path="/perfil" element={<Perfil />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/call-center" element={<ProtectedRoute><DashboardCallCenter /></ProtectedRoute>} />
+                <Route path="/crm" element={<ProtectedRoute><CRMDashboard /></ProtectedRoute>} />
+                <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
+                <Route path="/indicacoes" element={<ProtectedRoute><Indicacoes /></ProtectedRoute>} />
+                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
+                <Route path="/agendamentos" element={<ProtectedRoute><Agendamentos /></ProtectedRoute>} />
+                <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
+                <Route path="/metas-clinica" element={<ProtectedRoute><MetasClinica /></ProtectedRoute>} />
+                <Route path="/bonus-metas" element={<ProtectedRoute><BonusMetas /></ProtectedRoute>} />
+                <Route path="/plano-incentivo" element={<ProtectedRoute><PlanoIncentivoV2 /></ProtectedRoute>} />
+                <Route path="/incentivos" element={<ProtectedRoute><PlanoIncentivo /></ProtectedRoute>} />
+                <Route path="/alertas" element={<ProtectedRoute><Alertas /></ProtectedRoute>} />
+                <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+                <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />
+                <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

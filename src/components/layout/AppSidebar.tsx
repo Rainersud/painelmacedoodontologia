@@ -11,7 +11,9 @@ import {
   LogOut,
   UserCircle
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 import {
   Sidebar,
@@ -36,36 +38,43 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Call Center', url: '/call-center', icon: Phone },
-  
-  { title: 'Funil de Vendas', url: '/funil', icon: Phone },
-  { title: 'Indicações', url: '/indicacoes', icon: Gift },
-  { title: 'Agendamentos', url: '/agendamentos', icon: Calendar },
+  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
+  { title: 'Call Center', url: '/call-center', icon: Phone, module: 'call_center' },
+  { title: 'Funil de Vendas', url: '/funil', icon: Phone, module: 'funil' },
+  { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
+  { title: 'Agendamentos', url: '/agendamentos', icon: Calendar, module: 'agendamentos' },
 ];
 
 const managementNavItems = [
-  { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target },
-  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target },
-  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target },
-  { title: 'Alertas', url: '/alertas', icon: Bell },
-  { title: 'Relatórios', url: '/relatorios', icon: FileText },
+  { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
+  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
+  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target, module: 'plano_incentivo' },
+  { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
+  { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
 ];
 
 const adminNavItems = [
-  { title: 'Configurações', url: '/configuracoes', icon: Settings },
+  { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
-  const fullName = 'Administrador';
-  const role = 'admin';
-  const isAdmin = true;
+  const navigate = useNavigate();
+  const { fullName, role, isAdmin, signOut } = useAuth();
+  const { canView } = usePermissions();
 
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
-  const NavItem = ({ item }: { item: { title: string; url: string; icon: React.ElementType } }) => (
+  const filterVisible = (items: typeof mainNavItems) => 
+    items.filter(item => isAdmin || canView(item.module));
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  const NavItem = ({ item }: { item: typeof mainNavItems[0] }) => (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive(item.url)}>
         <NavLink 
@@ -84,6 +93,9 @@ export function AppSidebar() {
     </SidebarMenuItem>
   );
 
+  const visibleMain = filterVisible(mainNavItems);
+  const visibleMgmt = filterVisible(managementNavItems);
+
   return (
     <Sidebar className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border px-6 py-5">
@@ -99,31 +111,35 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-4 py-6">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-            Principal
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {mainNavItems.map((item) => (
-                <NavItem key={item.title} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleMain.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
+              Principal
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {visibleMain.map((item) => (
+                  <NavItem key={item.title} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-            Gestão
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {managementNavItems.map((item) => (
-                <NavItem key={item.title} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleMgmt.length > 0 && (
+          <SidebarGroup className="mt-6">
+            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
+              Gestão
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {visibleMgmt.map((item) => (
+                  <NavItem key={item.title} item={item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {isAdmin && (
           <SidebarGroup className="mt-6">
@@ -155,7 +171,7 @@ export function AppSidebar() {
                   {fullName || 'Usuário'}
                 </span>
                 <span className="text-xs text-sidebar-muted capitalize">
-                  {role === 'admin' ? 'Administrador' : 'Agente'}
+                  {role === 'admin' ? 'Administrador' : 'Colaborador'}
                 </span>
               </div>
             </button>
@@ -166,6 +182,11 @@ export function AppSidebar() {
                 <UserCircle className="h-4 w-4" />
                 Meu Perfil
               </NavLink>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+              <LogOut className="h-4 w-4" />
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -24,15 +24,11 @@ function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps)
   const location = useLocation();
   const [forceComplete, setForceComplete] = useState(false);
 
-  // Safety timeout to prevent infinite loading
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setForceComplete(true);
-    }, 3000);
+    const timeout = setTimeout(() => setForceComplete(true), 5000);
     return () => clearTimeout(timeout);
   }, []);
 
-  // Only wait for initial auth loading if not forced
   if (loading && !forceComplete) {
     return <LoadingScreen />;
   }
@@ -41,7 +37,6 @@ function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps)
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // If requiring admin, wait for role to load (but not forever)
   if (requireAdmin) {
     if (roleLoading && !forceComplete) {
       return <LoadingScreen />;

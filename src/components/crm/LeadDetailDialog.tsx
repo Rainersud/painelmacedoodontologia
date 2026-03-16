@@ -33,6 +33,8 @@ import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
+import { TriageFormDialog } from './TriageFormDialog';
+import { usePatientTriage } from '@/hooks/usePatientTriage';
 import {
   Phone,
   MessageSquare,
@@ -45,6 +47,7 @@ import {
   Trash2,
   Gift,
   Clock,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

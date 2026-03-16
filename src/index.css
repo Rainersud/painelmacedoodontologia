@@ -221,4 +221,32 @@
   .monday-card-colored {
     @apply rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5;
   }
+
+  /* Responsive utilities */
+  .responsive-grid-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  .responsive-grid-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .responsive-grid-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+
+  .responsive-grid-5 {
+    @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4;
+  }
+
+  /* Smart scroll containers */
+  .scroll-container-x {
+    @apply overflow-x-auto overflow-y-hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-container-y {
+    @apply overflow-y-auto overflow-x-hidden;
+    -webkit-overflow-scrolling: touch;
+  }
 }

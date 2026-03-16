@@ -145,17 +145,17 @@ const Funil = () => {
         </Button>
       </div>
 
-      <div className="h-[calc(100vh-10rem)] overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-3 min-w-max pb-4 px-1">
+      <div className="h-[calc(100vh-11rem)] scroll-container-x">
+        <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalValueByStatus(stage.key);
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             
             return (
-              <div 
+                <div 
                 key={stage.key}
-                className="w-64 sm:w-72 flex-shrink-0"
+                className="w-60 sm:w-68 lg:w-72 flex-shrink-0"
                 onDragOver={(e) => handleDragOver(e, stage.key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}

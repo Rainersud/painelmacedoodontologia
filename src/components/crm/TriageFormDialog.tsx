@@ -163,7 +163,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -221,7 +221,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                     <Label className="text-xs">Email</Label>
                     <Input type="email" value={form.email || ''} onChange={e => updateField('email', e.target.value)} placeholder="email@exemplo.com" />
                   </div>
-                  <div className="col-span-2 space-y-1">
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
                     <Label className="text-xs">Endereço</Label>
                     <Input value={form.address || ''} onChange={e => updateField('address', e.target.value)} placeholder="Rua, número, bairro, cidade" />
                   </div>
@@ -504,26 +504,28 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
         )}
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 px-6 py-4 border-t bg-muted/30">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30">
           <Button onClick={handleSave} disabled={saveTriage.isPending} className="flex-1">
             {saveTriage.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Salvar Ficha
           </Button>
-          <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha">
-            <Printer className="h-4 w-4" />
-          </Button>
-          {!isCompleted && (
-            <Button
-              variant="outline"
-              onClick={handleMarkCompleted}
-              disabled={markCompleted.isPending}
-              className="text-success border-success/30 hover:bg-success/10"
-              title="Marcar como Triagem Concluída"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Concluir
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha" className="shrink-0">
+              <Printer className="h-4 w-4" />
             </Button>
-          )}
+            {!isCompleted && (
+              <Button
+                variant="outline"
+                onClick={handleMarkCompleted}
+                disabled={markCompleted.isPending}
+                className="text-success border-success/30 hover:bg-success/10 flex-1 sm:flex-none"
+                title="Marcar como Triagem Concluída"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Concluir
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

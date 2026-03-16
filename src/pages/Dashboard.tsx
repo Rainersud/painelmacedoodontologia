@@ -224,20 +224,20 @@ const Dashboard = () => {
     <AppLayout title="Dashboard">
       <div className="space-y-6">
         {/* Header with Period Selector */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">Visão Geral</h1>
-            <p className="text-muted-foreground">Acompanhe os principais indicadores</p>
+            <h1 className="text-xl sm:text-2xl font-bold">Visão Geral</h1>
+            <p className="text-sm text-muted-foreground">Acompanhe os principais indicadores</p>
           </div>
           <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
             <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="diario" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="diario" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Hoje
               </TabsTrigger>
-              <TabsTrigger value="semanal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="semanal" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Semana
               </TabsTrigger>
-              <TabsTrigger value="mensal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="mensal" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Mês
               </TabsTrigger>
             </TabsList>
@@ -566,7 +566,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {(() => {
                 const leads = allLeads || [];
                 const liberados = leads.filter((l: any) => l.attendance_discount_status === 'liberado').length;
@@ -582,12 +582,12 @@ const Dashboard = () => {
                   { label: 'Impacto Financeiro', value: `R$ ${impacto.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: DollarSign, color: 'hsl(var(--chart-5))' },
                 ];
               })().map((item) => (
-                <div key={item.label} className="p-4 rounded-xl bg-muted/30 text-center">
-                  <div className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
-                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
+                <div key={item.label} className="p-3 sm:p-4 rounded-xl bg-muted/30 text-center">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: `${item.color}20` }}>
+                    <item.icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: item.color }} />
                   </div>
-                  <p className="text-xl font-bold">{typeof item.value === 'number' ? item.value : item.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                  <p className="text-lg sm:text-xl font-bold break-words">{typeof item.value === 'number' ? item.value : item.value}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -603,7 +603,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
                 { label: 'Indicações no Mês', value: referralMetrics?.totalReferralsMonth || 0, icon: UserPlus, color: 'hsl(var(--chart-5))' },
                 { label: 'Total Indicações', value: referralMetrics?.totalReferralsAll || 0, icon: Users, color: 'hsl(var(--primary))' },

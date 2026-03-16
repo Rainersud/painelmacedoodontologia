@@ -153,9 +153,9 @@ const Funil = () => {
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             
             return (
-              <div 
+                <div 
                 key={stage.key}
-                className="w-64 sm:w-72 flex-shrink-0"
+                className="w-60 sm:w-68 lg:w-72 flex-shrink-0"
                 onDragOver={(e) => handleDragOver(e, stage.key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}

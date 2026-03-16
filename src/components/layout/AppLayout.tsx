@@ -4,6 +4,7 @@ import { Bell, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -11,8 +12,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, title }: AppLayoutProps) {
-  const fullName = 'Administrador';
-  const initials = 'AD';
+  const { fullName, role } = useAuth();
+  const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   return (
     <SidebarProvider>
@@ -28,7 +29,6 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               </div>
               
               <div className="flex items-center gap-4">
-                {/* Search */}
                 <div className="hidden md:flex relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -37,19 +37,19 @@ export function AppLayout({ children, title }: AppLayoutProps) {
                   />
                 </div>
 
-                {/* Notifications */}
                 <Button variant="ghost" size="icon" className="relative h-9 w-9">
                   <Bell className="h-5 w-5 text-muted-foreground" />
                   <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 </Button>
 
-                {/* User info */}
                 <div className="flex items-center gap-3 pl-4 border-l border-border">
                   <div className="hidden sm:flex flex-col items-end">
                     <span className="text-sm font-medium text-foreground">
                       {fullName?.split(' ')[0] || 'Usuário'}
                     </span>
-                    <span className="text-xs text-muted-foreground">Online</span>
+                    <span className="text-xs text-muted-foreground">
+                      {role === 'admin' ? 'Administrador' : 'Colaborador'}
+                    </span>
                   </div>
                   <Avatar className="h-9 w-9 ring-2 ring-primary/20">
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">

@@ -14,19 +14,29 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Verify caller is admin
-    const authHeader = req.headers.get('Authorization')!
-    const callerClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } },
-    })
-    const { data: { user: caller } } = await callerClient.auth.getUser()
-    if (!caller) {
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(JSON.stringify({ error: 'Configuração do servidor ausente' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+
+    // Verify caller is admin using their JWT
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Não autenticado' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user: caller }, error: authError } = await adminClient.auth.getUser(token)
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ error: 'Não autenticado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     // Check if caller is admin
     const { data: isAdmin } = await adminClient.rpc('is_admin', { _user_id: caller.id })

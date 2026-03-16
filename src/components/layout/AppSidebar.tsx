@@ -4,6 +4,7 @@ import {
   Phone, 
   Gift,
   Calendar, 
+  CreditCard,
   Target, 
   Bell, 
   FileText, 
@@ -43,6 +44,7 @@ const mainNavItems = [
   { title: 'Funil de Vendas', url: '/funil', icon: Phone, module: 'funil' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
   { title: 'Agendamentos', url: '/agendamentos', icon: Calendar, module: 'agendamentos' },
+  { title: 'Crédito Liberado', url: '/credito-liberado', icon: CreditCard, module: 'credito_liberado' },
 ];
 
 const managementNavItems = [

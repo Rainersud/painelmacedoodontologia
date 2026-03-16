@@ -252,9 +252,10 @@ const Leads = () => {
         </div>
 
         {/* Leads Table */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm overflow-hidden">
           <CardContent className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="font-semibold">Lead</TableHead>

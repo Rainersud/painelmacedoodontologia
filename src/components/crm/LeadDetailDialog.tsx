@@ -262,48 +262,49 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         </DialogTitle>
       </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = lead.status === 'compareceu' || 
               ['orcamentos_abertos', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado', 'tratamento_andamento', 'concluido', 'pos_venda'].includes(lead.status);
-            const cols = showTriage ? 7 : 6;
             return (
-              <TabsList className={`grid w-full`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-                <TabsTrigger value="info">
-                  <User className="h-4 w-4 mr-1" />
-                  Dados
-                </TabsTrigger>
-                <TabsTrigger value="status">
-                  <ArrowRight className="h-4 w-4 mr-1" />
-                  Status
-                </TabsTrigger>
-                {showTriage && (
-                  <TabsTrigger value="triage" onClick={() => setTriageOpen(true)}>
-                    <FileText className="h-4 w-4 mr-1" />
-                    Triagem
+              <div className="overflow-x-auto -mx-1 px-1">
+                <TabsList className="inline-flex w-auto min-w-full">
+                  <TabsTrigger value="info" className="text-xs sm:text-sm gap-1">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Dados</span>
                   </TabsTrigger>
-                )}
-                <TabsTrigger value="referral">
-                  <Gift className="h-4 w-4 mr-1" />
-                  Indicação
-                </TabsTrigger>
-                <TabsTrigger value="task">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Tarefa
-                </TabsTrigger>
-                <TabsTrigger value="funnel">
-                  <Clock className="h-4 w-4 mr-1" />
-                  Funil
-                </TabsTrigger>
-                <TabsTrigger value="history">
-                  <StickyNote className="h-4 w-4 mr-1" />
-                  Histórico
-                </TabsTrigger>
-              </TabsList>
+                  <TabsTrigger value="status" className="text-xs sm:text-sm gap-1">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Status</span>
+                  </TabsTrigger>
+                  {showTriage && (
+                    <TabsTrigger value="triage" onClick={() => setTriageOpen(true)} className="text-xs sm:text-sm gap-1">
+                      <FileText className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Triagem</span>
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="referral" className="text-xs sm:text-sm gap-1">
+                    <Gift className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Indicação</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Tarefa</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="funnel" className="text-xs sm:text-sm gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Funil</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs sm:text-sm gap-1">
+                    <StickyNote className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Histórico</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             );
           })()}
 
-          <ScrollArea className="flex-1 mt-4">
+          <ScrollArea className="flex-1 mt-4 pb-4">
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-2 gap-4">

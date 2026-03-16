@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -32,11 +32,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<'admin' | 'agente'>('agente');
   const [roleLoading, setRoleLoading] = useState(true);
   const [fullName, setFullName] = useState('');
+  const initialized = useRef(false);
 
   const fetchUserData = async (userId: string) => {
     setRoleLoading(true);
     try {
-      // Fetch role
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -44,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
       setRole((roleData?.role as 'admin' | 'agente') || 'agente');
 
-      // Fetch profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
@@ -59,12 +58,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Skip the first event if getSession already handled it
+      if (!initialized.current) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Use setTimeout to avoid Supabase deadlock
         setTimeout(() => fetchUserData(session.user.id), 0);
       } else {
         setRole('agente');
@@ -74,7 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // THEN check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -84,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRoleLoading(false);
       }
       setLoading(false);
+      // Mark as initialized so onAuthStateChange can take over
+      initialized.current = true;
     });
 
     return () => subscription.unsubscribe();

@@ -221,7 +221,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                     <Label className="text-xs">Email</Label>
                     <Input type="email" value={form.email || ''} onChange={e => updateField('email', e.target.value)} placeholder="email@exemplo.com" />
                   </div>
-                  <div className="col-span-2 space-y-1">
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
                     <Label className="text-xs">Endereço</Label>
                     <Input value={form.address || ''} onChange={e => updateField('address', e.target.value)} placeholder="Rua, número, bairro, cidade" />
                   </div>

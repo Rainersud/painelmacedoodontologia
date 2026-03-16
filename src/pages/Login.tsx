@@ -9,7 +9,7 @@ import { Loader2, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Login() {
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,21 +33,14 @@ export default function Login() {
       return;
     }
     setSubmitting(true);
-    const { error } = await (await import('@/contexts/AuthContext')).useAuth
-      ? { error: null }
-      : { error: null };
-
-    // Direct call
-    const { signIn } = await import('@/integrations/supabase/client').then(({ supabase }) => ({
-      signIn: async () => supabase.auth.signInWithPassword({ email, password }),
-    }));
-    const result = await signIn();
+    const { error } = await signIn(email, password);
     setSubmitting(false);
 
-    if (result.error) {
-      toast.error(result.error.message === 'Invalid login credentials'
-        ? 'E-mail ou senha incorretos'
-        : result.error.message
+    if (error) {
+      toast.error(
+        error.message === 'Invalid login credentials'
+          ? 'E-mail ou senha incorretos'
+          : error.message
       );
     }
   };

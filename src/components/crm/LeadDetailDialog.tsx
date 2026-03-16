@@ -33,6 +33,8 @@ import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
+import { TriageFormDialog } from './TriageFormDialog';
+import { usePatientTriage } from '@/hooks/usePatientTriage';
 import {
   Phone,
   MessageSquare,
@@ -45,6 +47,7 @@ import {
   Trash2,
   Gift,
   Clock,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -64,6 +67,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
 
   const [activeTab, setActiveTab] = useState('info');
+  const [triageOpen, setTriageOpen] = useState(false);
   const [formData, setFormData] = useState({
     interest_product: '',
     estimated_value: '',
@@ -259,7 +263,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="info">
               <User className="h-4 w-4 mr-1" />
               Dados
@@ -267,6 +271,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsTrigger value="status">
               <ArrowRight className="h-4 w-4 mr-1" />
               Status
+            </TabsTrigger>
+            <TabsTrigger value="triage" onClick={() => setTriageOpen(true)}>
+              <FileText className="h-4 w-4 mr-1" />
+              Triagem
             </TabsTrigger>
             <TabsTrigger value="referral">
               <Gift className="h-4 w-4 mr-1" />
@@ -672,6 +680,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </TabsContent>
           </ScrollArea>
         </Tabs>
+
+        <TriageFormDialog
+          lead={lead}
+          open={triageOpen}
+          onOpenChange={setTriageOpen}
+        />
       </DialogContent>
     </Dialog>
   );

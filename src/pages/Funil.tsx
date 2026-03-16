@@ -9,6 +9,7 @@ import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
+import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,10 @@ const Funil = () => {
   // Scheduling dialog state
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);
+
+  // Triage dialog state
+  const [triageDialogOpen, setTriageDialogOpen] = useState(false);
+  const [triageLead, setTriageLead] = useState<Lead | null>(null);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -58,6 +63,14 @@ const Funil = () => {
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);
+      } else if (newStatus === 'compareceu') {
+        // Move to compareceu and open triage
+        updateStatus.mutate({ leadId: lead.id, newStatus }, {
+          onSuccess: () => {
+            setTriageLead(lead);
+            setTriageDialogOpen(true);
+          },
+        });
       } else {
         updateStatus.mutate({ leadId: lead.id, newStatus });
       }
@@ -227,6 +240,15 @@ const Funil = () => {
         leadName={pendingScheduleLead?.name || ''}
         onConfirm={handleScheduleConfirm}
         isPending={updateStatus.isPending}
+      />
+
+      <TriageFormDialog
+        lead={triageLead}
+        open={triageDialogOpen}
+        onOpenChange={(open) => {
+          setTriageDialogOpen(open);
+          if (!open) setTriageLead(null);
+        }}
       />
     </AppLayout>
   );

@@ -27,6 +27,10 @@ const Funil = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);
 
+  // Triage dialog state
+  const [triageDialogOpen, setTriageDialogOpen] = useState(false);
+  const [triageLead, setTriageLead] = useState<Lead | null>(null);
+
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
     e.dataTransfer.setData('text/plain', lead.id);

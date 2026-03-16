@@ -9,6 +9,7 @@ import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
+import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
 

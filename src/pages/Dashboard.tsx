@@ -224,20 +224,20 @@ const Dashboard = () => {
     <AppLayout title="Dashboard">
       <div className="space-y-6">
         {/* Header with Period Selector */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">Visão Geral</h1>
-            <p className="text-muted-foreground">Acompanhe os principais indicadores</p>
+            <h1 className="text-xl sm:text-2xl font-bold">Visão Geral</h1>
+            <p className="text-sm text-muted-foreground">Acompanhe os principais indicadores</p>
           </div>
           <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
             <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="diario" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="diario" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Hoje
               </TabsTrigger>
-              <TabsTrigger value="semanal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="semanal" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Semana
               </TabsTrigger>
-              <TabsTrigger value="mensal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger value="mensal" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Mês
               </TabsTrigger>
             </TabsList>

@@ -33,6 +33,24 @@ const Funil = () => {
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [triageLead, setTriageLead] = useState<Lead | null>(null);
 
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
+
+  // Filtered leads
+  const filteredLeads = useMemo(() => {
+    if (!leads) return [];
+    return leads.filter(lead => {
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = !query || 
+        lead.name.toLowerCase().includes(query) ||
+        lead.phone.includes(query) ||
+        (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
+      const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
+      return matchesSearch && matchesTreatment;
+    });
+  }, [leads, searchQuery, treatmentFilter]);
+
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
     e.dataTransfer.setData('text/plain', lead.id);

@@ -46,6 +46,7 @@ import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
+import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';

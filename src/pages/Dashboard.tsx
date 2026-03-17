@@ -226,6 +226,9 @@ const Dashboard = () => {
   return (
     <AppLayout title="Dashboard">
       <div className="space-y-6">
+        {/* Pending Tasks Alert Banner - TOP PRIORITY */}
+        <PendingTasksBanner />
+
         {/* Header with Period Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>

@@ -130,6 +130,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   const handleSaveInfo = () => {
     const updates: Partial<Lead> = {
+      name: formData.name,
+      phone: formData.phone,
       interest_product: formData.interest_product || null,
       estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
       email: formData.email || null,

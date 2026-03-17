@@ -43,10 +43,10 @@ export interface BonusTarget {
 
 const metricLabels: Record<string, string> = {
   novos_leads: 'Novos Leads',
-  agendamentos: 'Agendamentos',
-  comparecimentos: 'Comparecimentos',
+  agendamentos: 'Agendado',
+  comparecimentos: 'Compareceu',
   resgatados: 'Resgatados',
-  fechados: 'Fechados',
+  fechados: 'Venda Realizada',
 };
 
 const metricColors: Record<string, string> = {

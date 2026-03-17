@@ -185,7 +185,7 @@ export function useClinicGoals() {
         },
         {
           key: 'agendamentos',
-          label: 'Agendamentos',
+          label: 'Agendado',
           target: agendamentosTarget,
           current: agendamentosCount || 0,
           rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0,

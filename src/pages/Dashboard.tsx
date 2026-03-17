@@ -435,8 +435,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Today Tasks Widget */}
-        <TodayTasksWidget />
+        {/* (Tasks widget moved above charts) */}
 
         {/* Key Metrics Row */}
         <div className="grid gap-6 lg:grid-cols-2">

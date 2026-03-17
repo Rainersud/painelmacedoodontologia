@@ -271,7 +271,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = lead.status === 'compareceu' || 
-              ['orcamentos_abertos', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado', 'tratamento_andamento', 'concluido', 'pos_venda'].includes(lead.status);
+              ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
             return (
               <div className="overflow-x-auto -mx-1 px-1">
                 <TabsList className="inline-flex w-auto min-w-full">

@@ -43,7 +43,7 @@ const mainNavItems = [
   { title: 'Call Center', url: '/call-center', icon: Phone, module: 'call_center' },
   { title: 'Funil de Vendas', url: '/funil', icon: Phone, module: 'funil' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
-  { title: 'Agendamentos', url: '/agendamentos', icon: Calendar, module: 'agendamentos' },
+  { title: 'Tarefas', url: '/tarefas', icon: Calendar, module: 'tarefas' },
   { title: 'Crédito Liberado', url: '/credito-liberado', icon: CreditCard, module: 'credito_liberado' },
 ];
 

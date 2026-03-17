@@ -45,6 +45,7 @@ import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
+import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';
@@ -427,6 +428,9 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Today Tasks Widget */}
+        <TodayTasksWidget />
+
         {/* Key Metrics Row */}
         <div className="grid gap-6 lg:grid-cols-2">
           <KeyMetricsWidget 
@@ -435,7 +439,7 @@ const Dashboard = () => {
             custoFechamento={430}
             breakEven={2}
           />
-          <ClinicGoalsWidget 
+          <ClinicGoalsWidget
             currentLeads={metrics?.newLeads || 0}
             currentAgendamentos={metrics?.scheduledAppointments || 0}
             currentComparecimentos={0}

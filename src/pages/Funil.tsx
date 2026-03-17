@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Plus, Search, X } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -30,6 +32,24 @@ const Funil = () => {
   // Triage dialog state
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [triageLead, setTriageLead] = useState<Lead | null>(null);
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
+
+  // Filtered leads
+  const filteredLeads = useMemo(() => {
+    if (!leads) return [];
+    return leads.filter(lead => {
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = !query || 
+        lead.name.toLowerCase().includes(query) ||
+        lead.phone.includes(query) ||
+        (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
+      const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
+      return matchesSearch && matchesTreatment;
+    });
+  }, [leads, searchQuery, treatmentFilter]);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -105,8 +125,8 @@ const Funil = () => {
   }, []);
 
   const getLeadsByStatus = useCallback((status: LeadStatus) => {
-    return leads?.filter(lead => lead.status === status) || [];
-  }, [leads]);
+    return filteredLeads.filter(lead => lead.status === status);
+  }, [filteredLeads]);
 
   const getTotalValueByStatus = useCallback((status: LeadStatus) => {
     return getLeadsByStatus(status).reduce((sum, lead) => 
@@ -134,15 +154,51 @@ const Funil = () => {
 
   return (
     <AppLayout title="Funil de Vendas">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground">
-          {leads?.length || 0} contatos no funil
-        </p>
-        <Button onClick={() => setAddLeadOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Adicionar Lead
-        </Button>
+      {/* Header with Search and Add */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {filteredLeads.length} contatos no funil
+            {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
+          </p>
+          <Button onClick={() => setAddLeadOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar Lead
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <Select value={treatmentFilter} onValueChange={setTreatmentFilter}>
+            <SelectTrigger className="w-44 h-9 text-sm">
+              <SelectValue placeholder="Tratamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tratamentos</SelectItem>
+              <SelectItem value="implante">Implante</SelectItem>
+              <SelectItem value="protese_flexivel">Prótese Flexível</SelectItem>
+              <SelectItem value="protese_total">Prótese Total</SelectItem>
+              <SelectItem value="outro">Outro</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="h-[calc(100vh-11rem)] scroll-container-x">

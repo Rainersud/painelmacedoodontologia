@@ -207,7 +207,7 @@ export function useClinicGoals() {
         },
         {
           key: 'fechamentos',
-          label: 'Fechamentos',
+          label: 'Venda Realizada',
           target: fechamentosTarget,
           current: fechamentosCount || 0,
           rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0,

@@ -159,10 +159,22 @@ export function useClinicGoals() {
         return 'critical';
       };
 
+      // Also get revenue from leads.treatment_value for closed leads (fechado)
+      const { data: leadRevenueData } = await supabase
+        .from('leads')
+        .select('treatment_value')
+        .eq('status', 'fechado')
+        .not('treatment_value', 'is', null)
+        .gte('closed_at', monthStart.toISOString())
+        .lte('closed_at', monthEnd.toISOString());
+
+      const leadRevenue = (leadRevenueData || []).reduce((sum, l) => sum + (l.treatment_value || 0), 0);
+      const combinedRevenue = Math.max(totalRevenue, leadRevenue); // Use whichever is greater
+
       const goals: ClinicGoal[] = [
         {
           key: 'leads',
-          label: 'Leads Gerados',
+          label: 'Novos Leads',
           target: leadsTarget,
           current: leadsCount || 0,
           rate: 100,

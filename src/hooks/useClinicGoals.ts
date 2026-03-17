@@ -196,7 +196,7 @@ export function useClinicGoals() {
         },
         {
           key: 'comparecimentos',
-          label: 'Comparecimentos',
+          label: 'Compareceu',
           target: comparecimentosTarget,
           current: comparecimentosCount || 0,
           rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0,

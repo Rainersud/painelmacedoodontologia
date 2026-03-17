@@ -154,15 +154,51 @@ const Funil = () => {
 
   return (
     <AppLayout title="Funil de Vendas">
-      {/* Header with Add button */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground">
-          {leads?.length || 0} contatos no funil
-        </p>
-        <Button onClick={() => setAddLeadOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Adicionar Lead
-        </Button>
+      {/* Header with Search and Add */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {filteredLeads.length} contatos no funil
+            {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
+          </p>
+          <Button onClick={() => setAddLeadOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar Lead
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou telefone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <Select value={treatmentFilter} onValueChange={setTreatmentFilter}>
+            <SelectTrigger className="w-44 h-9 text-sm">
+              <SelectValue placeholder="Tratamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tratamentos</SelectItem>
+              <SelectItem value="implante">Implante</SelectItem>
+              <SelectItem value="protese_flexivel">Prótese Flexível</SelectItem>
+              <SelectItem value="protese_total">Prótese Total</SelectItem>
+              <SelectItem value="outro">Outro</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="h-[calc(100vh-11rem)] scroll-container-x">

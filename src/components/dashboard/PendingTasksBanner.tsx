@@ -117,9 +117,9 @@ export function PendingTasksBanner() {
                   {typeConfig.label}
                 </Badge>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-[10px] gap-1 text-success opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-7 px-2 text-[10px] gap-1 text-success border-success/30 hover:bg-success/10"
                   onClick={() => handleComplete(task.id)}
                   disabled={updateTask.isPending}
                 >

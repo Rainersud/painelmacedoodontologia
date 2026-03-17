@@ -45,6 +45,7 @@ import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
+import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';

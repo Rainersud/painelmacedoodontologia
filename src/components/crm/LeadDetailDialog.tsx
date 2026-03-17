@@ -315,6 +315,26 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="lead_name">Nome</Label>
+                  <Input
+                    id="lead_name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nome do lead"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lead_phone">Telefone</Label>
+                  <Input
+                    id="lead_phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="interest_product">Interesse de Tratamento</Label>
                   <Select
                     value={formData.interest_product || undefined}

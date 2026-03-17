@@ -301,6 +301,9 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Today Tasks Widget - Right after KPIs */}
+        <TodayTasksWidget />
+
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Leads Performance Chart */}

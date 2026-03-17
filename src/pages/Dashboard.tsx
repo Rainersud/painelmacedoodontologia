@@ -46,6 +46,7 @@ import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
 import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
+import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';
@@ -225,6 +226,9 @@ const Dashboard = () => {
   return (
     <AppLayout title="Dashboard">
       <div className="space-y-6">
+        {/* Pending Tasks Alert Banner - TOP PRIORITY */}
+        <PendingTasksBanner />
+
         {/* Header with Period Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
@@ -296,6 +300,9 @@ const Dashboard = () => {
             </Card>
           ))}
         </div>
+
+        {/* Today Tasks Widget - Right after KPIs */}
+        <TodayTasksWidget />
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -428,8 +435,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Today Tasks Widget */}
-        <TodayTasksWidget />
+        {/* (Tasks widget moved above charts) */}
 
         {/* Key Metrics Row */}
         <div className="grid gap-6 lg:grid-cols-2">

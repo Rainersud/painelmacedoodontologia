@@ -101,6 +101,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   useEffect(() => {
     if (lead) {
       setFormData({
+        name: lead.name || '',
+        phone: lead.phone || '',
         interest_product: lead.interest_product || '',
         estimated_value: String(lead.estimated_value || ''),
         email: lead.email || '',

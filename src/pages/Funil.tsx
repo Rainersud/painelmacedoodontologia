@@ -125,8 +125,8 @@ const Funil = () => {
   }, []);
 
   const getLeadsByStatus = useCallback((status: LeadStatus) => {
-    return leads?.filter(lead => lead.status === status) || [];
-  }, [leads]);
+    return filteredLeads.filter(lead => lead.status === status);
+  }, [filteredLeads]);
 
   const getTotalValueByStatus = useCallback((status: LeadStatus) => {
     return getLeadsByStatus(status).reduce((sum, lead) => 

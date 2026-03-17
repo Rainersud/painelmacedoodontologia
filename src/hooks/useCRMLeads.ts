@@ -93,10 +93,16 @@ export function useUpdateLeadStatus() {
         ...additionalData,
       };
       
+      // Map concluido/tratamento_andamento to fechado (Venda Realizada is the single final stage)
+      if (newStatus === 'concluido' || newStatus === 'tratamento_andamento') {
+        updates.status = 'fechado';
+      }
+
       // Add timestamp fields based on status
-      if (newStatus === 'resgatado') {
+      const effectiveStatus = (updates.status as string) || newStatus;
+      if (effectiveStatus === 'resgatado') {
         updates.rescued_at = new Date().toISOString();
-      } else if (newStatus === 'fechado') {
+      } else if (effectiveStatus === 'fechado') {
         updates.closed_at = new Date().toISOString();
         updates.completed_at = new Date().toISOString();
       } else if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {

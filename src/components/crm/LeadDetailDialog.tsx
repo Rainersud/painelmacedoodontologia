@@ -271,7 +271,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = lead.status === 'compareceu' || 
-              ['orcamentos_abertos', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado', 'tratamento_andamento', 'concluido', 'pos_venda'].includes(lead.status);
+              ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
             return (
               <div className="overflow-x-auto -mx-1 px-1">
                 <TabsList className="inline-flex w-auto min-w-full">
@@ -630,6 +630,33 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={2}
                 />
               </div>
+
+              {/* Rescue button for Follow-up 4 */}
+              {(lead.status === 'followup_4') && (
+                <div className="p-3 rounded-lg border-2 border-warning/40 bg-warning/5 space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
+                    🔄 Lead em Follow-up 4
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Este lead chegou ao último follow-up. Marque como resgatado se houver retorno positivo.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full border-warning/30 text-warning hover:bg-warning/10"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        leadId: lead.id,
+                        newStatus: 'resgatado' as LeadStatus,
+                      }, {
+                        onSuccess: () => onOpenChange(false),
+                      });
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    ✅ Marcar como Resgatado
+                  </Button>
+                </div>
+              )}
 
               <Button
                 className="w-full"

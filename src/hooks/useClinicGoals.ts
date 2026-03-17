@@ -159,10 +159,22 @@ export function useClinicGoals() {
         return 'critical';
       };
 
+      // Also get revenue from leads.treatment_value for closed leads (fechado)
+      const { data: leadRevenueData } = await supabase
+        .from('leads')
+        .select('treatment_value')
+        .eq('status', 'fechado')
+        .not('treatment_value', 'is', null)
+        .gte('closed_at', monthStart.toISOString())
+        .lte('closed_at', monthEnd.toISOString());
+
+      const leadRevenue = (leadRevenueData || []).reduce((sum, l) => sum + (l.treatment_value || 0), 0);
+      const combinedRevenue = Math.max(totalRevenue, leadRevenue); // Use whichever is greater
+
       const goals: ClinicGoal[] = [
         {
           key: 'leads',
-          label: 'Leads Gerados',
+          label: 'Novos Leads',
           target: leadsTarget,
           current: leadsCount || 0,
           rate: 100,
@@ -173,7 +185,7 @@ export function useClinicGoals() {
         },
         {
           key: 'agendamentos',
-          label: 'Agendamentos',
+          label: 'Agendado',
           target: agendamentosTarget,
           current: agendamentosCount || 0,
           rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0,
@@ -184,7 +196,7 @@ export function useClinicGoals() {
         },
         {
           key: 'comparecimentos',
-          label: 'Comparecimentos',
+          label: 'Compareceu',
           target: comparecimentosTarget,
           current: comparecimentosCount || 0,
           rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0,
@@ -195,7 +207,7 @@ export function useClinicGoals() {
         },
         {
           key: 'fechamentos',
-          label: 'Fechamentos',
+          label: 'Venda Realizada',
           target: fechamentosTarget,
           current: fechamentosCount || 0,
           rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0,
@@ -218,10 +230,10 @@ export function useClinicGoals() {
           key: 'faturamento',
           label: 'Faturamento',
           target: faturamentoTarget,
-          current: totalRevenue,
-          percentage: Math.min(100, Math.round((totalRevenue / faturamentoTarget) * 100)),
-          status: calculateStatus(totalRevenue, faturamentoTarget),
-          remaining: Math.max(0, faturamentoTarget - totalRevenue),
+          current: combinedRevenue,
+          percentage: Math.min(100, Math.round((combinedRevenue / faturamentoTarget) * 100)),
+          status: calculateStatus(combinedRevenue, faturamentoTarget),
+          remaining: Math.max(0, faturamentoTarget - combinedRevenue),
           isEditable: true,
         },
         {
@@ -248,10 +260,10 @@ export function useClinicGoals() {
 
       // Funnel data for visualization
       const funnelData = [
-        { stage: 'Leads', value: leadsCount || 0, rate: 100, targetRate: 100, color: 'hsl(var(--primary))', key: 'leads' },
-        { stage: 'Agendamentos', value: agendamentosCount || 0, rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0, targetRate: agendamentosTargetRate, color: 'hsl(var(--chart-1))', key: 'agendamentos' },
-        { stage: 'Comparecimentos', value: comparecimentosCount || 0, rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0, targetRate: comparecimentosTargetRate, color: 'hsl(var(--chart-2))', key: 'comparecimentos' },
-        { stage: 'Fechamentos', value: fechamentosCount || 0, rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0, targetRate: fechamentosTargetRate, color: 'hsl(var(--success))', key: 'fechamentos' },
+        { stage: 'Novos Leads', value: leadsCount || 0, rate: 100, targetRate: 100, color: 'hsl(var(--primary))', key: 'leads' },
+        { stage: 'Agendado', value: agendamentosCount || 0, rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0, targetRate: agendamentosTargetRate, color: 'hsl(var(--chart-1))', key: 'agendamentos' },
+        { stage: 'Compareceu', value: comparecimentosCount || 0, rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0, targetRate: comparecimentosTargetRate, color: 'hsl(var(--chart-2))', key: 'comparecimentos' },
+        { stage: 'Venda Realizada', value: fechamentosCount || 0, rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0, targetRate: fechamentosTargetRate, color: 'hsl(var(--success))', key: 'fechamentos' },
       ];
 
       return { goals, funnelData, healthyRates };

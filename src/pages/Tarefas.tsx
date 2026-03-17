@@ -58,20 +58,21 @@ function TaskItem({
       isCompleted && "bg-muted/50 opacity-75",
       isPast && !isCompleted && "border-destructive/50 bg-destructive/5"
     )}>
-      <div className="flex items-start gap-3">
-        <button
-          onClick={isCompleted ? onReopen : onComplete}
-          className="mt-0.5 shrink-0"
-        >
-          {isCompleted ? (
-            <CheckCircle2 className="h-5 w-5 text-success" />
-          ) : (
+        <div className="flex items-start gap-3">
+        {!isCompleted ? (
+          <button
+            onClick={onComplete}
+            className="mt-0.5 shrink-0"
+            title="Concluir tarefa"
+          >
             <Circle className={cn(
               "h-5 w-5",
               isPast ? "text-destructive" : "text-muted-foreground"
             )} />
-          )}
-        </button>
+          </button>
+        ) : (
+          <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" />
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
@@ -118,6 +119,30 @@ function TaskItem({
               <Badge variant="destructive" className="text-[10px]">
                 Atrasada
               </Badge>
+            )}
+          </div>
+          {/* Action buttons */}
+          <div className="mt-2">
+            {isCompleted ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-warning border-warning/30 hover:bg-warning/10"
+                onClick={onReopen}
+              >
+                <Circle className="h-3.5 w-3.5" />
+                Reverter para Pendente
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-success border-success/30 hover:bg-success/10"
+                onClick={onComplete}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Concluir
+              </Button>
             )}
           </div>
         </div>

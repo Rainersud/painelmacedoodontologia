@@ -156,18 +156,9 @@ export function TodayTasksWidget() {
                   {completed.map(task => (
                     <div
                       key={task.id}
-                      className="flex items-center gap-3 p-2.5 rounded-lg bg-success/5 border border-success/10 opacity-70 hover:opacity-100 transition-opacity group"
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-success/5 border border-success/10"
                     >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 shrink-0 text-success"
-                        onClick={() => handleReopen(task.id)}
-                        disabled={updateTask.isPending}
-                        title="Marcar como concluída"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                      </Button>
+                      <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate line-through text-muted-foreground">{task.title}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -179,12 +170,12 @@ export function TodayTasksWidget() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-6 text-[10px] gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-warning border-warning/30 hover:bg-warning/10"
+                        className="h-7 text-[10px] gap-1 text-warning border-warning/30 hover:bg-warning/10"
                         onClick={() => handleReopen(task.id)}
                         disabled={updateTask.isPending}
                       >
                         <Undo2 className="h-3 w-3" />
-                        Reverter
+                        Reverter para Pendente
                       </Button>
                     </div>
                   ))}

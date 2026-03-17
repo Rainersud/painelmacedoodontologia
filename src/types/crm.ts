@@ -85,6 +85,9 @@ export interface Task {
   completed_at?: string | null;
   status: TaskStatus;
   priority?: TaskPriority;
+  response?: string | null;
+  reschedule_reason?: string | null;
+  rescheduled_from_id?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data

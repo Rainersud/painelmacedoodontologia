@@ -121,12 +121,15 @@ export function useUpdateTask() {
       updates 
     }: { 
       id: string; 
-      updates: Partial<Pick<Task, 'title' | 'description' | 'scheduled_at' | 'status' | 'priority'>> 
+      updates: Partial<Pick<Task, 'title' | 'description' | 'scheduled_at' | 'status' | 'priority' | 'response'>> 
     }) => {
       const finalUpdates: Record<string, unknown> = { ...updates };
       
       if (updates.status === 'concluido') {
         finalUpdates.completed_at = new Date().toISOString();
+      }
+      if (updates.status === 'pendente') {
+        finalUpdates.completed_at = null;
       }
 
       const { error } = await supabase
@@ -136,7 +139,6 @@ export function useUpdateTask() {
 
       if (error) throw error;
 
-      // Log completion
       if (updates.status === 'concluido' && user) {
         const { data: task } = await supabase
           .from('tasks')
@@ -150,6 +152,7 @@ export function useUpdateTask() {
             agent_id: user.id,
             activity_type: 'task_completed',
             title: `Tarefa concluída: ${task.title}`,
+            description: updates.response || undefined,
           });
         }
       }
@@ -161,6 +164,76 @@ export function useUpdateTask() {
     },
     onError: () => {
       toast.error('Erro ao atualizar tarefa');
+    },
+  });
+}
+
+export function useRescheduleTask() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      taskId, 
+      newDate, 
+      reason, 
+      observation 
+    }: { 
+      taskId: string; 
+      newDate: string; 
+      reason: string; 
+      observation?: string; 
+    }) => {
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { data: original, error: fetchError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+
+      if (fetchError || !original) throw fetchError || new Error('Tarefa não encontrada');
+
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ 
+          status: 'reagendado', 
+          reschedule_reason: reason,
+          description: observation ? `${original.description || ''}\n[Reagendamento] ${observation}`.trim() : original.description,
+        })
+        .eq('id', taskId);
+
+      if (updateError) throw updateError;
+
+      const { error: insertError } = await supabase.from('tasks').insert({
+        lead_id: original.lead_id,
+        agent_id: user.id,
+        title: original.title,
+        description: original.description,
+        task_type: original.task_type,
+        priority: original.priority,
+        scheduled_at: newDate,
+        status: 'pendente',
+        rescheduled_from_id: taskId,
+      });
+
+      if (insertError) throw insertError;
+
+      await supabase.from('activity_logs').insert({
+        lead_id: original.lead_id,
+        agent_id: user.id,
+        activity_type: 'task_created',
+        title: `Tarefa reagendada: ${original.title}`,
+        description: `Motivo: ${reason}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      toast.success('Tarefa reagendada com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao reagendar tarefa');
     },
   });
 }

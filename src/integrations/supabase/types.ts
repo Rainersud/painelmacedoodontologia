@@ -745,6 +745,9 @@ export type Database = {
           id: string
           lead_id: string | null
           priority: string | null
+          reschedule_reason: string | null
+          rescheduled_from_id: string | null
+          response: string | null
           scheduled_at: string
           status: string
           task_type: string
@@ -759,6 +762,9 @@ export type Database = {
           id?: string
           lead_id?: string | null
           priority?: string | null
+          reschedule_reason?: string | null
+          rescheduled_from_id?: string | null
+          response?: string | null
           scheduled_at: string
           status?: string
           task_type: string
@@ -773,6 +779,9 @@ export type Database = {
           id?: string
           lead_id?: string | null
           priority?: string | null
+          reschedule_reason?: string | null
+          rescheduled_from_id?: string | null
+          response?: string | null
           scheduled_at?: string
           status?: string
           task_type?: string
@@ -785,6 +794,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_rescheduled_from_id_fkey"
+            columns: ["rescheduled_from_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

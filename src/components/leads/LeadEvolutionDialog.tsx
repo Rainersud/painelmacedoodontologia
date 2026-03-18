@@ -340,7 +340,6 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
             budgetValue={lead.treatment_value || 0}
           />
         )}
-        </Tabs>
       </DialogContent>
     </Dialog>
   );

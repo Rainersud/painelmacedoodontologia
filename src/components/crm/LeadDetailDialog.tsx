@@ -133,7 +133,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       name: formData.name,
       phone: formData.phone,
       interest_product: formData.interest_product || null,
-      estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
       email: formData.email || null,
       whatsapp: formData.whatsapp || null,
       notes: formData.notes || null,

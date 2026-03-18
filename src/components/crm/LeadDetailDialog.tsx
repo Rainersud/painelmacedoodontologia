@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
+import { PaymentDialog } from './PaymentDialog';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
 import {
   Phone,

@@ -153,7 +153,14 @@ export function useDashboardMetrics(period: 'diario' | 'semanal' | 'mensal' = 'm
       const attendedLeads = leads.filter(l => l.status !== 'novo_lead').length;
       const scheduledAppointments = appointments.length;
       const attendedAppointments = appointments.filter(a => a.attended_at).length;
-      const revenue = appointments.filter(a => a.attended_at && a.revenue).reduce((sum, a) => sum + (a.revenue || 0), 0);
+      // Revenue from PAYMENTS table only (single source of truth)
+      const { data: paidPayments } = await supabase
+        .from('payments')
+        .select('net_value')
+        .eq('status', 'pago')
+        .gte('paid_at', start.toISOString())
+        .lte('paid_at', end.toISOString());
+      const revenue = (paidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
       
       const conversionRate = newLeads > 0 ? Math.round((scheduledAppointments / newLeads) * 100) : 0;
       const attendanceRate = scheduledAppointments > 0 ? Math.round((attendedAppointments / scheduledAppointments) * 100) : 0;

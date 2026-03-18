@@ -180,7 +180,14 @@ export function useDashboardMetrics(period: 'diario' | 'semanal' | 'mensal' = 'm
       const prevAttendedLeads = prevLeadsArr.filter(l => l.status !== 'novo_lead').length;
       const prevScheduledAppointments = prevAppointmentsArr.length;
       const prevAttendedAppointments = prevAppointmentsArr.filter(a => a.attended_at).length;
-      const prevRevenue = prevAppointmentsArr.filter(a => a.attended_at && a.revenue).reduce((sum, a) => sum + (a.revenue || 0), 0);
+      // Previous period revenue from payments
+      const { data: prevPaidPayments } = await supabase
+        .from('payments')
+        .select('net_value')
+        .eq('status', 'pago')
+        .gte('paid_at', prevStart.toISOString())
+        .lte('paid_at', prevEnd.toISOString());
+      const prevRevenue = (prevPaidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
       const prevConversionRate = prevNewLeads > 0 ? Math.round((prevScheduledAppointments / prevNewLeads) * 100) : 0;
       const prevAttendanceRate = prevScheduledAppointments > 0 ? Math.round((prevAttendedAppointments / prevScheduledAppointments) * 100) : 0;
 

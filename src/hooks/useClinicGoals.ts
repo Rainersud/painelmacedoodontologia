@@ -120,17 +120,8 @@ export function useClinicGoals() {
 
       const paymentsRevenue = (paidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
 
-      // Fallback to appointments revenue if no payments recorded yet
-      const { data: revenueData } = await supabase
-        .from('appointments')
-        .select('revenue')
-        .not('attended_at', 'is', null)
-        .not('revenue', 'is', null)
-        .gte('attended_at', monthStart.toISOString())
-        .lte('attended_at', monthEnd.toISOString());
-
-      const appointmentsRevenue = (revenueData || []).reduce((sum, a) => sum + (a.revenue || 0), 0);
-      const totalRevenue = paymentsRevenue > 0 ? paymentsRevenue : appointmentsRevenue;
+      // Single source of truth: revenue comes ONLY from payments table
+      const totalRevenue = paymentsRevenue;
       const ticketMedio = fechamentosCount && fechamentosCount > 0 
         ? Math.round(totalRevenue / fechamentosCount) 
         : 0;

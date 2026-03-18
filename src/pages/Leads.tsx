@@ -300,9 +300,6 @@ const Leads = () => {
                         <span className="text-sm">{lead.profiles?.full_name || 'Sem agente'}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatCurrency(lead.estimated_value || 0)}
-                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(lead.created_at)}
                     </TableCell>

@@ -62,11 +62,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
     type: '' as 'ligacao' | 'whatsapp' | 'email' | 'presencial' | '',
     notes: '',
   });
-  const [closingData, setClosingData] = useState({
-    treatment_value: '',
-    payment_method: '' as 'avista' | 'parcelado' | '',
-    notes: '',
-  });
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const updateStatus = useMutation({
     mutationFn: async ({ newStatus, notes }: { newStatus: LeadStatus; notes: string }) => {

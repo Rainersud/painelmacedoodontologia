@@ -69,6 +69,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   const [activeTab, setActiveTab] = useState('info');
   const [triageOpen, setTriageOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',

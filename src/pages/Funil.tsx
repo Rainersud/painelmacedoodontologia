@@ -35,6 +35,10 @@ const Funil = () => {
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [triageLead, setTriageLead] = useState<Lead | null>(null);
 
+  // Payment dialog state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentLead, setPaymentLead] = useState<Lead | null>(null);
+
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');

@@ -143,13 +143,7 @@ const Funil = () => {
     );
   }, [getLeadsByStatus]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  // formatCurrency imported from @/lib/currency
 
   if (isLoading) {
     return (

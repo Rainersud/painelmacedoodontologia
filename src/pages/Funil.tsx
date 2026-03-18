@@ -318,7 +318,7 @@ const Funil = () => {
         }}
         leadId={paymentLead?.id || ''}
         leadName={paymentLead?.name || ''}
-        budgetValue={paymentLead?.treatment_value || paymentLead?.estimated_value || 0}
+        budgetValue={paymentLead?.treatment_value || 0}
       />
     </AppLayout>
   );

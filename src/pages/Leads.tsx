@@ -263,7 +263,6 @@ const Leads = () => {
                   <TableHead className="font-semibold">Origem</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Agente</TableHead>
-                  <TableHead className="font-semibold">Valor Est.</TableHead>
                   <TableHead className="font-semibold">Data</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>

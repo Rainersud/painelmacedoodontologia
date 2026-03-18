@@ -585,7 +585,7 @@ const Dashboard = () => {
                 const elegiveis = leads.filter((l: any) => (l.attendance_discount_status || 'elegivel') === 'elegivel').length;
                 const impacto = leads
                   .filter((l: any) => l.attendance_discount_status === 'liberado')
-                  .reduce((sum: number, l: any) => sum + (Number(l.treatment_value || l.estimated_value || 0) * 0.05), 0);
+                  .reduce((sum: number, l: any) => sum + (Number(l.treatment_value || 0) * 0.05), 0);
                 return [
                   { label: 'Descontos Liberados', value: liberados, icon: UserCheck, color: 'hsl(var(--success))' },
                   { label: 'Cancelados por Falta', value: cancelados, icon: Target, color: 'hsl(var(--destructive))' },

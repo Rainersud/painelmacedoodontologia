@@ -74,7 +74,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     name: '',
     phone: '',
     interest_product: '',
-    estimated_value: '',
     email: '',
     whatsapp: '',
     notes: '',

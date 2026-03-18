@@ -309,6 +309,17 @@ const Funil = () => {
           if (!open) setTriageLead(null);
         }}
       />
+
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={(open) => {
+          setPaymentDialogOpen(open);
+          if (!open) setPaymentLead(null);
+        }}
+        leadId={paymentLead?.id || ''}
+        leadName={paymentLead?.name || ''}
+        budgetValue={paymentLead?.treatment_value || paymentLead?.estimated_value || 0}
+      />
     </AppLayout>
   );
 };

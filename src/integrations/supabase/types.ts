@@ -408,6 +408,7 @@ export type Database = {
         Row: {
           assigned_agent_id: string | null
           attendance_discount_status: string
+          budget_value: number | null
           closed_at: string | null
           completed_at: string | null
           converted_at: string | null
@@ -436,6 +437,7 @@ export type Database = {
         Insert: {
           assigned_agent_id?: string | null
           attendance_discount_status?: string
+          budget_value?: number | null
           closed_at?: string | null
           completed_at?: string | null
           converted_at?: string | null
@@ -464,6 +466,7 @@ export type Database = {
         Update: {
           assigned_agent_id?: string | null
           attendance_discount_status?: string
+          budget_value?: number | null
           closed_at?: string | null
           completed_at?: string | null
           converted_at?: string | null
@@ -636,6 +639,84 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          agent_id: string
+          created_at: string
+          due_date: string | null
+          fee_amount: number
+          fee_percentage: number
+          gross_value: number
+          id: string
+          installment_number: number | null
+          installments: number
+          lead_id: string
+          net_value: number
+          notes: string | null
+          paid_at: string | null
+          parent_payment_id: string | null
+          payment_method: string
+          status: string
+          total_installments: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          due_date?: string | null
+          fee_amount?: number
+          fee_percentage?: number
+          gross_value?: number
+          id?: string
+          installment_number?: number | null
+          installments?: number
+          lead_id: string
+          net_value?: number
+          notes?: string | null
+          paid_at?: string | null
+          parent_payment_id?: string | null
+          payment_method: string
+          status?: string
+          total_installments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          due_date?: string | null
+          fee_amount?: number
+          fee_percentage?: number
+          gross_value?: number
+          id?: string
+          installment_number?: number | null
+          installments?: number
+          lead_id?: string
+          net_value?: number
+          notes?: string | null
+          paid_at?: string | null
+          parent_payment_id?: string | null
+          payment_method?: string
+          status?: string
+          total_installments?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_parent_payment_id_fkey"
+            columns: ["parent_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]

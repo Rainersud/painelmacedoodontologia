@@ -137,7 +137,8 @@ const Funil = () => {
     return filteredLeads.filter(lead => lead.status === status);
   }, [filteredLeads]);
 
-  const getTotalValueByStatus = useCallback((status: LeadStatus) => {
+  // Show budget (treatment_value) for funnel column totals - this is orçamento, not faturamento
+  const getTotalBudgetByStatus = useCallback((status: LeadStatus) => {
     return getLeadsByStatus(status).reduce((sum, lead) => 
       sum + (lead.treatment_value || 0), 0
     );

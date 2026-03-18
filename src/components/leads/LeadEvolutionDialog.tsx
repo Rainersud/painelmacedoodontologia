@@ -302,57 +302,43 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
             </Button>
           </TabsContent>
 
-          {/* Close Deal Tab */}
+          {/* Close Deal Tab - now opens PaymentDialog */}
           <TabsContent value="close" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="treatment-value">Valor do Tratamento (R$)</Label>
-                <Input
-                  id="treatment-value"
-                  name="treatment-value"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={closingData.treatment_value}
-                  onChange={(e) => setClosingData(prev => ({ ...prev, treatment_value: e.target.value }))}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="payment-method">Forma de Pagamento</Label>
-                <Select 
-                  value={closingData.payment_method || undefined} 
-                  onValueChange={(v) => setClosingData(prev => ({ ...prev, payment_method: v as 'avista' | 'parcelado' }))}
-                >
-                  <SelectTrigger id="payment-method">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="avista">À Vista</SelectItem>
-                    <SelectItem value="parcelado">Parcelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-3">
+              <h4 className="font-medium text-success flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Venda Realizada
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Para fechar a venda, primeiro registre o pagamento. Após a confirmação, o lead será movido automaticamente para "Venda Realizada".
+              </p>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => setPaymentOpen(true)}
+              >
+                💰 Registrar Pagamento
+              </Button>
+              <Button
+                className="w-full"
+                onClick={() => updateStatus.mutate({ newStatus: 'fechado', notes: '' })}
+                disabled={updateStatus.isPending}
+              >
+                {updateStatus.isPending ? 'Fechando...' : 'Confirmar Venda Realizada'}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="closing-notes">Observações (opcional)</Label>
-              <Textarea
-                id="closing-notes"
-                name="closing-notes"
-                placeholder="Detalhes do fechamento..."
-                value={closingData.notes}
-                onChange={(e) => setClosingData(prev => ({ ...prev, notes: e.target.value }))}
-              />
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => updateStatus.mutate({ newStatus: 'fechado', notes: closingData.notes })}
-              disabled={!closingData.treatment_value || !closingData.payment_method || updateStatus.isPending}
-            >
-              {updateStatus.isPending ? 'Fechando...' : 'Fechar Venda'}
-            </Button>
           </TabsContent>
+        </Tabs>
+        
+        {lead && (
+          <PaymentDialog
+            open={paymentOpen}
+            onOpenChange={setPaymentOpen}
+            leadId={lead.id}
+            leadName={lead.name}
+            budgetValue={lead.treatment_value || 0}
+          />
+        )}
         </Tabs>
       </DialogContent>
     </Dialog>

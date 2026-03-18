@@ -765,6 +765,13 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           open={triageOpen}
           onOpenChange={setTriageOpen}
         />
+        <PaymentDialog
+          open={paymentOpen}
+          onOpenChange={setPaymentOpen}
+          leadId={lead.id}
+          leadName={lead.name}
+          budgetValue={lead.treatment_value || lead.estimated_value || 0}
+        />
       </DialogContent>
     </Dialog>
   );

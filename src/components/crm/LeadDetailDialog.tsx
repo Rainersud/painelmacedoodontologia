@@ -113,7 +113,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setNewStatus('');
       setStatusNotes('');
       setScheduledAt('');
-      setClosingData({ treatment_value: '', payment_method: '' });
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');

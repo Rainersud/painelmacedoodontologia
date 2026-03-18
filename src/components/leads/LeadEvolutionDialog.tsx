@@ -159,7 +159,6 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
   const resetForm = () => {
     setSelectedStatus('');
     setInteractionData({ type: '', notes: '' });
-    setClosingData({ treatment_value: '', payment_method: '', notes: '' });
     setActiveTab('status');
   };
 

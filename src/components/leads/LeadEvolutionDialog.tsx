@@ -35,7 +35,7 @@ interface LeadEvolutionDialogProps {
     name: string;
     phone: string;
     status: LeadStatus;
-    estimated_value: number | null;
+    treatment_value?: number | null;
   } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;

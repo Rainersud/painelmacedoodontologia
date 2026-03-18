@@ -212,10 +212,6 @@ const Leads = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="value">Valor Estimado</Label>
-                    <Input id="value" type="number" placeholder="R$ 0,00" />
-                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="notes">Observações</Label>

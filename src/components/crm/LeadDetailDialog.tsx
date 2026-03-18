@@ -755,7 +755,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           onOpenChange={setPaymentOpen}
           leadId={lead.id}
           leadName={lead.name}
-          budgetValue={lead.treatment_value || lead.estimated_value || 0}
+          budgetValue={lead.treatment_value || 0}
         />
       </DialogContent>
     </Dialog>

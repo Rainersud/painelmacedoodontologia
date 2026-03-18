@@ -140,14 +140,24 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     updateLead.mutate({ leadId: lead.id, updates });
   };
 
-  const handleChangeStatus = () => {
+  const handleChangeStatus = async () => {
     if (!newStatus) return;
     
-    const additionalData: Partial<Lead> = {};
-    if (newStatus === 'fechado' && closingData.treatment_value) {
-      additionalData.treatment_value = parseFloat(closingData.treatment_value);
-      additionalData.payment_method = closingData.payment_method || null;
+    // VALIDATION: Block move to fechado without payment
+    if (newStatus === 'fechado') {
+      const { count } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('lead_id', lead.id)
+        .eq('status', 'pago');
+      
+      if (!count || count === 0) {
+        toast.error('Não é possível marcar como Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
+        return;
+      }
     }
+
+    const additionalData: Partial<Lead> = {};
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }

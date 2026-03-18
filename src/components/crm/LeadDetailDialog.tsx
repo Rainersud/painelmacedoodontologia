@@ -105,7 +105,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         name: lead.name || '',
         phone: lead.phone || '',
         interest_product: lead.interest_product || '',
-        estimated_value: String(lead.estimated_value || ''),
         email: lead.email || '',
         whatsapp: lead.whatsapp || '',
         notes: lead.notes || '',

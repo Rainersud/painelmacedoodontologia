@@ -350,18 +350,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimated_value">Valor do Negócio (R$)</Label>
-                  <Input
-                    id="estimated_value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.estimated_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimated_value: e.target.value }))}
-                    placeholder="0,00"
-                  />
-                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">

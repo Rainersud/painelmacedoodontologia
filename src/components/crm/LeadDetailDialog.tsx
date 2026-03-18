@@ -74,7 +74,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     name: '',
     phone: '',
     interest_product: '',
-    estimated_value: '',
     email: '',
     whatsapp: '',
     notes: '',
@@ -106,7 +105,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         name: lead.name || '',
         phone: lead.phone || '',
         interest_product: lead.interest_product || '',
-        estimated_value: String(lead.estimated_value || ''),
         email: lead.email || '',
         whatsapp: lead.whatsapp || '',
         notes: lead.notes || '',
@@ -135,7 +133,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       name: formData.name,
       phone: formData.phone,
       interest_product: formData.interest_product || null,
-      estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
       email: formData.email || null,
       whatsapp: formData.whatsapp || null,
       notes: formData.notes || null,
@@ -352,18 +349,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <SelectItem value="outro">Outro</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimated_value">Valor do Negócio (R$)</Label>
-                  <Input
-                    id="estimated_value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.estimated_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimated_value: e.target.value }))}
-                    placeholder="0,00"
-                  />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -770,7 +755,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           onOpenChange={setPaymentOpen}
           leadId={lead.id}
           leadName={lead.name}
-          budgetValue={lead.treatment_value || lead.estimated_value || 0}
+          budgetValue={lead.treatment_value || 0}
         />
       </DialogContent>
     </Dialog>

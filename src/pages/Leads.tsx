@@ -212,10 +212,6 @@ const Leads = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="value">Valor Estimado</Label>
-                    <Input id="value" type="number" placeholder="R$ 0,00" />
-                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="notes">Observações</Label>
@@ -263,7 +259,6 @@ const Leads = () => {
                   <TableHead className="font-semibold">Origem</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Agente</TableHead>
-                  <TableHead className="font-semibold">Valor Est.</TableHead>
                   <TableHead className="font-semibold">Data</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -300,9 +295,6 @@ const Leads = () => {
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{lead.profiles?.full_name || 'Sem agente'}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatCurrency(lead.estimated_value || 0)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(lead.created_at)}

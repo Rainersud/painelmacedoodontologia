@@ -112,7 +112,7 @@ export function LeadCard({
           <div className="flex items-center gap-1">
             <DollarSign className="h-3.5 w-3.5 text-success" />
             <span className="font-bold text-xs">
-              {formatCurrency(lead.treatment_value || lead.estimated_value || 0)}
+              {formatCurrency(lead.treatment_value || 0)}
             </span>
           </div>
           <div className="flex gap-0.5">

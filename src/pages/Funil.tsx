@@ -139,7 +139,7 @@ const Funil = () => {
 
   const getTotalValueByStatus = useCallback((status: LeadStatus) => {
     return getLeadsByStatus(status).reduce((sum, lead) => 
-      sum + (lead.treatment_value || lead.estimated_value || 0), 0
+      sum + (lead.treatment_value || 0), 0
     );
   }, [getLeadsByStatus]);
 
@@ -318,7 +318,7 @@ const Funil = () => {
         }}
         leadId={paymentLead?.id || ''}
         leadName={paymentLead?.name || ''}
-        budgetValue={paymentLead?.treatment_value || paymentLead?.estimated_value || 0}
+        budgetValue={paymentLead?.treatment_value || 0}
       />
     </AppLayout>
   );

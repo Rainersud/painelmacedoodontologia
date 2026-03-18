@@ -79,7 +79,7 @@ const Funil = () => {
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, newStatus: LeadStatus) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, newStatus: LeadStatus) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -87,6 +87,22 @@ const Funil = () => {
     const lead = leads?.find(l => l.id === leadId);
     
     if (lead && lead.status !== newStatus) {
+      // VALIDATION: Block move to fechado without payment
+      if (newStatus === 'fechado') {
+        const { count } = await supabase
+          .from('payments')
+          .select('*', { count: 'exact', head: true })
+          .eq('lead_id', lead.id)
+          .eq('status', 'pago');
+        
+        if (!count || count === 0) {
+          toast.error('Não é possível mover para Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
+          setDraggedLeadId(null);
+          setDropTargetStatus(null);
+          return;
+        }
+      }
+
       // If dropping to "agendou", open schedule dialog
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);

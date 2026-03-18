@@ -209,7 +209,7 @@ const Funil = () => {
         <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
-            const totalValue = getTotalValueByStatus(stage.key);
+            const totalValue = getTotalBudgetByStatus(stage.key);
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             
             return (

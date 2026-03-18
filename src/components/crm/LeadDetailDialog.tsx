@@ -587,42 +587,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Closing fields when status is fechado */}
+              {/* Info: fechado requires payment */}
               {newStatus === 'fechado' && (
-                <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-4">
+                <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-2">
                   <h4 className="font-medium text-success flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Fechamento de Venda
+                    Venda Realizada
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="treatment_value">Valor do Tratamento (R$)</Label>
-                      <Input
-                        id="treatment_value"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={closingData.treatment_value}
-                        onChange={(e) => setClosingData(prev => ({ ...prev, treatment_value: e.target.value }))}
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="payment_method">Forma de Pagamento</Label>
-                      <Select
-                        value={closingData.payment_method || undefined}
-                        onValueChange={(v) => setClosingData(prev => ({ ...prev, payment_method: v as 'avista' | 'parcelado' }))}
-                      >
-                        <SelectTrigger id="payment_method">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="avista">À Vista</SelectItem>
-                          <SelectItem value="parcelado">Parcelado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Para marcar como Venda Realizada, é necessário ter um pagamento confirmado. 
+                    Use o botão "Registrar Pagamento" acima antes de alterar o status.
+                  </p>
                 </div>
               )}
 

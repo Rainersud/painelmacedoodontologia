@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
+import { PaymentDialog } from './PaymentDialog';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
 import {
   Phone,
@@ -68,6 +69,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   const [activeTab, setActiveTab] = useState('info');
   const [triageOpen, setTriageOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -559,7 +561,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-
+              {/* Payment Button - available from compareceu onwards */}
+              {['compareceu', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status) && (
+                <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2 text-success">
+                    💰 Pagamento
+                  </h4>
+                  <Button
+                    variant="outline"
+                    className="w-full border-success/30 text-success hover:bg-success/10"
+                    onClick={() => setPaymentOpen(true)}
+                  >
+                    Registrar Pagamento
+                  </Button>
+                </div>
+              )}
 
 
               {/* Schedule fields when status is agendou */}
@@ -748,6 +764,13 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           lead={lead}
           open={triageOpen}
           onOpenChange={setTriageOpen}
+        />
+        <PaymentDialog
+          open={paymentOpen}
+          onOpenChange={setPaymentOpen}
+          leadId={lead.id}
+          leadName={lead.name}
+          budgetValue={lead.treatment_value || lead.estimated_value || 0}
         />
       </DialogContent>
     </Dialog>

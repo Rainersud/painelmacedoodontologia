@@ -110,6 +110,17 @@ export function useClinicGoals() {
         .gte('closed_at', monthStart.toISOString())
         .lte('closed_at', monthEnd.toISOString());
 
+      // Get real received revenue from payments table (net_value of paid payments)
+      const { data: paidPayments } = await supabase
+        .from('payments')
+        .select('net_value')
+        .eq('status', 'pago')
+        .gte('paid_at', monthStart.toISOString())
+        .lte('paid_at', monthEnd.toISOString());
+
+      const paymentsRevenue = (paidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
+
+      // Fallback to appointments revenue if no payments recorded yet
       const { data: revenueData } = await supabase
         .from('appointments')
         .select('revenue')
@@ -118,7 +129,8 @@ export function useClinicGoals() {
         .gte('attended_at', monthStart.toISOString())
         .lte('attended_at', monthEnd.toISOString());
 
-      const totalRevenue = (revenueData || []).reduce((sum, a) => sum + (a.revenue || 0), 0);
+      const appointmentsRevenue = (revenueData || []).reduce((sum, a) => sum + (a.revenue || 0), 0);
+      const totalRevenue = paymentsRevenue > 0 ? paymentsRevenue : appointmentsRevenue;
       const ticketMedio = fechamentosCount && fechamentosCount > 0 
         ? Math.round(totalRevenue / fechamentosCount) 
         : 0;
@@ -159,17 +171,7 @@ export function useClinicGoals() {
         return 'critical';
       };
 
-      // Also get revenue from leads.treatment_value for closed leads (fechado)
-      const { data: leadRevenueData } = await supabase
-        .from('leads')
-        .select('treatment_value')
-        .eq('status', 'fechado')
-        .not('treatment_value', 'is', null)
-        .gte('closed_at', monthStart.toISOString())
-        .lte('closed_at', monthEnd.toISOString());
-
-      const leadRevenue = (leadRevenueData || []).reduce((sum, l) => sum + (l.treatment_value || 0), 0);
-      const combinedRevenue = Math.max(totalRevenue, leadRevenue); // Use whichever is greater
+      // Revenue is already calculated from payments (net received) above
 
       const goals: ClinicGoal[] = [
         {
@@ -230,10 +232,10 @@ export function useClinicGoals() {
           key: 'faturamento',
           label: 'Faturamento',
           target: faturamentoTarget,
-          current: combinedRevenue,
-          percentage: Math.min(100, Math.round((combinedRevenue / faturamentoTarget) * 100)),
-          status: calculateStatus(combinedRevenue, faturamentoTarget),
-          remaining: Math.max(0, faturamentoTarget - combinedRevenue),
+          current: totalRevenue,
+          percentage: Math.min(100, Math.round((totalRevenue / faturamentoTarget) * 100)),
+          status: calculateStatus(totalRevenue, faturamentoTarget),
+          remaining: Math.max(0, faturamentoTarget - totalRevenue),
           isEditable: true,
         },
         {

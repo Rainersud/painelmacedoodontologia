@@ -12,8 +12,10 @@ import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
 import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
+import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/currency';
 
 const Funil = () => {
   const { data: leads, isLoading } = useCRMLeads();
@@ -32,6 +34,10 @@ const Funil = () => {
   // Triage dialog state
   const [triageDialogOpen, setTriageDialogOpen] = useState(false);
   const [triageLead, setTriageLead] = useState<Lead | null>(null);
+
+  // Payment dialog state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentLead, setPaymentLead] = useState<Lead | null>(null);
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,11 +90,14 @@ const Funil = () => {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);
       } else if (newStatus === 'compareceu') {
-        // Move to compareceu and open triage
+        // Move to compareceu, open triage, then open payment
         updateStatus.mutate({ leadId: lead.id, newStatus }, {
           onSuccess: () => {
             setTriageLead(lead);
             setTriageDialogOpen(true);
+            // Also open payment dialog after triage
+            setPaymentLead(lead);
+            setPaymentDialogOpen(true);
           },
         });
       } else {
@@ -134,13 +143,7 @@ const Funil = () => {
     );
   }, [getLeadsByStatus]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  // formatCurrency imported from @/lib/currency
 
   if (isLoading) {
     return (
@@ -305,6 +308,17 @@ const Funil = () => {
           setTriageDialogOpen(open);
           if (!open) setTriageLead(null);
         }}
+      />
+
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={(open) => {
+          setPaymentDialogOpen(open);
+          if (!open) setPaymentLead(null);
+        }}
+        leadId={paymentLead?.id || ''}
+        leadName={paymentLead?.name || ''}
+        budgetValue={paymentLead?.treatment_value || paymentLead?.estimated_value || 0}
       />
     </AppLayout>
   );

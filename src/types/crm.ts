@@ -53,8 +53,8 @@ export interface Lead {
   source: LeadSource;
   status: LeadStatus;
   assigned_agent_id: string | null;
-  estimated_value: number | null;
   treatment_value?: number | null;
+  budget_value?: number | null;
   payment_method?: string | null;
   interest_product?: string | null;
   interest_rating?: number;

@@ -40,11 +40,25 @@ export function TreatmentRankingWidget() {
 
       const { data: leads, error } = await supabase
         .from('leads')
-        .select('interest_product, status, treatment_value, created_at')
+        .select('id, interest_product, status, created_at')
         .gte('created_at', since.toISOString())
         .not('interest_product', 'is', null);
 
       if (error) throw error;
+
+      // Get real revenue from payments for closed leads
+      const closedLeadIds = (leads || []).filter(l => l.status === 'fechado').map(l => l.id);
+      let revenueMap: Record<string, number> = {};
+      if (closedLeadIds.length > 0) {
+        const { data: payments } = await supabase
+          .from('payments')
+          .select('lead_id, net_value')
+          .eq('status', 'pago')
+          .in('lead_id', closedLeadIds);
+        (payments || []).forEach(p => {
+          revenueMap[p.lead_id] = (revenueMap[p.lead_id] || 0) + (p.net_value || 0);
+        });
+      }
 
       const map: Record<string, { leads: number; attended: number; closed: number; revenue: number }> = {};
 
@@ -55,7 +69,7 @@ export function TreatmentRankingWidget() {
         if (lead.status === 'compareceu' || lead.status === 'fechado') map[key].attended++;
         if (lead.status === 'fechado') {
           map[key].closed++;
-          map[key].revenue += Number(lead.treatment_value || 0);
+          map[key].revenue += revenueMap[lead.id] || 0;
         }
       }
 

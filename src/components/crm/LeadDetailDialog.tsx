@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -84,10 +86,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [closingData, setClosingData] = useState({
-    treatment_value: '',
-    payment_method: '' as 'avista' | 'parcelado' | '',
-  });
   const [noteData, setNoteData] = useState({
     content: '',
   });
@@ -117,7 +115,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setNewStatus('');
       setStatusNotes('');
       setScheduledAt('');
-      setClosingData({ treatment_value: '', payment_method: '' });
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');
@@ -145,14 +142,24 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     updateLead.mutate({ leadId: lead.id, updates });
   };
 
-  const handleChangeStatus = () => {
+  const handleChangeStatus = async () => {
     if (!newStatus) return;
     
-    const additionalData: Partial<Lead> = {};
-    if (newStatus === 'fechado' && closingData.treatment_value) {
-      additionalData.treatment_value = parseFloat(closingData.treatment_value);
-      additionalData.payment_method = closingData.payment_method || null;
+    // VALIDATION: Block move to fechado without payment
+    if (newStatus === 'fechado') {
+      const { count } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('lead_id', lead.id)
+        .eq('status', 'pago');
+      
+      if (!count || count === 0) {
+        toast.error('Não é possível marcar como Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
+        return;
+      }
     }
+
+    const additionalData: Partial<Lead> = {};
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
@@ -582,42 +589,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Closing fields when status is fechado */}
+              {/* Info: fechado requires payment */}
               {newStatus === 'fechado' && (
-                <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-4">
+                <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-2">
                   <h4 className="font-medium text-success flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Fechamento de Venda
+                    Venda Realizada
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="treatment_value">Valor do Tratamento (R$)</Label>
-                      <Input
-                        id="treatment_value"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={closingData.treatment_value}
-                        onChange={(e) => setClosingData(prev => ({ ...prev, treatment_value: e.target.value }))}
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="payment_method">Forma de Pagamento</Label>
-                      <Select
-                        value={closingData.payment_method || undefined}
-                        onValueChange={(v) => setClosingData(prev => ({ ...prev, payment_method: v as 'avista' | 'parcelado' }))}
-                      >
-                        <SelectTrigger id="payment_method">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="avista">À Vista</SelectItem>
-                          <SelectItem value="parcelado">Parcelado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Para marcar como Venda Realizada, é necessário ter um pagamento confirmado. 
+                    Use o botão "Registrar Pagamento" acima antes de alterar o status.
+                  </p>
                 </div>
               )}
 

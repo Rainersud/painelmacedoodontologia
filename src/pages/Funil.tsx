@@ -1,4 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +79,7 @@ const Funil = () => {
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, newStatus: LeadStatus) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, newStatus: LeadStatus) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -85,6 +87,22 @@ const Funil = () => {
     const lead = leads?.find(l => l.id === leadId);
     
     if (lead && lead.status !== newStatus) {
+      // VALIDATION: Block move to fechado without payment
+      if (newStatus === 'fechado') {
+        const { count } = await supabase
+          .from('payments')
+          .select('*', { count: 'exact', head: true })
+          .eq('lead_id', lead.id)
+          .eq('status', 'pago');
+        
+        if (!count || count === 0) {
+          toast.error('Não é possível mover para Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
+          setDraggedLeadId(null);
+          setDropTargetStatus(null);
+          return;
+        }
+      }
+
       // If dropping to "agendou", open schedule dialog
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);
@@ -137,7 +155,8 @@ const Funil = () => {
     return filteredLeads.filter(lead => lead.status === status);
   }, [filteredLeads]);
 
-  const getTotalValueByStatus = useCallback((status: LeadStatus) => {
+  // Show budget (treatment_value) for funnel column totals - this is orçamento, not faturamento
+  const getTotalBudgetByStatus = useCallback((status: LeadStatus) => {
     return getLeadsByStatus(status).reduce((sum, lead) => 
       sum + (lead.treatment_value || 0), 0
     );
@@ -208,7 +227,7 @@ const Funil = () => {
         <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
-            const totalValue = getTotalValueByStatus(stage.key);
+            const totalValue = getTotalBudgetByStatus(stage.key);
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             
             return (

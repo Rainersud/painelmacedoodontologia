@@ -73,13 +73,17 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
       if (newStatus === 'resgatado') {
         updates.rescued_at = new Date().toISOString();
       } else if (newStatus === 'fechado') {
+        // Validate payment exists
+        const { count } = await supabase
+          .from('payments')
+          .select('*', { count: 'exact', head: true })
+          .eq('lead_id', lead.id)
+          .eq('status', 'pago');
+        
+        if (!count || count === 0) {
+          throw new Error('Registre um pagamento antes de marcar como Venda Realizada.');
+        }
         updates.closed_at = new Date().toISOString();
-        if (closingData.treatment_value) {
-          updates.treatment_value = parseFloat(closingData.treatment_value);
-        }
-        if (closingData.payment_method) {
-          updates.payment_method = closingData.payment_method;
-        }
       }
 
       const { error: leadError } = await supabase

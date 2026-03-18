@@ -84,10 +84,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [closingData, setClosingData] = useState({
-    treatment_value: '',
-    payment_method: '' as 'avista' | 'parcelado' | '',
-  });
   const [noteData, setNoteData] = useState({
     content: '',
   });

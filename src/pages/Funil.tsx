@@ -90,11 +90,14 @@ const Funil = () => {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);
       } else if (newStatus === 'compareceu') {
-        // Move to compareceu and open triage
+        // Move to compareceu, open triage, then open payment
         updateStatus.mutate({ leadId: lead.id, newStatus }, {
           onSuccess: () => {
             setTriageLead(lead);
             setTriageDialogOpen(true);
+            // Also open payment dialog after triage
+            setPaymentLead(lead);
+            setPaymentDialogOpen(true);
           },
         });
       } else {

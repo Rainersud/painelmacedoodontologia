@@ -155,20 +155,86 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: Budget Value */}
+        {/* Step 1: Budget Value + Payment Type */}
         {step === 'budget' && (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto scroll-container-y">
             <div className="space-y-2">
               <Label>Valor do Tratamento Orçado</Label>
               <CurrencyInput value={grossValue} onChange={setGrossValue} />
             </div>
+
+            {/* Show balance info if there are previous payments */}
+            {totalPaid > 0 && (
+              <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total orçado</span>
+                  <span className="font-medium">{formatCurrency(grossValue)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Já pago</span>
+                  <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Saldo restante</span>
+                  <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                    {formatCurrency(remainingBalance)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Payment type selection */}
+            <div className="space-y-2">
+              <Label>Tipo de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { setPaymentType('total'); setPartialValue(0); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 text-sm font-medium transition-all",
+                    paymentType === 'total'
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <CheckCircle2 className="h-4 w-4 mx-auto mb-1" />
+                  Pagamento Total
+                </button>
+                <button
+                  onClick={() => setPaymentType('parcial')}
+                  className={cn(
+                    "p-3 rounded-lg border-2 text-sm font-medium transition-all",
+                    paymentType === 'parcial'
+                      ? "border-warning bg-warning/10 text-warning"
+                      : "border-border hover:border-warning/50"
+                  )}
+                >
+                  <Calculator className="h-4 w-4 mx-auto mb-1" />
+                  Pagamento Parcial
+                </button>
+              </div>
+            </div>
+
+            {/* Partial value input */}
+            {paymentType === 'parcial' && (
+              <div className="space-y-2">
+                <Label>Valor a pagar agora</Label>
+                <CurrencyInput value={partialValue} onChange={setPartialValue} />
+                {partialValue > 0 && grossValue > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Saldo restante após pagamento: {formatCurrency(Math.max(0, grossValue - totalPaid - partialValue))}
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button
               className="w-full"
-              disabled={grossValue <= 0}
+              disabled={effectiveValue <= 0}
               onClick={() => setStep('method')}
             >
               <Banknote className="h-4 w-4 mr-2" />
-              PAGAR
+              PAGAR {formatCurrency(effectiveValue)}
             </Button>
           </div>
         )}

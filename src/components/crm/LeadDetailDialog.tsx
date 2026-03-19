@@ -561,10 +561,31 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
+              {/* Budget Field - separate from payments */}
+              <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
+                  📋 Valor do Orçamento
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
+                </p>
+                <CurrencyInput
+                  value={lead.budget_value || 0}
+                  onChange={(value) => {
+                    updateLead.mutate({ leadId: lead.id, updates: { budget_value: value } });
+                  }}
+                />
+                {(lead.budget_value || 0) > 0 && (
+                  <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.budget_value || 0)}
+                  </Badge>
+                )}
+              </div>
+
               {/* Payment Button - available on ALL stages */}
               <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2 text-success">
-                  💰 Pagamento
+                  💰 Pagamento (Faturamento Real)
                 </h4>
                 <Button
                   variant="outline"

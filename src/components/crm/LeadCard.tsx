@@ -136,6 +136,15 @@ export function LeadCard({
           </div>
         )}
 
+        {/* Budget Pending */}
+        {(lead.budget_value || 0) > 0 && !(lead.treatment_value && lead.treatment_value > 0) && (
+          <div className="mb-1.5">
+            <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
+              📋 Orçamento: {formatCurrency(lead.budget_value || 0)}
+            </Badge>
+          </div>
+        )}
+
         {/* Value + Actions */}
         <div className="flex items-center justify-between pt-1.5 border-t border-border">
           <div className="flex items-center gap-1">

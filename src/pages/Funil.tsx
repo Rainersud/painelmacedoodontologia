@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 
 const Funil = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();
   
@@ -33,6 +34,21 @@ const Funil = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
+
+  // Auto-open lead from URL query param (e.g. from Alerts)
+  useEffect(() => {
+    const leadId = searchParams.get('leadId');
+    if (leadId && leads && leads.length > 0) {
+      const lead = leads.find(l => l.id === leadId);
+      if (lead) {
+        setSelectedLead(lead);
+        setDialogOpen(true);
+        // Clean up the URL param
+        searchParams.delete('leadId');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [leads, searchParams, setSearchParams]);
   
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);

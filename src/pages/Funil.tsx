@@ -250,6 +250,53 @@ const Funil = () => {
                 <SelectItem value="outro">Outro</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Date Filter */}
+            <Select value={dateFilter} onValueChange={(v) => {
+              setDateFilter(v);
+              if (v !== 'custom') setCustomDate(undefined);
+            }}>
+              <SelectTrigger className="w-44 h-9 text-sm">
+                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="Filtrar por data" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Todas as datas</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="tomorrow">Amanhã</SelectItem>
+                <SelectItem value="yesterday">Ontem</SelectItem>
+                <SelectItem value="custom">Selecionar data...</SelectItem>
+              </SelectContent>
+            </Select>
+            {dateFilter === 'custom' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    {customDate ? format(customDate, 'dd/MM/yyyy') : 'Escolher'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customDate}
+                    onSelect={setCustomDate}
+                    className="p-3 pointer-events-auto"
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+            {dateFilter !== 'none' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground"
+                onClick={() => { setDateFilter('none'); setCustomDate(undefined); }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 

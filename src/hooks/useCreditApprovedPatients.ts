@@ -8,6 +8,7 @@ export interface CreditApprovedPatient {
   lead_status: string;
   credit_approved_value: number;
   credit_status: string;
+  budget_value: number;
   filled_at: string;
   updated_at: string;
 }

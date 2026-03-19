@@ -43,23 +43,26 @@ function AlertItem({ alert, onViewLead }: { alert: SmartAlert; onViewLead: (id: 
   const Icon = type.icon;
 
   return (
-    <div className={cn(
-      "p-3 rounded-lg border border-l-4 transition-all hover:shadow-sm",
-      level.borderColor,
-      "bg-card"
-    )}>
+    <div 
+      className={cn(
+        "p-3 rounded-lg border border-l-4 transition-all hover:shadow-md cursor-pointer",
+        level.borderColor,
+        "bg-card"
+      )}
+      onClick={() => onViewLead(alert.leadId)}
+    >
       <div className="flex items-start gap-3">
         <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", level.color)}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-medium truncate">{alert.title}</span>
+            <span className="text-sm font-medium truncate">{alert.leadName}</span>
             <Badge variant="outline" className={cn("text-[10px] h-5 shrink-0 border-0", level.color)}>
               {level.icon} {level.label}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-1">{alert.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{alert.title}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button 
@@ -67,7 +70,7 @@ function AlertItem({ alert, onViewLead }: { alert: SmartAlert; onViewLead: (id: 
             size="sm" 
             className="h-7 w-7 p-0"
             title="Entrar em contato"
-            onClick={() => window.open(`https://wa.me/55${alert.leadPhone.replace(/\D/g, '')}`, '_blank')}
+            onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/55${alert.leadPhone.replace(/\D/g, '')}`, '_blank'); }}
           >
             <Phone className="h-3.5 w-3.5" />
           </Button>
@@ -75,10 +78,10 @@ function AlertItem({ alert, onViewLead }: { alert: SmartAlert; onViewLead: (id: 
             variant="ghost" 
             size="sm" 
             className="h-7 w-7 p-0"
-            title="Ver lead"
-            onClick={() => onViewLead(alert.leadId)}
+            title="Ver lead no funil"
+            onClick={(e) => { e.stopPropagation(); onViewLead(alert.leadId); }}
           >
-            <Eye className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
@@ -94,7 +97,7 @@ export function SmartAlertsWidget() {
   const displayAlerts = expanded ? alerts : alerts.slice(0, 5);
 
   const handleViewLead = (leadId: string) => {
-    navigate('/funil');
+    navigate(`/funil?leadId=${leadId}`);
   };
 
   if (alerts.length === 0) {

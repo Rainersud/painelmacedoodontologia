@@ -243,8 +243,13 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
         {step === 'method' && (
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-sm text-muted-foreground">Valor do tratamento</p>
-              <p className="text-2xl font-bold">{formatCurrency(grossValue)}</p>
+              <p className="text-sm text-muted-foreground">
+                {paymentType === 'parcial' ? 'Valor do pagamento parcial' : 'Valor do tratamento'}
+              </p>
+              <p className="text-2xl font-bold">{formatCurrency(effectiveValue)}</p>
+              {paymentType === 'parcial' && (
+                <p className="text-xs text-muted-foreground mt-1">de {formatCurrency(grossValue)} total</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map(({ key, label, icon: Icon, color }) => (

@@ -1,12 +1,16 @@
 import { useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format, isToday, isTomorrow, isYesterday, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Search, X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, Plus, Search, X, CalendarIcon } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { FunnelActivityFilter } from '@/components/crm/FunnelActivityFilter';
 import { LeadCard } from '@/components/crm/LeadCard';
@@ -38,9 +42,25 @@ const Funil = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('none');
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+
+  // Stages affected by date filter
+  const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
+
+  const getFilterDate = useCallback((): Date | null => {
+    if (dateFilter === 'none') return null;
+    if (dateFilter === 'today') return new Date();
+    if (dateFilter === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return d; }
+    if (dateFilter === 'yesterday') { const d = new Date(); d.setDate(d.getDate() - 1); return d; }
+    if (dateFilter === 'custom' && customDate) return customDate;
+    return null;
+  }, [dateFilter, customDate]);
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
+    const filterDate = getFilterDate();
+    
     return leads.filter(lead => {
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch = !query || 
@@ -48,9 +68,23 @@ const Funil = () => {
         lead.phone.includes(query) ||
         (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
-      return matchesSearch && matchesTreatment;
+      
+      // Date filter: only applies to agendou/consulta_agendada/compareceu
+      let matchesDate = true;
+      if (filterDate && dateFilteredStages.includes(lead.status)) {
+        const refDate = lead.status === 'compareceu' 
+          ? (lead.stage_entered_at || lead.updated_at)
+          : (lead.scheduled_appointment_at || lead.stage_entered_at || lead.updated_at);
+        if (refDate) {
+          matchesDate = isSameDay(new Date(refDate), filterDate);
+        } else {
+          matchesDate = false;
+        }
+      }
+      
+      return matchesSearch && matchesTreatment && matchesDate;
     });
-  }, [leads, searchQuery, treatmentFilter]);
+  }, [leads, searchQuery, treatmentFilter, getFilterDate]);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -216,6 +250,53 @@ const Funil = () => {
                 <SelectItem value="outro">Outro</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Date Filter */}
+            <Select value={dateFilter} onValueChange={(v) => {
+              setDateFilter(v);
+              if (v !== 'custom') setCustomDate(undefined);
+            }}>
+              <SelectTrigger className="w-44 h-9 text-sm">
+                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="Filtrar por data" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Todas as datas</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="tomorrow">Amanhã</SelectItem>
+                <SelectItem value="yesterday">Ontem</SelectItem>
+                <SelectItem value="custom">Selecionar data...</SelectItem>
+              </SelectContent>
+            </Select>
+            {dateFilter === 'custom' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    {customDate ? format(customDate, 'dd/MM/yyyy') : 'Escolher'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customDate}
+                    onSelect={setCustomDate}
+                    className="p-3 pointer-events-auto"
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+            {dateFilter !== 'none' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground"
+                onClick={() => { setDateFilter('none'); setCustomDate(undefined); }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 

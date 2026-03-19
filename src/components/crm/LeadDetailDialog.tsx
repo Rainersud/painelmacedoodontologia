@@ -282,7 +282,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             const showTriage = lead.status === 'compareceu' || 
               ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
             return (
-              <div className="overflow-x-auto -mx-1 px-1">
+              <div className="shrink-0 overflow-x-auto -mx-1 px-1 border-b border-border">
                 <TabsList className="inline-flex w-auto min-w-full">
                   <TabsTrigger value="info" className="text-xs sm:text-sm gap-1">
                     <User className="h-3.5 w-3.5" />
@@ -319,7 +319,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             );
           })()}
 
-          <div className="flex-1 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
+          <div className="flex-1 min-h-0 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
             {/* Smart Alerts Banner */}
             <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}

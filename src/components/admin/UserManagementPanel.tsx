@@ -37,6 +37,7 @@ const DEFAULT_AGENT_PERMISSIONS = [
   { module: 'indicacoes', can_view: true, can_edit: true },
   { module: 'agendamentos', can_view: true, can_edit: true },
   { module: 'tarefas', can_view: true, can_edit: true },
+  { module: 'credito_liberado', can_view: true, can_edit: true },
   { module: 'metas_clinica', can_view: true, can_edit: false },
   { module: 'bonus_metas', can_view: true, can_edit: false },
   { module: 'plano_incentivo', can_view: true, can_edit: false },

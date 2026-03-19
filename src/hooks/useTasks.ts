@@ -48,11 +48,11 @@ export function useTasks(filters?: {
       if (leadIds.length > 0) {
         const { data: leads } = await supabase
           .from('leads')
-          .select('id, name, phone')
+          .select('id, name, phone, budget_value, treatment_value')
           .in('id', leadIds as string[]);
         
         if (leads) {
-          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone }]));
+          leadMap = Object.fromEntries(leads.map(l => [l.id, { name: l.name, phone: l.phone, budget_value: l.budget_value, treatment_value: l.treatment_value }]));
         }
       }
 

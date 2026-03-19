@@ -88,7 +88,7 @@ const Funil = () => {
     const lead = leads?.find(l => l.id === leadId);
     
     if (lead && lead.status !== newStatus) {
-      // VALIDATION: Block move to fechado without payment
+      // When moving to fechado, check for payment - prompt if missing
       if (newStatus === 'fechado') {
         const { count } = await supabase
           .from('payments')
@@ -97,7 +97,10 @@ const Funil = () => {
           .eq('status', 'pago');
         
         if (!count || count === 0) {
-          toast.error('Não é possível mover para Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
+          // Auto-open payment dialog instead of blocking
+          setPaymentLead(lead);
+          setPaymentDialogOpen(true);
+          toast.info('Registre o pagamento para concluir a venda.');
           setDraggedLeadId(null);
           setDropTargetStatus(null);
           return;

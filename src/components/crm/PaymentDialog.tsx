@@ -360,7 +360,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                         <SelectItem key={n} value={String(n)}>
-                          {n}x de {formatCurrency(grossValue / n)}
+                          {n}x de {formatCurrency(effectiveValue / n)}
                         </SelectItem>
                       ))}
                     </SelectContent>

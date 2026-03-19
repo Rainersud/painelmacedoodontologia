@@ -580,9 +580,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     }
                   }}
                 />
-                {(lead.budget_value || 0) > 0 && (
+                {budgetValue > 0 && (
                   <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
-                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.budget_value || 0)}
+                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
                   </Badge>
                 )}
               </div>

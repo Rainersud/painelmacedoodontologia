@@ -336,7 +336,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
               <div className="p-4 rounded-lg border-2 border-success/20 bg-success/5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">💰 Valor recebido</span>
-                  <span className="font-bold text-lg text-success">{formatCurrency(grossValue)}</span>
+                  <span className="font-bold text-lg text-success">{formatCurrency(effectiveValue)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />

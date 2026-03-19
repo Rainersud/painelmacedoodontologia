@@ -311,7 +311,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                   <div className="space-y-2 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">💳 Valor pago pelo paciente</span>
-                      <span className="font-bold">{formatCurrency(grossValue)}</span>
+                      <span className="font-bold">{formatCurrency(effectiveValue)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-destructive">
                       <span>Taxa de antecipação ({creditCalc.feePercentage}%)</span>

@@ -553,21 +553,20 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Payment Button - available from compareceu onwards */}
-              {['compareceu', 'followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status) && (
-                <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
-                  <h4 className="font-medium text-sm flex items-center gap-2 text-success">
-                    💰 Pagamento
-                  </h4>
-                  <Button
-                    variant="outline"
-                    className="w-full border-success/30 text-success hover:bg-success/10"
-                    onClick={() => setPaymentOpen(true)}
-                  >
-                    Registrar Pagamento
-                  </Button>
-                </div>
-              )}
+              {/* Payment Button - available on ALL stages */}
+              <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2 text-success">
+                  💰 Pagamento
+                </h4>
+                <Button
+                  variant="outline"
+                  className="w-full border-success/30 text-success hover:bg-success/10"
+                  onClick={() => setPaymentOpen(true)}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Registrar Pagamento
+                </Button>
+              </div>
 
 
               {/* Schedule fields when status is agendou */}

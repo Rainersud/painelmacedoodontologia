@@ -300,7 +300,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                         <SelectItem key={n} value={String(n)}>
-                          {n}x de {formatCurrency(grossValue / n)} — Taxa: {CREDIT_FEE_RATES[n]}%
+                          {n}x de {formatCurrency(effectiveValue / n)} — Taxa: {CREDIT_FEE_RATES[n]}%
                         </SelectItem>
                       ))}
                     </SelectContent>

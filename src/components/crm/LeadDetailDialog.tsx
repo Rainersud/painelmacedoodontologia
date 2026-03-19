@@ -197,7 +197,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0 overflow-hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <DialogTitle className="flex items-start sm:items-center gap-3">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

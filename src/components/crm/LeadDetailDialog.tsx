@@ -85,6 +85,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     discount_percentage: '5',
     scheduled_appointment_at: '',
   });
+  const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -114,6 +115,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
           : '',
       });
+      setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
       setStatusNotes('');
       setScheduledAt('');
@@ -570,14 +572,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
                 </p>
                 <CurrencyInput
-                  value={lead.budget_value || 0}
-                  onChange={(value) => {
-                    updateLead.mutate({ leadId: lead.id, updates: { budget_value: value } });
+                  value={budgetValue}
+                  onChange={(value) => setBudgetValue(value)}
+                  onBlur={() => {
+                    if (budgetValue !== (lead.budget_value || 0)) {
+                      updateLead.mutate({ leadId: lead.id, updates: { budget_value: budgetValue } });
+                    }
                   }}
                 />
-                {(lead.budget_value || 0) > 0 && (
+                {budgetValue > 0 && (
                   <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
-                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.budget_value || 0)}
+                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
                   </Badge>
                 )}
               </div>

@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';

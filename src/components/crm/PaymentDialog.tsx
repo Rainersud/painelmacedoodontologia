@@ -47,14 +47,29 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   const [installments, setInstallments] = useState(1);
   const [boletoCount, setBoletoCount] = useState(1);
   const [boletoDates, setBoletoDates] = useState<string[]>([]);
+  const [paymentType, setPaymentType] = useState<'total' | 'parcial'>('total');
+  const [partialValue, setPartialValue] = useState(0);
 
   const createPayment = useCreatePayment();
+  const { data: existingPayments } = usePayments(leadId);
+
+  // Calculate already paid amount
+  const totalPaid = useMemo(() => {
+    return (existingPayments || [])
+      .filter(p => p.status === 'pago')
+      .reduce((sum, p) => sum + (p.net_value || 0), 0);
+  }, [existingPayments]);
+
+  const remainingBalance = Math.max(0, grossValue - totalPaid);
+
+  // The actual payment value based on type
+  const effectiveValue = paymentType === 'parcial' ? partialValue : grossValue;
 
   // Credit card calculation
   const creditCalc = useMemo(() => {
-    if (method !== 'credito' || grossValue <= 0) return null;
-    return calculateNetValue(grossValue, installments);
-  }, [method, grossValue, installments]);
+    if (method !== 'credito' || effectiveValue <= 0) return null;
+    return calculateNetValue(effectiveValue, installments);
+  }, [method, effectiveValue, installments]);
 
   const handleReset = () => {
     setStep('budget');
@@ -62,6 +77,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
     setInstallments(1);
     setBoletoCount(1);
     setBoletoDates([]);
+    setPaymentType('total');
+    setPartialValue(0);
   };
 
   const handleMethodSelect = (m: PaymentMethod) => {

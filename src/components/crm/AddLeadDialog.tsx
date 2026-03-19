@@ -66,19 +66,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
     setSaving(true);
     try {
-      // Check for duplicates by phone
       const cleanPhone = form.phone.replace(/\D/g, '');
-      const { data: existing } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error('Já existe um contato com esse telefone');
-        setSaving(false);
-        return;
-      }
 
       const { error } = await supabase.from('leads').insert({
         name: form.name.trim(),

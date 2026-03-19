@@ -51,6 +51,7 @@ export function useCreditApprovedPatients() {
             lead_status: lead.status,
             credit_approved_value: Number(t.credit_approved_value) || 0,
             credit_status: t.credit_status || 'pendente',
+            budget_value: Number(lead.budget_value) || 0,
             filled_at: t.filled_at,
             updated_at: t.updated_at,
           };

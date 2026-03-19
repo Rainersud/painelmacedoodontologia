@@ -340,7 +340,7 @@ const Funil = () => {
                     {/* Column body — scrolls vertically */}
                     <div className="flex-1 min-h-0 px-2 pb-2">
                       <div className="h-full overflow-y-auto scroll-container-y space-y-2 pr-1">
-                        {stageLeads.map((lead) => (
+                        {stageLeads.map((lead, index) => (
                           <div
                             key={lead.id}
                             draggable
@@ -355,6 +355,7 @@ const Funil = () => {
                               lead={lead} 
                               onClick={handleOpenDetail}
                               compact
+                              index={index}
                             />
                           </div>
                         ))}

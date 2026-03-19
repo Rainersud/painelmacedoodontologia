@@ -49,6 +49,8 @@ export function LeadCard({
                       topAlert?.level === 'opportunity' ? 'border-l-4 border-l-success' :
                       topAlert?.level === 'attention' ? 'border-l-4 border-l-warning' : '';
 
+  const isEven = index % 2 === 0;
+
   return (
     <Card 
       draggable={!!onDragStart}
@@ -56,6 +58,7 @@ export function LeadCard({
       onClick={() => onClick?.(lead)}
       className={cn(
         "cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-sm group relative",
+        isEven ? "bg-card" : "bg-muted/40",
         onDragStart && "active:cursor-grabbing",
         borderClass
       )}

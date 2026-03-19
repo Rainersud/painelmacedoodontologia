@@ -277,8 +277,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Valor do tratamento</p>
-                <p className="text-lg font-bold">{formatCurrency(grossValue)}</p>
+                <p className="text-sm text-muted-foreground">{paymentType === 'parcial' ? 'Pagamento parcial' : 'Valor do tratamento'}</p>
+                <p className="text-lg font-bold">{formatCurrency(effectiveValue)}</p>
               </div>
               <Badge className={PAYMENT_METHODS.find(m => m.key === method)?.color}>
                 {PAYMENT_METHODS.find(m => m.key === method)?.label}

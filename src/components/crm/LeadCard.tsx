@@ -58,7 +58,7 @@ export function LeadCard({
       onClick={() => onClick?.(lead)}
       className={cn(
         "cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-sm group relative",
-        isEven ? "bg-card" : "bg-muted/40",
+        isEven ? "bg-card" : "bg-accent/70",
         onDragStart && "active:cursor-grabbing",
         borderClass
       )}

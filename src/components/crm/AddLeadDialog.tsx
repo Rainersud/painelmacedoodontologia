@@ -117,7 +117,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Adicionar Lead</DialogTitle>
           <DialogDescription>

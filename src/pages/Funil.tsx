@@ -233,7 +233,7 @@ const Funil = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-11rem)] overflow-y-auto overflow-x-auto scroll-container-x">
+      <div className="h-[calc(100vh-11rem)] overflow-x-auto overflow-y-hidden" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
         <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1 h-full">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);

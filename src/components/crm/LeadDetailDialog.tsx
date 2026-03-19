@@ -705,14 +705,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={2}
                 />
               </div>
-              <Button
-                className="w-full"
-                onClick={handleCreateTask}
-                disabled={!taskData.title || !taskData.scheduled_at || createTask.isPending}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {createTask.isPending ? 'Criando...' : 'Criar Tarefa'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button
+                  className="w-full"
+                  onClick={handleCreateTask}
+                  disabled={!taskData.title || !taskData.scheduled_at || createTask.isPending}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {createTask.isPending ? 'Criando...' : 'Criar Tarefa'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Referral Tab */}

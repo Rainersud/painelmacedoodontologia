@@ -231,6 +231,9 @@ const Dashboard = () => {
         {/* Pending Tasks Alert Banner - TOP PRIORITY */}
         <PendingTasksBanner />
 
+        {/* Smart Alerts */}
+        <SmartAlertsWidget />
+
         {/* Header with Period Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>

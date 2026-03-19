@@ -16,6 +16,7 @@ export const MODULE_KEYS = {
   indicacoes: 'indicacoes',
   agendamentos: 'agendamentos',
   tarefas: 'tarefas',
+  credito_liberado: 'credito_liberado',
   metas_clinica: 'metas_clinica',
   bonus_metas: 'bonus_metas',
   plano_incentivo: 'plano_incentivo',

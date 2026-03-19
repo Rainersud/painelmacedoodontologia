@@ -33,6 +33,7 @@ export const MODULE_LABELS: Record<string, string> = {
   indicacoes: 'Indicações',
   agendamentos: 'Agendamentos',
   tarefas: 'Tarefas',
+  credito_liberado: 'Crédito Liberado',
   metas_clinica: 'Metas da Clínica',
   bonus_metas: 'Bônus por Metas',
   plano_incentivo: 'Plano de Incentivo',

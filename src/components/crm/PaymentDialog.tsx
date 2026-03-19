@@ -381,7 +381,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                         min={new Date().toISOString().split('T')[0]}
                       />
                       <span className="text-sm text-muted-foreground shrink-0">
-                        {formatCurrency(grossValue / boletoCount)}
+                        {formatCurrency(effectiveValue / boletoCount)}
                       </span>
                     </div>
                   ))}

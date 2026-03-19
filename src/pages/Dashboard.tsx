@@ -48,6 +48,7 @@ import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionW
 import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 import { DailySummaryWidget } from '@/components/dashboard/DailySummaryWidget';
+import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';
@@ -229,6 +230,9 @@ const Dashboard = () => {
       <div className="space-y-6">
         {/* Pending Tasks Alert Banner - TOP PRIORITY */}
         <PendingTasksBanner />
+
+        {/* Smart Alerts */}
+        <SmartAlertsWidget />
 
         {/* Header with Period Selector */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

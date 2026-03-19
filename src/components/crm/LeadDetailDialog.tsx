@@ -447,14 +447,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
-              <Button 
-                className="w-full"
-                onClick={handleSaveInfo}
-                disabled={updateLead.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updateLead.isPending ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button 
+                  className="w-full"
+                  onClick={handleSaveInfo}
+                  disabled={updateLead.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateLead.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Status Tab */}

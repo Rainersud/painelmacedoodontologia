@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
+import { LeadAlertsBanner } from './LeadAlertsBanner';
 import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
@@ -319,6 +320,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           })()}
 
           <div className="flex-1 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
+            {/* Smart Alerts Banner */}
+            <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

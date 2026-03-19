@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { CurrencyInput } from './CurrencyInput';
 import { formatCurrency, CREDIT_FEE_RATES, calculateNetValue } from '@/lib/currency';
-import { useCreatePayment } from '@/hooks/usePayments';
+import { useCreatePayment, usePayments } from '@/hooks/usePayments';
 import {
   CreditCard,
   Banknote,
@@ -47,14 +47,29 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   const [installments, setInstallments] = useState(1);
   const [boletoCount, setBoletoCount] = useState(1);
   const [boletoDates, setBoletoDates] = useState<string[]>([]);
+  const [paymentType, setPaymentType] = useState<'total' | 'parcial'>('total');
+  const [partialValue, setPartialValue] = useState(0);
 
   const createPayment = useCreatePayment();
+  const { data: existingPayments } = usePayments(leadId);
+
+  // Calculate already paid amount
+  const totalPaid = useMemo(() => {
+    return (existingPayments || [])
+      .filter(p => p.status === 'pago')
+      .reduce((sum, p) => sum + (p.net_value || 0), 0);
+  }, [existingPayments]);
+
+  const remainingBalance = Math.max(0, grossValue - totalPaid);
+
+  // The actual payment value based on type
+  const effectiveValue = paymentType === 'parcial' ? partialValue : grossValue;
 
   // Credit card calculation
   const creditCalc = useMemo(() => {
-    if (method !== 'credito' || grossValue <= 0) return null;
-    return calculateNetValue(grossValue, installments);
-  }, [method, grossValue, installments]);
+    if (method !== 'credito' || effectiveValue <= 0) return null;
+    return calculateNetValue(effectiveValue, installments);
+  }, [method, effectiveValue, installments]);
 
   const handleReset = () => {
     setStep('budget');
@@ -62,6 +77,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
     setInstallments(1);
     setBoletoCount(1);
     setBoletoDates([]);
+    setPaymentType('total');
+    setPartialValue(0);
   };
 
   const handleMethodSelect = (m: PaymentMethod) => {
@@ -87,11 +104,11 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   };
 
   const handleConfirmPayment = () => {
-    if (!method || grossValue <= 0) return;
+    if (!method || effectiveValue <= 0) return;
 
     let feePercentage = 0;
     let feeAmount = 0;
-    let netValue = grossValue;
+    let netValue = effectiveValue;
 
     if (method === 'credito' && creditCalc) {
       feePercentage = creditCalc.feePercentage;
@@ -102,7 +119,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
     createPayment.mutate({
       lead_id: leadId,
       payment_method: method,
-      gross_value: grossValue,
+      gross_value: effectiveValue,
       installments: method === 'credito' ? installments : method === 'boleto' ? boletoCount : 1,
       fee_percentage: feePercentage,
       fee_amount: feeAmount,
@@ -117,10 +134,11 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   };
 
   const canConfirm = () => {
-    if (!method || grossValue <= 0) return false;
+    if (!method || effectiveValue <= 0) return false;
     if (method === 'boleto') {
       return boletoDates.every(d => d.length > 0);
     }
+    if (paymentType === 'parcial' && partialValue <= 0) return false;
     return true;
   };
 
@@ -137,20 +155,86 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: Budget Value */}
+        {/* Step 1: Budget Value + Payment Type */}
         {step === 'budget' && (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto scroll-container-y">
             <div className="space-y-2">
               <Label>Valor do Tratamento Orçado</Label>
               <CurrencyInput value={grossValue} onChange={setGrossValue} />
             </div>
+
+            {/* Show balance info if there are previous payments */}
+            {totalPaid > 0 && (
+              <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total orçado</span>
+                  <span className="font-medium">{formatCurrency(grossValue)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Já pago</span>
+                  <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Saldo restante</span>
+                  <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                    {formatCurrency(remainingBalance)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Payment type selection */}
+            <div className="space-y-2">
+              <Label>Tipo de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { setPaymentType('total'); setPartialValue(0); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 text-sm font-medium transition-all",
+                    paymentType === 'total'
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <CheckCircle2 className="h-4 w-4 mx-auto mb-1" />
+                  Pagamento Total
+                </button>
+                <button
+                  onClick={() => setPaymentType('parcial')}
+                  className={cn(
+                    "p-3 rounded-lg border-2 text-sm font-medium transition-all",
+                    paymentType === 'parcial'
+                      ? "border-warning bg-warning/10 text-warning"
+                      : "border-border hover:border-warning/50"
+                  )}
+                >
+                  <Calculator className="h-4 w-4 mx-auto mb-1" />
+                  Pagamento Parcial
+                </button>
+              </div>
+            </div>
+
+            {/* Partial value input */}
+            {paymentType === 'parcial' && (
+              <div className="space-y-2">
+                <Label>Valor a pagar agora</Label>
+                <CurrencyInput value={partialValue} onChange={setPartialValue} />
+                {partialValue > 0 && grossValue > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Saldo restante após pagamento: {formatCurrency(Math.max(0, grossValue - totalPaid - partialValue))}
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button
               className="w-full"
-              disabled={grossValue <= 0}
+              disabled={effectiveValue <= 0}
               onClick={() => setStep('method')}
             >
               <Banknote className="h-4 w-4 mr-2" />
-              PAGAR
+              PAGAR {formatCurrency(effectiveValue)}
             </Button>
           </div>
         )}
@@ -159,8 +243,13 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
         {step === 'method' && (
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-sm text-muted-foreground">Valor do tratamento</p>
-              <p className="text-2xl font-bold">{formatCurrency(grossValue)}</p>
+              <p className="text-sm text-muted-foreground">
+                {paymentType === 'parcial' ? 'Valor do pagamento parcial' : 'Valor do tratamento'}
+              </p>
+              <p className="text-2xl font-bold">{formatCurrency(effectiveValue)}</p>
+              {paymentType === 'parcial' && (
+                <p className="text-xs text-muted-foreground mt-1">de {formatCurrency(grossValue)} total</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map(({ key, label, icon: Icon, color }) => (
@@ -188,8 +277,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-muted/50 flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Valor do tratamento</p>
-                <p className="text-lg font-bold">{formatCurrency(grossValue)}</p>
+                <p className="text-sm text-muted-foreground">{paymentType === 'parcial' ? 'Pagamento parcial' : 'Valor do tratamento'}</p>
+                <p className="text-lg font-bold">{formatCurrency(effectiveValue)}</p>
               </div>
               <Badge className={PAYMENT_METHODS.find(m => m.key === method)?.color}>
                 {PAYMENT_METHODS.find(m => m.key === method)?.label}
@@ -211,7 +300,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                         <SelectItem key={n} value={String(n)}>
-                          {n}x de {formatCurrency(grossValue / n)} — Taxa: {CREDIT_FEE_RATES[n]}%
+                          {n}x de {formatCurrency(effectiveValue / n)} — Taxa: {CREDIT_FEE_RATES[n]}%
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -222,7 +311,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                   <div className="space-y-2 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">💳 Valor pago pelo paciente</span>
-                      <span className="font-bold">{formatCurrency(grossValue)}</span>
+                      <span className="font-bold">{formatCurrency(effectiveValue)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-destructive">
                       <span>Taxa de antecipação ({creditCalc.feePercentage}%)</span>
@@ -247,7 +336,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
               <div className="p-4 rounded-lg border-2 border-success/20 bg-success/5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">💰 Valor recebido</span>
-                  <span className="font-bold text-lg text-success">{formatCurrency(grossValue)}</span>
+                  <span className="font-bold text-lg text-success">{formatCurrency(effectiveValue)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
@@ -271,7 +360,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                         <SelectItem key={n} value={String(n)}>
-                          {n}x de {formatCurrency(grossValue / n)}
+                          {n}x de {formatCurrency(effectiveValue / n)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -292,7 +381,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                         min={new Date().toISOString().split('T')[0]}
                       />
                       <span className="text-sm text-muted-foreground shrink-0">
-                        {formatCurrency(grossValue / boletoCount)}
+                        {formatCurrency(effectiveValue / boletoCount)}
                       </span>
                     </div>
                   ))}

@@ -1,16 +1,17 @@
 import { Input } from '@/components/ui/input';
-import { formatCurrencyInput, currencyDisplayToNumber } from '@/lib/currency';
+import { formatCurrencyInput } from '@/lib/currency';
 
 interface CurrencyInputProps {
   value: number;
   onChange: (value: number) => void;
+  onBlur?: () => void;
   placeholder?: string;
   id?: string;
   className?: string;
   disabled?: boolean;
 }
 
-export function CurrencyInput({ value, onChange, placeholder = '0,00', id, className, disabled }: CurrencyInputProps) {
+export function CurrencyInput({ value, onChange, onBlur, placeholder = '0,00', id, className, disabled }: CurrencyInputProps) {
   const displayValue = value > 0 ? formatCurrencyInput(Math.round(value * 100).toString()) : '';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +32,7 @@ export function CurrencyInput({ value, onChange, placeholder = '0,00', id, class
         id={id}
         value={displayValue}
         onChange={handleChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={`pl-10 ${className || ''}`}
         disabled={disabled}

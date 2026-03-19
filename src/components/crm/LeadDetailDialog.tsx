@@ -572,9 +572,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
                 </p>
                 <CurrencyInput
-                  value={lead.budget_value || 0}
-                  onChange={(value) => {
-                    updateLead.mutate({ leadId: lead.id, updates: { budget_value: value } });
+                  value={budgetValue}
+                  onChange={(value) => setBudgetValue(value)}
+                  onBlur={() => {
+                    if (budgetValue !== (lead.budget_value || 0)) {
+                      updateLead.mutate({ leadId: lead.id, updates: { budget_value: budgetValue } });
+                    }
                   }}
                 />
                 {(lead.budget_value || 0) > 0 && (

@@ -43,7 +43,7 @@ export function useTasks(filters?: {
 
       // Fetch lead names separately
       const leadIds = [...new Set(data?.map(t => t.lead_id).filter(Boolean))];
-      let leadMap: Record<string, { name: string; phone: string }> = {};
+      let leadMap: Record<string, { name: string; phone: string; budget_value?: number | null; treatment_value?: number | null }> = {};
       
       if (leadIds.length > 0) {
         const { data: leads } = await supabase

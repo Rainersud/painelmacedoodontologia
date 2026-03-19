@@ -91,7 +91,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   // Joined data
-  lead?: { name: string; phone: string } | null;
+  lead?: { name: string; phone: string; budget_value?: number | null; treatment_value?: number | null } | null;
   profiles?: { full_name: string } | null;
 }
 

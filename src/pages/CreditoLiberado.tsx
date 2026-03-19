@@ -138,6 +138,15 @@ const CreditoLiberado = () => {
                           </span>
                         </td>
                         <td className="py-3">
+                          {patient.budget_value && patient.budget_value > 0 ? (
+                            <span className="text-sm font-medium text-warning">
+                              {formatCurrency(patient.budget_value)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-3">
                           <Badge
                             variant="outline"
                             className={cn("text-xs border-0 px-2 py-0.5", getStageColor(patient.lead_status), "text-white")}

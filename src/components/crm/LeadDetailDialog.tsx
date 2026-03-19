@@ -318,7 +318,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             );
           })()}
 
-          <ScrollArea className="flex-1 mt-4 pb-4">
+          <div className="flex-1 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

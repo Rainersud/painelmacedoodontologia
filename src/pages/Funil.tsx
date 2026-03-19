@@ -188,7 +188,10 @@ const Funil = () => {
             {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
           </p>
           <div className="flex items-center gap-2">
-            <FunnelActivityFilter />
+            <FunnelActivityFilter onLeadClick={(leadId) => {
+              const lead = leads?.find(l => l.id === leadId);
+              if (lead) handleOpenDetail(lead);
+            }} />
             <Button onClick={() => setAddLeadOpen(true)} size="sm">
               <Plus className="h-4 w-4 mr-1" />
               Adicionar Lead

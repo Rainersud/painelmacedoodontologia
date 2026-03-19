@@ -644,14 +644,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <Button
-                className="w-full"
-                onClick={handleChangeStatus}
-                disabled={!newStatus || updateStatus.isPending}
-              >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button
+                  className="w-full"
+                  onClick={handleChangeStatus}
+                  disabled={!newStatus || updateStatus.isPending}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Task Tab */}

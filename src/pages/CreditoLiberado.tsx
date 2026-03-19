@@ -116,6 +116,7 @@ const CreditoLiberado = () => {
                     <tr className="border-b text-left">
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paciente</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Crédito Aprovado</th>
+                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Orçamento Pendente</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Etapa no Funil</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Última Atualização</th>
                     </tr>

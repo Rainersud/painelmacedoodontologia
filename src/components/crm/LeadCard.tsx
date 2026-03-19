@@ -15,6 +15,7 @@ interface LeadCardProps {
   onAddNote?: (lead: Lead) => void;
   onCall?: (lead: Lead) => void;
   compact?: boolean;
+  index?: number;
 }
 
 export function LeadCard({ 

@@ -104,11 +104,11 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   };
 
   const handleConfirmPayment = () => {
-    if (!method || grossValue <= 0) return;
+    if (!method || effectiveValue <= 0) return;
 
     let feePercentage = 0;
     let feeAmount = 0;
-    let netValue = grossValue;
+    let netValue = effectiveValue;
 
     if (method === 'credito' && creditCalc) {
       feePercentage = creditCalc.feePercentage;
@@ -119,7 +119,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
     createPayment.mutate({
       lead_id: leadId,
       payment_method: method,
-      gross_value: grossValue,
+      gross_value: effectiveValue,
       installments: method === 'credito' ? installments : method === 'boleto' ? boletoCount : 1,
       fee_percentage: feePercentage,
       fee_amount: feeAmount,
@@ -134,10 +134,11 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   };
 
   const canConfirm = () => {
-    if (!method || grossValue <= 0) return false;
+    if (!method || effectiveValue <= 0) return false;
     if (method === 'boleto') {
       return boletoDates.every(d => d.length > 0);
     }
+    if (paymentType === 'parcial' && partialValue <= 0) return false;
     return true;
   };
 

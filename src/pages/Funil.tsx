@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, Search, X } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
+import { FunnelActivityFilter } from '@/components/crm/FunnelActivityFilter';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
@@ -183,10 +184,13 @@ const Funil = () => {
             {filteredLeads.length} contatos no funil
             {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
           </p>
-          <Button onClick={() => setAddLeadOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Adicionar Lead
-          </Button>
+          <div className="flex items-center gap-2">
+            <FunnelActivityFilter />
+            <Button onClick={() => setAddLeadOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar Lead
+            </Button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-sm">

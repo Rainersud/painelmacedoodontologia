@@ -161,6 +161,23 @@ export function useCreatePayment() {
         .from('leads')
         .update({ treatment_value: data.gross_value, budget_value: data.gross_value })
         .eq('id', data.lead_id);
+
+      // Log the payment activity
+      const { data: leadData } = await supabase
+        .from('leads')
+        .select('name')
+        .eq('id', data.lead_id)
+        .maybeSingle();
+
+      await supabase.from('activity_logs').insert({
+        lead_id: data.lead_id,
+        agent_id: user.id,
+        activity_type: 'value_updated',
+        title: `Pagamento registrado: ${leadData?.name || 'Lead'}`,
+        description: `${data.payment_method.toUpperCase()} - R$ ${data.gross_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}${data.payment_method === 'credito' ? ` (${data.installments}x, líquido: R$ ${data.net_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` : ''}`,
+        new_value: String(data.net_value),
+        metadata: { payment_method: data.payment_method, gross_value: data.gross_value, net_value: data.net_value, installments: data.installments },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });

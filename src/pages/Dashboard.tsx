@@ -47,6 +47,7 @@ import { TreatmentRankingWidget } from '@/components/dashboard/TreatmentRankingW
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
+import { DailySummaryWidget } from '@/components/dashboard/DailySummaryWidget';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';
@@ -300,6 +301,9 @@ const Dashboard = () => {
             </Card>
           ))}
         </div>
+
+        {/* Daily Summary Widget */}
+        <DailySummaryWidget />
 
         {/* Today Tasks Widget - Right after KPIs */}
         <TodayTasksWidget />

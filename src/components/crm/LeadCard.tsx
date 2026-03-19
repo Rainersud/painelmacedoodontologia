@@ -1,10 +1,11 @@
-import { Phone, MessageSquare, Calendar, DollarSign, StickyNote, CheckSquare } from 'lucide-react';
+import { Phone, MessageSquare, Calendar, DollarSign, StickyNote, CheckSquare, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ReferralPopover } from './ReferralPopover';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
+import { useLeadAlerts } from '@/hooks/useLeadAlerts';
 import { cn } from '@/lib/utils';
 
 interface LeadCardProps {
@@ -25,6 +26,7 @@ export function LeadCard({
   compact = false,
 }: LeadCardProps) {
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
+  const leadAlerts = useLeadAlerts(lead);
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
 
@@ -39,6 +41,12 @@ export function LeadCard({
     critical: 'bg-destructive/10 text-destructive',
   };
 
+  // Get the highest priority alert for the card border
+  const topAlert = leadAlerts[0];
+  const borderClass = topAlert?.level === 'critical' ? 'border-l-4 border-l-destructive' : 
+                      topAlert?.level === 'opportunity' ? 'border-l-4 border-l-success' :
+                      topAlert?.level === 'attention' ? 'border-l-4 border-l-warning' : '';
+
   return (
     <Card 
       draggable={!!onDragStart}
@@ -46,7 +54,8 @@ export function LeadCard({
       onClick={() => onClick?.(lead)}
       className={cn(
         "cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-sm group relative",
-        onDragStart && "active:cursor-grabbing"
+        onDragStart && "active:cursor-grabbing",
+        borderClass
       )}
     >
       {/* Task indicator */}
@@ -75,6 +84,21 @@ export function LeadCard({
             <ReferralPopover lead={lead} refTags={refTags} />
           )}
         </div>
+
+        {/* Smart Alert Badge */}
+        {topAlert && (
+          <div className="mb-1.5">
+            <Badge variant="outline" className={cn(
+              "text-[10px] border-0 font-medium",
+              topAlert.level === 'critical' ? 'bg-destructive/10 text-destructive' :
+              topAlert.level === 'opportunity' ? 'bg-success/10 text-success' :
+              'bg-warning/10 text-warning'
+            )}>
+              <Zap className="h-2.5 w-2.5 mr-0.5" />
+              {topAlert.shortLabel}
+            </Badge>
+          </div>
+        )}
 
         {/* Treatment Interest */}
         {lead.interest_product && (

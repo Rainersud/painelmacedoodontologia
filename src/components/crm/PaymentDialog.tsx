@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { CurrencyInput } from './CurrencyInput';
 import { formatCurrency, CREDIT_FEE_RATES, calculateNetValue } from '@/lib/currency';
-import { useCreatePayment } from '@/hooks/usePayments';
+import { useCreatePayment, usePayments } from '@/hooks/usePayments';
 import {
   CreditCard,
   Banknote,

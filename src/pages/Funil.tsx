@@ -233,8 +233,8 @@ const Funil = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-11rem)] scroll-container-x">
-        <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1">
+      <div className="h-[calc(100vh-11rem)] overflow-y-auto overflow-x-auto scroll-container-x">
+        <div className="flex gap-2 sm:gap-3 min-w-max pb-4 px-1 h-full">
           {FUNNEL_STAGES.map((stage) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalBudgetByStatus(stage.key);
@@ -243,13 +243,13 @@ const Funil = () => {
             return (
                 <div 
                 key={stage.key}
-                className="w-60 sm:w-68 lg:w-72 flex-shrink-0"
+                className="w-60 sm:w-68 lg:w-72 flex-shrink-0 flex flex-col h-full"
                 onDragOver={(e) => handleDragOver(e, stage.key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}
               >
                 <Card className={cn(
-                  "border-0 shadow-sm h-full transition-all duration-200",
+                  "border-0 shadow-sm flex-1 flex flex-col transition-all duration-200",
                   isDropTarget && 'ring-2 ring-primary ring-offset-2'
                 )}>
                   <CardHeader className="pb-2 px-3 pt-3">
@@ -266,8 +266,8 @@ const Funil = () => {
                       {formatCurrency(totalValue)}
                     </p>
                   </CardHeader>
-                  <CardContent className="pt-0 px-2 pb-2">
-                    <div className="space-y-2 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
+                  <CardContent className="pt-0 px-2 pb-2 flex-1 overflow-hidden">
+                    <div className="space-y-2 h-full overflow-y-auto scroll-container-y pr-1">
                       {stageLeads.map((lead) => (
                         <div
                           key={lead.id}

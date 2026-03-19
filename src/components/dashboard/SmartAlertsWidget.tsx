@@ -97,7 +97,7 @@ export function SmartAlertsWidget() {
   const displayAlerts = expanded ? alerts : alerts.slice(0, 5);
 
   const handleViewLead = (leadId: string) => {
-    navigate('/funil');
+    navigate(`/funil?leadId=${leadId}`);
   };
 
   if (alerts.length === 0) {

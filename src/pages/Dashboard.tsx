@@ -48,6 +48,7 @@ import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionW
 import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 import { DailySummaryWidget } from '@/components/dashboard/DailySummaryWidget';
+import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 
 
 type Period = 'diario' | 'semanal' | 'mensal';

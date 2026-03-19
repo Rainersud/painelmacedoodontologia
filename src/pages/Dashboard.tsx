@@ -302,6 +302,9 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Daily Summary Widget */}
+        <DailySummaryWidget />
+
         {/* Today Tasks Widget - Right after KPIs */}
         <TodayTasksWidget />
 

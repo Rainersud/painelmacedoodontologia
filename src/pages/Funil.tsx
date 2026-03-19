@@ -184,10 +184,13 @@ const Funil = () => {
             {filteredLeads.length} contatos no funil
             {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
           </p>
-          <Button onClick={() => setAddLeadOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Adicionar Lead
-          </Button>
+          <div className="flex items-center gap-2">
+            <FunnelActivityFilter />
+            <Button onClick={() => setAddLeadOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar Lead
+            </Button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-sm">

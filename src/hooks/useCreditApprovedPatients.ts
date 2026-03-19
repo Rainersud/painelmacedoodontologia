@@ -8,6 +8,7 @@ export interface CreditApprovedPatient {
   lead_status: string;
   credit_approved_value: number;
   credit_status: string;
+  budget_value: number;
   filled_at: string;
   updated_at: string;
 }
@@ -30,7 +31,7 @@ export function useCreditApprovedPatients() {
       const leadIds = triages.map(t => t.lead_id);
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('id, name, status')
+        .select('id, name, status, budget_value')
         .in('id', leadIds);
 
       if (leadsError) throw leadsError;
@@ -50,6 +51,7 @@ export function useCreditApprovedPatients() {
             lead_status: lead.status,
             credit_approved_value: Number(t.credit_approved_value) || 0,
             credit_status: t.credit_status || 'pendente',
+            budget_value: Number(lead.budget_value) || 0,
             filled_at: t.filled_at,
             updated_at: t.updated_at,
           };

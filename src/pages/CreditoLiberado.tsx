@@ -116,6 +116,7 @@ const CreditoLiberado = () => {
                     <tr className="border-b text-left">
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paciente</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Crédito Aprovado</th>
+                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Orçamento Pendente</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Etapa no Funil</th>
                       <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Última Atualização</th>
                     </tr>
@@ -135,6 +136,15 @@ const CreditoLiberado = () => {
                           <span className="text-sm font-bold text-success">
                             {formatCurrency(patient.credit_approved_value)}
                           </span>
+                        </td>
+                        <td className="py-3">
+                          {patient.budget_value && patient.budget_value > 0 ? (
+                            <span className="text-sm font-medium text-warning">
+                              {formatCurrency(patient.budget_value)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="py-3">
                           <Badge

@@ -310,7 +310,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     <span className="hidden sm:inline">Funil</span>
                   </TabsTrigger>
                   <TabsTrigger value="history" className="text-xs sm:text-sm gap-1">
-                    <StickyNote className="h-3.5 w-3.5" />
+                    <Clock className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Histórico</span>
                   </TabsTrigger>
                 </TabsList>

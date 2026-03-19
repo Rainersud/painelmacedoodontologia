@@ -117,7 +117,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Adicionar Lead</DialogTitle>
           <DialogDescription>
@@ -125,7 +125,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-2 flex-1 overflow-y-auto scroll-container-y">
           <div className="space-y-2">
             <Label htmlFor="name">Nome *</Label>
             <Input

@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
@@ -197,7 +197,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0 overflow-hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
           <DialogTitle className="flex items-start sm:items-center gap-3">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -316,7 +318,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             );
           })()}
 
-          <ScrollArea className="flex-1 mt-4 pb-4">
+          <div className="flex-1 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -445,14 +447,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
-              <Button 
-                className="w-full"
-                onClick={handleSaveInfo}
-                disabled={updateLead.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updateLead.isPending ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button 
+                  className="w-full"
+                  onClick={handleSaveInfo}
+                  disabled={updateLead.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateLead.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Status Tab */}
@@ -640,14 +644,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <Button
-                className="w-full"
-                onClick={handleChangeStatus}
-                disabled={!newStatus || updateStatus.isPending}
-              >
-                <ArrowRight className="h-4 w-4 mr-2" />
-                {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button
+                  className="w-full"
+                  onClick={handleChangeStatus}
+                  disabled={!newStatus || updateStatus.isPending}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Task Tab */}
@@ -699,14 +705,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={2}
                 />
               </div>
-              <Button
-                className="w-full"
-                onClick={handleCreateTask}
-                disabled={!taskData.title || !taskData.scheduled_at || createTask.isPending}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {createTask.isPending ? 'Criando...' : 'Criar Tarefa'}
-              </Button>
+              <div className="sticky bottom-0 pt-3 bg-card">
+                <Button
+                  className="w-full"
+                  onClick={handleCreateTask}
+                  disabled={!taskData.title || !taskData.scheduled_at || createTask.isPending}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {createTask.isPending ? 'Criando...' : 'Criar Tarefa'}
+                </Button>
+              </div>
             </TabsContent>
 
             {/* Referral Tab */}
@@ -723,7 +731,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsContent value="history" className="m-0">
               <LeadTimeline leadId={lead.id} />
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
 
         <TriageFormDialog

@@ -31,7 +31,7 @@ export function useCreditApprovedPatients() {
       const leadIds = triages.map(t => t.lead_id);
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('id, name, status')
+        .select('id, name, status, budget_value')
         .in('id', leadIds);
 
       if (leadsError) throw leadsError;

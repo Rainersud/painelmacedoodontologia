@@ -25,6 +25,7 @@ export function LeadCard({
   onAddNote,
   onCall,
   compact = false,
+  index = 0,
 }: LeadCardProps) {
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const leadAlerts = useLeadAlerts(lead);

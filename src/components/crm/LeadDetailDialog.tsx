@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { StarRating } from './StarRating';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
+import { LeadAlertsBanner } from './LeadAlertsBanner';
 import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead } from '@/hooks/useCRMLeads';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';

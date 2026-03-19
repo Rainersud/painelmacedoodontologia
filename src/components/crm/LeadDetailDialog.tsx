@@ -731,7 +731,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsContent value="history" className="m-0">
               <LeadTimeline leadId={lead.id} />
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
 
         <TriageFormDialog

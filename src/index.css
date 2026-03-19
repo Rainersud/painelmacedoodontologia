@@ -243,10 +243,48 @@
   .scroll-container-x {
     @apply overflow-x-auto overflow-y-hidden;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scroll-container-x::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .scroll-container-x::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroll-container-x::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  .scroll-container-x::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 
   .scroll-container-y {
     @apply overflow-y-auto overflow-x-hidden;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scroll-container-y::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scroll-container-y::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroll-container-y::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  .scroll-container-y::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 }

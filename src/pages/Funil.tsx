@@ -42,9 +42,25 @@ const Funil = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('none');
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+
+  // Stages affected by date filter
+  const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
+
+  const getFilterDate = useCallback((): Date | null => {
+    if (dateFilter === 'none') return null;
+    if (dateFilter === 'today') return new Date();
+    if (dateFilter === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return d; }
+    if (dateFilter === 'yesterday') { const d = new Date(); d.setDate(d.getDate() - 1); return d; }
+    if (dateFilter === 'custom' && customDate) return customDate;
+    return null;
+  }, [dateFilter, customDate]);
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
+    const filterDate = getFilterDate();
+    
     return leads.filter(lead => {
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch = !query || 
@@ -52,9 +68,23 @@ const Funil = () => {
         lead.phone.includes(query) ||
         (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
-      return matchesSearch && matchesTreatment;
+      
+      // Date filter: only applies to agendou/consulta_agendada/compareceu
+      let matchesDate = true;
+      if (filterDate && dateFilteredStages.includes(lead.status)) {
+        const refDate = lead.status === 'compareceu' 
+          ? (lead.stage_entered_at || lead.updated_at)
+          : (lead.scheduled_appointment_at || lead.stage_entered_at || lead.updated_at);
+        if (refDate) {
+          matchesDate = isSameDay(new Date(refDate), filterDate);
+        } else {
+          matchesDate = false;
+        }
+      }
+      
+      return matchesSearch && matchesTreatment && matchesDate;
     });
-  }, [leads, searchQuery, treatmentFilter]);
+  }, [leads, searchQuery, treatmentFilter, getFilterDate]);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);

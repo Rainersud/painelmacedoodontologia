@@ -1,19 +1,15 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { CreditCard, Users, Building2 } from 'lucide-react';
 import { useCreditApprovedPatients } from '@/hooks/useCreditApprovedPatients';
 import { FUNNEL_STAGES } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '@/lib/currency';
 
 const CreditoLiberado = () => {
   const { data: patients, isLoading } = useCreditApprovedPatients();
-
-  const totalCredit = patients?.reduce((sum, p) => sum + p.credit_approved_value, 0) || 0;
 
   const getStageLabel = (status: string) => {
     const stage = FUNNEL_STAGES.find(s => s.key === status);
@@ -28,66 +24,24 @@ const CreditoLiberado = () => {
   return (
     <AppLayout title="Pacientes com Crédito Liberado">
       <div className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total de Pacientes</p>
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-16 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold">{patients?.length || 0}</p>
-                  )}
-                </div>
+        {/* Summary */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-success" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Crédito Total Disponível</p>
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-32 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold text-success">{formatCurrency(totalCredit)}</p>
-                  )}
-                </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Pacientes com Crédito</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16 mt-1" />
+                ) : (
+                  <p className="text-2xl font-bold">{patients?.length || 0}</p>
+                )}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ticket Médio</p>
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-24 mt-1" />
-                  ) : (
-                    <p className="text-2xl font-bold">
-                      {patients && patients.length > 0
-                        ? formatCurrency(totalCredit / patients.length)
-                        : 'R$ 0'}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Patient List */}
         <Card className="border-0 shadow-sm">
@@ -101,7 +55,7 @@ const CreditoLiberado = () => {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" />
+                  <div key={i} className="h-20 rounded-lg bg-muted/50 animate-pulse" />
                 ))}
               </div>
             ) : !patients || patients.length === 0 ? (
@@ -110,59 +64,48 @@ const CreditoLiberado = () => {
                 <p className="text-sm text-muted-foreground">Nenhum paciente com crédito aprovado no momento</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paciente</th>
-                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Crédito Aprovado</th>
-                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Orçamento Pendente</th>
-                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Etapa no Funil</th>
-                      <th className="pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Última Atualização</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {patients.map(patient => (
-                      <tr key={patient.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                              <DollarSign className="h-4 w-4 text-success" />
-                            </div>
-                            <span className="text-sm font-medium">{patient.lead_name}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <span className="text-sm font-bold text-success">
-                            {formatCurrency(patient.credit_approved_value)}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          {patient.budget_value && patient.budget_value > 0 ? (
-                            <span className="text-sm font-medium text-warning">
-                              {formatCurrency(patient.budget_value)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="py-3">
-                          <Badge
-                            variant="outline"
-                            className={cn("text-xs border-0 px-2 py-0.5", getStageColor(patient.lead_status), "text-white")}
-                          >
-                            {getStageLabel(patient.lead_status)}
+              <div className="space-y-3">
+                {patients.map(patient => (
+                  <div
+                    key={patient.id}
+                    className="p-4 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                          <CreditCard className="h-4 w-4 text-success" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{patient.lead_name}</p>
+                          <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/20 mt-0.5">
+                            APROVADO
                           </Badge>
-                        </td>
-                        <td className="py-3">
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(patient.updated_at).toLocaleDateString('pt-BR')}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn("text-xs border-0 px-2 py-0.5", getStageColor(patient.lead_status), "text-white")}
+                        >
+                          {getStageLabel(patient.lead_status)}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(patient.updated_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {patient.credit_companies.map(c => (
+                        <div key={c.name} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
+                          <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-xs text-muted-foreground">{c.name}:</span>
+                          <span className="text-xs font-bold text-success ml-auto">{formatCurrency(c.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

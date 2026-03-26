@@ -534,6 +534,9 @@ export type Database = {
           cpf: string | null
           created_at: string
           credit_approved_value: number | null
+          credit_capim_value: number | null
+          credit_maioral_value: number | null
+          credit_pagmais_value: number | null
           credit_status: string | null
           desired_feeling: string | null
           desired_smile_change: string | null
@@ -570,6 +573,9 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           credit_approved_value?: number | null
+          credit_capim_value?: number | null
+          credit_maioral_value?: number | null
+          credit_pagmais_value?: number | null
           credit_status?: string | null
           desired_feeling?: string | null
           desired_smile_change?: string | null
@@ -606,6 +612,9 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           credit_approved_value?: number | null
+          credit_capim_value?: number | null
+          credit_maioral_value?: number | null
+          credit_pagmais_value?: number | null
           credit_status?: string | null
           desired_feeling?: string | null
           desired_smile_change?: string | null

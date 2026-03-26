@@ -16,7 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { Save, Printer, CheckCircle2, Loader2, FileText } from 'lucide-react';
+import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
+import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -455,7 +456,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary">Limite de Crédito</h3>
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 items-start">
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={form.credit_status === 'aprovado'}
@@ -468,14 +469,11 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                     {form.credit_status === 'aprovado' && (
                       <div className="flex items-center gap-2 flex-1">
                         <Label className="text-xs whitespace-nowrap">Valor:</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <CurrencyInput
+                          value={form.credit_approved_value || 0}
+                          onChange={(v) => updateField('credit_approved_value', v)}
                           className="h-8 text-xs"
-                          value={form.credit_approved_value || ''}
-                          onChange={e => updateField('credit_approved_value', parseFloat(e.target.value) || 0)}
-                          placeholder="R$ 0,00"
+                          placeholder="0,00"
                         />
                       </div>
                     )}
@@ -489,6 +487,45 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       />
                       <Label className="text-xs font-normal cursor-pointer">Negado</Label>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Credit Companies */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-primary">Empresas de Crédito</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">PAGMAIS</Label>
+                    <CurrencyInput
+                      value={form.credit_pagmais_value || 0}
+                      onChange={(v) => updateField('credit_pagmais_value', v)}
+                      placeholder="Valor liberado"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">CAPIM</Label>
+                    <CurrencyInput
+                      value={form.credit_capim_value || 0}
+                      onChange={(v) => updateField('credit_capim_value', v)}
+                      placeholder="Valor liberado"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">MAIORAL</Label>
+                    <CurrencyInput
+                      value={form.credit_maioral_value || 0}
+                      onChange={(v) => updateField('credit_maioral_value', v)}
+                      placeholder="Valor liberado"
+                      className="h-8 text-xs"
+                    />
                   </div>
                 </div>
               </div>

@@ -18,6 +18,7 @@ import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
+import { formatCurrency } from '@/lib/currency';
 import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -83,8 +84,11 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
   };
 
   const handleSave = () => {
+    const totalCredit = form.credit_status === 'negado' ? 0 :
+      (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);
+    
     saveTriage.mutate(
-      { ...form, lead_id: lead.id } as PatientTriageData,
+      { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
       {
         onSuccess: () => toast.success('Ficha de triagem salva com sucesso!'),
         onError: () => toast.error('Erro ao salvar ficha de triagem'),
@@ -452,43 +456,31 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
               <Separator />
 
-              {/* Credit Limit */}
+              {/* Credit Status */}
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-primary">Limite de Crédito</h3>
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-3 items-start">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={form.credit_status === 'aprovado'}
-                        onCheckedChange={(checked) => {
-                          updateField('credit_status', checked ? 'aprovado' : 'pendente');
-                        }}
-                      />
-                      <Label className="text-xs font-normal cursor-pointer">Aprovado</Label>
-                    </div>
-                    {form.credit_status === 'aprovado' && (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Label className="text-xs whitespace-nowrap">Valor:</Label>
-                        <CurrencyInput
-                          value={form.credit_approved_value || 0}
-                          onChange={(v) => updateField('credit_approved_value', v)}
-                          className="h-8 text-xs"
-                          placeholder="0,00"
-                        />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={form.credit_status === 'negado'}
-                        onCheckedChange={(checked) => {
-                          updateField('credit_status', checked ? 'negado' : 'pendente');
-                          if (checked) updateField('credit_approved_value', 0);
-                        }}
-                      />
-                      <Label className="text-xs font-normal cursor-pointer">Negado</Label>
-                    </div>
+                <h3 className="text-sm font-semibold mb-3 text-primary">Status de Crédito</h3>
+                <RadioGroup
+                  value={form.credit_status || ''}
+                  onValueChange={v => {
+                    updateField('credit_status', v);
+                    if (v === 'negado') {
+                      updateField('credit_pagmais_value', 0);
+                      updateField('credit_capim_value', 0);
+                      updateField('credit_maioral_value', 0);
+                      updateField('credit_approved_value', 0);
+                    }
+                  }}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="aprovado" />
+                    <Label className="text-xs font-normal cursor-pointer">APROVADO</Label>
                   </div>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="negado" />
+                    <Label className="text-xs font-normal cursor-pointer">NEGADO</Label>
+                  </div>
+                </RadioGroup>
               </div>
 
               <Separator />
@@ -507,6 +499,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       onChange={(v) => updateField('credit_pagmais_value', v)}
                       placeholder="Valor liberado"
                       className="h-8 text-xs"
+                      disabled={form.credit_status === 'negado'}
                     />
                   </div>
                   <div className="space-y-1">
@@ -516,6 +509,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       onChange={(v) => updateField('credit_capim_value', v)}
                       placeholder="Valor liberado"
                       className="h-8 text-xs"
+                      disabled={form.credit_status === 'negado'}
                     />
                   </div>
                   <div className="space-y-1">
@@ -525,7 +519,24 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       onChange={(v) => updateField('credit_maioral_value', v)}
                       placeholder="Valor liberado"
                       className="h-8 text-xs"
+                      disabled={form.credit_status === 'negado'}
                     />
+                  </div>
+                </div>
+
+                {/* Auto-calculated total */}
+                <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-primary">Crédito Liberado (Total)</Label>
+                    <span className="text-sm font-bold text-primary">
+                      {formatCurrency(
+                        (form.credit_status === 'negado' ? 0 :
+                          (form.credit_pagmais_value || 0) +
+                          (form.credit_capim_value || 0) +
+                          (form.credit_maioral_value || 0)
+                        )
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

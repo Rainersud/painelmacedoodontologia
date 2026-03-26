@@ -84,8 +84,11 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
   };
 
   const handleSave = () => {
+    const totalCredit = form.credit_status === 'negado' ? 0 :
+      (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);
+    
     saveTriage.mutate(
-      { ...form, lead_id: lead.id } as PatientTriageData,
+      { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
       {
         onSuccess: () => toast.success('Ficha de triagem salva com sucesso!'),
         onError: () => toast.error('Erro ao salvar ficha de triagem'),

@@ -524,20 +524,27 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                   </div>
                 </div>
 
-                {/* Auto-calculated total */}
-                <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-primary">Crédito Liberado (Total)</Label>
-                    <span className="text-sm font-bold text-primary">
-                      {formatCurrency(
-                        (form.credit_status === 'negado' ? 0 :
-                          (form.credit_pagmais_value || 0) +
-                          (form.credit_capim_value || 0) +
-                          (form.credit_maioral_value || 0)
-                        )
-                      )}
-                    </span>
-                  </div>
+                {/* Credit summary - per company, no sum */}
+                <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1">
+                  <Label className="text-xs font-semibold text-primary">Crédito Liberado</Label>
+                  {(() => {
+                    const entries = [
+                      { name: 'PAGMAIS', value: form.credit_pagmais_value || 0 },
+                      { name: 'CAPIM', value: form.credit_capim_value || 0 },
+                      { name: 'MAIORAL', value: form.credit_maioral_value || 0 },
+                    ].filter(e => e.value > 0);
+
+                    if (form.credit_status === 'negado' || entries.length === 0) {
+                      return <p className="text-xs text-muted-foreground">Sem crédito liberado</p>;
+                    }
+
+                    return entries.map(e => (
+                      <div key={e.name} className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{e.name}:</span>
+                        <span className="font-semibold text-primary">{formatCurrency(e.value)}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 

@@ -26,7 +26,7 @@ export const COST_CATEGORIES = [
 ] as const;
 
 export function useAcquisitionCosts(referenceMonth?: Date) {
-  const { userId } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const month = referenceMonth || new Date();
   const monthStart = startOfMonth(month);

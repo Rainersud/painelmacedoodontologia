@@ -51,6 +51,7 @@ const managementNavItems = [
   { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
   { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
   { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target, module: 'plano_incentivo' },
+  { title: 'CAC & Financeiro', url: '/cac', icon: LayoutDashboard, module: 'cac' },
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
 ];

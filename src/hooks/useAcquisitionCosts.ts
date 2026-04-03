@@ -51,7 +51,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
     mutationFn: async (cost: { category: string; description?: string; amount: number; reference_month: string }) => {
       const { error } = await supabase
         .from('acquisition_costs' as any)
-        .insert({ ...cost, created_by: userId } as any);
+        .insert({ ...cost, created_by: user?.id } as any);
       if (error) throw error;
     },
     onSuccess: () => {

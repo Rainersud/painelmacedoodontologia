@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';

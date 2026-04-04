@@ -349,6 +349,16 @@ const Comercial2 = () => {
 
   const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
 
+  // Keep selectedOpp in sync with optimistic cache updates
+  useEffect(() => {
+    if (selectedOpp && opportunities) {
+      const updated = opportunities.find(o => o.id === selectedOpp.id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedOpp)) {
+        setSelectedOpp(updated);
+      }
+    }
+  }, [opportunities, selectedOpp]);
+
   // Auto-sync is handled by database trigger - no manual sync needed
 
   const filteredOpps = useMemo(() => {

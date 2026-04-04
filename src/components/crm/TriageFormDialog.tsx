@@ -90,6 +90,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
         referral_name: r.referral_name,
         situation: r.situation,
         relationship: r.relationship || '',
+        phone: r.phone || '',
         converted_lead_id: r.converted_lead_id,
       })));
     }

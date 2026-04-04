@@ -20,7 +20,7 @@ import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucid
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
 import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
-import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead } from '@/hooks/useTriageReferrals';
+import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, useBulkLinkReferrals } from '@/hooks/useTriageReferrals';
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -55,6 +55,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
   const saveTriage = useSavePatientTriage();
   const saveReferrals = useSaveTriageReferrals();
   const convertToLead = useConvertReferralToLead();
+  const bulkLink = useBulkLinkReferrals();
   const markCompleted = useMarkTriageCompleted();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +64,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     referral_name: string;
     situation: string;
     relationship: string;
+    phone?: string;
     converted_lead_id?: string | null;
     id?: string;
   }>>([]);
@@ -88,6 +90,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
         referral_name: r.referral_name,
         situation: r.situation,
         relationship: r.relationship || '',
+        phone: r.phone || '',
         converted_lead_id: r.converted_lead_id,
       })));
     }
@@ -128,6 +131,39 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
           setReferralEntries(updated);
         },
         onError: () => toast.error('Erro ao converter indicação em lead'),
+      }
+    );
+  };
+
+  const handleBulkLink = () => {
+    if (!user) return;
+    const linkable = referralEntries.filter(
+      (e) => !e.converted_lead_id && e.referral_name.trim() && e.phone && e.phone.replace(/\D/g, '').length >= 10
+    );
+    if (linkable.length === 0) {
+      toast.error('Preencha nome e telefone para vincular as indicações');
+      return;
+    }
+    bulkLink.mutate(
+      { referrals: linkable.map(r => ({ ...r, lead_id: lead.id })), agentId: user.id, referrerLeadId: lead.id },
+      {
+        onSuccess: (results) => {
+          const success = results.filter(r => r.success);
+          const failed = results.filter(r => !r.success);
+          if (success.length > 0) {
+            toast.success(`${success.length} indicação(ões) vinculadas com sucesso!`);
+            const updated = referralEntries.map(entry => {
+              const wasLinked = success.find(r => r.name === entry.referral_name);
+              if (wasLinked) return { ...entry, converted_lead_id: 'converted' };
+              return entry;
+            });
+            setReferralEntries(updated);
+          }
+          if (failed.length > 0) {
+            failed.forEach(f => toast.error(`${f.name}: ${f.error}`));
+          }
+        },
+        onError: () => toast.error('Erro ao vincular indicações'),
       }
     );
   };
@@ -648,6 +684,8 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 referrals={referralEntries}
                 onChange={setReferralEntries}
                 onConvertToLead={handleConvertToLead}
+                onBulkLink={handleBulkLink}
+                isBulkLinking={bulkLink.isPending}
               />
 
               {/* Filled info */}

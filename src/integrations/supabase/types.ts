@@ -1145,6 +1145,7 @@ export type Database = {
           created_at: string
           id: string
           lead_id: string
+          phone: string | null
           referral_name: string
           relationship: string | null
           situation: string
@@ -1157,6 +1158,7 @@ export type Database = {
           created_at?: string
           id?: string
           lead_id: string
+          phone?: string | null
           referral_name: string
           relationship?: string | null
           situation?: string
@@ -1169,6 +1171,7 @@ export type Database = {
           created_at?: string
           id?: string
           lead_id?: string
+          phone?: string | null
           referral_name?: string
           relationship?: string | null
           situation?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.triage_referrals ADD COLUMN phone text DEFAULT NULL;

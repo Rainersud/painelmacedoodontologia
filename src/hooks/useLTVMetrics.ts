@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths } from 'date-fns';
 
 export type PeriodFilter = 'mes' | 'trimestre' | 'ano' | 'todos';
+export type SaleTypeFilter = 'todos' | '1_etapa' | '2_etapas';
 
 export interface RecurrenceGroup {
   label: string;
@@ -59,11 +60,22 @@ function getDateRange(period: PeriodFilter): { start: Date; end: Date } | null {
   }
 }
 
-export function useLTVMetrics(period: PeriodFilter = 'todos') {
+export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleTypeFilter = 'todos') {
   return useQuery({
-    queryKey: ['ltv-metrics', period],
+    queryKey: ['ltv-metrics', period, saleType],
     queryFn: async (): Promise<LTVMetricsData> => {
       const dateRange = getDateRange(period);
+
+      // Get leads filtered by sale_type if needed
+      let leadIdsBySaleType: Set<string> | null = null;
+      if (saleType !== 'todos') {
+        const saleTypeValue = saleType === '1_etapa' ? '1_etapa' : '2_etapas';
+        const { data: filteredLeads } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('sale_type', saleTypeValue);
+        leadIdsBySaleType = new Set((filteredLeads || []).map(l => l.id));
+      }
 
       // Get all upsell opportunities with lead data
       const { data: opps } = await supabase
@@ -117,9 +129,10 @@ export function useLTVMetrics(period: PeriodFilter = 'todos') {
         paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
       });
 
-      // Group opportunities by lead
+      // Group opportunities by lead (filtered by sale type)
       const leadPurchaseCounts: Record<string, number> = {};
       (opps || []).forEach(o => {
+        if (leadIdsBySaleType && !leadIdsBySaleType.has(o.lead_id)) return;
         const current = leadPurchaseCounts[o.lead_id] || 0;
         leadPurchaseCounts[o.lead_id] = Math.max(current, o.purchase_count || 1);
       });

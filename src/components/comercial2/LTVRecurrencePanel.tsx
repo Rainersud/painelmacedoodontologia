@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, TrendingUp, DollarSign, Users, Target, Lightbulb, BarChart3 } from 'lucide-react';
-import { useLTVMetrics, type PeriodFilter } from '@/hooks/useLTVMetrics';
+import { useLTVMetrics, type PeriodFilter, type SaleTypeFilter } from '@/hooks/useLTVMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -28,9 +28,16 @@ const PERIOD_OPTIONS = [
   { value: 'ano', label: 'Ano atual' },
 ] as const;
 
+const SALE_TYPE_OPTIONS = [
+  { value: 'todos', label: 'Todos os tipos' },
+  { value: '1_etapa', label: '1 Etapa' },
+  { value: '2_etapas', label: '2 Etapas' },
+] as const;
+
 export function LTVRecurrencePanel() {
   const [period, setPeriod] = useState<PeriodFilter>('todos');
-  const { data: metrics, isLoading } = useLTVMetrics(period);
+  const [saleType, setSaleType] = useState<SaleTypeFilter>('todos');
+  const { data: metrics, isLoading } = useLTVMetrics(period, saleType);
 
   if (isLoading) {
     return (
@@ -52,16 +59,28 @@ export function LTVRecurrencePanel() {
           <BarChart3 className="h-5 w-5 text-primary" />
           <h2 className="text-base font-bold">Análise de LTV por Recorrência</h2>
         </div>
-        <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-          <SelectTrigger className="w-[160px] h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIOD_OPTIONS.map(o => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={saleType} onValueChange={(v) => setSaleType(v as SaleTypeFilter)}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SALE_TYPE_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary Cards */}

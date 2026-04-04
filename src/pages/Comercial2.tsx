@@ -20,7 +20,7 @@ import {
   CONTACT_STATUS_CONFIG,
   type UpsellOpportunity,
 } from '@/hooks/useUpsellOpportunities';
-import { useCRMLeads } from '@/hooks/useCRMLeads';
+
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';

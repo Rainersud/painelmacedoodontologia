@@ -8,6 +8,7 @@ export interface TriageReferral {
   referral_name: string;
   situation: string;
   relationship: string;
+  phone?: string;
   converted_lead_id?: string | null;
   converted_at?: string | null;
 }
@@ -17,7 +18,6 @@ export function useTriageReferrals(leadId: string | undefined) {
     queryKey: ['triage-referrals', leadId],
     queryFn: async () => {
       if (!leadId) return [];
-      // Get triage first to find triage_id
       const { data: triage } = await supabase
         .from('patient_triage')
         .select('id')
@@ -52,19 +52,22 @@ export function useSaveTriageReferrals() {
       triageId: string;
       referrals: TriageReferral[];
     }) => {
-      // Delete existing
+      // Delete existing non-converted
       await (supabase.from('triage_referrals' as any) as any)
         .delete()
-        .eq('triage_id', triageId);
+        .eq('triage_id', triageId)
+        .is('converted_lead_id', null);
 
-      if (referrals.length === 0) return;
+      const newReferrals = referrals.filter(r => !r.converted_lead_id);
+      if (newReferrals.length === 0) return;
 
-      const rows = referrals.map((r) => ({
+      const rows = newReferrals.map((r) => ({
         triage_id: triageId,
         lead_id: leadId,
         referral_name: r.referral_name,
         situation: r.situation,
         relationship: r.relationship || '',
+        phone: r.phone || null,
       }));
 
       const { error } = await (supabase.from('triage_referrals' as any) as any).insert(rows);
@@ -89,12 +92,25 @@ export function useConvertReferralToLead() {
       agentId: string;
       referrerLeadId: string;
     }) => {
-      // Create a new lead from the referral
+      // Check for duplicate phone
+      const phone = (referral.phone || '').replace(/\D/g, '');
+      if (phone.length >= 10) {
+        const { data: existing } = await supabase
+          .from('leads')
+          .select('id, name')
+          .eq('phone', phone)
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error(`Já existe um lead com este telefone: ${existing.name}`);
+        }
+      }
+
       const { data: newLead, error: leadError } = await supabase
         .from('leads')
         .insert({
           name: referral.referral_name,
-          phone: '',
+          phone: phone || '',
           source: 'indicacao' as any,
           status: 'indicacoes' as any,
           interest_product: referral.situation === 'dentadura' ? 'protese_total' :
@@ -133,6 +149,51 @@ export function useConvertReferralToLead() {
       });
 
       return newLead;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['triage-referrals'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['referrals'] });
+    },
+  });
+}
+
+export function useBulkLinkReferrals() {
+  const queryClient = useQueryClient();
+  const convertMutation = useConvertReferralToLead();
+
+  return useMutation({
+    mutationFn: async ({
+      referrals,
+      agentId,
+      referrerLeadId,
+    }: {
+      referrals: TriageReferral[];
+      agentId: string;
+      referrerLeadId: string;
+    }) => {
+      const results: { name: string; success: boolean; error?: string }[] = [];
+
+      for (const referral of referrals) {
+        const phone = (referral.phone || '').replace(/\D/g, '');
+        if (!referral.referral_name.trim() || phone.length < 10) {
+          results.push({ name: referral.referral_name || 'Sem nome', success: false, error: 'Nome ou telefone não preenchido' });
+          continue;
+        }
+        if (referral.converted_lead_id) {
+          results.push({ name: referral.referral_name, success: false, error: 'Já convertido' });
+          continue;
+        }
+
+        try {
+          await convertMutation.mutateAsync({ referral, agentId, referrerLeadId });
+          results.push({ name: referral.referral_name, success: true });
+        } catch (err: any) {
+          results.push({ name: referral.referral_name, success: false, error: err.message });
+        }
+      }
+
+      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['triage-referrals'] });

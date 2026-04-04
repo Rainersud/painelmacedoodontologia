@@ -834,12 +834,18 @@ const Comercial2 = () => {
                                       </div>
                                     )}
                                   <div className="flex items-center gap-1.5">
-                                    <Badge variant="outline" className="text-[10px]">
-                                      {opp.suggested_treatment}
-                                    </Badge>
                                     <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
                                       🔄 {opp.purchase_count || 1}x
                                     </Badge>
+                                    {(() => {
+                                      const entries = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+                                      const ltv = entries.reduce((s, p) => s + p.value, 0);
+                                      return ltv > 0 ? (
+                                        <Badge className="text-[9px] bg-success/10 text-success border-success/30">
+                                          💰 {formatCurrency(ltv)}
+                                        </Badge>
+                                      ) : null;
+                                    })()}
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <Badge className={cn('text-[9px]', contactCfg.color)}>

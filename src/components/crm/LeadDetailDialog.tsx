@@ -71,6 +71,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const deleteLead = useDeleteLead();
   const createTask = useCreateTask();
   const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
+  const { data: friendlyData } = useFriendlyPatientStatus(lead?.id);
 
   const [activeTab, setActiveTab] = useState('info');
   const [triageOpen, setTriageOpen] = useState(false);

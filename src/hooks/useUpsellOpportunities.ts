@@ -261,8 +261,10 @@ export function useUpsellMetrics() {
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
   const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
-  const giftsPending = basePatients.filter(o => !o.gift_sent).length;
-  const giftsSent = basePatients.filter(o => o.gift_sent).length;
+  const giftsPending = basePatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
+  const giftsSent = basePatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
+  const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;
+  const prosthesisPending = basePatients.filter(o => !o.gift_prosthesis_sent).length;
 
   return {
     total,

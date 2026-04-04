@@ -498,6 +498,7 @@ const Comercial2 = () => {
   const metrics = useUpsellMetrics();
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
+  const createUpsell = useCreateUpsellOpportunity();
   const addContact = useAddContactHistory();
 
   const [searchQuery, setSearchQuery] = useState('');

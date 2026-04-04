@@ -16,6 +16,8 @@ export interface UpsellOpportunity {
   closed_at: string | null;
   next_contact_at: string | null;
   attempt_count: number;
+  gift_sent: boolean;
+  gift_sent_at: string | null;
   created_at: string;
   updated_at: string;
   lead?: {

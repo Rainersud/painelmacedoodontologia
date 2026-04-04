@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, TrendingUp, DollarSign, Users, Target, Lightbulb } from 'lucide-react';
-import { useLTVMetrics } from '@/hooks/useLTVMetrics';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, TrendingUp, DollarSign, Users, Target, Lightbulb, BarChart3 } from 'lucide-react';
+import { useLTVMetrics, type PeriodFilter } from '@/hooks/useLTVMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 const HEALTH_STYLES = {
   success: 'bg-success/10 text-success border-success/30',
@@ -13,13 +16,21 @@ const HEALTH_STYLES = {
 } as const;
 
 const HEALTH_LABELS = {
-  success: '🟢 Saudável',
+  success: '🟢 Lucrativo',
   warning: '🟡 Atenção',
   destructive: '🔴 Prejuízo',
 } as const;
 
+const PERIOD_OPTIONS = [
+  { value: 'todos', label: 'Todo período' },
+  { value: 'mes', label: 'Mês atual' },
+  { value: 'trimestre', label: 'Trimestre atual' },
+  { value: 'ano', label: 'Ano atual' },
+] as const;
+
 export function LTVRecurrencePanel() {
-  const { data: metrics, isLoading } = useLTVMetrics();
+  const [period, setPeriod] = useState<PeriodFilter>('todos');
+  const { data: metrics, isLoading } = useLTVMetrics(period);
 
   if (isLoading) {
     return (
@@ -31,12 +42,28 @@ export function LTVRecurrencePanel() {
 
   if (!metrics) return null;
 
-  const totalClients = metrics.groups.reduce((sum, g) => sum + g.clientCount, 0);
-  const totalRevenue = metrics.groups.reduce((sum, g) => sum + g.totalRevenue, 0);
-  const overallLTV = totalClients > 0 ? totalRevenue / totalClients : 0;
+  const maxRevenue = Math.max(...metrics.groups.map(g => g.totalRevenue), 1);
 
   return (
     <div className="space-y-4">
+      {/* Header with filter */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <h2 className="text-base font-bold">Análise de LTV por Recorrência</h2>
+        </div>
+        <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIOD_OPTIONS.map(o => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="monday-card">
@@ -45,7 +72,7 @@ export function LTVRecurrencePanel() {
               <Users className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Total Pacientes</p>
-                <p className="text-lg font-bold">{totalClients}</p>
+                <p className="text-lg font-bold">{metrics.totalClients}</p>
               </div>
             </div>
           </CardContent>
@@ -56,7 +83,7 @@ export function LTVRecurrencePanel() {
               <DollarSign className="h-4 w-4 text-success" />
               <div>
                 <p className="text-[10px] text-muted-foreground">Receita Total</p>
-                <p className="text-lg font-bold">{formatCurrency(totalRevenue)}</p>
+                <p className="text-lg font-bold">{formatCurrency(metrics.totalRevenue)}</p>
               </div>
             </div>
           </CardContent>
@@ -67,7 +94,7 @@ export function LTVRecurrencePanel() {
               <TrendingUp className="h-4 w-4 text-chart-2" />
               <div>
                 <p className="text-[10px] text-muted-foreground">LTV Médio</p>
-                <p className="text-lg font-bold">{formatCurrency(overallLTV)}</p>
+                <p className="text-lg font-bold">{formatCurrency(metrics.overallLTV)}</p>
               </div>
             </div>
           </CardContent>
@@ -89,22 +116,23 @@ export function LTVRecurrencePanel() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            📊 Geração de Caixa por Recorrência (LTV Inteligente)
+            📊 Geração de Caixa por Recorrência
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs whitespace-nowrap">Recorrência</TableHead>
-                  <TableHead className="text-xs text-center whitespace-nowrap">Clientes</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">Ticket Médio</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">LTV Médio</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">CAC Médio</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">Lucro Médio</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">Receita Total</TableHead>
-                  <TableHead className="text-xs text-center whitespace-nowrap">Saúde</TableHead>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="text-xs whitespace-nowrap font-semibold">Recorrência</TableHead>
+                  <TableHead className="text-xs text-center whitespace-nowrap font-semibold">Clientes</TableHead>
+                  <TableHead className="text-xs text-center whitespace-nowrap font-semibold">%</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap font-semibold">Ticket Médio</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap font-semibold">LTV Médio</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap font-semibold">CAC Médio</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap font-semibold">Lucro Médio</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap font-semibold">Receita Total</TableHead>
+                  <TableHead className="text-xs text-center whitespace-nowrap font-semibold">Saúde</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,17 +140,25 @@ export function LTVRecurrencePanel() {
                   <TableRow
                     key={group.label}
                     className={cn(
-                      group.clientCount === 0 && 'opacity-50',
-                      group.label === metrics.bestProfitGroup && 'bg-success/5'
+                      group.clientCount === 0 && 'opacity-40',
+                      group.label === metrics.bestProfitGroup && 'bg-success/5 border-l-2 border-l-success'
                     )}
                   >
                     <TableCell className="font-medium text-sm whitespace-nowrap">
-                      {group.label}
-                      {group.label === metrics.bestProfitGroup && (
-                        <span className="ml-1.5 text-[10px]">⭐</span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {group.label}
+                        {group.label === metrics.bestProfitGroup && (
+                          <span className="text-[10px]">⭐</span>
+                        )}
+                        {group.label === metrics.bestLTVGroup && group.label !== metrics.bestProfitGroup && (
+                          <span className="text-[10px]">📈</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center font-bold">{group.clientCount}</TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                      {group.percentOfTotal.toFixed(0)}%
+                    </TableCell>
                     <TableCell className="text-right text-sm">{formatCurrency(group.avgTicket)}</TableCell>
                     <TableCell className="text-right text-sm font-semibold">{formatCurrency(group.avgLTV)}</TableCell>
                     <TableCell className="text-right text-sm text-destructive">{formatCurrency(group.avgCAC)}</TableCell>
@@ -132,7 +168,17 @@ export function LTVRecurrencePanel() {
                     )}>
                       {formatCurrency(group.avgProfit)}
                     </TableCell>
-                    <TableCell className="text-right text-sm font-semibold">{formatCurrency(group.totalRevenue)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-sm font-semibold">{formatCurrency(group.totalRevenue)}</span>
+                        {group.clientCount > 0 && (
+                          <Progress
+                            value={(group.totalRevenue / maxRevenue) * 100}
+                            className="h-1 w-16"
+                          />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-center">
                       {group.clientCount > 0 ? (
                         <Badge className={cn('text-[9px]', HEALTH_STYLES[group.healthColor])}>
@@ -165,7 +211,6 @@ export function LTVRecurrencePanel() {
                 key={i}
                 className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50 border text-sm"
               >
-                <span className="shrink-0">💡</span>
                 <p className="text-muted-foreground">{insight}</p>
               </div>
             ))}

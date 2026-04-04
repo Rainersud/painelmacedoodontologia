@@ -172,7 +172,20 @@ export function useUpdateUpsellOpportunity() {
       const { error } = await supabase.from('upsell_opportunities').update(data).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['upsell-opportunities'] }),
+    onMutate: async ({ id, ...data }) => {
+      await qc.cancelQueries({ queryKey: ['upsell-opportunities'] });
+      const previous = qc.getQueryData<UpsellOpportunity[]>(['upsell-opportunities']);
+      qc.setQueryData<UpsellOpportunity[]>(['upsell-opportunities'], (old) =>
+        old?.map((o) => (o.id === id ? { ...o, ...data } as UpsellOpportunity : o)) ?? []
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(['upsell-opportunities'], context.previous);
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['upsell-opportunities'] }),
   });
 }
 

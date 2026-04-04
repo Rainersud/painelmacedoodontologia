@@ -42,26 +42,17 @@ interface PurchaseEntry {
   value: number;
 }
 
-function parsePurchaseEntries(raw: string | null, fallbackTreatment?: string | null, fallbackValue?: number | null): PurchaseEntry[] {
-  if (!raw) {
-    // Auto-fill first purchase from lead data
-    if (fallbackTreatment || fallbackValue) {
-      return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
-    }
-    return [];
-  }
+function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
   } catch {
-    // Legacy format: semicolon-separated numbers — migrate
+    // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: i === 0 ? (fallbackTreatment || `Compra ${i + 1}`) : `Compra ${i + 1}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
     }
-  }
-  if (fallbackTreatment || fallbackValue) {
-    return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
   }
   return [];
 }

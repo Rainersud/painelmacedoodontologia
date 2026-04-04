@@ -954,6 +954,8 @@ const Comercial2 = () => {
               setContactDialogOpen={setContactDialogOpen}
               contactHistory={contactHistory || []}
               suggestions={suggestions || []}
+              createUpsell={createUpsell}
+              allOpps={opportunities || []}
             />
           )}
         </DialogContent>

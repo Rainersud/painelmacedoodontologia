@@ -113,17 +113,16 @@ function DetailDialogContent({
     setSelectedCount(Math.max(parsed.length + 1, 1));
   }, [opp.purchase_values]);
 
-  // When count changes, adjust local array
+  // When count changes, adjust local array (recurrent entries = count - 1)
   const handleCountChange = (newCount: number) => {
     setSelectedCount(newCount);
+    const recurrentCount = newCount - 1; // exclude first purchase
     const updated = [...localPurchases];
-    // Add empty entries if needed
-    while (updated.length < newCount) {
+    while (updated.length < recurrentCount) {
       updated.push({ treatment: '', value: 0 });
     }
-    // Trim if needed
-    if (updated.length > newCount) {
-      updated.length = newCount;
+    if (updated.length > recurrentCount) {
+      updated.length = recurrentCount;
     }
     setLocalPurchases(updated);
   };

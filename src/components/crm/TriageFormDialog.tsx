@@ -684,6 +684,8 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 referrals={referralEntries}
                 onChange={setReferralEntries}
                 onConvertToLead={handleConvertToLead}
+                onBulkLink={handleBulkLink}
+                isBulkLinking={bulkLink.isPending}
               />
 
               {/* Filled info */}

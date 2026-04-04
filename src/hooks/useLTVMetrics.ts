@@ -80,7 +80,7 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
       // Get all upsell opportunities with lead data
       const { data: opps } = await supabase
         .from('upsell_opportunities')
-        .select('lead_id, purchase_count, estimated_value, closed_value, status')
+        .select('lead_id, purchase_count, estimated_value, closed_value, status, purchase_values')
         .order('lead_id');
 
       // Get paid payments
@@ -129,12 +129,33 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
         paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
       });
 
-      // Group opportunities by lead (filtered by sale type)
+      // Group opportunities by lead — use purchase_values JSON for accurate count
       const leadPurchaseCounts: Record<string, number> = {};
+      const leadLTVFromPurchases: Record<string, number> = {};
       (opps || []).forEach(o => {
         if (leadIdsBySaleType && !leadIdsBySaleType.has(o.lead_id)) return;
+        let count = o.purchase_count || 1;
+        let ltvFromField = 0;
+        if (o.purchase_values) {
+          try {
+            const parsed = JSON.parse(o.purchase_values);
+            if (Array.isArray(parsed)) {
+              const filled = parsed.filter((p: { value?: number }) => (p.value || 0) > 0);
+              count = Math.max(filled.length, 1);
+              ltvFromField = filled.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
+            }
+          } catch {
+            // Legacy semicolon format
+            const nums = o.purchase_values.split(';').map((v: string) => parseFloat(v.trim())).filter((v: number) => !isNaN(v) && v > 0);
+            if (nums.length > 0) {
+              count = nums.length;
+              ltvFromField = nums.reduce((s: number, v: number) => s + v, 0);
+            }
+          }
+        }
         const current = leadPurchaseCounts[o.lead_id] || 0;
-        leadPurchaseCounts[o.lead_id] = Math.max(current, o.purchase_count || 1);
+        leadPurchaseCounts[o.lead_id] = Math.max(current, count);
+        leadLTVFromPurchases[o.lead_id] = (leadLTVFromPurchases[o.lead_id] || 0) + ltvFromField;
       });
 
       const totalClientsAll = Object.keys(leadPurchaseCounts).length;
@@ -149,7 +170,12 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
         const clientCount = leadsInGroup.length;
         const leadIds = leadsInGroup.map(([id]) => id);
 
-        const groupRevenue = leadIds.reduce((sum, id) => sum + (paymentsByLead[id] || 0), 0);
+        // Use LTV from purchase_values if available, fallback to payments
+        const groupRevenue = leadIds.reduce((sum, id) => {
+          const fromPurchases = leadLTVFromPurchases[id] || 0;
+          const fromPayments = paymentsByLead[id] || 0;
+          return sum + Math.max(fromPurchases, fromPayments);
+        }, 0);
         const avgLTV = clientCount > 0 ? groupRevenue / clientCount : 0;
         const avgTicket = clientCount > 0 ? groupRevenue / (clientCount * (maxCount || minCount)) : 0;
         const avgProfit = avgLTV - avgCACGlobal;

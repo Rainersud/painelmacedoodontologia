@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -35,6 +35,40 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+/* Types for structured purchase tracking */
+interface PurchaseEntry {
+  treatment: string;
+  value: number;
+}
+
+function parsePurchaseEntries(raw: string | null, fallbackTreatment?: string | null, fallbackValue?: number | null): PurchaseEntry[] {
+  if (!raw) {
+    // Auto-fill first purchase from lead data
+    if (fallbackTreatment || fallbackValue) {
+      return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
+    }
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
+  } catch {
+    // Legacy format: semicolon-separated numbers — migrate
+    const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
+    if (nums.length > 0) {
+      return nums.map((v, i) => ({ treatment: i === 0 ? (fallbackTreatment || `Compra ${i + 1}`) : `Compra ${i + 1}`, value: v }));
+    }
+  }
+  if (fallbackTreatment || fallbackValue) {
+    return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
+  }
+  return [];
+}
+
+function serializePurchaseEntries(entries: PurchaseEntry[]): string {
+  return JSON.stringify(entries);
+}
 
 /* Detail Dialog Content with Triage Integration */
 function DetailDialogContent({
@@ -69,42 +103,74 @@ function DetailDialogContent({
     });
   };
 
-  // Parse purchase values from semicolon-separated string
-  const purchaseValues = useMemo(() => {
-    if (!opp.purchase_values) return [];
-    return opp.purchase_values
-      .split(';')
-      .map(v => parseFloat(v.trim()))
-      .filter(v => !isNaN(v) && v > 0);
-  }, [opp.purchase_values]);
+  // Parse structured purchase entries
+  const purchases = useMemo(() =>
+    parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value),
+    [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]
+  );
 
-  const calculatedLTV = useMemo(() => purchaseValues.reduce((sum, v) => sum + v, 0), [purchaseValues]);
-  const calculatedTicket = useMemo(() => purchaseValues.length > 0 ? calculatedLTV / purchaseValues.length : 0, [purchaseValues, calculatedLTV]);
+  const [selectedCount, setSelectedCount] = useState<number>(
+    Math.max(purchases.length, 1)
+  );
+  const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
 
-  const [editingTreatment, setEditingTreatment] = useState(false);
-  const [editTreatmentName, setEditTreatmentName] = useState(opp.suggested_treatment);
-  const [newPurchaseValue, setNewPurchaseValue] = useState('');
+  // Sync local state when opp changes
+  useEffect(() => {
+    const parsed = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+    setLocalPurchases(parsed);
+    setSelectedCount(Math.max(parsed.length, 1));
+  }, [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]);
 
-  // Check if this patient already has a treatment (block duplicates)
-  const patientHasTreatment = allOpps.some(o => o.lead_id === opp.lead_id);
+  // When count changes, adjust local array
+  const handleCountChange = (newCount: number) => {
+    setSelectedCount(newCount);
+    const updated = [...localPurchases];
+    // Add empty entries if needed
+    while (updated.length < newCount) {
+      updated.push({ treatment: '', value: 0 });
+    }
+    // Trim if needed
+    if (updated.length > newCount) {
+      updated.length = newCount;
+    }
+    setLocalPurchases(updated);
+  };
 
-  const handleAddPurchaseValue = () => {
-    const val = parseFloat(newPurchaseValue);
-    if (isNaN(val) || val <= 0) return;
-    const currentValues = opp.purchase_values ? opp.purchase_values : '';
-    const updated = currentValues ? `${currentValues}; ${val}` : String(val);
-    const valuesArray = updated.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
-    updateOpp.mutate({
-      id: opp.id,
-      purchase_values: updated,
-      purchase_count: valuesArray.length,
-    }, {
-      onSuccess: () => {
-        toast.success('Compra adicionada ao histórico!');
-        setNewPurchaseValue('');
-      },
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value', val: string) => {
+    setLocalPurchases(prev => {
+      const copy = [...prev];
+      if (field === 'treatment') {
+        copy[index] = { ...copy[index], treatment: val };
+      } else {
+        copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
+      }
+      return copy;
     });
   };
+
+  const handleSavePurchases = () => {
+    const serialized = serializePurchaseEntries(localPurchases);
+    updateOpp.mutate({
+      id: opp.id,
+      purchase_values: serialized,
+      purchase_count: localPurchases.filter(p => p.value > 0).length || selectedCount,
+    }, {
+      onSuccess: () => toast.success('Histórico de compras salvo!'),
+      onError: () => toast.error('Erro ao salvar. Tente novamente.'),
+    });
+  };
+
+  const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  const filledPurchases = localPurchases.filter(p => p.value > 0);
+  const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? calculatedLTV / filledPurchases.length : 0, [filledPurchases, calculatedLTV]);
+
+  const recurrenceOptions = [
+    { value: 1, label: 'Comprou 1 vez' },
+    { value: 2, label: 'Comprou 2 vezes' },
+    { value: 3, label: 'Comprou 3 vezes' },
+    { value: 4, label: 'Comprou 4 vezes' },
+    { value: 5, label: 'Comprou 5 vezes ou mais' },
+  ];
 
   return (
     <div className="space-y-4">
@@ -118,78 +184,79 @@ function DetailDialogContent({
           <p className="text-muted-foreground text-xs">Valor Original</p>
           <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
         </div>
-        <div className="col-span-2">
-          <p className="text-muted-foreground text-xs mb-1">Tratamento Sugerido para LTV</p>
-          {editingTreatment ? (
-            <div className="flex gap-2">
-              <Input
-                value={editTreatmentName}
-                onChange={(e) => setEditTreatmentName(e.target.value)}
-                className="h-8 text-sm flex-1"
-                placeholder="Nome do tratamento"
-              />
-              <Button size="sm" className="h-8 text-xs" onClick={() => {
-                if (!editTreatmentName.trim()) return;
-                updateOpp.mutate({ id: opp.id, suggested_treatment: editTreatmentName.trim() }, {
-                  onSuccess: () => { toast.success('Tratamento atualizado!'); setEditingTreatment(false); },
-                });
-              }}>Salvar</Button>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setEditingTreatment(false); setEditTreatmentName(opp.suggested_treatment); }}>✕</Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={() => setEditingTreatment(true)}>✏️ Editar</Button>
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs">Valor Estimado</p>
-          <Input
-            type="number"
-            value={opp.estimated_value || ''}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value) || 0;
-              updateOpp.mutate({ id: opp.id, estimated_value: val });
-            }}
-            className="h-8 text-sm mt-0.5"
-            placeholder="R$ 0,00"
-          />
-        </div>
       </div>
 
-      {/* Histórico de Compras (LTV) - Campo Único */}
-      <div className="rounded-lg border p-3 space-y-3">
-        <p className="text-xs font-semibold flex items-center gap-1.5">💰 Histórico de Compras (LTV)</p>
+      {/* ===== NEW LTV DO PACIENTE BLOCK ===== */}
+      <div className="rounded-lg border border-primary/30 p-3 space-y-3">
+        <p className="text-xs font-bold flex items-center gap-1.5 text-primary">
+          💰 LTV do Paciente
+        </p>
 
-        {/* Current values display */}
-        <div className="rounded-md bg-muted/50 p-2.5">
-          <p className="text-[10px] text-muted-foreground mb-1">Valores (separados por ;)</p>
-          <p className="text-sm font-mono font-medium min-h-[20px]">
-            {opp.purchase_values || <span className="text-muted-foreground italic">Nenhuma compra registrada</span>}
-          </p>
+        {/* Step 1: Recurrence selector */}
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Quantidade de compras</Label>
+          <Select value={String(selectedCount)} onValueChange={(v) => handleCountChange(parseInt(v))}>
+            <SelectTrigger className="h-8 text-sm mt-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {recurrenceOptions.map(opt => (
+                <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Add new purchase value */}
-        <div className="flex gap-2">
-          <Input
-            type="number"
-            value={newPurchaseValue}
-            onChange={(e) => setNewPurchaseValue(e.target.value)}
-            placeholder="Valor da compra"
-            className="h-8 text-sm flex-1"
-          />
-          <Button size="sm" className="h-8 text-xs gap-1" onClick={handleAddPurchaseValue} disabled={!newPurchaseValue}>
-            <Plus className="h-3 w-3" /> Adicionar
-          </Button>
+        {/* Step 2: Dynamic purchase fields */}
+        <div className="space-y-2">
+          {Array.from({ length: selectedCount }).map((_, i) => {
+            const entry = localPurchases[i] || { treatment: '', value: 0 };
+            const isFirst = i === 0;
+            return (
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5",
+                isFirst ? "border-primary/20 bg-primary/5" : "border-border"
+              )}>
+                <p className="text-[10px] font-semibold text-muted-foreground">
+                  🔹 Compra {i + 1} {isFirst && '(automática)'}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
+                    <Input
+                      value={entry.treatment}
+                      onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)}
+                      placeholder="Ex: Implante"
+                      className="h-7 text-xs mt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      value={entry.value || ''}
+                      onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)}
+                      placeholder="0"
+                      className="h-7 text-xs mt-0.5"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* Save button */}
+        <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
+          💾 Salvar Compras
+        </Button>
 
         {/* Auto-calculated metrics */}
-        {purchaseValues.length > 0 && (
+        {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
               <p className="text-[9px] text-muted-foreground">Compras</p>
-              <p className="text-sm font-bold text-primary">{purchaseValues.length}x</p>
+              <p className="text-sm font-bold text-primary">{filledPurchases.length}x</p>
             </div>
             <div className="rounded-md bg-success/5 border border-success/20 p-2">
               <p className="text-[9px] text-muted-foreground">LTV Total</p>
@@ -202,12 +269,10 @@ function DetailDialogContent({
           </div>
         )}
 
-        {/* Recurrence status (auto from purchase count) */}
-        <div className="flex items-center gap-2">
-          <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-            🔄 {purchaseValues.length > 0 ? `Comprou ${purchaseValues.length >= 5 ? '5+' : purchaseValues.length} vez${purchaseValues.length > 1 ? 'es' : ''}` : 'Sem compras'}
-          </Badge>
-        </div>
+        {/* Recurrence badge */}
+        <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+          🔄 {filledPurchases.length > 0 ? `Comprou ${filledPurchases.length >= 5 ? '5+' : filledPurchases.length} vez${filledPurchases.length > 1 ? 'es' : ''}` : 'Comprou 1 vez'}
+        </Badge>
       </div>
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
@@ -420,31 +485,6 @@ function DetailDialogContent({
                 {c.notes && <p className="mt-0.5 text-muted-foreground">{c.notes}</p>}
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Treatment Info (read-only, single treatment per patient) */}
-      {suggestions.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5">💡 Sugestões de tratamento</p>
-          <div className="flex flex-wrap gap-1.5">
-            {suggestions
-              .filter(s => s.trigger_treatment === (opp.lead?.interest_product || ''))
-              .map(s => (
-                <Badge
-                  key={s.id}
-                  variant="outline"
-                  className="text-[10px] cursor-pointer hover:bg-primary/10"
-                  onClick={() => {
-                    updateOpp.mutate({ id: opp.id, suggested_treatment: s.suggested_treatment }, {
-                      onSuccess: () => toast.success(`Tratamento alterado para "${s.suggested_treatment}"`),
-                    });
-                  }}
-                >
-                  {opp.suggested_treatment === s.suggested_treatment ? '✅' : '→'} {s.suggested_treatment}
-                </Badge>
-              ))}
           </div>
         </div>
       )}
@@ -794,12 +834,18 @@ const Comercial2 = () => {
                                       </div>
                                     )}
                                   <div className="flex items-center gap-1.5">
-                                    <Badge variant="outline" className="text-[10px]">
-                                      {opp.suggested_treatment}
-                                    </Badge>
                                     <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
                                       🔄 {opp.purchase_count || 1}x
                                     </Badge>
+                                    {(() => {
+                                      const entries = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+                                      const ltv = entries.reduce((s, p) => s + p.value, 0);
+                                      return ltv > 0 ? (
+                                        <Badge className="text-[9px] bg-success/10 text-success border-success/30">
+                                          💰 {formatCurrency(ltv)}
+                                        </Badge>
+                                      ) : null;
+                                    })()}
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <Badge className={cn('text-[9px]', contactCfg.color)}>

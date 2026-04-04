@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucid
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
 import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
+import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead } from '@/hooks/useTriageReferrals';
+import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Lead } from '@/types/crm';
@@ -49,11 +51,21 @@ const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);
+  const { data: existingReferrals } = useTriageReferrals(lead?.id);
   const saveTriage = useSavePatientTriage();
+  const saveReferrals = useSaveTriageReferrals();
+  const convertToLead = useConvertReferralToLead();
   const markCompleted = useMarkTriageCompleted();
   const printRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<Partial<PatientTriageData>>({});
+  const [referralEntries, setReferralEntries] = useState<Array<{
+    referral_name: string;
+    situation: string;
+    relationship: string;
+    converted_lead_id?: string | null;
+    id?: string;
+  }>>([]);
 
   useEffect(() => {
     if (existingTriage) {
@@ -69,6 +81,18 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     }
   }, [existingTriage, lead]);
 
+  useEffect(() => {
+    if (existingReferrals && existingReferrals.length > 0) {
+      setReferralEntries(existingReferrals.map(r => ({
+        id: r.id,
+        referral_name: r.referral_name,
+        situation: r.situation,
+        relationship: r.relationship || '',
+        converted_lead_id: r.converted_lead_id,
+      })));
+    }
+  }, [existingReferrals]);
+
   if (!lead) return null;
 
   const updateField = (field: string, value: unknown) => {
@@ -83,6 +107,31 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     updateField('motivation', updated);
   };
 
+  const handleConvertToLead = (index: number) => {
+    if (!user) return;
+    const entry = referralEntries[index];
+    if (!entry.referral_name.trim()) {
+      toast.error('Preencha o nome da pessoa para converter em lead');
+      return;
+    }
+    convertToLead.mutate(
+      {
+        referral: { ...entry, lead_id: lead.id },
+        agentId: user.id,
+        referrerLeadId: lead.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${entry.referral_name} convertido em lead com sucesso!`);
+          const updated = [...referralEntries];
+          updated[index] = { ...updated[index], converted_lead_id: 'converted' };
+          setReferralEntries(updated);
+        },
+        onError: () => toast.error('Erro ao converter indicação em lead'),
+      }
+    );
+  };
+
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
       (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);
@@ -90,7 +139,18 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     saveTriage.mutate(
       { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
       {
-        onSuccess: () => toast.success('Ficha de triagem salva com sucesso!'),
+        onSuccess: (data) => {
+          toast.success('Ficha de triagem salva com sucesso!');
+          // Save referrals after triage is saved
+          const triageId = existingTriage?.id || (data as any)?.id;
+          if (triageId && referralEntries.length > 0) {
+            saveReferrals.mutate({
+              leadId: lead.id,
+              triageId,
+              referrals: referralEntries.filter(r => r.referral_name.trim()).map(r => ({ ...r, lead_id: lead.id })),
+            });
+          }
+        },
         onError: () => toast.error('Erro ao salvar ficha de triagem'),
       }
     );
@@ -547,6 +607,15 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                   })()}
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Referral Section */}
+              <TriageReferralSection
+                referrals={referralEntries}
+                onChange={setReferralEntries}
+                onConvertToLead={handleConvertToLead}
+              />
 
               {/* Filled info */}
               {existingTriage?.filled_at && (

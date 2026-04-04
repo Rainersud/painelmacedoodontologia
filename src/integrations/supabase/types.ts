@@ -1132,6 +1132,67 @@ export type Database = {
           },
         ]
       }
+      triage_referrals: {
+        Row: {
+          converted_at: string | null
+          converted_lead_id: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          referral_name: string
+          relationship: string | null
+          situation: string
+          triage_id: string
+          updated_at: string
+        }
+        Insert: {
+          converted_at?: string | null
+          converted_lead_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          referral_name: string
+          relationship?: string | null
+          situation?: string
+          triage_id: string
+          updated_at?: string
+        }
+        Update: {
+          converted_at?: string | null
+          converted_lead_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          referral_name?: string
+          relationship?: string | null
+          situation?: string
+          triage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "triage_referrals_converted_lead_id_fkey"
+            columns: ["converted_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "triage_referrals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "triage_referrals_triage_id_fkey"
+            columns: ["triage_id"]
+            isOneToOne: false
+            referencedRelation: "patient_triage"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           can_edit: boolean

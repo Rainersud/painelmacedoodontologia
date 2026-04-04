@@ -63,6 +63,9 @@ export function useRealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
         queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_opportunities' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['upsell-opportunities'] });
+      })
       .subscribe();
 
     return () => {

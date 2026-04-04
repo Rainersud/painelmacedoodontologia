@@ -28,9 +28,16 @@ const PERIOD_OPTIONS = [
   { value: 'ano', label: 'Ano atual' },
 ] as const;
 
+const SALE_TYPE_OPTIONS = [
+  { value: 'todos', label: 'Todos os tipos' },
+  { value: '1_etapa', label: '1 Etapa' },
+  { value: '2_etapas', label: '2 Etapas' },
+] as const;
+
 export function LTVRecurrencePanel() {
   const [period, setPeriod] = useState<PeriodFilter>('todos');
-  const { data: metrics, isLoading } = useLTVMetrics(period);
+  const [saleType, setSaleType] = useState<SaleTypeFilter>('todos');
+  const { data: metrics, isLoading } = useLTVMetrics(period, saleType);
 
   if (isLoading) {
     return (

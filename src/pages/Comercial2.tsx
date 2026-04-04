@@ -381,10 +381,10 @@ const Comercial2 = () => {
 
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-      <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
+      <div className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
         {/* Metrics Bar */}
         {metrics && (
-          <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
+          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3 mb-4">
             <Card className="monday-card">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
@@ -499,8 +499,8 @@ const Comercial2 = () => {
         </div>
 
         {/* Kanban Board */}
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x">
-          <div className="flex gap-3 min-w-max h-full pb-2 px-1">
+        <div className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x">
+          <div className="flex gap-3 min-w-max md:h-full pb-2 px-1">
             {UPSELL_STAGES.map((stage) => {
               const stageOpps = getOppsByStatus(stage.key);
               const isDropping = dropTarget === stage.key && draggedId !== null;
@@ -509,7 +509,7 @@ const Comercial2 = () => {
               return (
                 <div
                   key={stage.key}
-                  className="w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 h-full"
+                  className="w-56 sm:w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 md:h-full"
                   onDragOver={(e) => handleDragOver(e, stage.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.key)}
@@ -657,7 +657,7 @@ const Comercial2 = () => {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />

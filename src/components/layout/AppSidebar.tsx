@@ -57,6 +57,7 @@ const managementNavItems = [
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
+  { title: 'Funil Tráfego Pago', url: '/funil-trafego', icon: Megaphone, module: 'funil_trafego' },
 ];
 
 const adminNavItems = [

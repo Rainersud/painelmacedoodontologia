@@ -130,7 +130,7 @@ const Comercial2 = () => {
       <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
         {/* Metrics Bar */}
         {metrics && (
-          <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+          <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
             <Card className="monday-card">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">

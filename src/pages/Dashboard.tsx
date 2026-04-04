@@ -313,7 +313,12 @@ const Dashboard = () => {
         {/* Today Tasks Widget - Right after KPIs */}
         <TodayTasksWidget />
 
-        {/* Charts Row */}
+        {/* Visual Sales Funnel */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <VisualFunnelWidget />
+          <FunnelConversionWidget />
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Leads Performance Chart */}
           <Card className="monday-card">

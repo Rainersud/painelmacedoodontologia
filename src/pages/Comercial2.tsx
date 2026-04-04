@@ -218,7 +218,43 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Contact Status */}
+      {/* Paciente Amigo Section */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-semibold flex items-center gap-1.5">
+          🤝 Paciente Amigo
+        </p>
+        <div className="flex items-center gap-2">
+          <Badge className={cn("text-[10px]", opp.friendly_patient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
+            {opp.friendly_patient ? '✅ Aceitou participar' : '❌ Não participar'}
+          </Badge>
+        </div>
+        {opp.friendly_patient && (
+          <div className={cn(
+            "p-2.5 rounded-md border space-y-2",
+            opp.friendly_patient_video_recorded ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={opp.friendly_patient_video_recorded}
+                  onCheckedChange={(checked) => {
+                    updateOpp.mutate({
+                      id: opp.id,
+                      friendly_patient_video_recorded: !!checked,
+                      friendly_patient_video_recorded_at: checked ? new Date().toISOString() : null,
+                    });
+                  }}
+                  className="h-4 w-4"
+                />
+                <span className="text-xs font-semibold">🎬 Gravar Depoimento</span>
+              </div>
+              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                {opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}
+              </Badge>
+            </div>
+          </div>
+        )}
+      </div>
       <div>
         <p className="text-xs font-semibold text-muted-foreground mb-1.5">Status do Contato</p>
         <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>

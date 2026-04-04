@@ -326,30 +326,57 @@ const Comercial2 = () => {
                                     </p>
                                   )}
                                   {stage.key === 'base_pacientes' && (
-                                    <div
-                                      className={cn(
-                                        "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
-                                        opp.gift_sent
-                                          ? "border-success/30 bg-success/5 text-success"
-                                          : "border-warning/30 bg-warning/5 text-warning"
-                                      )}
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Checkbox
-                                        checked={opp.gift_sent}
-                                        onCheckedChange={(checked) => {
-                                          updateOpp.mutate({
-                                            id: opp.id,
-                                            gift_sent: !!checked,
-                                            gift_sent_at: checked ? new Date().toISOString() : null,
-                                          });
-                                        }}
-                                        className="h-3.5 w-3.5"
-                                      />
-                                      <Gift className="h-3 w-3" />
-                                      <span className="font-medium">
-                                        {opp.gift_sent ? 'Brinde Enviado' : 'Enviar Brinde'}
-                                      </span>
+                                    <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                                      {/* Surgery Gift */}
+                                      <div
+                                        className={cn(
+                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                          opp.gift_surgery_sent
+                                            ? "border-success/30 bg-success/5 text-success"
+                                            : "border-warning/30 bg-warning/5 text-warning"
+                                        )}
+                                      >
+                                        <Checkbox
+                                          checked={opp.gift_surgery_sent}
+                                          onCheckedChange={(checked) => {
+                                            updateOpp.mutate({
+                                              id: opp.id,
+                                              gift_surgery_sent: !!checked,
+                                              gift_surgery_sent_at: checked ? new Date().toISOString() : null,
+                                            });
+                                          }}
+                                          className="h-3.5 w-3.5"
+                                        />
+                                        <Gift className="h-3 w-3" />
+                                        <span className="font-medium">
+                                          {opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}
+                                        </span>
+                                      </div>
+                                      {/* Prosthesis Gift */}
+                                      <div
+                                        className={cn(
+                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                          opp.gift_prosthesis_sent
+                                            ? "border-success/30 bg-success/5 text-success"
+                                            : "border-warning/30 bg-warning/5 text-warning"
+                                        )}
+                                      >
+                                        <Checkbox
+                                          checked={opp.gift_prosthesis_sent}
+                                          onCheckedChange={(checked) => {
+                                            updateOpp.mutate({
+                                              id: opp.id,
+                                              gift_prosthesis_sent: !!checked,
+                                              gift_prosthesis_sent_at: checked ? new Date().toISOString() : null,
+                                            });
+                                          }}
+                                          className="h-3.5 w-3.5"
+                                        />
+                                        <Gift className="h-3 w-3" />
+                                        <span className="font-medium">
+                                          {opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}
+                                        </span>
+                                      </div>
                                     </div>
                                   )}
                                 </CardContent>

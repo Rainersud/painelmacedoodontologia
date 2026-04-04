@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,
@@ -21,6 +24,7 @@ import {
   CONTACT_STATUS_CONFIG,
   type UpsellOpportunity,
 } from '@/hooks/useUpsellOpportunities';
+import { usePatientTriage } from '@/hooks/usePatientTriage';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';

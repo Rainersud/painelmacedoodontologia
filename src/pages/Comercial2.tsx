@@ -520,6 +520,39 @@ const Comercial2 = () => {
                 </div>
               </CardContent>
             </Card>
+            <Card className="monday-card border-primary/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🤝 Pac. Amigo</p>
+                    <p className="text-lg font-bold text-primary">{metrics.friendlyAccepted}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-warning/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-warning" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Pendentes</p>
+                    <p className="text-lg font-bold text-warning">{metrics.videoPending}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-success/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-success" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Realizados</p>
+                    <p className="text-lg font-bold text-success">{metrics.videoRecorded}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 

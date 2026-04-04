@@ -40,6 +40,7 @@ import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';
 import { CurrencyInput } from './CurrencyInput';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
+import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import {
   Phone,
   MessageSquare,

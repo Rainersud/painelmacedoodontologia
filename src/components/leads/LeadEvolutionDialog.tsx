@@ -86,7 +86,22 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
           throw new Error('Registre um pagamento antes de marcar como Venda Realizada.');
         }
         updates.closed_at = new Date().toISOString();
-      }
+
+        // Save friendly_patient on upsell opportunities
+        if (friendlyPatient !== null) {
+          const { data: upsellOpps } = await supabase
+            .from('upsell_opportunities')
+            .select('id')
+            .eq('lead_id', lead.id);
+          
+          if (upsellOpps && upsellOpps.length > 0) {
+            await supabase
+              .from('upsell_opportunities')
+              .update({ friendly_patient: friendlyPatient })
+              .eq('lead_id', lead.id);
+          }
+          // If no upsell exists yet (trigger will create), we store in notes for the trigger
+        }
 
       const { error: leadError } = await supabase
         .from('leads')

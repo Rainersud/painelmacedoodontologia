@@ -213,13 +213,15 @@ function MeetingContent({ meeting, cacMetrics, salesMetrics, goalsProgress, refe
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
-          <TabsTrigger value="metricas">Métricas</TabsTrigger>
-          <TabsTrigger value="acoes">Planos de Ação</TabsTrigger>
-          <TabsTrigger value="anotacoes">Anotações</TabsTrigger>
-          <TabsTrigger value="treinamento">Treinamento</TabsTrigger>
-          <TabsTrigger value="resumo">Resumo</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-5 sm:w-full">
+            <TabsTrigger value="metricas" className="text-xs sm:text-sm">Métricas</TabsTrigger>
+            <TabsTrigger value="acoes" className="text-xs sm:text-sm">Planos de Ação</TabsTrigger>
+            <TabsTrigger value="anotacoes" className="text-xs sm:text-sm">Anotações</TabsTrigger>
+            <TabsTrigger value="treinamento" className="text-xs sm:text-sm">Treinamento</TabsTrigger>
+            <TabsTrigger value="resumo" className="text-xs sm:text-sm">Resumo</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="metricas">
           <MetricsPanel cacMetrics={cacMetrics} salesMetrics={salesMetrics} goalsProgress={goalsProgress} referralDashboard={referralDashboard} incentiveData={incentiveData} />

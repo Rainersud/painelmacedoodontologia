@@ -1,0 +1,1 @@
+ALTER TABLE public.upsell_opportunities ADD COLUMN IF NOT EXISTS purchase_values text DEFAULT '';

@@ -1265,6 +1265,7 @@ export type Database = {
           next_contact_at: string | null
           notes: string | null
           purchase_count: number
+          purchase_values: string | null
           status: string
           suggested_treatment: string
           treatment_category: string | null
@@ -1294,6 +1295,7 @@ export type Database = {
           next_contact_at?: string | null
           notes?: string | null
           purchase_count?: number
+          purchase_values?: string | null
           status?: string
           suggested_treatment: string
           treatment_category?: string | null
@@ -1323,6 +1325,7 @@ export type Database = {
           next_contact_at?: string | null
           notes?: string | null
           purchase_count?: number
+          purchase_values?: string | null
           status?: string
           suggested_treatment?: string
           treatment_category?: string | null

@@ -229,6 +229,15 @@ const Dashboard = () => {
   return (
     <AppLayout title="Dashboard">
       <div className="space-y-6">
+        {/* Motivational Quote */}
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center space-y-1">
+          <p className="text-sm text-foreground leading-relaxed">
+            O consumidor que você <strong>QUER</strong> como cliente tem que saber que o seu produto <strong>É PARA ELE</strong>.
+          </p>
+          <p className="text-sm text-foreground leading-relaxed">
+            O consumidor que você <strong>NÃO</strong> quer como cliente tem que saber que o produto <strong>NÃO É PARA ELE</strong>!
+          </p>
+        </div>
         {/* Pending Tasks Alert Banner - TOP PRIORITY */}
         <PendingTasksBanner />
 

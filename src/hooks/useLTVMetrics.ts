@@ -129,9 +129,10 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
         paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
       });
 
-      // Group opportunities by lead
+      // Group opportunities by lead (filtered by sale type)
       const leadPurchaseCounts: Record<string, number> = {};
       (opps || []).forEach(o => {
+        if (leadIdsBySaleType && !leadIdsBySaleType.has(o.lead_id)) return;
         const current = leadPurchaseCounts[o.lead_id] || 0;
         leadPurchaseCounts[o.lead_id] = Math.max(current, o.purchase_count || 1);
       });

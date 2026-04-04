@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,
@@ -129,7 +130,7 @@ const Comercial2 = () => {
       <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
         {/* Metrics Bar */}
         {metrics && (
-          <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+          <div className="shrink-0 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
             <Card className="monday-card">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
@@ -192,6 +193,28 @@ const Comercial2 = () => {
                   <div>
                     <p className="text-[10px] text-muted-foreground">LTV/Paciente</p>
                     <p className="text-lg font-bold">{formatCurrency(metrics.ltvPerPatient)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-warning/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-warning" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Pendentes</p>
+                    <p className="text-lg font-bold text-warning">{metrics.giftsPending}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-success/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-success" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Enviados</p>
+                    <p className="text-lg font-bold text-success">{metrics.giftsSent}</p>
                   </div>
                 </div>
               </CardContent>
@@ -297,6 +320,33 @@ const Comercial2 = () => {
                                     <p className="text-[10px] text-muted-foreground">
                                       {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
                                     </p>
+                                  )}
+                                  {stage.key === 'base_pacientes' && (
+                                    <div
+                                      className={cn(
+                                        "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                        opp.gift_sent
+                                          ? "border-success/30 bg-success/5 text-success"
+                                          : "border-warning/30 bg-warning/5 text-warning"
+                                      )}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Checkbox
+                                        checked={opp.gift_sent}
+                                        onCheckedChange={(checked) => {
+                                          updateOpp.mutate({
+                                            id: opp.id,
+                                            gift_sent: !!checked,
+                                            gift_sent_at: checked ? new Date().toISOString() : null,
+                                          });
+                                        }}
+                                        className="h-3.5 w-3.5"
+                                      />
+                                      <Gift className="h-3 w-3" />
+                                      <span className="font-medium">
+                                        {opp.gift_sent ? 'Brinde Enviado' : 'Enviar Brinde'}
+                                      </span>
+                                    </div>
                                   )}
                                 </CardContent>
                               </Card>

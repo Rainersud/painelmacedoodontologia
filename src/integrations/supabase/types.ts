@@ -1240,6 +1240,8 @@ export type Database = {
           contact_status: string
           created_at: string
           estimated_value: number | null
+          gift_sent: boolean
+          gift_sent_at: string | null
           id: string
           lead_id: string
           next_contact_at: string | null
@@ -1257,6 +1259,8 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          gift_sent?: boolean
+          gift_sent_at?: string | null
           id?: string
           lead_id: string
           next_contact_at?: string | null
@@ -1274,6 +1278,8 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          gift_sent?: boolean
+          gift_sent_at?: string | null
           id?: string
           lead_id?: string
           next_contact_at?: string | null

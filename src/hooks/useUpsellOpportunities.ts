@@ -16,6 +16,8 @@ export interface UpsellOpportunity {
   closed_at: string | null;
   next_contact_at: string | null;
   attempt_count: number;
+  gift_sent: boolean;
+  gift_sent_at: string | null;
   created_at: string;
   updated_at: string;
   lead?: {
@@ -252,6 +254,10 @@ export function useUpsellMetrics() {
   const uniquePatients = new Set(opportunities.map(o => o.lead_id)).size;
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
+  const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
+  const giftsPending = basePatients.filter(o => !o.gift_sent).length;
+  const giftsSent = basePatients.filter(o => o.gift_sent).length;
+
   return {
     total,
     closedCount: closed.length,
@@ -260,6 +266,8 @@ export function useUpsellMetrics() {
     avgTicket,
     uniquePatients,
     ltvPerPatient,
+    giftsPending,
+    giftsSent,
     byStatus: UPSELL_STAGES.map(s => ({
       ...s,
       count: opportunities.filter(o => o.status === s.key).length,

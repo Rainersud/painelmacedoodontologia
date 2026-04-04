@@ -11,7 +11,8 @@ import {
   Settings,
   LogOut,
   UserCircle,
-  CalendarCheck
+  CalendarCheck,
+  Megaphone
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,6 +58,7 @@ const managementNavItems = [
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
+  { title: 'Funil Tráfego Pago', url: '/funil-trafego', icon: Megaphone, module: 'funil_trafego' },
 ];
 
 const adminNavItems = [

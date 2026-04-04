@@ -94,6 +94,63 @@ export type Database = {
           },
         ]
       }
+      ad_creatives: {
+        Row: {
+          appointments: number
+          attendance: number
+          clicks: number
+          created_at: string
+          created_by: string
+          id: string
+          investment: number
+          is_active: boolean
+          leads_generated: number
+          link_url: string | null
+          name: string
+          platform: string
+          reference_month: string
+          revenue: number
+          sales: number
+          updated_at: string
+        }
+        Insert: {
+          appointments?: number
+          attendance?: number
+          clicks?: number
+          created_at?: string
+          created_by: string
+          id?: string
+          investment?: number
+          is_active?: boolean
+          leads_generated?: number
+          link_url?: string | null
+          name: string
+          platform?: string
+          reference_month?: string
+          revenue?: number
+          sales?: number
+          updated_at?: string
+        }
+        Update: {
+          appointments?: number
+          attendance?: number
+          clicks?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          investment?: number
+          is_active?: boolean
+          leads_generated?: number
+          link_url?: string | null
+          name?: string
+          platform?: string
+          reference_month?: string
+          revenue?: number
+          sales?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_daily_metrics: {
         Row: {
           agent_id: string

@@ -18,6 +18,12 @@ export interface UpsellOpportunity {
   attempt_count: number;
   gift_sent: boolean;
   gift_sent_at: string | null;
+  gift_surgery_sent: boolean;
+  gift_surgery_sent_at: string | null;
+  gift_surgery_date: string | null;
+  gift_prosthesis_sent: boolean;
+  gift_prosthesis_sent_at: string | null;
+  gift_prosthesis_date: string | null;
   created_at: string;
   updated_at: string;
   lead?: {
@@ -255,8 +261,10 @@ export function useUpsellMetrics() {
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
   const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
-  const giftsPending = basePatients.filter(o => !o.gift_sent).length;
-  const giftsSent = basePatients.filter(o => o.gift_sent).length;
+  const giftsPending = basePatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
+  const giftsSent = basePatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
+  const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;
+  const prosthesisPending = basePatients.filter(o => !o.gift_prosthesis_sent).length;
 
   return {
     total,
@@ -268,6 +276,8 @@ export function useUpsellMetrics() {
     ltvPerPatient,
     giftsPending,
     giftsSent,
+    surgeryPending,
+    prosthesisPending,
     byStatus: UPSELL_STAGES.map(s => ({
       ...s,
       count: opportunities.filter(o => o.status === s.key).length,

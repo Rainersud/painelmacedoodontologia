@@ -785,6 +785,7 @@ export type Database = {
           filled_at: string
           filled_by: string
           full_name: string | null
+          ice_cream_flavor: string | null
           id: string
           instagram: string | null
           lead_id: string
@@ -793,6 +794,7 @@ export type Database = {
           motivation_other: string | null
           nickname: string | null
           phone: string | null
+          post_treatment_food: string | null
           previous_implants: boolean | null
           profession: string | null
           prosthesis_duration: string | null
@@ -824,6 +826,7 @@ export type Database = {
           filled_at?: string
           filled_by: string
           full_name?: string | null
+          ice_cream_flavor?: string | null
           id?: string
           instagram?: string | null
           lead_id: string
@@ -832,6 +835,7 @@ export type Database = {
           motivation_other?: string | null
           nickname?: string | null
           phone?: string | null
+          post_treatment_food?: string | null
           previous_implants?: boolean | null
           profession?: string | null
           prosthesis_duration?: string | null
@@ -863,6 +867,7 @@ export type Database = {
           filled_at?: string
           filled_by?: string
           full_name?: string | null
+          ice_cream_flavor?: string | null
           id?: string
           instagram?: string | null
           lead_id?: string
@@ -871,6 +876,7 @@ export type Database = {
           motivation_other?: string | null
           nickname?: string | null
           phone?: string | null
+          post_treatment_food?: string | null
           previous_implants?: boolean | null
           profession?: string | null
           prosthesis_duration?: string | null
@@ -1240,8 +1246,14 @@ export type Database = {
           contact_status: string
           created_at: string
           estimated_value: number | null
+          gift_prosthesis_date: string | null
+          gift_prosthesis_sent: boolean
+          gift_prosthesis_sent_at: string | null
           gift_sent: boolean
           gift_sent_at: string | null
+          gift_surgery_date: string | null
+          gift_surgery_sent: boolean
+          gift_surgery_sent_at: string | null
           id: string
           lead_id: string
           next_contact_at: string | null
@@ -1259,8 +1271,14 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          gift_prosthesis_date?: string | null
+          gift_prosthesis_sent?: boolean
+          gift_prosthesis_sent_at?: string | null
           gift_sent?: boolean
           gift_sent_at?: string | null
+          gift_surgery_date?: string | null
+          gift_surgery_sent?: boolean
+          gift_surgery_sent_at?: string | null
           id?: string
           lead_id: string
           next_contact_at?: string | null
@@ -1278,8 +1296,14 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          gift_prosthesis_date?: string | null
+          gift_prosthesis_sent?: boolean
+          gift_prosthesis_sent_at?: string | null
           gift_sent?: boolean
           gift_sent_at?: string | null
+          gift_surgery_date?: string | null
+          gift_surgery_sent?: boolean
+          gift_surgery_sent_at?: string | null
           id?: string
           lead_id?: string
           next_contact_at?: string | null

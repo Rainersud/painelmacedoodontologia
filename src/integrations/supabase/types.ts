@@ -1264,6 +1264,7 @@ export type Database = {
           lead_id: string
           next_contact_at: string | null
           notes: string | null
+          purchase_count: number
           status: string
           suggested_treatment: string
           treatment_category: string | null
@@ -1292,6 +1293,7 @@ export type Database = {
           lead_id: string
           next_contact_at?: string | null
           notes?: string | null
+          purchase_count?: number
           status?: string
           suggested_treatment: string
           treatment_category?: string | null
@@ -1320,6 +1322,7 @@ export type Database = {
           lead_id?: string
           next_contact_at?: string | null
           notes?: string | null
+          purchase_count?: number
           status?: string
           suggested_treatment?: string
           treatment_category?: string | null

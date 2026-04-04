@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
 import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,
@@ -94,7 +96,26 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Triage Personalization Data */}
+      {/* Purchase Count / Recurrence */}
+      <div className="rounded-lg border p-3 space-y-2">
+        <p className="text-xs font-semibold flex items-center gap-1.5">🔄 Status de Recorrência</p>
+        <Select
+          value={String((opp as any).purchase_count || 1)}
+          onValueChange={(val) => updateOpp.mutate({ id: opp.id, purchase_count: parseInt(val) })}
+        >
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Comprou 1 vez</SelectItem>
+            <SelectItem value="2">Comprou 2 vezes</SelectItem>
+            <SelectItem value="3">Comprou 3 vezes</SelectItem>
+            <SelectItem value="4">Comprou 4 vezes</SelectItem>
+            <SelectItem value="5">Comprou 5 vezes ou mais</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
           <p className="text-xs font-semibold text-primary flex items-center gap-1.5">🎁 Personalização de Brinde</p>
@@ -438,7 +459,16 @@ const Comercial2 = () => {
 
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-      <div className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+      <Tabs defaultValue="pipeline" className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+        <TabsList className="shrink-0 mb-3 w-fit">
+          <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
+          <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
+        </TabsList>
+        <TabsContent value="ltv" className="flex-1 overflow-y-auto">
+          <LTVRecurrencePanel />
+        </TabsContent>
+        <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">
+      <div className="flex flex-col h-full min-h-0">
         {/* Metrics Bar */}
         {metrics && (
           <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-11 gap-2 sm:gap-3 mb-4">
@@ -660,9 +690,14 @@ const Comercial2 = () => {
                                         </span>
                                       </div>
                                     )}
-                                  <Badge variant="outline" className="text-[10px]">
-                                    {opp.suggested_treatment}
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {opp.suggested_treatment}
+                                    </Badge>
+                                    <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+                                      🔄 {(opp as any).purchase_count || 1}x
+                                    </Badge>
+                                  </div>
                                   <div className="flex items-center justify-between">
                                     <Badge className={cn('text-[9px]', contactCfg.color)}>
                                       {contactCfg.label}
@@ -757,6 +792,7 @@ const Comercial2 = () => {
           </div>
         </div>
       </div>
+        </TabsContent>
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
@@ -827,6 +863,7 @@ const Comercial2 = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </Tabs>
     </AppLayout>
   );
 };

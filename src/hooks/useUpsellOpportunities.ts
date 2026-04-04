@@ -177,7 +177,7 @@ export function useAddContactHistory() {
     }) => {
       const { error: histError } = await supabase.from('upsell_contact_history').insert({
         opportunity_id: data.opportunity_id,
-        agent_id: userId!,
+        agent_id: user!.id,
         contact_type: data.contact_type,
         result: data.result || null,
         notes: data.notes || null,

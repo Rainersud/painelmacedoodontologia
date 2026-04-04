@@ -204,24 +204,10 @@ const Comercial2 = () => {
 
         {/* Header */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
-          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {filteredOpps.length} oportunidades no pipeline
-              {closedLeadsNotInPipeline.length > 0 && (
-                <span className="text-warning ml-2">
-                  • {closedLeadsNotInPipeline.length} pacientes aguardando sincronização
-                </span>
-              )}
+              <span className="text-success ml-2">• Sincronização automática ativa</span>
             </p>
-            <div className="flex items-center gap-2">
-              {closedLeadsNotInPipeline.length > 0 && (
-                <Button onClick={handleSyncClosedLeads} size="sm" variant="outline" disabled={autoGenerate.isPending}>
-                  {autoGenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-                  Sincronizar Pacientes
-                </Button>
-              )}
-            </div>
-          </div>
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

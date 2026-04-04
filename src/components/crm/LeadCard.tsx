@@ -147,6 +147,18 @@ export function LeadCard({
           </div>
         )}
 
+        {/* Paciente Amigo Badge */}
+        {lead.status === 'fechado' && friendlyData && (
+          <div className="mb-1.5">
+            <Badge variant="outline" className={cn(
+              "text-[10px] border-0 font-medium",
+              friendlyData.friendly_patient ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+            )}>
+              🤝 Paciente Amigo: {friendlyData.friendly_patient ? 'Sim' : 'Não'}
+            </Badge>
+          </div>
+        )}
+
         {/* Value + Actions */}
         <div className="flex items-center justify-between pt-1.5 border-t border-border">
           <div className="flex items-center gap-1">

@@ -55,6 +55,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
   const saveTriage = useSavePatientTriage();
   const saveReferrals = useSaveTriageReferrals();
   const convertToLead = useConvertReferralToLead();
+  const bulkLink = useBulkLinkReferrals();
   const markCompleted = useMarkTriageCompleted();
   const printRef = useRef<HTMLDivElement>(null);
 

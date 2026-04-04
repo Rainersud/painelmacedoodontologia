@@ -162,24 +162,56 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Purchase Count / Recurrence */}
-      <div className="rounded-lg border p-3 space-y-2">
-        <p className="text-xs font-semibold flex items-center gap-1.5">🔄 Status de Recorrência</p>
-        <Select
-          value={String((opp as any).purchase_count || 1)}
-          onValueChange={(val) => updateOpp.mutate({ id: opp.id, purchase_count: parseInt(val) })}
-        >
-          <SelectTrigger className="h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Comprou 1 vez</SelectItem>
-            <SelectItem value="2">Comprou 2 vezes</SelectItem>
-            <SelectItem value="3">Comprou 3 vezes</SelectItem>
-            <SelectItem value="4">Comprou 4 vezes</SelectItem>
-            <SelectItem value="5">Comprou 5 vezes ou mais</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Histórico de Compras (LTV) - Campo Único */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-semibold flex items-center gap-1.5">💰 Histórico de Compras (LTV)</p>
+
+        {/* Current values display */}
+        <div className="rounded-md bg-muted/50 p-2.5">
+          <p className="text-[10px] text-muted-foreground mb-1">Valores (separados por ;)</p>
+          <p className="text-sm font-mono font-medium min-h-[20px]">
+            {opp.purchase_values || <span className="text-muted-foreground italic">Nenhuma compra registrada</span>}
+          </p>
+        </div>
+
+        {/* Add new purchase value */}
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            value={newPurchaseValue}
+            onChange={(e) => setNewPurchaseValue(e.target.value)}
+            placeholder="Valor da compra"
+            className="h-8 text-sm flex-1"
+          />
+          <Button size="sm" className="h-8 text-xs gap-1" onClick={handleAddPurchaseValue} disabled={!newPurchaseValue}>
+            <Plus className="h-3 w-3" /> Adicionar
+          </Button>
+        </div>
+
+        {/* Auto-calculated metrics */}
+        {purchaseValues.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
+              <p className="text-[9px] text-muted-foreground">Compras</p>
+              <p className="text-sm font-bold text-primary">{purchaseValues.length}x</p>
+            </div>
+            <div className="rounded-md bg-success/5 border border-success/20 p-2">
+              <p className="text-[9px] text-muted-foreground">LTV Total</p>
+              <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+            </div>
+            <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
+              <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
+              <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Recurrence status (auto from purchase count) */}
+        <div className="flex items-center gap-2">
+          <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+            🔄 {purchaseValues.length > 0 ? `Comprou ${purchaseValues.length >= 5 ? '5+' : purchaseValues.length} vez${purchaseValues.length > 1 ? 'es' : ''}` : 'Sem compras'}
+          </Badge>
+        </div>
       </div>
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (

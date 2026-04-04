@@ -83,6 +83,7 @@ const App = () => (
                 <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
                 <Route path="/cac" element={<ProtectedRoute><CACDashboard /></ProtectedRoute>} />
                 <Route path="/metricas-vendas" element={<ProtectedRoute><MetricasVendas /></ProtectedRoute>} />
+                <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />
                 <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

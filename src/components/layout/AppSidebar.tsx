@@ -56,6 +56,7 @@ const managementNavItems = [
   { title: 'Métricas de Vendas', url: '/metricas-vendas', icon: Target, module: 'metricas_vendas' },
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
+  { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
 ];
 
 const adminNavItems = [

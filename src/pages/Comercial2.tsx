@@ -197,14 +197,14 @@ function DetailDialogContent({
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
-            <Popover>
+            <Popover open={prosthesisCalendarOpen} onOpenChange={setProsthesisCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
                   <CalendarIcon className="h-3 w-3" />
                   {opp.gift_prosthesis_date ? format(new Date(opp.gift_prosthesis_date + 'T12:00:00'), 'dd/MM/yyyy') : 'Agendar'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[100]" align="start" side="bottom" sideOffset={4}>
                 <Calendar
                   mode="single"
                   selected={opp.gift_prosthesis_date ? new Date(opp.gift_prosthesis_date + 'T12:00:00') : undefined}

@@ -94,23 +94,24 @@ function DetailDialogContent({
     });
   };
 
-  // Parse structured purchase entries
+  // Parse structured purchase entries (only recurrent purchases, excluding first sale)
   const purchases = useMemo(() =>
-    parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value),
-    [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]
+    parsePurchaseEntries(opp.purchase_values),
+    [opp.purchase_values]
   );
 
+  // selectedCount = total purchases including the initial (1 = only initial, no LTV)
   const [selectedCount, setSelectedCount] = useState<number>(
-    Math.max(purchases.length, 1)
+    Math.max(purchases.length + 1, 1)
   );
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
 
   // Sync local state when opp changes
   useEffect(() => {
-    const parsed = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+    const parsed = parsePurchaseEntries(opp.purchase_values);
     setLocalPurchases(parsed);
-    setSelectedCount(Math.max(parsed.length, 1));
-  }, [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]);
+    setSelectedCount(Math.max(parsed.length + 1, 1));
+  }, [opp.purchase_values]);
 
   // When count changes, adjust local array
   const handleCountChange = (newCount: number) => {

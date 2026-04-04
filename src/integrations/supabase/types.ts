@@ -530,6 +530,150 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_action_plans: {
+        Row: {
+          completion_date: string | null
+          created_at: string
+          description: string
+          execution_date: string | null
+          id: string
+          meeting_id: string
+          related_metric: string | null
+          responsible: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completion_date?: string | null
+          created_at?: string
+          description: string
+          execution_date?: string | null
+          id?: string
+          meeting_id: string
+          related_metric?: string | null
+          responsible: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completion_date?: string | null
+          created_at?: string
+          description?: string
+          execution_date?: string | null
+          id?: string
+          meeting_id?: string
+          related_metric?: string | null
+          responsible?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_action_plans_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_annotations: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          meeting_id: string
+          metric_key: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          meeting_id: string
+          metric_key: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          metric_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_annotations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_training_links: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_training_links_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string
+          created_by: string
+          general_notes: string | null
+          id: string
+          meeting_date: string
+          period_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          general_notes?: string | null
+          id?: string
+          meeting_date: string
+          period_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          general_notes?: string | null
+          id?: string
+          meeting_date?: string
+          period_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meta_settings: {
         Row: {
           created_at: string

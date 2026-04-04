@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, Plus, MessageSquare, Phone, ChevronRight } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight } from 'lucide-react';
 import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,
@@ -16,12 +16,11 @@ import {
   useContactHistory,
   useUpsellMetrics,
   useTreatmentSuggestions,
-  useAutoGenerateUpsell,
   UPSELL_STAGES,
   CONTACT_STATUS_CONFIG,
   type UpsellOpportunity,
 } from '@/hooks/useUpsellOpportunities';
-import { useCRMLeads } from '@/hooks/useCRMLeads';
+
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
@@ -30,13 +29,11 @@ import { ptBR } from 'date-fns/locale';
 
 const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
-  const { data: allLeads } = useCRMLeads();
   const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
   const addContact = useAddContactHistory();
-  const autoGenerate = useAutoGenerateUpsell();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -50,28 +47,7 @@ const Comercial2 = () => {
 
   const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
 
-  // Find closed leads not yet in Comercial 2
-  const closedLeadsNotInPipeline = useMemo(() => {
-    if (!allLeads || !opportunities) return [];
-    const existingLeadIds = new Set(opportunities.map(o => o.lead_id));
-    return allLeads.filter(l => l.status === 'fechado' && !existingLeadIds.has(l.id));
-  }, [allLeads, opportunities]);
-
-  // Auto-sync: generate upsell opportunities for closed leads
-  const handleSyncClosedLeads = async () => {
-    if (closedLeadsNotInPipeline.length === 0) {
-      toast.info('Todos os pacientes fechados já estão no Comercial 2.');
-      return;
-    }
-    for (const lead of closedLeadsNotInPipeline) {
-      await autoGenerate.mutateAsync({
-        id: lead.id,
-        interest_product: lead.interest_product || null,
-        assigned_agent_id: lead.assigned_agent_id,
-      });
-    }
-    toast.success(`${closedLeadsNotInPipeline.length} pacientes sincronizados com o Comercial 2!`);
-  };
+  // Auto-sync is handled by database trigger - no manual sync needed
 
   const filteredOpps = useMemo(() => {
     if (!opportunities) return [];
@@ -225,24 +201,10 @@ const Comercial2 = () => {
 
         {/* Header */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
-          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {filteredOpps.length} oportunidades no pipeline
-              {closedLeadsNotInPipeline.length > 0 && (
-                <span className="text-warning ml-2">
-                  • {closedLeadsNotInPipeline.length} pacientes aguardando sincronização
-                </span>
-              )}
+              <span className="text-success ml-2">• Sincronização automática ativa</span>
             </p>
-            <div className="flex items-center gap-2">
-              {closedLeadsNotInPipeline.length > 0 && (
-                <Button onClick={handleSyncClosedLeads} size="sm" variant="outline" disabled={autoGenerate.isPending}>
-                  {autoGenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-                  Sincronizar Pacientes
-                </Button>
-              )}
-            </div>
-          </div>
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

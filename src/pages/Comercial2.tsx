@@ -96,7 +96,26 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Triage Personalization Data */}
+      {/* Purchase Count / Recurrence */}
+      <div className="rounded-lg border p-3 space-y-2">
+        <p className="text-xs font-semibold flex items-center gap-1.5">🔄 Status de Recorrência</p>
+        <Select
+          value={String((opp as any).purchase_count || 1)}
+          onValueChange={(val) => updateOpp.mutate({ id: opp.id, purchase_count: parseInt(val) })}
+        >
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Comprou 1 vez</SelectItem>
+            <SelectItem value="2">Comprou 2 vezes</SelectItem>
+            <SelectItem value="3">Comprou 3 vezes</SelectItem>
+            <SelectItem value="4">Comprou 4 vezes</SelectItem>
+            <SelectItem value="5">Comprou 5 vezes ou mais</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
           <p className="text-xs font-semibold text-primary flex items-center gap-1.5">🎁 Personalização de Brinde</p>

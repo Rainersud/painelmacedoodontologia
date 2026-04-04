@@ -768,6 +768,7 @@ const Comercial2 = () => {
           </div>
         </div>
       </div>
+        </TabsContent>
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
@@ -838,6 +839,7 @@ const Comercial2 = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </Tabs>
     </AppLayout>
   );
 };

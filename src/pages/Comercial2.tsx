@@ -52,10 +52,6 @@ function DetailDialogContent({
   const { data: triage } = usePatientTriage(opp.lead_id);
   const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);
   const [prosthesisCalendarOpen, setProsthesisCalendarOpen] = useState(false);
-  const [addTreatmentOpen, setAddTreatmentOpen] = useState(false);
-  const [newTreatmentName, setNewTreatmentName] = useState('');
-  const [newTreatmentValue, setNewTreatmentValue] = useState('');
-  const [newTreatmentCategory, setNewTreatmentCategory] = useState('geral');
 
   const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
     updateOpp.mutate({

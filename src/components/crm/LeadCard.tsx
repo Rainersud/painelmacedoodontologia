@@ -6,6 +6,7 @@ import { ReferralPopover } from './ReferralPopover';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';
+import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import { cn } from '@/lib/utils';
 
 interface LeadCardProps {

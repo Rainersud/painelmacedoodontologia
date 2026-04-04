@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, TrendingUp, DollarSign, Users, Target, Lightbulb, BarChart3 } from 'lucide-react';
-import { useLTVMetrics, type PeriodFilter } from '@/hooks/useLTVMetrics';
+import { useLTVMetrics, type PeriodFilter, type SaleTypeFilter } from '@/hooks/useLTVMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';

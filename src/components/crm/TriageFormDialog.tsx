@@ -135,6 +135,38 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     );
   };
 
+  const handleBulkLink = () => {
+    if (!user) return;
+    const linkable = referralEntries.filter(
+      (e) => !e.converted_lead_id && e.referral_name.trim() && e.phone && e.phone.replace(/\D/g, '').length >= 10
+    );
+    if (linkable.length === 0) {
+      toast.error('Preencha nome e telefone para vincular as indicações');
+      return;
+    }
+    bulkLink.mutate(
+      { referrals: linkable.map(r => ({ ...r, lead_id: lead.id })), agentId: user.id, referrerLeadId: lead.id },
+      {
+        onSuccess: (results) => {
+          const success = results.filter(r => r.success);
+          const failed = results.filter(r => !r.success);
+          if (success.length > 0) {
+            toast.success(`${success.length} indicação(ões) vinculadas com sucesso!`);
+            const updated = referralEntries.map(entry => {
+              const wasLinked = success.find(r => r.name === entry.referral_name);
+              if (wasLinked) return { ...entry, converted_lead_id: 'converted' };
+              return entry;
+            });
+            setReferralEntries(updated);
+          }
+          if (failed.length > 0) {
+            failed.forEach(f => toast.error(`${f.name}: ${f.error}`));
+          }
+        },
+        onError: () => toast.error('Erro ao vincular indicações'),
+      }
+    );
+
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
       (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);

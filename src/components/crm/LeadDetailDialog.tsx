@@ -664,6 +664,48 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
+              {/* Paciente Amigo - show for already-fechado leads (read-only with edit) */}
+              {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <h4 className="font-medium text-primary flex items-center gap-2">
+                    🤝 Paciente Amigo
+                  </h4>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="friendly_patient_detail"
+                        checked={friendlyPatient === true}
+                        onChange={async () => {
+                          setFriendlyPatient(true);
+                          await supabase.from('upsell_opportunities').update({ friendly_patient: true }).eq('lead_id', lead.id);
+                          toast.success('Paciente Amigo atualizado para Sim');
+                        }}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span className="text-sm font-medium">✅ Sim</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="friendly_patient_detail"
+                        checked={friendlyPatient === false}
+                        onChange={async () => {
+                          setFriendlyPatient(false);
+                          await supabase.from('upsell_opportunities').update({ friendly_patient: false }).eq('lead_id', lead.id);
+                          toast.success('Paciente Amigo atualizado para Não');
+                        }}
+                        className="h-4 w-4 accent-destructive"
+                      />
+                      <span className="text-sm font-medium">❌ Não</span>
+                    </label>
+                  </div>
+                  <Badge className={cn("text-xs", friendlyPatient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
+                    {friendlyPatient ? '✅ Aceitou participar' : '❌ Não participa'}
+                  </Badge>
+                </div>
+              )}
+
               {newStatus === 'fechado' && (
                 <div className="space-y-4">
                   {/* Paciente Amigo Section */}

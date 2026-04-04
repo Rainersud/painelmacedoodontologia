@@ -29,6 +29,7 @@ export function LeadCard({
   index = 0,
 }: LeadCardProps) {
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
+  const { data: friendlyData } = useFriendlyPatientStatus(lead.status === 'fechado' ? lead.id : undefined);
   const leadAlerts = useLeadAlerts(lead);
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);

@@ -841,7 +841,7 @@ const Comercial2 = () => {
                                       🔄 {opp.purchase_count || 1}x
                                     </Badge>
                                     {(() => {
-                                      const entries = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+                                      const entries = parsePurchaseEntries(opp.purchase_values);
                                       const ltv = entries.reduce((s, p) => s + p.value, 0);
                                       return ltv > 0 ? (
                                         <Badge className="text-[9px] bg-success/10 text-success border-success/30">

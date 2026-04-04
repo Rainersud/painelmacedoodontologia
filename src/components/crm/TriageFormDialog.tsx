@@ -20,7 +20,7 @@ import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucid
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
 import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
-import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead } from '@/hooks/useTriageReferrals';
+import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, useBulkLinkReferrals } from '@/hooks/useTriageReferrals';
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';

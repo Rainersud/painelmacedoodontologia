@@ -459,6 +459,7 @@ export type Database = {
           payment_method: string | null
           phone: string
           rescued_at: string | null
+          sale_type: string | null
           scheduled_appointment_at: string | null
           source: Database["public"]["Enums"]["lead_source"]
           stage_entered_at: string | null
@@ -488,6 +489,7 @@ export type Database = {
           payment_method?: string | null
           phone: string
           rescued_at?: string | null
+          sale_type?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           stage_entered_at?: string | null
@@ -517,6 +519,7 @@ export type Database = {
           payment_method?: string | null
           phone?: string
           rescued_at?: string | null
+          sale_type?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           stage_entered_at?: string | null

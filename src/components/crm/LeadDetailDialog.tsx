@@ -84,6 +84,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     attendance_discount_status: 'elegivel' as 'elegivel' | 'liberado' | 'cancelado',
     discount_percentage: '5',
     scheduled_appointment_at: '',
+    sale_type: '' as '' | '1_etapa' | '2_etapas',
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -114,6 +115,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         scheduled_appointment_at: lead.scheduled_appointment_at 
           ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
           : '',
+        sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -139,6 +141,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       notes: formData.notes || null,
       attendance_discount_status: formData.attendance_discount_status,
       discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
+      sale_type: formData.sale_type || null,
     };
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
@@ -362,6 +365,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <SelectItem value="protese_flexivel">Prótese Flexível</SelectItem>
                       <SelectItem value="protese_total">Prótese Total</SelectItem>
                       <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sale_type">Tipo de Venda</Label>
+                  <Select
+                    value={formData.sale_type || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, sale_type: v as '1_etapa' | '2_etapas' }))}
+                  >
+                    <SelectTrigger id="sale_type">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1_etapa">Venda em 1 Etapa</SelectItem>
+                      <SelectItem value="2_etapas">Venda em 2 Etapas</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

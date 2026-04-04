@@ -52,6 +52,7 @@ const managementNavItems = [
   { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
   { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target, module: 'plano_incentivo' },
   { title: 'CAC & Financeiro', url: '/cac', icon: LayoutDashboard, module: 'cac' },
+  { title: 'Métricas de Vendas', url: '/metricas-vendas', icon: Target, module: 'metricas_vendas' },
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
 ];

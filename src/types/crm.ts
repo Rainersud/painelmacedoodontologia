@@ -67,6 +67,7 @@ export interface Lead {
   attendance_discount_status?: 'elegivel' | 'liberado' | 'cancelado';
   discount_percentage?: number;
   no_show_count?: number;
+  sale_type?: '1_etapa' | '2_etapas' | null;
   created_at: string;
   updated_at: string;
   // Joined data

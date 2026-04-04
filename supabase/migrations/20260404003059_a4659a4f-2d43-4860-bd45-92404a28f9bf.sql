@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN sale_type text DEFAULT NULL;

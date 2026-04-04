@@ -64,6 +64,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     referral_name: string;
     situation: string;
     relationship: string;
+    phone?: string;
     converted_lead_id?: string | null;
     id?: string;
   }>>([]);

@@ -24,6 +24,9 @@ export interface UpsellOpportunity {
   gift_prosthesis_sent: boolean;
   gift_prosthesis_sent_at: string | null;
   gift_prosthesis_date: string | null;
+  friendly_patient: boolean;
+  friendly_patient_video_recorded: boolean;
+  friendly_patient_video_recorded_at: string | null;
   created_at: string;
   updated_at: string;
   lead?: {

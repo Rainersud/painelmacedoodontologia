@@ -440,7 +440,16 @@ const Comercial2 = () => {
 
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-      <div className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+      <Tabs defaultValue="pipeline" className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+        <TabsList className="shrink-0 mb-3 w-fit">
+          <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
+          <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
+        </TabsList>
+        <TabsContent value="ltv" className="flex-1 overflow-y-auto">
+          <LTVRecurrencePanel />
+        </TabsContent>
+        <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">
+      <div className="flex flex-col h-full min-h-0">
         {/* Metrics Bar */}
         {metrics && (
           <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-11 gap-2 sm:gap-3 mb-4">

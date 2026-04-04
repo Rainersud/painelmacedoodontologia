@@ -671,9 +671,14 @@ const Comercial2 = () => {
                                         </span>
                                       </div>
                                     )}
-                                  <Badge variant="outline" className="text-[10px]">
-                                    {opp.suggested_treatment}
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {opp.suggested_treatment}
+                                    </Badge>
+                                    <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+                                      🔄 {(opp as any).purchase_count || 1}x
+                                    </Badge>
+                                  </div>
                                   <div className="flex items-center justify-between">
                                     <Badge className={cn('text-[9px]', contactCfg.color)}>
                                       {contactCfg.label}

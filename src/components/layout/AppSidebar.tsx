@@ -13,7 +13,8 @@ import {
   UserCircle,
   CalendarCheck,
   Megaphone,
-  Layers
+  Layers,
+  Repeat
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';

@@ -134,7 +134,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');
     }
-  }, [lead]);
+  }, [lead, friendlyData]);
 
   if (!lead) return null;
 

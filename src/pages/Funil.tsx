@@ -205,7 +205,7 @@ const Funil = () => {
 
   if (isLoading) {
     return (
-      <AppLayout title="Funil de Vendas">
+      <AppLayout title="Comercial 1 – Aquisição">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

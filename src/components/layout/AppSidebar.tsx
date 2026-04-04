@@ -11,7 +11,8 @@ import {
   Settings,
   LogOut,
   UserCircle,
-  CalendarCheck
+  CalendarCheck,
+  Megaphone
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';

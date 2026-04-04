@@ -657,17 +657,54 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Info: fechado requires payment */}
               {newStatus === 'fechado' && (
-                <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-2">
-                  <h4 className="font-medium text-success flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Venda Realizada
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    Para marcar como Venda Realizada, é necessário ter um pagamento confirmado. 
-                    Use o botão "Registrar Pagamento" acima antes de alterar o status.
-                  </p>
+                <div className="space-y-4">
+                  {/* Paciente Amigo Section */}
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                    <h4 className="font-medium text-primary flex items-center gap-2">
+                      🤝 Paciente Amigo
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      "Você se sentindo realizado com o tratamento no final, você aceita participar do programa <strong>'Paciente Amigo'</strong>, onde podemos gravar um pequeno vídeo de depoimento ou uma breve entrevista relatando sua experiência com seu tratamento? Isso te dá um <strong>cashback de R$ 200,00</strong> no seu tratamento. Lembrando que é opcional, apenas se realmente se sentir feliz com o tratamento e tiver o desejo de participar!"
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="friendly_patient_detail"
+                          checked={friendlyPatient === true}
+                          onChange={() => setFriendlyPatient(true)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span className="text-sm font-medium">✅ Sim</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="friendly_patient_detail"
+                          checked={friendlyPatient === false}
+                          onChange={() => setFriendlyPatient(false)}
+                          className="h-4 w-4 accent-destructive"
+                        />
+                        <span className="text-sm font-medium">❌ Não</span>
+                      </label>
+                    </div>
+                    {friendlyPatient === null && (
+                      <p className="text-[10px] text-destructive">* Campo obrigatório antes de confirmar a venda</p>
+                    )}
+                  </div>
+
+                  {/* Payment info */}
+                  <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-2">
+                    <h4 className="font-medium text-success flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Venda Realizada
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Para marcar como Venda Realizada, é necessário ter um pagamento confirmado. 
+                      Use o botão "Registrar Pagamento" acima antes de alterar o status.
+                    </p>
+                  </div>
                 </div>
               )}
 

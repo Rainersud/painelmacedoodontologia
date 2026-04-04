@@ -60,9 +60,9 @@ function getDateRange(period: PeriodFilter): { start: Date; end: Date } | null {
   }
 }
 
-export function useLTVMetrics(period: PeriodFilter = 'todos') {
+export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleTypeFilter = 'todos') {
   return useQuery({
-    queryKey: ['ltv-metrics', period],
+    queryKey: ['ltv-metrics', period, saleType],
     queryFn: async (): Promise<LTVMetricsData> => {
       const dateRange = getDateRange(period);
 

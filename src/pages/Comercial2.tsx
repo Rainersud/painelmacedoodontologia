@@ -348,7 +348,6 @@ const Comercial2 = () => {
                                       </span>
                                     </div>
                                   )}
-                                  )}
                                 </CardContent>
                               </Card>
                             </div>

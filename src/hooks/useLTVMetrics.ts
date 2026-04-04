@@ -66,6 +66,17 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
     queryFn: async (): Promise<LTVMetricsData> => {
       const dateRange = getDateRange(period);
 
+      // Get leads filtered by sale_type if needed
+      let leadIdsBySaleType: Set<string> | null = null;
+      if (saleType !== 'todos') {
+        const saleTypeValue = saleType === '1_etapa' ? '1_etapa' : '2_etapas';
+        const { data: filteredLeads } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('sale_type', saleTypeValue);
+        leadIdsBySaleType = new Set((filteredLeads || []).map(l => l.id));
+      }
+
       // Get all upsell opportunities with lead data
       const { data: opps } = await supabase
         .from('upsell_opportunities')

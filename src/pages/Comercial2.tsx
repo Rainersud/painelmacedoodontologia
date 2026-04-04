@@ -415,112 +415,14 @@ const Comercial2 = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedOpp && (
-            <div className="space-y-4">
-              {/* Patient Info */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground text-xs">Tratamento Original</p>
-                  <p className="font-medium">{selectedOpp.lead?.interest_product || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Valor Original</p>
-                  <p className="font-medium">{formatCurrency(selectedOpp.lead?.treatment_value || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Tratamento Sugerido</p>
-                  <p className="font-semibold text-primary">{selectedOpp.suggested_treatment}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs">Valor Estimado</p>
-                  <Input
-                    type="number"
-                    value={selectedOpp.estimated_value || ''}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      updateOpp.mutate({ id: selectedOpp.id, estimated_value: val });
-                    }}
-                    className="h-8 text-sm mt-0.5"
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-              </div>
-
-              {/* Contact Status */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Status do Contato</p>
-                <Select value={selectedOpp.contact_status} onValueChange={handleUpdateContactStatus}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CONTACT_STATUS_CONFIG).map(([key, cfg]) => (
-                      <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Observações</p>
-                <Textarea
-                  value={selectedOpp.notes || ''}
-                  onChange={(e) => updateOpp.mutate({ id: selectedOpp.id, notes: e.target.value })}
-                  placeholder="Adicione observações..."
-                  className="text-sm min-h-[60px]"
-                />
-              </div>
-
-              {/* Register Contact Button */}
-              <Button
-                onClick={() => setContactDialogOpen(true)}
-                size="sm"
-                className="w-full"
-              >
-                <Phone className="h-4 w-4 mr-1" />
-                Registrar Contato
-              </Button>
-
-              {/* Contact History */}
-              {contactHistory && contactHistory.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Histórico de Contatos</p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {contactHistory.map((c) => (
-                      <div key={c.id} className="p-2 rounded-lg border bg-muted/30 text-xs">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-[9px]">
-                            {c.contact_type === 'ligacao' ? '📞 Ligação' : c.contact_type === 'whatsapp' ? '💬 WhatsApp' : '📝 Outro'}
-                          </Badge>
-                          <span className="text-muted-foreground">
-                            {format(new Date(c.created_at), 'dd/MM HH:mm', { locale: ptBR })}
-                          </span>
-                        </div>
-                        {c.result && <p className="mt-1 font-medium">{c.result}</p>}
-                        {c.notes && <p className="mt-0.5 text-muted-foreground">{c.notes}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Treatment Suggestions */}
-              {suggestions && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">💡 Sugestões de Tratamento</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestions
-                      .filter(s => s.trigger_treatment === (selectedOpp.lead?.interest_product || ''))
-                      .map(s => (
-                        <Badge key={s.id} variant="outline" className="text-[10px] cursor-default">
-                          {s.suggested_treatment}
-                          {s.delay_months > 0 && ` (${s.delay_months}m)`}
-                        </Badge>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <DetailDialogContent
+              opp={selectedOpp}
+              updateOpp={updateOpp}
+              handleUpdateContactStatus={handleUpdateContactStatus}
+              setContactDialogOpen={setContactDialogOpen}
+              contactHistory={contactHistory || []}
+              suggestions={suggestions || []}
+            />
           )}
         </DialogContent>
       </Dialog>

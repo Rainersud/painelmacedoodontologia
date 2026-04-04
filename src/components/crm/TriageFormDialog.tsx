@@ -51,11 +51,20 @@ const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);
+  const { data: existingReferrals } = useTriageReferrals(lead?.id);
   const saveTriage = useSavePatientTriage();
-  const markCompleted = useMarkTriageCompleted();
+  const saveReferrals = useSaveTriageReferrals();
+  const convertToLead = useConvertReferralToLead();
   const printRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<Partial<PatientTriageData>>({});
+  const [referralEntries, setReferralEntries] = useState<Array<{
+    referral_name: string;
+    situation: string;
+    relationship: string;
+    converted_lead_id?: string | null;
+    id?: string;
+  }>>([]);
 
   useEffect(() => {
     if (existingTriage) {

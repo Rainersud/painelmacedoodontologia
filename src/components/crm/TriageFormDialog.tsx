@@ -147,7 +147,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             saveReferrals.mutate({
               leadId: lead.id,
               triageId,
-              referrals: referralEntries.filter(r => r.referral_name.trim()),
+              referrals: referralEntries.filter(r => r.referral_name.trim()).map(r => ({ ...r, lead_id: lead.id })),
             });
           }
         },

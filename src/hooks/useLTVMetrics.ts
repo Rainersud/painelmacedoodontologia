@@ -170,7 +170,12 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
         const clientCount = leadsInGroup.length;
         const leadIds = leadsInGroup.map(([id]) => id);
 
-        const groupRevenue = leadIds.reduce((sum, id) => sum + (paymentsByLead[id] || 0), 0);
+        // Use LTV from purchase_values if available, fallback to payments
+        const groupRevenue = leadIds.reduce((sum, id) => {
+          const fromPurchases = leadLTVFromPurchases[id] || 0;
+          const fromPayments = paymentsByLead[id] || 0;
+          return sum + Math.max(fromPurchases, fromPayments);
+        }, 0);
         const avgLTV = clientCount > 0 ? groupRevenue / clientCount : 0;
         const avgTicket = clientCount > 0 ? groupRevenue / (clientCount * (maxCount || minCount)) : 0;
         const avgProfit = avgLTV - avgCACGlobal;

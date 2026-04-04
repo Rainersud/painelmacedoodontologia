@@ -29,6 +29,7 @@ export interface UpsellOpportunity {
   friendly_patient_video_recorded_at: string | null;
   created_at: string;
   updated_at: string;
+  purchase_count: number;
   lead?: {
     name: string;
     phone: string;

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -218,7 +218,43 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Contact Status */}
+      {/* Paciente Amigo Section */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-semibold flex items-center gap-1.5">
+          🤝 Paciente Amigo
+        </p>
+        <div className="flex items-center gap-2">
+          <Badge className={cn("text-[10px]", opp.friendly_patient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
+            {opp.friendly_patient ? '✅ Aceitou participar' : '❌ Não participar'}
+          </Badge>
+        </div>
+        {opp.friendly_patient && (
+          <div className={cn(
+            "p-2.5 rounded-md border space-y-2",
+            opp.friendly_patient_video_recorded ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={opp.friendly_patient_video_recorded}
+                  onCheckedChange={(checked) => {
+                    updateOpp.mutate({
+                      id: opp.id,
+                      friendly_patient_video_recorded: !!checked,
+                      friendly_patient_video_recorded_at: checked ? new Date().toISOString() : null,
+                    });
+                  }}
+                  className="h-4 w-4"
+                />
+                <span className="text-xs font-semibold">🎬 Gravar Depoimento</span>
+              </div>
+              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                {opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}
+              </Badge>
+            </div>
+          </div>
+        )}
+      </div>
       <div>
         <p className="text-xs font-semibold text-muted-foreground mb-1.5">Status do Contato</p>
         <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>
@@ -395,7 +431,7 @@ const Comercial2 = () => {
       <div className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
         {/* Metrics Bar */}
         {metrics && (
-          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3 mb-4">
+          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-11 gap-2 sm:gap-3 mb-4">
             <Card className="monday-card">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
@@ -484,6 +520,39 @@ const Comercial2 = () => {
                 </div>
               </CardContent>
             </Card>
+            <Card className="monday-card border-primary/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🤝 Pac. Amigo</p>
+                    <p className="text-lg font-bold text-primary">{metrics.friendlyAccepted}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-warning/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-warning" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Pendentes</p>
+                    <p className="text-lg font-bold text-warning">{metrics.videoPending}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-success/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-success" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Realizados</p>
+                    <p className="text-lg font-bold text-success">{metrics.videoRecorded}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -567,7 +636,20 @@ const Comercial2 = () => {
                                       {opp.lead?.name || 'Paciente'}
                                     </p>
                                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                  </div>
+                                    </div>
+                                    {/* Paciente Amigo on card */}
+                                    {opp.friendly_patient && (
+                                      <div className={cn(
+                                        "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                        opp.friendly_patient_video_recorded
+                                          ? "border-success/30 bg-success/5 text-success"
+                                          : "border-warning/30 bg-warning/5 text-warning animate-pulse"
+                                      )}>
+                                        <span className="font-medium">
+                                          {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
+                                        </span>
+                                      </div>
+                                    )}
                                   <Badge variant="outline" className="text-[10px]">
                                     {opp.suggested_treatment}
                                   </Badge>

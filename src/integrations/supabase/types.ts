@@ -1246,6 +1246,9 @@ export type Database = {
           contact_status: string
           created_at: string
           estimated_value: number | null
+          friendly_patient: boolean
+          friendly_patient_video_recorded: boolean
+          friendly_patient_video_recorded_at: string | null
           gift_prosthesis_date: string | null
           gift_prosthesis_sent: boolean
           gift_prosthesis_sent_at: string | null
@@ -1271,6 +1274,9 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          friendly_patient?: boolean
+          friendly_patient_video_recorded?: boolean
+          friendly_patient_video_recorded_at?: string | null
           gift_prosthesis_date?: string | null
           gift_prosthesis_sent?: boolean
           gift_prosthesis_sent_at?: string | null
@@ -1296,6 +1302,9 @@ export type Database = {
           contact_status?: string
           created_at?: string
           estimated_value?: number | null
+          friendly_patient?: boolean
+          friendly_patient_video_recorded?: boolean
+          friendly_patient_video_recorded_at?: string | null
           gift_prosthesis_date?: string | null
           gift_prosthesis_sent?: boolean
           gift_prosthesis_sent_at?: string | null

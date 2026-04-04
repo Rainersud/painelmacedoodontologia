@@ -24,6 +24,9 @@ export interface UpsellOpportunity {
   gift_prosthesis_sent: boolean;
   gift_prosthesis_sent_at: string | null;
   gift_prosthesis_date: string | null;
+  friendly_patient: boolean;
+  friendly_patient_video_recorded: boolean;
+  friendly_patient_video_recorded_at: string | null;
   created_at: string;
   updated_at: string;
   lead?: {
@@ -266,6 +269,10 @@ export function useUpsellMetrics() {
   const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;
   const prosthesisPending = basePatients.filter(o => !o.gift_prosthesis_sent).length;
 
+  const friendlyAccepted = opportunities.filter(o => o.friendly_patient);
+  const videoPending = friendlyAccepted.filter(o => !o.friendly_patient_video_recorded).length;
+  const videoRecorded = friendlyAccepted.filter(o => o.friendly_patient_video_recorded).length;
+
   return {
     total,
     closedCount: closed.length,
@@ -278,6 +285,9 @@ export function useUpsellMetrics() {
     giftsSent,
     surgeryPending,
     prosthesisPending,
+    friendlyAccepted: friendlyAccepted.length,
+    videoPending,
+    videoRecorded,
     byStatus: UPSELL_STAGES.map(s => ({
       ...s,
       count: opportunities.filter(o => o.status === s.key).length,

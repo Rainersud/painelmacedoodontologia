@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -64,6 +64,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
     notes: '',
   });
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
 
   const updateStatus = useMutation({
     mutationFn: async ({ newStatus, notes }: { newStatus: LeadStatus; notes: string }) => {
@@ -93,6 +94,16 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
         .eq('id', lead.id);
 
       if (leadError) throw leadError;
+
+      // After lead update (trigger may have created upsell), save friendly_patient
+      if (newStatus === 'fechado' && friendlyPatient !== null) {
+        // Small delay to let the trigger fire
+        await new Promise(r => setTimeout(r, 500));
+        await supabase
+          .from('upsell_opportunities')
+          .update({ friendly_patient: friendlyPatient })
+          .eq('lead_id', lead.id);
+      }
 
       // Register the status change as an interaction
       if (notes.trim()) {
@@ -161,6 +172,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
     setSelectedStatus('');
     setInteractionData({ type: '', notes: '' });
     setActiveTab('status');
+    setFriendlyPatient(null);
   };
 
   if (!lead) return null;
@@ -305,6 +317,41 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
 
           {/* Close Deal Tab - now opens PaymentDialog */}
           <TabsContent value="close" className="space-y-4">
+            {/* Paciente Amigo Section */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <h4 className="font-medium text-primary flex items-center gap-2">
+                🤝 Paciente Amigo
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                "Você se sentindo realizado com o tratamento no final, você aceita participar do programa <strong>'Paciente Amigo'</strong>, onde podemos gravar um pequeno vídeo de depoimento ou uma breve entrevista relatando sua experiência com seu tratamento? Isso te dá um <strong>cashback de R$ 200,00</strong> no seu tratamento. Lembrando que é opcional, apenas se realmente se sentir feliz com o tratamento e tiver o desejo de participar!"
+              </p>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="friendly_patient"
+                    checked={friendlyPatient === true}
+                    onChange={() => setFriendlyPatient(true)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="text-sm font-medium">✅ Sim</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="friendly_patient"
+                    checked={friendlyPatient === false}
+                    onChange={() => setFriendlyPatient(false)}
+                    className="h-4 w-4 accent-destructive"
+                  />
+                  <span className="text-sm font-medium">❌ Não</span>
+                </label>
+              </div>
+              {friendlyPatient === null && (
+                <p className="text-[10px] text-destructive">* Campo obrigatório antes de confirmar a venda</p>
+              )}
+            </div>
+
             <div className="p-4 bg-success/5 rounded-lg border border-success/20 space-y-3">
               <h4 className="font-medium text-success flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
@@ -322,8 +369,14 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
               </Button>
               <Button
                 className="w-full"
-                onClick={() => updateStatus.mutate({ newStatus: 'fechado', notes: '' })}
-                disabled={updateStatus.isPending}
+                onClick={() => {
+                  if (friendlyPatient === null) {
+                    toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
+                    return;
+                  }
+                  updateStatus.mutate({ newStatus: 'fechado', notes: `Paciente Amigo: ${friendlyPatient ? 'Sim' : 'Não'}` });
+                }}
+                disabled={updateStatus.isPending || friendlyPatient === null}
               >
                 {updateStatus.isPending ? 'Fechando...' : 'Confirmar Venda Realizada'}
               </Button>

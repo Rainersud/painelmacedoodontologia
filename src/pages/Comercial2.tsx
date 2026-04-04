@@ -177,7 +177,7 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* ===== NEW LTV DO PACIENTE BLOCK ===== */}
+      {/* ===== LTV DO PACIENTE BLOCK ===== */}
       <div className="rounded-lg border border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold flex items-center gap-1.5 text-primary">
           💰 LTV do Paciente
@@ -185,7 +185,7 @@ function DetailDialogContent({
 
         {/* Step 1: Recurrence selector */}
         <div>
-          <Label className="text-[10px] text-muted-foreground">Quantidade de compras</Label>
+          <Label className="text-[10px] text-muted-foreground">Quantidade de compras (incluindo a 1ª)</Label>
           <Select value={String(selectedCount)} onValueChange={(v) => handleCountChange(parseInt(v))}>
             <SelectTrigger className="h-8 text-sm mt-1">
               <SelectValue />
@@ -198,18 +198,25 @@ function DetailDialogContent({
           </Select>
         </div>
 
-        {/* Step 2: Dynamic purchase fields */}
-        <div className="space-y-2">
-          {Array.from({ length: selectedCount }).map((_, i) => {
-            const entry = localPurchases[i] || { treatment: '', value: 0 };
-            const isFirst = i === 0;
-            return (
-              <div key={i} className={cn(
-                "rounded-md border p-2.5 space-y-1.5",
-                isFirst ? "border-primary/20 bg-primary/5" : "border-border"
-              )}>
+        {/* Info for "Comprou 1 vez" */}
+        {selectedCount === 1 && (
+          <div className="rounded-md border border-muted bg-muted/30 p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              ℹ️ A 1ª compra é <strong>aquisição (CAC)</strong>, não gera LTV.
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Selecione "Comprou 2 vezes" ou mais para registrar compras recorrentes.
+            </p>
+          </div>
+        )}
+
+        {/* Step 2: Dynamic purchase fields (starting from Compra 2) */}
+        {selectedCount > 1 && (
+          <div className="space-y-2">
+            {localPurchases.map((entry, i) => (
+              <div key={i} className="rounded-md border border-border p-2.5 space-y-1.5">
                 <p className="text-[10px] font-semibold text-muted-foreground">
-                  🔹 Compra {i + 1} {isFirst && '(automática)'}
+                  🔹 Compra {i + 2}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -233,20 +240,22 @@ function DetailDialogContent({
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Save button */}
-        <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
-          💾 Salvar Compras
-        </Button>
+        {/* Save button (only if there are recurrent purchases) */}
+        {selectedCount > 1 && (
+          <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
+            💾 Salvar Compras Recorrentes
+          </Button>
+        )}
 
-        {/* Auto-calculated metrics */}
+        {/* Auto-calculated metrics (LTV = only recurrent) */}
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Compras</p>
+              <p className="text-[9px] text-muted-foreground">Recorrências</p>
               <p className="text-sm font-bold text-primary">{filledPurchases.length}x</p>
             </div>
             <div className="rounded-md bg-success/5 border border-success/20 p-2">
@@ -262,7 +271,10 @@ function DetailDialogContent({
 
         {/* Recurrence badge */}
         <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-          🔄 {filledPurchases.length > 0 ? `Comprou ${filledPurchases.length >= 5 ? '5+' : filledPurchases.length} vez${filledPurchases.length > 1 ? 'es' : ''}` : 'Comprou 1 vez'}
+          {selectedCount === 1
+            ? '📌 Apenas 1ª compra (aquisição)'
+            : `🔄 ${filledPurchases.length} compra${filledPurchases.length > 1 ? 's' : ''} recorrente${filledPurchases.length > 1 ? 's' : ''}`
+          }
         </Badge>
       </div>
 

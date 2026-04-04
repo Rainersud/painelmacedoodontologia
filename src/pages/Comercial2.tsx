@@ -38,7 +38,7 @@ import { ptBR } from 'date-fns/locale';
 
 /* Detail Dialog Content with Triage Integration */
 function DetailDialogContent({
-  opp, updateOpp, handleUpdateContactStatus, setContactDialogOpen, contactHistory, suggestions,
+  opp, updateOpp, handleUpdateContactStatus, setContactDialogOpen, contactHistory, suggestions, createUpsell, allOpps,
 }: {
   opp: UpsellOpportunity;
   updateOpp: ReturnType<typeof useUpdateUpsellOpportunity>;
@@ -46,6 +46,8 @@ function DetailDialogContent({
   setContactDialogOpen: (v: boolean) => void;
   contactHistory: Array<{ id: string; contact_type: string; result: string | null; notes: string | null; created_at: string }>;
   suggestions: Array<{ id: string; trigger_treatment: string; suggested_treatment: string; delay_months: number }>;
+  createUpsell: ReturnType<typeof useCreateUpsellOpportunity>;
+  allOpps: UpsellOpportunity[];
 }) {
   const { data: triage } = usePatientTriage(opp.lead_id);
   const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);

@@ -32,7 +32,256 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const Comercial2 = () => {
+/* Detail Dialog Content with Triage Integration */
+function DetailDialogContent({
+  opp, updateOpp, handleUpdateContactStatus, setContactDialogOpen, contactHistory, suggestions,
+}: {
+  opp: UpsellOpportunity;
+  updateOpp: ReturnType<typeof useUpdateUpsellOpportunity>;
+  handleUpdateContactStatus: (s: string) => void;
+  setContactDialogOpen: (v: boolean) => void;
+  contactHistory: Array<{ id: string; contact_type: string; result: string | null; notes: string | null; created_at: string }>;
+  suggestions: Array<{ id: string; trigger_treatment: string; suggested_treatment: string; delay_months: number }>;
+}) {
+  const { data: triage } = usePatientTriage(opp.lead_id);
+
+  const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
+    updateOpp.mutate({
+      id: opp.id,
+      [field]: date ? format(date, 'yyyy-MM-dd') : null,
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Patient Info */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p className="text-muted-foreground text-xs">Tratamento Original</p>
+          <p className="font-medium">{opp.lead?.interest_product || '-'}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Valor Original</p>
+          <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Tratamento Sugerido</p>
+          <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Valor Estimado</p>
+          <Input
+            type="number"
+            value={opp.estimated_value || ''}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value) || 0;
+              updateOpp.mutate({ id: opp.id, estimated_value: val });
+            }}
+            className="h-8 text-sm mt-0.5"
+            placeholder="R$ 0,00"
+          />
+        </div>
+      </div>
+
+      {/* Triage Personalization Data */}
+      {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <p className="text-xs font-semibold text-primary flex items-center gap-1.5">🎁 Personalização de Brinde</p>
+          {triage.ice_cream_flavor && (
+            <div className="flex items-start gap-2 text-sm">
+              <span>🍦</span>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Sabor de sorvete preferido</p>
+                <p className="font-medium">{triage.ice_cream_flavor}</p>
+              </div>
+            </div>
+          )}
+          {triage.post_treatment_food && (
+            <div className="flex items-start gap-2 text-sm">
+              <span>🍽️</span>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Desejo pós-tratamento</p>
+                <p className="font-medium">{triage.post_treatment_food}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Gift Management - Two Events */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-semibold flex items-center gap-1.5">
+          <Gift className="h-3.5 w-3.5 text-primary" /> Envio de Brindes
+        </p>
+
+        {/* Surgery Gift */}
+        <div className={cn(
+          "p-2.5 rounded-md border space-y-2",
+          opp.gift_surgery_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={opp.gift_surgery_sent}
+                onCheckedChange={(checked) => {
+                  updateOpp.mutate({
+                    id: opp.id,
+                    gift_surgery_sent: !!checked,
+                    gift_surgery_sent_at: checked ? new Date().toISOString() : null,
+                  });
+                }}
+                className="h-4 w-4"
+              />
+              <span className="text-xs font-semibold">🎁 Brinde – Dia da Cirurgia</span>
+            </div>
+            <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+              {opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {opp.gift_surgery_date ? format(new Date(opp.gift_surgery_date + 'T12:00:00'), 'dd/MM/yyyy') : 'Agendar'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={opp.gift_surgery_date ? new Date(opp.gift_surgery_date + 'T12:00:00') : undefined}
+                  onSelect={(d) => handleDateChange('gift_surgery_date', d)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Prosthesis Gift */}
+        <div className={cn(
+          "p-2.5 rounded-md border space-y-2",
+          opp.gift_prosthesis_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={opp.gift_prosthesis_sent}
+                onCheckedChange={(checked) => {
+                  updateOpp.mutate({
+                    id: opp.id,
+                    gift_prosthesis_sent: !!checked,
+                    gift_prosthesis_sent_at: checked ? new Date().toISOString() : null,
+                  });
+                }}
+                className="h-4 w-4"
+              />
+              <span className="text-xs font-semibold">🎁 Brinde – Entrega da Prótese</span>
+            </div>
+            <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+              {opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {opp.gift_prosthesis_date ? format(new Date(opp.gift_prosthesis_date + 'T12:00:00'), 'dd/MM/yyyy') : 'Agendar'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={opp.gift_prosthesis_date ? new Date(opp.gift_prosthesis_date + 'T12:00:00') : undefined}
+                  onSelect={(d) => handleDateChange('gift_prosthesis_date', d)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Status */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Status do Contato</p>
+        <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CONTACT_STATUS_CONFIG).map(([key, cfg]) => (
+              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Notes */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Observações</p>
+        <Textarea
+          value={opp.notes || ''}
+          onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })}
+          placeholder="Adicione observações..."
+          className="text-sm min-h-[60px]"
+        />
+      </div>
+
+      {/* Register Contact Button */}
+      <Button onClick={() => setContactDialogOpen(true)} size="sm" className="w-full">
+        <Phone className="h-4 w-4 mr-1" />
+        Registrar Contato
+      </Button>
+
+      {/* Contact History */}
+      {contactHistory.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Histórico de Contatos</p>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {contactHistory.map((c) => (
+              <div key={c.id} className="p-2 rounded-lg border bg-muted/30 text-xs">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-[9px]">
+                    {c.contact_type === 'ligacao' ? '📞 Ligação' : c.contact_type === 'whatsapp' ? '💬 WhatsApp' : '📝 Outro'}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {format(new Date(c.created_at), 'dd/MM HH:mm', { locale: ptBR })}
+                  </span>
+                </div>
+                {c.result && <p className="mt-1 font-medium">{c.result}</p>}
+                {c.notes && <p className="mt-0.5 text-muted-foreground">{c.notes}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Treatment Suggestions */}
+      {suggestions.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">💡 Sugestões de Tratamento</p>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestions
+              .filter(s => s.trigger_treatment === (opp.lead?.interest_product || ''))
+              .map(s => (
+                <Badge key={s.id} variant="outline" className="text-[10px] cursor-default">
+                  {s.suggested_treatment}
+                  {s.delay_months > 0 && ` (${s.delay_months}m)`}
+                </Badge>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
   const { data: opportunities, isLoading } = useUpsellOpportunities();
   const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();

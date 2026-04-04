@@ -368,6 +368,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sale_type">Tipo de Venda</Label>
+                  <Select
+                    value={formData.sale_type || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, sale_type: v as '1_etapa' | '2_etapas' }))}
+                  >
+                    <SelectTrigger id="sale_type">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1_etapa">Venda em 1 Etapa</SelectItem>
+                      <SelectItem value="2_etapas">Venda em 2 Etapas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">

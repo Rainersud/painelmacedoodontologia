@@ -129,32 +129,36 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
         paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
       });
 
-      // Group opportunities by lead — use purchase_values JSON for accurate count
+      // Group opportunities by lead — purchase_values now stores ONLY recurrent purchases (2nd+)
+      // The first purchase is acquisition (CAC), not LTV
       const leadPurchaseCounts: Record<string, number> = {};
       const leadLTVFromPurchases: Record<string, number> = {};
       (opps || []).forEach(o => {
         if (leadIdsBySaleType && !leadIdsBySaleType.has(o.lead_id)) return;
-        let count = o.purchase_count || 1;
+        let recurrentCount = 0;
         let ltvFromField = 0;
         if (o.purchase_values) {
           try {
             const parsed = JSON.parse(o.purchase_values);
             if (Array.isArray(parsed)) {
               const filled = parsed.filter((p: { value?: number }) => (p.value || 0) > 0);
-              count = Math.max(filled.length, 1);
+              recurrentCount = filled.length;
               ltvFromField = filled.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
             }
           } catch {
             // Legacy semicolon format
             const nums = o.purchase_values.split(';').map((v: string) => parseFloat(v.trim())).filter((v: number) => !isNaN(v) && v > 0);
             if (nums.length > 0) {
-              count = nums.length;
+              recurrentCount = nums.length;
               ltvFromField = nums.reduce((s: number, v: number) => s + v, 0);
             }
           }
         }
+        // Total purchase count = recurrent + 1 (initial acquisition)
+        const totalCount = recurrentCount + 1;
         const current = leadPurchaseCounts[o.lead_id] || 0;
-        leadPurchaseCounts[o.lead_id] = Math.max(current, count);
+        leadPurchaseCounts[o.lead_id] = Math.max(current, totalCount);
+        // LTV = only recurrent purchases (excludes first sale)
         leadLTVFromPurchases[o.lead_id] = (leadLTVFromPurchases[o.lead_id] || 0) + ltvFromField;
       });
 

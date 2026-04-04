@@ -42,26 +42,17 @@ interface PurchaseEntry {
   value: number;
 }
 
-function parsePurchaseEntries(raw: string | null, fallbackTreatment?: string | null, fallbackValue?: number | null): PurchaseEntry[] {
-  if (!raw) {
-    // Auto-fill first purchase from lead data
-    if (fallbackTreatment || fallbackValue) {
-      return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
-    }
-    return [];
-  }
+function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
   } catch {
-    // Legacy format: semicolon-separated numbers — migrate
+    // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: i === 0 ? (fallbackTreatment || `Compra ${i + 1}`) : `Compra ${i + 1}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
     }
-  }
-  if (fallbackTreatment || fallbackValue) {
-    return [{ treatment: fallbackTreatment || 'Tratamento inicial', value: fallbackValue || 0 }];
   }
   return [];
 }
@@ -103,35 +94,35 @@ function DetailDialogContent({
     });
   };
 
-  // Parse structured purchase entries
+  // Parse structured purchase entries (only recurrent purchases, excluding first sale)
   const purchases = useMemo(() =>
-    parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value),
-    [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]
+    parsePurchaseEntries(opp.purchase_values),
+    [opp.purchase_values]
   );
 
+  // selectedCount = total purchases including the initial (1 = only initial, no LTV)
   const [selectedCount, setSelectedCount] = useState<number>(
-    Math.max(purchases.length, 1)
+    Math.max(purchases.length + 1, 1)
   );
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
 
   // Sync local state when opp changes
   useEffect(() => {
-    const parsed = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+    const parsed = parsePurchaseEntries(opp.purchase_values);
     setLocalPurchases(parsed);
-    setSelectedCount(Math.max(parsed.length, 1));
-  }, [opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value]);
+    setSelectedCount(Math.max(parsed.length + 1, 1));
+  }, [opp.purchase_values]);
 
-  // When count changes, adjust local array
+  // When count changes, adjust local array (recurrent entries = count - 1)
   const handleCountChange = (newCount: number) => {
     setSelectedCount(newCount);
+    const recurrentCount = newCount - 1; // exclude first purchase
     const updated = [...localPurchases];
-    // Add empty entries if needed
-    while (updated.length < newCount) {
+    while (updated.length < recurrentCount) {
       updated.push({ treatment: '', value: 0 });
     }
-    // Trim if needed
-    if (updated.length > newCount) {
-      updated.length = newCount;
+    if (updated.length > recurrentCount) {
+      updated.length = recurrentCount;
     }
     setLocalPurchases(updated);
   };
@@ -186,7 +177,7 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* ===== NEW LTV DO PACIENTE BLOCK ===== */}
+      {/* ===== LTV DO PACIENTE BLOCK ===== */}
       <div className="rounded-lg border border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold flex items-center gap-1.5 text-primary">
           💰 LTV do Paciente
@@ -194,7 +185,7 @@ function DetailDialogContent({
 
         {/* Step 1: Recurrence selector */}
         <div>
-          <Label className="text-[10px] text-muted-foreground">Quantidade de compras</Label>
+          <Label className="text-[10px] text-muted-foreground">Quantidade de compras (incluindo a 1ª)</Label>
           <Select value={String(selectedCount)} onValueChange={(v) => handleCountChange(parseInt(v))}>
             <SelectTrigger className="h-8 text-sm mt-1">
               <SelectValue />
@@ -207,18 +198,25 @@ function DetailDialogContent({
           </Select>
         </div>
 
-        {/* Step 2: Dynamic purchase fields */}
-        <div className="space-y-2">
-          {Array.from({ length: selectedCount }).map((_, i) => {
-            const entry = localPurchases[i] || { treatment: '', value: 0 };
-            const isFirst = i === 0;
-            return (
-              <div key={i} className={cn(
-                "rounded-md border p-2.5 space-y-1.5",
-                isFirst ? "border-primary/20 bg-primary/5" : "border-border"
-              )}>
+        {/* Info for "Comprou 1 vez" */}
+        {selectedCount === 1 && (
+          <div className="rounded-md border border-muted bg-muted/30 p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              ℹ️ A 1ª compra é <strong>aquisição (CAC)</strong>, não gera LTV.
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Selecione "Comprou 2 vezes" ou mais para registrar compras recorrentes.
+            </p>
+          </div>
+        )}
+
+        {/* Step 2: Dynamic purchase fields (starting from Compra 2) */}
+        {selectedCount > 1 && (
+          <div className="space-y-2">
+            {localPurchases.map((entry, i) => (
+              <div key={i} className="rounded-md border border-border p-2.5 space-y-1.5">
                 <p className="text-[10px] font-semibold text-muted-foreground">
-                  🔹 Compra {i + 1} {isFirst && '(automática)'}
+                  🔹 Compra {i + 2}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -242,20 +240,22 @@ function DetailDialogContent({
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Save button */}
-        <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
-          💾 Salvar Compras
-        </Button>
+        {/* Save button (only if there are recurrent purchases) */}
+        {selectedCount > 1 && (
+          <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
+            💾 Salvar Compras Recorrentes
+          </Button>
+        )}
 
-        {/* Auto-calculated metrics */}
+        {/* Auto-calculated metrics (LTV = only recurrent) */}
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Compras</p>
+              <p className="text-[9px] text-muted-foreground">Recorrências</p>
               <p className="text-sm font-bold text-primary">{filledPurchases.length}x</p>
             </div>
             <div className="rounded-md bg-success/5 border border-success/20 p-2">
@@ -271,7 +271,10 @@ function DetailDialogContent({
 
         {/* Recurrence badge */}
         <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-          🔄 {filledPurchases.length > 0 ? `Comprou ${filledPurchases.length >= 5 ? '5+' : filledPurchases.length} vez${filledPurchases.length > 1 ? 'es' : ''}` : 'Comprou 1 vez'}
+          {selectedCount === 1
+            ? '📌 Apenas 1ª compra (aquisição)'
+            : `🔄 ${filledPurchases.length} compra${filledPurchases.length > 1 ? 's' : ''} recorrente${filledPurchases.length > 1 ? 's' : ''}`
+          }
         </Badge>
       </div>
 
@@ -838,7 +841,7 @@ const Comercial2 = () => {
                                       🔄 {opp.purchase_count || 1}x
                                     </Badge>
                                     {(() => {
-                                      const entries = parsePurchaseEntries(opp.purchase_values, opp.lead?.interest_product, opp.lead?.treatment_value);
+                                      const entries = parsePurchaseEntries(opp.purchase_values);
                                       const ltv = entries.reduce((s, p) => s + p.value, 0);
                                       return ltv > 0 ? (
                                         <Badge className="text-[9px] bg-success/10 text-success border-success/30">

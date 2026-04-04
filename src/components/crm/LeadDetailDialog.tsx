@@ -89,6 +89,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
+  const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
   const [scheduledAt, setScheduledAt] = useState('');
   const [noteData, setNoteData] = useState({
     content: '',

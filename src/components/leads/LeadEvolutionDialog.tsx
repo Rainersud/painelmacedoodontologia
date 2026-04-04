@@ -162,6 +162,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
     setSelectedStatus('');
     setInteractionData({ type: '', notes: '' });
     setActiveTab('status');
+    setFriendlyPatient(null);
   };
 
   if (!lead) return null;

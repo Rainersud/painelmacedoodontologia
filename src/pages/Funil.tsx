@@ -214,7 +214,7 @@ const Funil = () => {
   }
 
   return (
-    <AppLayout title="Funil de Vendas">
+    <AppLayout title="Comercial 1 – Aquisição">
       {/* The entire funnel page is a flex column that fills available space */}
       <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
         {/* Fixed header area — never scrolls */}

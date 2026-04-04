@@ -1193,6 +1193,142 @@ export type Database = {
           },
         ]
       }
+      upsell_contact_history: {
+        Row: {
+          agent_id: string
+          contact_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          opportunity_id: string
+          result: string | null
+        }
+        Insert: {
+          agent_id: string
+          contact_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opportunity_id: string
+          result?: string | null
+        }
+        Update: {
+          agent_id?: string
+          contact_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opportunity_id?: string
+          result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_contact_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "upsell_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_opportunities: {
+        Row: {
+          agent_id: string | null
+          attempt_count: number
+          closed_at: string | null
+          closed_value: number | null
+          contact_status: string
+          created_at: string
+          estimated_value: number | null
+          id: string
+          lead_id: string
+          next_contact_at: string | null
+          notes: string | null
+          status: string
+          suggested_treatment: string
+          treatment_category: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          attempt_count?: number
+          closed_at?: string | null
+          closed_value?: number | null
+          contact_status?: string
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          lead_id: string
+          next_contact_at?: string | null
+          notes?: string | null
+          status?: string
+          suggested_treatment: string
+          treatment_category?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          attempt_count?: number
+          closed_at?: string | null
+          closed_value?: number | null
+          contact_status?: string
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          lead_id?: string
+          next_contact_at?: string | null
+          notes?: string | null
+          status?: string
+          suggested_treatment?: string
+          treatment_category?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upsell_opportunities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upsell_treatment_suggestions: {
+        Row: {
+          category: string
+          created_at: string
+          delay_months: number
+          id: string
+          is_active: boolean
+          priority: number
+          suggested_treatment: string
+          trigger_treatment: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          delay_months?: number
+          id?: string
+          is_active?: boolean
+          priority?: number
+          suggested_treatment: string
+          trigger_treatment: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          delay_months?: number
+          id?: string
+          is_active?: boolean
+          priority?: number
+          suggested_treatment?: string
+          trigger_treatment?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_edit: boolean

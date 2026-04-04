@@ -276,6 +276,8 @@ export function useUpsellMetrics() {
     ltvPerPatient,
     giftsPending,
     giftsSent,
+    surgeryPending,
+    prosthesisPending,
     byStatus: UPSELL_STAGES.map(s => ({
       ...s,
       count: opportunities.filter(o => o.status === s.key).length,

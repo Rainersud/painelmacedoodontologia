@@ -123,7 +123,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
       setStatusNotes('');
-      setFriendlyPatient(null);
+      // Load existing friendly_patient from upsell data if lead is already fechado
+      if (lead.status === 'fechado' && friendlyData) {
+        setFriendlyPatient(friendlyData.friendly_patient);
+      } else {
+        setFriendlyPatient(null);
+      }
       setScheduledAt('');
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });

@@ -282,6 +282,7 @@ function DetailDialogContent({
   );
 }
 
+const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
   const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();

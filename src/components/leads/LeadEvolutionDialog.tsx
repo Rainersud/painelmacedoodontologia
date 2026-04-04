@@ -102,6 +102,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
           }
           // If no upsell exists yet (trigger will create), we store in notes for the trigger
         }
+      }
 
       const { error: leadError } = await supabase
         .from('leads')

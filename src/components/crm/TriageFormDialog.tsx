@@ -608,6 +608,15 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                 </div>
               </div>
 
+              <Separator />
+
+              {/* Referral Section */}
+              <TriageReferralSection
+                referrals={referralEntries}
+                onChange={setReferralEntries}
+                onConvertToLead={handleConvertToLead}
+              />
+
               {/* Filled info */}
               {existingTriage?.filled_at && (
                 <div className="text-[10px] text-muted-foreground text-right">

@@ -15,6 +15,7 @@ import {
   useAddContactHistory,
   useContactHistory,
   useUpsellMetrics,
+  useTreatmentSuggestions,
   UPSELL_STAGES,
   CONTACT_STATUS_CONFIG,
   type UpsellOpportunity,

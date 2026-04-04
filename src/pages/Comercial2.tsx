@@ -50,28 +50,7 @@ const Comercial2 = () => {
 
   const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
 
-  // Find closed leads not yet in Comercial 2
-  const closedLeadsNotInPipeline = useMemo(() => {
-    if (!allLeads || !opportunities) return [];
-    const existingLeadIds = new Set(opportunities.map(o => o.lead_id));
-    return allLeads.filter(l => l.status === 'fechado' && !existingLeadIds.has(l.id));
-  }, [allLeads, opportunities]);
-
-  // Auto-sync: generate upsell opportunities for closed leads
-  const handleSyncClosedLeads = async () => {
-    if (closedLeadsNotInPipeline.length === 0) {
-      toast.info('Todos os pacientes fechados já estão no Comercial 2.');
-      return;
-    }
-    for (const lead of closedLeadsNotInPipeline) {
-      await autoGenerate.mutateAsync({
-        id: lead.id,
-        interest_product: lead.interest_product || null,
-        assigned_agent_id: lead.assigned_agent_id,
-      });
-    }
-    toast.success(`${closedLeadsNotInPipeline.length} pacientes sincronizados com o Comercial 2!`);
-  };
+  // Auto-sync is handled by database trigger - no manual sync needed
 
   const filteredOpps = useMemo(() => {
     if (!opportunities) return [];

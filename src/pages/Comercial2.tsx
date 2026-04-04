@@ -15,10 +15,10 @@ import {
   useAddContactHistory,
   useContactHistory,
   useUpsellMetrics,
-  useTreatmentSuggestions,
-  useAutoGenerateUpsell,
   UPSELL_STAGES,
   CONTACT_STATUS_CONFIG,
+  type UpsellOpportunity,
+} from '@/hooks/useUpsellOpportunities';
   type UpsellOpportunity,
 } from '@/hooks/useUpsellOpportunities';
 import { useCRMLeads } from '@/hooks/useCRMLeads';

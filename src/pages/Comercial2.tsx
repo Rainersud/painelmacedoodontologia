@@ -44,11 +44,22 @@ function DetailDialogContent({
   suggestions: Array<{ id: string; trigger_treatment: string; suggested_treatment: string; delay_months: number }>;
 }) {
   const { data: triage } = usePatientTriage(opp.lead_id);
+  const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);
+  const [prosthesisCalendarOpen, setProsthesisCalendarOpen] = useState(false);
 
   const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
     updateOpp.mutate({
       id: opp.id,
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
+    }, {
+      onSuccess: () => {
+        toast.success(date ? '📅 Data selecionada com sucesso!' : 'Data removida');
+        if (field === 'gift_surgery_date') setSurgeryCalendarOpen(false);
+        if (field === 'gift_prosthesis_date') setProsthesisCalendarOpen(false);
+      },
+      onError: () => {
+        toast.error('Erro ao salvar data. Tente novamente.');
+      },
     });
   };
 

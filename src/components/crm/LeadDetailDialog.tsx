@@ -121,6 +121,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
       setStatusNotes('');
+      setFriendlyPatient(null);
       setScheduledAt('');
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });

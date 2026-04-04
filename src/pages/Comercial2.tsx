@@ -636,7 +636,20 @@ const Comercial2 = () => {
                                       {opp.lead?.name || 'Paciente'}
                                     </p>
                                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                  </div>
+                                    </div>
+                                    {/* Paciente Amigo on card */}
+                                    {opp.friendly_patient && (
+                                      <div className={cn(
+                                        "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                        opp.friendly_patient_video_recorded
+                                          ? "border-success/30 bg-success/5 text-success"
+                                          : "border-warning/30 bg-warning/5 text-warning animate-pulse"
+                                      )}>
+                                        <span className="font-medium">
+                                          {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
+                                        </span>
+                                      </div>
+                                    )}
                                   <Badge variant="outline" className="text-[10px]">
                                     {opp.suggested_treatment}
                                   </Badge>

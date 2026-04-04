@@ -30,6 +30,7 @@ const Perfil = lazy(() => import("./pages/Perfil"));
 const CreditoLiberado = lazy(() => import("./pages/CreditoLiberado"));
 const CACDashboard = lazy(() => import("./pages/CACDashboard"));
 const MetricasVendas = lazy(() => import("./pages/MetricasVendas"));
+const Reunioes = lazy(() => import("./pages/Reunioes"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({

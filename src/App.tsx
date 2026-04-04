@@ -32,6 +32,7 @@ const CACDashboard = lazy(() => import("./pages/CACDashboard"));
 const MetricasVendas = lazy(() => import("./pages/MetricasVendas"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const FunilTrafego = lazy(() => import("./pages/FunilTrafego"));
+const CentralFunis = lazy(() => import("./pages/CentralFunis"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/metricas-vendas" element={<ProtectedRoute><MetricasVendas /></ProtectedRoute>} />
                 <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
                 <Route path="/funil-trafego" element={<ProtectedRoute><FunilTrafego /></ProtectedRoute>} />
+                <Route path="/central-funis" element={<ProtectedRoute><CentralFunis /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />
                 <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

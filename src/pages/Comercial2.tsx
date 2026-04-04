@@ -428,126 +428,30 @@ function DetailDialogContent({
         </div>
       )}
 
-      {/* Treatment Suggestions & Add Treatment */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-muted-foreground">💡 Tratamentos Sugeridos</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[10px] gap-1"
-            onClick={() => setAddTreatmentOpen(true)}
-          >
-            <Plus className="h-3 w-3" />
-            Adicionar Tratamento
-          </Button>
-        </div>
-
-        {/* Existing suggestions from config */}
-        {suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
+      {/* Treatment Info (read-only, single treatment per patient) */}
+      {suggestions.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-1.5">💡 Sugestões de tratamento</p>
+          <div className="flex flex-wrap gap-1.5">
             {suggestions
               .filter(s => s.trigger_treatment === (opp.lead?.interest_product || ''))
-              .map(s => {
-                const alreadyAdded = allOpps.some(
-                  o => o.lead_id === opp.lead_id && o.suggested_treatment === s.suggested_treatment
-                );
-                return (
-                  <Badge
-                    key={s.id}
-                    variant="outline"
-                    className={cn(
-                      "text-[10px]",
-                      alreadyAdded ? "cursor-default opacity-50" : "cursor-pointer hover:bg-primary/10"
-                    )}
-                    onClick={() => {
-                      if (alreadyAdded) return;
-                      createUpsell.mutate({
-                        lead_id: opp.lead_id,
-                        suggested_treatment: s.suggested_treatment,
-                        treatment_category: 'geral',
-                        agent_id: opp.agent_id || undefined,
-                      }, {
-                        onSuccess: () => toast.success(`Tratamento "${s.suggested_treatment}" adicionado!`),
-                        onError: () => toast.error('Erro ao adicionar tratamento'),
-                      });
-                    }}
-                  >
-                    {alreadyAdded ? '✅' : '+'} {s.suggested_treatment}
-                    {s.delay_months > 0 && ` (${s.delay_months}m)`}
-                  </Badge>
-                );
-              })}
-          </div>
-        )}
-
-        {/* Other upsell opps for this patient */}
-        {allOpps.filter(o => o.lead_id === opp.lead_id && o.id !== opp.id).length > 0 && (
-          <div className="space-y-1 mt-2">
-            <p className="text-[10px] text-muted-foreground font-medium">Outros tratamentos deste paciente:</p>
-            {allOpps
-              .filter(o => o.lead_id === opp.lead_id && o.id !== opp.id)
-              .map(o => (
-                <div key={o.id} className="flex items-center justify-between p-1.5 rounded border bg-muted/30 text-[10px]">
-                  <span className="font-medium">{o.suggested_treatment}</span>
-                  <Badge className={cn('text-[8px]', CONTACT_STATUS_CONFIG[o.contact_status]?.color)}>
-                    {CONTACT_STATUS_CONFIG[o.contact_status]?.label || o.contact_status}
-                  </Badge>
-                </div>
+              .map(s => (
+                <Badge
+                  key={s.id}
+                  variant="outline"
+                  className="text-[10px] cursor-pointer hover:bg-primary/10"
+                  onClick={() => {
+                    updateOpp.mutate({ id: opp.id, suggested_treatment: s.suggested_treatment }, {
+                      onSuccess: () => toast.success(`Tratamento alterado para "${s.suggested_treatment}"`),
+                    });
+                  }}
+                >
+                  {opp.suggested_treatment === s.suggested_treatment ? '✅' : '→'} {s.suggested_treatment}
+                </Badge>
               ))}
           </div>
-        )}
-      </div>
-
-      {/* Add Treatment Dialog (inline) */}
-      {addTreatmentOpen && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
-          <p className="text-xs font-semibold text-primary">➕ Novo Tratamento Sugerido</p>
-          <div>
-            <Label className="text-[10px]">Nome do tratamento *</Label>
-            <Input
-              value={newTreatmentName}
-              onChange={(e) => setNewTreatmentName(e.target.value)}
-              placeholder="Ex: Clareamento, Implante, Lente..."
-              className="h-8 text-sm mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-[10px]">Valor estimado (R$)</Label>
-            <Input
-              type="number"
-              value={newTreatmentValue}
-              onChange={(e) => setNewTreatmentValue(e.target.value)}
-              placeholder="0,00"
-              className="h-8 text-sm mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-[10px]">Categoria</Label>
-            <Select value={newTreatmentCategory} onValueChange={setNewTreatmentCategory}>
-              <SelectTrigger className="h-8 text-sm mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="geral">Geral</SelectItem>
-                <SelectItem value="estetica">Estética</SelectItem>
-                <SelectItem value="implante">Implante</SelectItem>
-                <SelectItem value="protese">Prótese</SelectItem>
-                <SelectItem value="ortodontia">Ortodontia</SelectItem>
-                <SelectItem value="outro">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => {
-                setAddTreatmentOpen(false);
-                setNewTreatmentName('');
-                setNewTreatmentValue('');
-              }}
+        </div>
+      )}
             >
               Cancelar
             </Button>

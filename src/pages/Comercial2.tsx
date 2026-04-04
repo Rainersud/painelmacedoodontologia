@@ -197,6 +197,28 @@ const Comercial2 = () => {
                 </div>
               </CardContent>
             </Card>
+            <Card className="monday-card border-warning/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-warning" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Pendentes</p>
+                    <p className="text-lg font-bold text-warning">{metrics.giftsPending}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="monday-card border-success/30">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-success" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Enviados</p>
+                    <p className="text-lg font-bold text-success">{metrics.giftsSent}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 

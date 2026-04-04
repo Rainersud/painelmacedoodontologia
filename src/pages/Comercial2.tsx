@@ -44,11 +44,22 @@ function DetailDialogContent({
   suggestions: Array<{ id: string; trigger_treatment: string; suggested_treatment: string; delay_months: number }>;
 }) {
   const { data: triage } = usePatientTriage(opp.lead_id);
+  const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);
+  const [prosthesisCalendarOpen, setProsthesisCalendarOpen] = useState(false);
 
   const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
     updateOpp.mutate({
       id: opp.id,
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
+    }, {
+      onSuccess: () => {
+        toast.success(date ? '📅 Data selecionada com sucesso!' : 'Data removida');
+        if (field === 'gift_surgery_date') setSurgeryCalendarOpen(false);
+        if (field === 'gift_prosthesis_date') setProsthesisCalendarOpen(false);
+      },
+      onError: () => {
+        toast.error('Erro ao salvar data. Tente novamente.');
+      },
     });
   };
 
@@ -140,14 +151,14 @@ function DetailDialogContent({
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
-            <Popover>
+            <Popover open={surgeryCalendarOpen} onOpenChange={setSurgeryCalendarOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
                   <CalendarIcon className="h-3 w-3" />
                   {opp.gift_surgery_date ? format(new Date(opp.gift_surgery_date + 'T12:00:00'), 'dd/MM/yyyy') : 'Agendar'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Calendar
                   mode="single"
                   selected={opp.gift_surgery_date ? new Date(opp.gift_surgery_date + 'T12:00:00') : undefined}
@@ -186,14 +197,14 @@ function DetailDialogContent({
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
-            <Popover>
+            <Popover open={prosthesisCalendarOpen} onOpenChange={setProsthesisCalendarOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
                   <CalendarIcon className="h-3 w-3" />
                   {opp.gift_prosthesis_date ? format(new Date(opp.gift_prosthesis_date + 'T12:00:00'), 'dd/MM/yyyy') : 'Agendar'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Calendar
                   mode="single"
                   selected={opp.gift_prosthesis_date ? new Date(opp.gift_prosthesis_date + 'T12:00:00') : undefined}

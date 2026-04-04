@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Plus, Trash2, ExternalLink, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, Users, Target, DollarSign, BarChart3, Gift, Award, FileText, BookOpen, MessageSquare } from 'lucide-react';
-import AppLayout from '@/components/layout/AppLayout';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

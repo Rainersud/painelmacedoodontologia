@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, Plus, MessageSquare, Phone, ChevronRight } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight } from 'lucide-react';
 import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,

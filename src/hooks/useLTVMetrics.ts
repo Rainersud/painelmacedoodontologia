@@ -80,7 +80,7 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
       // Get all upsell opportunities with lead data
       const { data: opps } = await supabase
         .from('upsell_opportunities')
-        .select('lead_id, purchase_count, estimated_value, closed_value, status')
+        .select('lead_id, purchase_count, estimated_value, closed_value, status, purchase_values')
         .order('lead_id');
 
       // Get paid payments

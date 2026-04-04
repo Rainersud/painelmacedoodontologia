@@ -73,6 +73,43 @@ function DetailDialogContent({
     });
   };
 
+  // Parse purchase values from semicolon-separated string
+  const purchaseValues = useMemo(() => {
+    if (!opp.purchase_values) return [];
+    return opp.purchase_values
+      .split(';')
+      .map(v => parseFloat(v.trim()))
+      .filter(v => !isNaN(v) && v > 0);
+  }, [opp.purchase_values]);
+
+  const calculatedLTV = useMemo(() => purchaseValues.reduce((sum, v) => sum + v, 0), [purchaseValues]);
+  const calculatedTicket = useMemo(() => purchaseValues.length > 0 ? calculatedLTV / purchaseValues.length : 0, [purchaseValues, calculatedLTV]);
+
+  const [editingTreatment, setEditingTreatment] = useState(false);
+  const [editTreatmentName, setEditTreatmentName] = useState(opp.suggested_treatment);
+  const [newPurchaseValue, setNewPurchaseValue] = useState('');
+
+  // Check if this patient already has a treatment (block duplicates)
+  const patientHasTreatment = allOpps.some(o => o.lead_id === opp.lead_id);
+
+  const handleAddPurchaseValue = () => {
+    const val = parseFloat(newPurchaseValue);
+    if (isNaN(val) || val <= 0) return;
+    const currentValues = opp.purchase_values ? opp.purchase_values : '';
+    const updated = currentValues ? `${currentValues}; ${val}` : String(val);
+    const valuesArray = updated.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
+    updateOpp.mutate({
+      id: opp.id,
+      purchase_values: updated,
+      purchase_count: valuesArray.length,
+    }, {
+      onSuccess: () => {
+        toast.success('Compra adicionada ao histórico!');
+        setNewPurchaseValue('');
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Patient Info */}
@@ -85,9 +122,30 @@ function DetailDialogContent({
           <p className="text-muted-foreground text-xs">Valor Original</p>
           <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
         </div>
-        <div>
-          <p className="text-muted-foreground text-xs">Tratamento Sugerido</p>
-          <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
+        <div className="col-span-2">
+          <p className="text-muted-foreground text-xs mb-1">Tratamento Sugerido para LTV</p>
+          {editingTreatment ? (
+            <div className="flex gap-2">
+              <Input
+                value={editTreatmentName}
+                onChange={(e) => setEditTreatmentName(e.target.value)}
+                className="h-8 text-sm flex-1"
+                placeholder="Nome do tratamento"
+              />
+              <Button size="sm" className="h-8 text-xs" onClick={() => {
+                if (!editTreatmentName.trim()) return;
+                updateOpp.mutate({ id: opp.id, suggested_treatment: editTreatmentName.trim() }, {
+                  onSuccess: () => { toast.success('Tratamento atualizado!'); setEditingTreatment(false); },
+                });
+              }}>Salvar</Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setEditingTreatment(false); setEditTreatmentName(opp.suggested_treatment); }}>✕</Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={() => setEditingTreatment(true)}>✏️ Editar</Button>
+            </div>
+          )}
         </div>
         <div>
           <p className="text-muted-foreground text-xs">Valor Estimado</p>

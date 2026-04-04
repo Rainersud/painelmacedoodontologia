@@ -141,6 +141,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       notes: formData.notes || null,
       attendance_discount_status: formData.attendance_discount_status,
       discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
+      sale_type: formData.sale_type || null,
     };
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();

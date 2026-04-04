@@ -29,6 +29,7 @@ import { ptBR } from 'date-fns/locale';
 
 const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
+  const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();

@@ -452,36 +452,6 @@ function DetailDialogContent({
           </div>
         </div>
       )}
-            >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1"
-              disabled={!newTreatmentName.trim() || createUpsell.isPending}
-              onClick={() => {
-                createUpsell.mutate({
-                  lead_id: opp.lead_id,
-                  suggested_treatment: newTreatmentName.trim(),
-                  treatment_category: newTreatmentCategory,
-                  estimated_value: parseFloat(newTreatmentValue) || 0,
-                  agent_id: opp.agent_id || undefined,
-                }, {
-                  onSuccess: () => {
-                    toast.success(`Tratamento "${newTreatmentName}" adicionado com sucesso!`);
-                    setAddTreatmentOpen(false);
-                    setNewTreatmentName('');
-                    setNewTreatmentValue('');
-                  },
-                  onError: () => toast.error('Erro ao adicionar tratamento. Tente novamente.'),
-                });
-              }}
-            >
-              {createUpsell.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Tratamento'}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

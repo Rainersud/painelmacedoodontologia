@@ -798,7 +798,7 @@ const Comercial2 = () => {
                                       {opp.suggested_treatment}
                                     </Badge>
                                     <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                      🔄 {(opp as any).purchase_count || 1}x
+                                      🔄 {opp.purchase_count || 1}x
                                     </Badge>
                                   </div>
                                   <div className="flex items-center justify-between">

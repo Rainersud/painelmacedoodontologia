@@ -19,6 +19,7 @@ import {
   useUpsellOpportunities,
   useUpdateUpsellStatus,
   useUpdateUpsellOpportunity,
+  useCreateUpsellOpportunity,
   useAddContactHistory,
   useContactHistory,
   useUpsellMetrics,

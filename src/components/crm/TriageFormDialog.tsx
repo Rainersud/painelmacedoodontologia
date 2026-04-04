@@ -166,6 +166,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
         onError: () => toast.error('Erro ao vincular indicações'),
       }
     );
+  };
 
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :

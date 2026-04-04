@@ -45,7 +45,8 @@ import { cn } from '@/lib/utils';
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
   { title: 'Call Center', url: '/call-center', icon: Phone, module: 'call_center' },
-  { title: 'Funil de Vendas', url: '/funil', icon: Phone, module: 'funil' },
+  { title: 'Comercial 1', url: '/funil', icon: Phone, module: 'funil' },
+  { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
   { title: 'Tarefas', url: '/tarefas', icon: Calendar, module: 'tarefas' },
   { title: 'Crédito Liberado', url: '/credito-liberado', icon: CreditCard, module: 'credito_liberado' },

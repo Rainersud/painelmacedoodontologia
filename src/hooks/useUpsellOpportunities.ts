@@ -167,7 +167,7 @@ export function useUpdateUpsellOpportunity() {
 
 export function useAddContactHistory() {
   const qc = useQueryClient();
-  const { userId } = useAuth();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (data: {
       opportunity_id: string;

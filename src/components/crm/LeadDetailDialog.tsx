@@ -156,6 +156,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     
     // VALIDATION: Block move to fechado without payment
     if (newStatus === 'fechado') {
+      if (friendlyPatient === null) {
+        toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
+        return;
+      }
+
       const { count } = await supabase
         .from('payments')
         .select('*', { count: 'exact', head: true })
@@ -178,7 +183,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       newStatus,
       additionalData,
     }, {
-      onSuccess: () => onOpenChange(false),
+      onSuccess: async () => {
+        // Save friendly_patient to upsell_opportunities after closing
+        if (newStatus === 'fechado' && friendlyPatient !== null) {
+          await new Promise(r => setTimeout(r, 500));
+          await supabase
+            .from('upsell_opportunities')
+            .update({ friendly_patient: friendlyPatient })
+            .eq('lead_id', lead.id);
+        }
+        onOpenChange(false);
+      },
     });
   };
 

@@ -18,6 +18,12 @@ export interface UpsellOpportunity {
   attempt_count: number;
   gift_sent: boolean;
   gift_sent_at: string | null;
+  gift_surgery_sent: boolean;
+  gift_surgery_sent_at: string | null;
+  gift_surgery_date: string | null;
+  gift_prosthesis_sent: boolean;
+  gift_prosthesis_sent_at: string | null;
+  gift_prosthesis_date: string | null;
   created_at: string;
   updated_at: string;
   lead?: {

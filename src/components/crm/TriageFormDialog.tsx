@@ -516,6 +516,39 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
               <Separator />
 
+              {/* Personalização de Brinde */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-primary flex items-center gap-2">
+                  🎁 Personalização de Brinde
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      🍦 Qual sabor de sorvete você mais prefere? <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      value={form.ice_cream_flavor || ''}
+                      onChange={e => updateField('ice_cream_flavor', e.target.value)}
+                      placeholder="Ex: Chocolate, Morango, Açaí..."
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      🍽️ O que você mais deseja comer assim que arrumar seus dentes novos? <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      value={form.post_treatment_food || ''}
+                      onChange={e => updateField('post_treatment_food', e.target.value)}
+                      placeholder="Ex: Churrasco, Maçã, Pizza..."
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Credit Status */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary">Status de Crédito</h3>

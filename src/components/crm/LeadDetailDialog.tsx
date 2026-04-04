@@ -750,7 +750,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 <Button
                   className="w-full"
                   onClick={handleChangeStatus}
-                  disabled={!newStatus || updateStatus.isPending}
+                  disabled={!newStatus || updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
                 >
                   <ArrowRight className="h-4 w-4 mr-2" />
                   {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}

@@ -115,6 +115,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         scheduled_appointment_at: lead.scheduled_appointment_at 
           ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
           : '',
+        sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');

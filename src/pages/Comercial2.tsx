@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -348,6 +348,16 @@ const Comercial2 = () => {
   const [contactNotes, setContactNotes] = useState('');
 
   const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
+
+  // Keep selectedOpp in sync with optimistic cache updates
+  useEffect(() => {
+    if (selectedOpp && opportunities) {
+      const updated = opportunities.find(o => o.id === selectedOpp.id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedOpp)) {
+        setSelectedOpp(updated);
+      }
+    }
+  }, [opportunities, selectedOpp]);
 
   // Auto-sync is handled by database trigger - no manual sync needed
 

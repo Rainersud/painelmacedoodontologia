@@ -117,7 +117,7 @@ function CreativeFunnel({ creative }: { creative: AdCreative }) {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-extrabold text-white drop-shadow-sm">
-                      {stage.isCurrency ? formatCurrency(value) : value}
+                      {'isCurrency' in stage && stage.isCurrency ? formatCurrency(value) : value}
                     </span>
                     {isExp ? <ChevronUp className="h-3 w-3 text-white/70" /> : <ChevronDown className="h-3 w-3 text-white/70" />}
                   </div>

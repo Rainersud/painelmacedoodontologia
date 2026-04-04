@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths } from 'date-fns';
 
 export type PeriodFilter = 'mes' | 'trimestre' | 'ano' | 'todos';
+export type SaleTypeFilter = 'todos' | '1_etapa' | '2_etapas';
 
 export interface RecurrenceGroup {
   label: string;

@@ -64,6 +64,7 @@ export function LeadEvolutionDialog({ lead, open, onOpenChange }: LeadEvolutionD
     notes: '',
   });
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
 
   const updateStatus = useMutation({
     mutationFn: async ({ newStatus, notes }: { newStatus: LeadStatus; notes: string }) => {

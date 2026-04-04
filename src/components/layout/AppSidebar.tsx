@@ -59,6 +59,7 @@ const managementNavItems = [
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
   { title: 'Funil Tráfego Pago', url: '/funil-trafego', icon: Megaphone, module: 'funil_trafego' },
+  { title: 'Central de Funis', url: '/central-funis', icon: Layers, module: 'central_funis' },
 ];
 
 const adminNavItems = [

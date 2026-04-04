@@ -6,6 +6,7 @@ import { ReferralPopover } from './ReferralPopover';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';
+import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import { cn } from '@/lib/utils';
 
 interface LeadCardProps {
@@ -28,6 +29,7 @@ export function LeadCard({
   index = 0,
 }: LeadCardProps) {
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
+  const { data: friendlyData } = useFriendlyPatientStatus(lead.status === 'fechado' ? lead.id : undefined);
   const leadAlerts = useLeadAlerts(lead);
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
@@ -141,6 +143,18 @@ export function LeadCard({
           <div className="mb-1.5">
             <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
               📋 Orçamento: {formatCurrency(lead.budget_value || 0)}
+            </Badge>
+          </div>
+        )}
+
+        {/* Paciente Amigo Badge */}
+        {lead.status === 'fechado' && friendlyData && (
+          <div className="mb-1.5">
+            <Badge variant="outline" className={cn(
+              "text-[10px] border-0 font-medium",
+              friendlyData.friendly_patient ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+            )}>
+              🤝 Paciente Amigo: {friendlyData.friendly_patient ? 'Sim' : 'Não'}
             </Badge>
           </div>
         )}

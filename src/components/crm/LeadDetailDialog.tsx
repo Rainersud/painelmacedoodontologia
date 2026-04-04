@@ -40,6 +40,7 @@ import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';
 import { CurrencyInput } from './CurrencyInput';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
+import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import {
   Phone,
   MessageSquare,
@@ -70,6 +71,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const deleteLead = useDeleteLead();
   const createTask = useCreateTask();
   const { data: appointmentHistory } = useAppointmentHistory(lead?.id || '');
+  const { data: friendlyData } = useFriendlyPatientStatus(lead?.id);
 
   const [activeTab, setActiveTab] = useState('info');
   const [triageOpen, setTriageOpen] = useState(false);
@@ -121,13 +123,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
       setStatusNotes('');
-      setFriendlyPatient(null);
+      // Load existing friendly_patient from upsell data if lead is already fechado
+      if (lead.status === 'fechado' && friendlyData) {
+        setFriendlyPatient(friendlyData.friendly_patient);
+      } else {
+        setFriendlyPatient(null);
+      }
       setScheduledAt('');
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');
     }
-  }, [lead]);
+  }, [lead, friendlyData]);
 
   if (!lead) return null;
 
@@ -654,6 +661,48 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       onChange={(e) => setScheduledAt(e.target.value)}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Paciente Amigo - show for already-fechado leads (read-only with edit) */}
+              {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <h4 className="font-medium text-primary flex items-center gap-2">
+                    🤝 Paciente Amigo
+                  </h4>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="friendly_patient_detail"
+                        checked={friendlyPatient === true}
+                        onChange={async () => {
+                          setFriendlyPatient(true);
+                          await supabase.from('upsell_opportunities').update({ friendly_patient: true }).eq('lead_id', lead.id);
+                          toast.success('Paciente Amigo atualizado para Sim');
+                        }}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span className="text-sm font-medium">✅ Sim</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="friendly_patient_detail"
+                        checked={friendlyPatient === false}
+                        onChange={async () => {
+                          setFriendlyPatient(false);
+                          await supabase.from('upsell_opportunities').update({ friendly_patient: false }).eq('lead_id', lead.id);
+                          toast.success('Paciente Amigo atualizado para Não');
+                        }}
+                        className="h-4 w-4 accent-destructive"
+                      />
+                      <span className="text-sm font-medium">❌ Não</span>
+                    </label>
+                  </div>
+                  <Badge className={cn("text-xs", friendlyPatient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
+                    {friendlyPatient ? '✅ Aceitou participar' : '❌ Não participa'}
+                  </Badge>
                 </div>
               )}
 

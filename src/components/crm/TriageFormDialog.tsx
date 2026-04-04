@@ -81,6 +81,18 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     }
   }, [existingTriage, lead]);
 
+  useEffect(() => {
+    if (existingReferrals && existingReferrals.length > 0) {
+      setReferralEntries(existingReferrals.map(r => ({
+        id: r.id,
+        referral_name: r.referral_name,
+        situation: r.situation,
+        relationship: r.relationship || '',
+        converted_lead_id: r.converted_lead_id,
+      })));
+    }
+  }, [existingReferrals]);
+
   if (!lead) return null;
 
   const updateField = (field: string, value: unknown) => {
@@ -95,6 +107,31 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     updateField('motivation', updated);
   };
 
+  const handleConvertToLead = (index: number) => {
+    if (!user) return;
+    const entry = referralEntries[index];
+    if (!entry.referral_name.trim()) {
+      toast.error('Preencha o nome da pessoa para converter em lead');
+      return;
+    }
+    convertToLead.mutate(
+      {
+        referral: { ...entry, lead_id: lead.id },
+        agentId: user.id,
+        referrerLeadId: lead.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${entry.referral_name} convertido em lead com sucesso!`);
+          const updated = [...referralEntries];
+          updated[index] = { ...updated[index], converted_lead_id: 'converted' };
+          setReferralEntries(updated);
+        },
+        onError: () => toast.error('Erro ao converter indicação em lead'),
+      }
+    );
+  };
+
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
       (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);
@@ -102,7 +139,18 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
     saveTriage.mutate(
       { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
       {
-        onSuccess: () => toast.success('Ficha de triagem salva com sucesso!'),
+        onSuccess: (data) => {
+          toast.success('Ficha de triagem salva com sucesso!');
+          // Save referrals after triage is saved
+          const triageId = existingTriage?.id || (data as any)?.id;
+          if (triageId && referralEntries.length > 0) {
+            saveReferrals.mutate({
+              leadId: lead.id,
+              triageId,
+              referrals: referralEntries.filter(r => r.referral_name.trim()),
+            });
+          }
+        },
         onError: () => toast.error('Erro ao salvar ficha de triagem'),
       }
     );

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths } from 'date-fns';
+
+export type PeriodFilter = 'mes' | 'trimestre' | 'ano' | 'todos';
 
 export interface RecurrenceGroup {
   label: string;
@@ -13,6 +15,7 @@ export interface RecurrenceGroup {
   avgProfit: number;
   totalRevenue: number;
   healthColor: 'success' | 'warning' | 'destructive';
+  percentOfTotal: number;
 }
 
 export interface LTVMetricsData {
@@ -22,6 +25,10 @@ export interface LTVMetricsData {
   highCACGroup: string | null;
   growthPotentialGroup: string | null;
   insights: string[];
+  totalClients: number;
+  totalRevenue: number;
+  overallLTV: number;
+  overallCAC: number;
 }
 
 const RECURRENCE_LABELS = [
@@ -38,54 +45,86 @@ function getHealthColor(profit: number): 'success' | 'warning' | 'destructive' {
   return 'destructive';
 }
 
-export function useLTVMetrics() {
+function getDateRange(period: PeriodFilter): { start: Date; end: Date } | null {
+  const now = new Date();
+  switch (period) {
+    case 'mes':
+      return { start: startOfMonth(now), end: endOfMonth(now) };
+    case 'trimestre':
+      return { start: startOfQuarter(now), end: endOfQuarter(now) };
+    case 'ano':
+      return { start: startOfYear(now), end: endOfYear(now) };
+    case 'todos':
+      return null;
+  }
+}
+
+export function useLTVMetrics(period: PeriodFilter = 'todos') {
   return useQuery({
-    queryKey: ['ltv-metrics'],
+    queryKey: ['ltv-metrics', period],
     queryFn: async (): Promise<LTVMetricsData> => {
+      const dateRange = getDateRange(period);
+
       // Get all upsell opportunities with lead data
       const { data: opps } = await supabase
         .from('upsell_opportunities')
         .select('lead_id, purchase_count, estimated_value, closed_value, status')
         .order('lead_id');
 
-      // Get all paid payments grouped by lead
-      const { data: payments } = await supabase
+      // Get paid payments
+      let paymentsQuery = supabase
         .from('payments')
         .select('lead_id, net_value')
         .eq('status', 'pago');
 
-      // Get total acquisition costs (current month for CAC approximation)
+      if (dateRange) {
+        paymentsQuery = paymentsQuery
+          .gte('paid_at', dateRange.start.toISOString())
+          .lte('paid_at', dateRange.end.toISOString());
+      }
+      const { data: payments } = await paymentsQuery;
+
+      // Get acquisition costs
       const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
+      const costStart = dateRange ? dateRange.start : subMonths(now, 12);
+      const costEnd = dateRange ? dateRange.end : now;
       const { data: costsData } = await supabase
         .from('acquisition_costs')
         .select('amount')
-        .gte('reference_month', monthStart.toISOString().split('T')[0])
-        .lte('reference_month', monthEnd.toISOString().split('T')[0]);
+        .gte('reference_month', costStart.toISOString().split('T')[0])
+        .lte('reference_month', costEnd.toISOString().split('T')[0]);
 
       const totalCosts = (costsData || []).reduce((sum, c) => sum + Number(c.amount), 0);
 
       // Get total closed leads for CAC calculation
-      const { count: totalClosed } = await supabase
+      let closedQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'fechado');
 
+      if (dateRange) {
+        closedQuery = closedQuery
+          .gte('closed_at', dateRange.start.toISOString())
+          .lte('closed_at', dateRange.end.toISOString());
+      }
+      const { count: totalClosed } = await closedQuery;
+
       const avgCACGlobal = (totalClosed || 0) > 0 ? totalCosts / (totalClosed || 1) : 0;
 
-      // Group payments by lead for LTV calculation
+      // Group payments by lead
       const paymentsByLead: Record<string, number> = {};
       (payments || []).forEach(p => {
         paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
       });
 
-      // Group opportunities by lead, use the max purchase_count per lead
+      // Group opportunities by lead
       const leadPurchaseCounts: Record<string, number> = {};
       (opps || []).forEach(o => {
         const current = leadPurchaseCounts[o.lead_id] || 0;
-        leadPurchaseCounts[o.lead_id] = Math.max(current, (o as any).purchase_count || 1);
+        leadPurchaseCounts[o.lead_id] = Math.max(current, o.purchase_count || 1);
       });
+
+      const totalClientsAll = Object.keys(leadPurchaseCounts).length;
 
       // Build recurrence groups
       const groups: RecurrenceGroup[] = RECURRENCE_LABELS.map(({ label, minCount, maxCount }) => {
@@ -97,7 +136,6 @@ export function useLTVMetrics() {
         const clientCount = leadsInGroup.length;
         const leadIds = leadsInGroup.map(([id]) => id);
 
-        // Calculate revenue for this group
         const groupRevenue = leadIds.reduce((sum, id) => sum + (paymentsByLead[id] || 0), 0);
         const avgLTV = clientCount > 0 ? groupRevenue / clientCount : 0;
         const avgTicket = clientCount > 0 ? groupRevenue / (clientCount * (maxCount || minCount)) : 0;
@@ -114,8 +152,14 @@ export function useLTVMetrics() {
           avgProfit,
           totalRevenue: groupRevenue,
           healthColor: getHealthColor(avgProfit),
+          percentOfTotal: totalClientsAll > 0 ? (clientCount / totalClientsAll) * 100 : 0,
         };
       });
+
+      // Totals
+      const totalClients = groups.reduce((sum, g) => sum + g.clientCount, 0);
+      const totalRevenue = groups.reduce((sum, g) => sum + g.totalRevenue, 0);
+      const overallLTV = totalClients > 0 ? totalRevenue / totalClients : 0;
 
       // Smart insights
       const activeGroups = groups.filter(g => g.clientCount > 0);
@@ -132,22 +176,34 @@ export function useLTVMetrics() {
       const growthPotentialGroup = singleBuyers.clientCount > 0 ? singleBuyers.label : null;
 
       const insights: string[] = [];
-      if (singleBuyers.clientCount > 0) {
-        insights.push(`"Clientes com 1 compra precisam de ação de pós-venda" – ${singleBuyers.clientCount} pacientes neste grupo`);
+      if (singleBuyers.clientCount > 0 && singleBuyers.avgProfit < 0) {
+        insights.push(`🔴 Clientes de 1 compra não são lucrativos (lucro médio: ${formatBRL(singleBuyers.avgProfit)}) → melhorar pós-venda`);
+      } else if (singleBuyers.clientCount > 0) {
+        insights.push(`⚠️ ${singleBuyers.clientCount} pacientes compraram apenas 1 vez → ação de pós-venda necessária`);
       }
+
       const twoBuyers = groups[1];
       if (twoBuyers.clientCount > 0) {
-        insights.push(`"Clientes com 2 compras têm alto potencial de crescimento" – ${twoBuyers.clientCount} pacientes`);
+        insights.push(`📈 Clientes com 2 compras têm alto potencial de LTV → focar upsell (${twoBuyers.clientCount} pacientes)`);
       }
+
       const threePlus = groups.slice(2).reduce((sum, g) => sum + g.clientCount, 0);
       if (threePlus > 0) {
-        insights.push(`"Grupo 3+ gera maior lucro – priorizar retenção" – ${threePlus} pacientes`);
+        const threePlusRevenue = groups.slice(2).reduce((sum, g) => sum + g.totalRevenue, 0);
+        insights.push(`🟢 Grupo 3+ compras gera maior lucro → priorizar retenção (${threePlus} pacientes, ${formatBRL(threePlusRevenue)} em receita)`);
       }
+
       if (bestProfitGroup) {
         const best = activeGroups.find(g => g.label === bestProfitGroup);
         if (best) {
-          insights.push(`💰 Grupo mais lucrativo: ${best.label} com lucro médio de R$ ${best.avgProfit.toFixed(0)} por paciente`);
+          insights.push(`💰 Grupo mais lucrativo: ${best.label} com lucro médio de ${formatBRL(best.avgProfit)} por paciente`);
         }
+      }
+
+      // Break-even insight
+      const breakEvenGroup = activeGroups.find(g => g.avgProfit > 0);
+      if (breakEvenGroup && breakEvenGroup.minCount > 1) {
+        insights.push(`🎯 O cliente precisa comprar pelo menos ${breakEvenGroup.minCount}x para dar lucro`);
       }
 
       return {
@@ -157,7 +213,15 @@ export function useLTVMetrics() {
         highCACGroup,
         growthPotentialGroup,
         insights,
+        totalClients,
+        totalRevenue,
+        overallLTV,
+        overallCAC: avgCACGlobal,
       };
     },
   });
+}
+
+function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }

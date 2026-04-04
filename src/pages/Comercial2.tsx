@@ -499,8 +499,8 @@ const Comercial2 = () => {
         </div>
 
         {/* Kanban Board */}
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x">
-          <div className="flex gap-3 min-w-max h-full pb-2 px-1">
+        <div className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x">
+          <div className="flex gap-3 min-w-max md:h-full pb-2 px-1">
             {UPSELL_STAGES.map((stage) => {
               const stageOpps = getOppsByStatus(stage.key);
               const isDropping = dropTarget === stage.key && draggedId !== null;
@@ -509,7 +509,7 @@ const Comercial2 = () => {
               return (
                 <div
                   key={stage.key}
-                  className="w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 h-full"
+                  className="w-56 sm:w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 md:h-full"
                   onDragOver={(e) => handleDragOver(e, stage.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.key)}

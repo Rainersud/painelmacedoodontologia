@@ -28,13 +28,10 @@ import { ptBR } from 'date-fns/locale';
 
 const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
-  const { data: allLeads } = useCRMLeads();
-  const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
   const addContact = useAddContactHistory();
-  const autoGenerate = useAutoGenerateUpsell();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);

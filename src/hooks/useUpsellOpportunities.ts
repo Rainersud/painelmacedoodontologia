@@ -30,6 +30,7 @@ export interface UpsellOpportunity {
   created_at: string;
   updated_at: string;
   purchase_count: number;
+  purchase_values: string | null;
   lead?: {
     name: string;
     phone: string;

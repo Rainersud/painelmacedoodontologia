@@ -52,10 +52,6 @@ function DetailDialogContent({
   const { data: triage } = usePatientTriage(opp.lead_id);
   const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);
   const [prosthesisCalendarOpen, setProsthesisCalendarOpen] = useState(false);
-  const [addTreatmentOpen, setAddTreatmentOpen] = useState(false);
-  const [newTreatmentName, setNewTreatmentName] = useState('');
-  const [newTreatmentValue, setNewTreatmentValue] = useState('');
-  const [newTreatmentCategory, setNewTreatmentCategory] = useState('geral');
 
   const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
     updateOpp.mutate({
@@ -73,6 +69,43 @@ function DetailDialogContent({
     });
   };
 
+  // Parse purchase values from semicolon-separated string
+  const purchaseValues = useMemo(() => {
+    if (!opp.purchase_values) return [];
+    return opp.purchase_values
+      .split(';')
+      .map(v => parseFloat(v.trim()))
+      .filter(v => !isNaN(v) && v > 0);
+  }, [opp.purchase_values]);
+
+  const calculatedLTV = useMemo(() => purchaseValues.reduce((sum, v) => sum + v, 0), [purchaseValues]);
+  const calculatedTicket = useMemo(() => purchaseValues.length > 0 ? calculatedLTV / purchaseValues.length : 0, [purchaseValues, calculatedLTV]);
+
+  const [editingTreatment, setEditingTreatment] = useState(false);
+  const [editTreatmentName, setEditTreatmentName] = useState(opp.suggested_treatment);
+  const [newPurchaseValue, setNewPurchaseValue] = useState('');
+
+  // Check if this patient already has a treatment (block duplicates)
+  const patientHasTreatment = allOpps.some(o => o.lead_id === opp.lead_id);
+
+  const handleAddPurchaseValue = () => {
+    const val = parseFloat(newPurchaseValue);
+    if (isNaN(val) || val <= 0) return;
+    const currentValues = opp.purchase_values ? opp.purchase_values : '';
+    const updated = currentValues ? `${currentValues}; ${val}` : String(val);
+    const valuesArray = updated.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
+    updateOpp.mutate({
+      id: opp.id,
+      purchase_values: updated,
+      purchase_count: valuesArray.length,
+    }, {
+      onSuccess: () => {
+        toast.success('Compra adicionada ao histórico!');
+        setNewPurchaseValue('');
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Patient Info */}
@@ -85,9 +118,30 @@ function DetailDialogContent({
           <p className="text-muted-foreground text-xs">Valor Original</p>
           <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
         </div>
-        <div>
-          <p className="text-muted-foreground text-xs">Tratamento Sugerido</p>
-          <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
+        <div className="col-span-2">
+          <p className="text-muted-foreground text-xs mb-1">Tratamento Sugerido para LTV</p>
+          {editingTreatment ? (
+            <div className="flex gap-2">
+              <Input
+                value={editTreatmentName}
+                onChange={(e) => setEditTreatmentName(e.target.value)}
+                className="h-8 text-sm flex-1"
+                placeholder="Nome do tratamento"
+              />
+              <Button size="sm" className="h-8 text-xs" onClick={() => {
+                if (!editTreatmentName.trim()) return;
+                updateOpp.mutate({ id: opp.id, suggested_treatment: editTreatmentName.trim() }, {
+                  onSuccess: () => { toast.success('Tratamento atualizado!'); setEditingTreatment(false); },
+                });
+              }}>Salvar</Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setEditingTreatment(false); setEditTreatmentName(opp.suggested_treatment); }}>✕</Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-primary">{opp.suggested_treatment}</p>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground" onClick={() => setEditingTreatment(true)}>✏️ Editar</Button>
+            </div>
+          )}
         </div>
         <div>
           <p className="text-muted-foreground text-xs">Valor Estimado</p>
@@ -104,24 +158,56 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* Purchase Count / Recurrence */}
-      <div className="rounded-lg border p-3 space-y-2">
-        <p className="text-xs font-semibold flex items-center gap-1.5">🔄 Status de Recorrência</p>
-        <Select
-          value={String((opp as any).purchase_count || 1)}
-          onValueChange={(val) => updateOpp.mutate({ id: opp.id, purchase_count: parseInt(val) })}
-        >
-          <SelectTrigger className="h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Comprou 1 vez</SelectItem>
-            <SelectItem value="2">Comprou 2 vezes</SelectItem>
-            <SelectItem value="3">Comprou 3 vezes</SelectItem>
-            <SelectItem value="4">Comprou 4 vezes</SelectItem>
-            <SelectItem value="5">Comprou 5 vezes ou mais</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Histórico de Compras (LTV) - Campo Único */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-semibold flex items-center gap-1.5">💰 Histórico de Compras (LTV)</p>
+
+        {/* Current values display */}
+        <div className="rounded-md bg-muted/50 p-2.5">
+          <p className="text-[10px] text-muted-foreground mb-1">Valores (separados por ;)</p>
+          <p className="text-sm font-mono font-medium min-h-[20px]">
+            {opp.purchase_values || <span className="text-muted-foreground italic">Nenhuma compra registrada</span>}
+          </p>
+        </div>
+
+        {/* Add new purchase value */}
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            value={newPurchaseValue}
+            onChange={(e) => setNewPurchaseValue(e.target.value)}
+            placeholder="Valor da compra"
+            className="h-8 text-sm flex-1"
+          />
+          <Button size="sm" className="h-8 text-xs gap-1" onClick={handleAddPurchaseValue} disabled={!newPurchaseValue}>
+            <Plus className="h-3 w-3" /> Adicionar
+          </Button>
+        </div>
+
+        {/* Auto-calculated metrics */}
+        {purchaseValues.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
+              <p className="text-[9px] text-muted-foreground">Compras</p>
+              <p className="text-sm font-bold text-primary">{purchaseValues.length}x</p>
+            </div>
+            <div className="rounded-md bg-success/5 border border-success/20 p-2">
+              <p className="text-[9px] text-muted-foreground">LTV Total</p>
+              <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+            </div>
+            <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
+              <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
+              <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Recurrence status (auto from purchase count) */}
+        <div className="flex items-center gap-2">
+          <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+            🔄 {purchaseValues.length > 0 ? `Comprou ${purchaseValues.length >= 5 ? '5+' : purchaseValues.length} vez${purchaseValues.length > 1 ? 'es' : ''}` : 'Sem compras'}
+          </Badge>
+        </div>
       </div>
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
@@ -338,153 +424,27 @@ function DetailDialogContent({
         </div>
       )}
 
-      {/* Treatment Suggestions & Add Treatment */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-muted-foreground">💡 Tratamentos Sugeridos</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[10px] gap-1"
-            onClick={() => setAddTreatmentOpen(true)}
-          >
-            <Plus className="h-3 w-3" />
-            Adicionar Tratamento
-          </Button>
-        </div>
-
-        {/* Existing suggestions from config */}
-        {suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
+      {/* Treatment Info (read-only, single treatment per patient) */}
+      {suggestions.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-1.5">💡 Sugestões de tratamento</p>
+          <div className="flex flex-wrap gap-1.5">
             {suggestions
               .filter(s => s.trigger_treatment === (opp.lead?.interest_product || ''))
-              .map(s => {
-                const alreadyAdded = allOpps.some(
-                  o => o.lead_id === opp.lead_id && o.suggested_treatment === s.suggested_treatment
-                );
-                return (
-                  <Badge
-                    key={s.id}
-                    variant="outline"
-                    className={cn(
-                      "text-[10px]",
-                      alreadyAdded ? "cursor-default opacity-50" : "cursor-pointer hover:bg-primary/10"
-                    )}
-                    onClick={() => {
-                      if (alreadyAdded) return;
-                      createUpsell.mutate({
-                        lead_id: opp.lead_id,
-                        suggested_treatment: s.suggested_treatment,
-                        treatment_category: 'geral',
-                        agent_id: opp.agent_id || undefined,
-                      }, {
-                        onSuccess: () => toast.success(`Tratamento "${s.suggested_treatment}" adicionado!`),
-                        onError: () => toast.error('Erro ao adicionar tratamento'),
-                      });
-                    }}
-                  >
-                    {alreadyAdded ? '✅' : '+'} {s.suggested_treatment}
-                    {s.delay_months > 0 && ` (${s.delay_months}m)`}
-                  </Badge>
-                );
-              })}
-          </div>
-        )}
-
-        {/* Other upsell opps for this patient */}
-        {allOpps.filter(o => o.lead_id === opp.lead_id && o.id !== opp.id).length > 0 && (
-          <div className="space-y-1 mt-2">
-            <p className="text-[10px] text-muted-foreground font-medium">Outros tratamentos deste paciente:</p>
-            {allOpps
-              .filter(o => o.lead_id === opp.lead_id && o.id !== opp.id)
-              .map(o => (
-                <div key={o.id} className="flex items-center justify-between p-1.5 rounded border bg-muted/30 text-[10px]">
-                  <span className="font-medium">{o.suggested_treatment}</span>
-                  <Badge className={cn('text-[8px]', CONTACT_STATUS_CONFIG[o.contact_status]?.color)}>
-                    {CONTACT_STATUS_CONFIG[o.contact_status]?.label || o.contact_status}
-                  </Badge>
-                </div>
+              .map(s => (
+                <Badge
+                  key={s.id}
+                  variant="outline"
+                  className="text-[10px] cursor-pointer hover:bg-primary/10"
+                  onClick={() => {
+                    updateOpp.mutate({ id: opp.id, suggested_treatment: s.suggested_treatment }, {
+                      onSuccess: () => toast.success(`Tratamento alterado para "${s.suggested_treatment}"`),
+                    });
+                  }}
+                >
+                  {opp.suggested_treatment === s.suggested_treatment ? '✅' : '→'} {s.suggested_treatment}
+                </Badge>
               ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add Treatment Dialog (inline) */}
-      {addTreatmentOpen && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
-          <p className="text-xs font-semibold text-primary">➕ Novo Tratamento Sugerido</p>
-          <div>
-            <Label className="text-[10px]">Nome do tratamento *</Label>
-            <Input
-              value={newTreatmentName}
-              onChange={(e) => setNewTreatmentName(e.target.value)}
-              placeholder="Ex: Clareamento, Implante, Lente..."
-              className="h-8 text-sm mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-[10px]">Valor estimado (R$)</Label>
-            <Input
-              type="number"
-              value={newTreatmentValue}
-              onChange={(e) => setNewTreatmentValue(e.target.value)}
-              placeholder="0,00"
-              className="h-8 text-sm mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-[10px]">Categoria</Label>
-            <Select value={newTreatmentCategory} onValueChange={setNewTreatmentCategory}>
-              <SelectTrigger className="h-8 text-sm mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="geral">Geral</SelectItem>
-                <SelectItem value="estetica">Estética</SelectItem>
-                <SelectItem value="implante">Implante</SelectItem>
-                <SelectItem value="protese">Prótese</SelectItem>
-                <SelectItem value="ortodontia">Ortodontia</SelectItem>
-                <SelectItem value="outro">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => {
-                setAddTreatmentOpen(false);
-                setNewTreatmentName('');
-                setNewTreatmentValue('');
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1"
-              disabled={!newTreatmentName.trim() || createUpsell.isPending}
-              onClick={() => {
-                createUpsell.mutate({
-                  lead_id: opp.lead_id,
-                  suggested_treatment: newTreatmentName.trim(),
-                  treatment_category: newTreatmentCategory,
-                  estimated_value: parseFloat(newTreatmentValue) || 0,
-                  agent_id: opp.agent_id || undefined,
-                }, {
-                  onSuccess: () => {
-                    toast.success(`Tratamento "${newTreatmentName}" adicionado com sucesso!`);
-                    setAddTreatmentOpen(false);
-                    setNewTreatmentName('');
-                    setNewTreatmentValue('');
-                  },
-                  onError: () => toast.error('Erro ao adicionar tratamento. Tente novamente.'),
-                });
-              }}
-            >
-              {createUpsell.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Tratamento'}
-            </Button>
           </div>
         </div>
       )}
@@ -838,7 +798,7 @@ const Comercial2 = () => {
                                       {opp.suggested_treatment}
                                     </Badge>
                                     <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                      🔄 {(opp as any).purchase_count || 1}x
+                                      🔄 {opp.purchase_count || 1}x
                                     </Badge>
                                   </div>
                                   <div className="flex items-center justify-between">

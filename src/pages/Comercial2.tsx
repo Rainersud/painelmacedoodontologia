@@ -3,17 +3,18 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, MessageSquare, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3 } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3, Lock, Save, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
+import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useUpsellOpportunities,
@@ -45,7 +46,7 @@ interface PurchaseEntry {
 }
 
 /* Treatment suggestion entry */
-interface TreatmentSuggestion {
+interface TreatmentSuggestionLocal {
   name: string;
   selected: boolean;
 }
@@ -94,18 +95,91 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
   return [];
 }
 
+// Get stage index for progression validation
+function getStageIndex(status: string): number {
+  return UPSELL_STAGES.findIndex(s => s.key === status);
+}
 
-/* Detail Dialog Content with Triage Integration */
-function DetailDialogContent({
-  opp, updateOpp, handleUpdateContactStatus, setContactDialogOpen, contactHistory, suggestions, createUpsell, allOpps,
+function getNextStage(currentStatus: string): string | null {
+  const idx = getStageIndex(currentStatus);
+  if (idx < 0 || idx >= UPSELL_STAGES.length - 1) return null;
+  return UPSELL_STAGES[idx + 1].key;
+}
+
+/* ============ LOCKED DETAIL (Comprou 1 vez) ============ */
+function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
+  const { data: triage } = usePatientTriage(opp.lead_id);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center gap-2">
+        <Lock className="h-4 w-4 text-warning" />
+        <p className="text-xs text-warning font-semibold">Esta coluna é somente leitura. A 1ª compra é aquisição (CAC).</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p className="text-muted-foreground text-xs">Tratamento Original</p>
+          <p className="font-medium">{opp.lead?.interest_product || '-'}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Valor Original</p>
+          <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Tipo de Venda</p>
+          <p className="font-medium">{opp.lead?.sale_type || '-'}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Data do Fechamento</p>
+          <p className="font-medium">{opp.lead?.closed_at ? format(new Date(opp.lead.closed_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+        </div>
+      </div>
+
+      {/* Gift Management - still viewable */}
+      <div className="rounded-lg border p-3 space-y-3">
+        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
+          <Gift className="h-3.5 w-3.5" /> Brindes
+        </p>
+        <div className="flex items-center gap-2">
+          <Badge className={cn("text-[10px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+            🎁 Cirurgia: {opp.gift_surgery_sent ? '✅ Enviado' : '⏳ Pendente'}
+          </Badge>
+          <Badge className={cn("text-[10px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+            🎁 Prótese: {opp.gift_prosthesis_sent ? '✅ Enviado' : '⏳ Pendente'}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Paciente Amigo */}
+      {opp.friendly_patient && (
+        <div className="rounded-lg border p-3">
+          <p className="text-xs font-bold text-chart-5 mb-1">🤝 Paciente Amigo</p>
+          <Badge className={cn("text-[10px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+            {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento Gravado' : '🎬 Pendente'}
+          </Badge>
+        </div>
+      )}
+
+      {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <p className="text-xs font-bold text-chart-5">🎁 Personalização</p>
+          {triage.ice_cream_flavor && <p className="text-sm">🍦 {triage.ice_cream_flavor}</p>}
+          {triage.post_treatment_food && <p className="text-sm">🍽️ {triage.post_treatment_food}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============ EDITABLE DETAIL (Comprou 2+) ============ */
+function EditableDetailContent({
+  opp, updateOpp, setContactDialogOpen, contactHistory, allOpps,
 }: {
   opp: UpsellOpportunity;
   updateOpp: ReturnType<typeof useUpdateUpsellOpportunity>;
-  handleUpdateContactStatus: (s: string) => void;
   setContactDialogOpen: (v: boolean) => void;
   contactHistory: Array<{ id: string; contact_type: string; result: string | null; notes: string | null; created_at: string }>;
-  suggestions: Array<{ id: string; trigger_treatment: string; suggested_treatment: string; delay_months: number }>;
-  createUpsell: ReturnType<typeof useCreateUpsellOpportunity>;
   allOpps: UpsellOpportunity[];
 }) {
   const { data: triage } = usePatientTriage(opp.lead_id);
@@ -118,31 +192,34 @@ function DetailDialogContent({
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
     }, {
       onSuccess: () => {
-        toast.success(date ? '📅 Data selecionada com sucesso!' : 'Data removida');
+        toast.success(date ? '📅 Data selecionada!' : 'Data removida');
         if (field === 'gift_surgery_date') setSurgeryCalendarOpen(false);
         if (field === 'gift_prosthesis_date') setProsthesisCalendarOpen(false);
       },
-      onError: () => toast.error('Erro ao salvar data. Tente novamente.'),
     });
   };
 
   const purchases = useMemo(() => parsePurchaseEntries(opp.purchase_values), [opp.purchase_values]);
-  const [selectedCount, setSelectedCount] = useState<number>(Math.max(purchases.length + 1, 1));
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
   const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
+  const [budgetValue, setBudgetValue] = useState(opp.estimated_value || 0);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);
     const locked = parsed.map(p => ({ ...p, locked: p.value > 0 }));
     setLocalPurchases(locked);
-    setSelectedCount(Math.max(parsed.length + 1, 1));
   }, [opp.purchase_values]);
+
+  useEffect(() => {
+    setBudgetValue(opp.estimated_value || 0);
+  }, [opp.estimated_value]);
 
   const autoSuggestionNames = useMemo(() =>
     getSuggestionsForTreatment(opp.lead?.interest_product || null),
     [opp.lead?.interest_product]
   );
-  const [treatmentSuggestions, setTreatmentSuggestions] = useState<TreatmentSuggestion[]>([]);
+  const [treatmentSuggestions, setTreatmentSuggestions] = useState<TreatmentSuggestionLocal[]>([]);
   const [newSuggestionName, setNewSuggestionName] = useState('');
 
   useEffect(() => {
@@ -157,38 +234,34 @@ function DetailDialogContent({
   const isImplantPatient = (opp.lead?.interest_product || '').toLowerCase().includes('implante');
   const needsDateField = (name: string) => isImplantPatient && name.toLowerCase().includes('revisão');
 
-  const handleCountChange = (newCount: number) => {
-    setSelectedCount(newCount);
-    const recurrentCount = newCount - 1;
-    const updated = [...localPurchases];
-    while (updated.length < recurrentCount) {
-      updated.push({ treatment: '', value: 0, date: null, locked: false });
-    }
-    if (updated.length > recurrentCount) {
-      const lockedCount = updated.filter(p => p.locked).length;
-      if (recurrentCount >= lockedCount) updated.length = recurrentCount;
-    }
-    setLocalPurchases(updated);
-  };
-
+  // When a suggestion is toggled ON, auto-add as a treatment entry
   const handleToggleSuggestion = (index: number) => {
     setTreatmentSuggestions(prev => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], selected: !copy[index].selected };
+      const wasSelected = copy[index].selected;
+      copy[index] = { ...copy[index], selected: !wasSelected };
+
+      if (!wasSelected) {
+        // Add to local purchases if not already there
+        const name = copy[index].name;
+        const exists = localPurchases.some(p => p.treatment.toLowerCase() === name.toLowerCase());
+        if (!exists) {
+          setLocalPurchases(lp => [...lp, { treatment: name, value: 0, date: null, locked: false }]);
+        }
+      }
+
       return copy;
     });
   };
-
-  // Get selected suggestion names for use as treatment name defaults
-  const selectedSuggestionNames = useMemo(() =>
-    treatmentSuggestions.filter(s => s.selected).map(s => s.name),
-    [treatmentSuggestions]
-  );
 
   const handleAddCustomSuggestion = () => {
     if (!newSuggestionName.trim()) return;
     const name = newSuggestionName.trim();
     setTreatmentSuggestions(prev => [...prev, { name, selected: true }]);
+    const exists = localPurchases.some(p => p.treatment.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      setLocalPurchases(lp => [...lp, { treatment: name, value: 0, date: null, locked: false }]);
+    }
     setNewSuggestionName('');
   };
 
@@ -203,46 +276,68 @@ function DetailDialogContent({
     });
   };
 
-  const handleSaveStage = (index: number) => {
-    const updated = [...localPurchases];
-    updated[index] = { ...updated[index], locked: true };
-    const serialized = JSON.stringify(updated.map(p => ({
+  // Save evolution: persist treatments, auto-advance card
+  const handleSaveEvolution = () => {
+    const lockedAll = localPurchases.map(p => ({ ...p, locked: true }));
+    const serialized = JSON.stringify(lockedAll.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
     })));
-    // Auto-progress funnel: purchase count = number of saved purchases + 1 (initial)
-    const savedCount = updated.filter(p => p.locked && p.value > 0).length;
-    const newPurchaseCount = savedCount + 1; // +1 for initial acquisition
-    const upsellStage = `upsell_${Math.min(savedCount, 5)}`;
-    updateOpp.mutate({
+
+    const nextStage = getNextStage(opp.status);
+    const updateData: Record<string, unknown> = {
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: newPurchaseCount,
-      status: upsellStage,
-    }, {
+      estimated_value: budgetValue,
+    };
+
+    if (nextStage) {
+      updateData.status = nextStage;
+      updateData.purchase_count = (opp.purchase_count || 1) + 1;
+    }
+
+    updateOpp.mutate(updateData as { id: string; [key: string]: unknown }, {
       onSuccess: () => {
-        setLocalPurchases(updated);
-        setStageEditing(prev => ({ ...prev, [index]: false }));
-        toast.success(`Compra ${index + 2} salva! Paciente movido para Upsell ${Math.min(savedCount, 5)}`);
+        setLocalPurchases(lockedAll);
+        setStageEditing({});
+        const nextLabel = nextStage ? UPSELL_STAGES.find(s => s.key === nextStage)?.label : null;
+        toast.success(nextLabel
+          ? `✅ Evolução salva! Paciente movido para "${nextLabel}"`
+          : '✅ Evolução salva! (última etapa)'
+        );
       },
-      onError: () => toast.error('Erro ao salvar. Tente novamente.'),
+      onError: () => toast.error('Erro ao salvar evolução'),
     });
   };
 
-  const handleEditStage = (index: number) => {
+  // Edit a specific treatment entry
+  const handleEditEntry = (index: number) => {
     setStageEditing(prev => ({ ...prev, [index]: true }));
+  };
+
+  // Delete a treatment entry
+  const handleDeleteEntry = (index: number) => {
+    const updated = localPurchases.filter((_, i) => i !== index);
+    setLocalPurchases(updated);
+    setDeleteConfirm(null);
+    // Also uncheck suggestion if matching
+    const removedName = localPurchases[index]?.treatment?.toLowerCase();
+    if (removedName) {
+      setTreatmentSuggestions(prev =>
+        prev.map(s => s.name.toLowerCase() === removedName ? { ...s, selected: false } : s)
+      );
+    }
+  };
+
+  const handleUpdateContactStatus = (newStatus: string) => {
+    updateOpp.mutate({ id: opp.id, contact_status: newStatus });
   };
 
   const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
   const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? calculatedLTV / filledPurchases.length : 0, [filledPurchases, calculatedLTV]);
 
-  const recurrenceOptions = [
-    { value: 1, label: 'Comprou 1 vez' },
-    { value: 2, label: 'Comprou 2 vezes' },
-    { value: 3, label: 'Comprou 3 vezes' },
-    { value: 4, label: 'Comprou 4 vezes' },
-    { value: 5, label: 'Comprou 5 vezes ou mais' },
-  ];
+  const currentStageLabel = UPSELL_STAGES.find(s => s.key === opp.status)?.label || opp.status;
+  const canAdvance = !!getNextStage(opp.status);
 
   return (
     <div className="space-y-4">
@@ -258,116 +353,116 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* ===== LTV DO PACIENTE ===== */}
-      <div className="rounded-lg border border-primary/30 p-3 space-y-3">
-        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
-          💰 LTV do Paciente
-        </p>
+      <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30">
+        📍 Etapa atual: {currentStageLabel}
+      </Badge>
 
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Quantidade de compras (incluindo a 1ª)</Label>
-          <Select value={String(selectedCount)} onValueChange={(v) => handleCountChange(parseInt(v))}>
-            <SelectTrigger className="h-8 text-sm mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {recurrenceOptions.map(opt => (
-                <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* ===== SUGESTÃO DE TRATAMENTO ===== */}
+      {treatmentSuggestions.length > 0 && (
+        <div className="rounded-md border border-chart-5/30 bg-chart-5/5 p-2.5 space-y-2">
+          <p className="text-[11px] font-bold text-chart-5">💡 Sugestão de Tratamento</p>
+          <p className="text-[9px] text-muted-foreground">Selecione para adicionar automaticamente em Tratamento</p>
+          <div className="flex flex-wrap gap-1.5">
+            {treatmentSuggestions.map((sug, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                  sug.selected ? "border-primary/40 bg-primary/10 text-primary font-semibold" : "border-border bg-background hover:bg-muted/50"
+                )}
+                onClick={() => handleToggleSuggestion(i)}
+              >
+                <Checkbox checked={sug.selected} className="h-3 w-3 pointer-events-none" />
+                <span>{sug.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              value={newSuggestionName}
+              onChange={(e) => setNewSuggestionName(e.target.value)}
+              placeholder="Adicionar sugestão manual..."
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
+            />
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>+ Adicionar</Button>
+          </div>
         </div>
+      )}
 
-        {selectedCount === 1 && (
-          <div className="rounded-md border border-muted bg-muted/30 p-3 text-center">
-            <p className="text-xs text-muted-foreground">ℹ️ A 1ª compra é <strong>aquisição (CAC)</strong>, não gera LTV.</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Selecione "Comprou 2 vezes" ou mais para registrar compras recorrentes.</p>
-          </div>
-        )}
-
-        {/* Sugestão de Tratamento */}
-        {treatmentSuggestions.length > 0 && selectedCount > 1 && (
-          <div className="rounded-md border border-chart-5/30 bg-chart-5/5 p-2.5 space-y-2">
-            <p className="text-[11px] font-bold text-chart-5">💡 Sugestão de Tratamento</p>
-            <div className="flex flex-wrap gap-1.5">
-              {treatmentSuggestions.map((sug, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
-                    sug.selected ? "border-primary/40 bg-primary/10 text-primary font-semibold" : "border-border bg-background hover:bg-muted/50"
-                  )}
-                  onClick={() => handleToggleSuggestion(i)}
-                >
-                  <Checkbox checked={sug.selected} className="h-3 w-3 pointer-events-none" />
-                  <span>{sug.name}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                value={newSuggestionName}
-                onChange={(e) => setNewSuggestionName(e.target.value)}
-                placeholder="Adicionar sugestão manual..."
-                className="h-7 text-xs flex-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
-              />
-              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>+ Adicionar</Button>
-            </div>
-          </div>
-        )}
-
-        {/* Tratamento (dynamic container) */}
-        {selectedCount > 1 && localPurchases.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[11px] font-bold text-chart-5">📋 Tratamento</p>
-            {localPurchases.map((entry, i) => {
-              const isEditable = !entry.locked || stageEditing[i];
-              const showDate = needsDateField(entry.treatment);
-              return (
-                <div key={i} className={cn(
-                  "rounded-md border p-2.5 space-y-1.5",
-                  entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
-                )}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold text-chart-5">🔹 Compra {i + 2}</p>
-                    <div className="flex items-center gap-1">
-                      {entry.locked && !stageEditing[i] && (
-                        <>
-                          <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
-                          <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2" onClick={() => handleEditStage(i)}>✏️ Editar</Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className={cn("grid gap-2", showDate ? "grid-cols-3" : "grid-cols-2")}>
-                    <div>
-                      <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
-                      <Input value={entry.treatment} onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)} placeholder="Ex: Limpeza" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
-                    </div>
-                    <div>
-                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
-                      <Input type="number" value={entry.value || ''} onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)} placeholder="0" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
-                    </div>
-                    {showDate && (
-                      <div>
-                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
-                        <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+      {/* ===== TRATAMENTO (entries with CRUD) ===== */}
+      {localPurchases.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-chart-5">📋 Tratamento</p>
+          {localPurchases.map((entry, i) => {
+            const isEditable = !entry.locked || stageEditing[i];
+            const showDate = needsDateField(entry.treatment);
+            return (
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5",
+                entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
+              )}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-chart-5">🔹 {entry.treatment || `Tratamento ${i + 1}`}</p>
+                  <div className="flex items-center gap-1">
+                    {entry.locked && !stageEditing[i] && (
+                      <>
+                        <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                        <Button size="sm" variant="ghost" className="h-6 text-[9px] px-1.5" onClick={() => handleEditEntry(i)}>
+                          <Pencil className="h-3 w-3 mr-0.5" /> Editar
+                        </Button>
+                      </>
+                    )}
+                    {deleteConfirm === i ? (
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="destructive" className="h-6 text-[9px] px-1.5" onClick={() => handleDeleteEntry(i)}>Confirmar</Button>
+                        <Button size="sm" variant="ghost" className="h-6 text-[9px] px-1.5" onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
                       </div>
+                    ) : (
+                      <Button size="sm" variant="ghost" className="h-6 text-[9px] px-1.5 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm(i)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     )}
                   </div>
-                  {isEditable && (
-                    <Button size="sm" className="w-full h-7 text-[10px] mt-1" onClick={() => handleSaveStage(i)}>💾 Salvar Etapa</Button>
+                </div>
+                <div className={cn("grid gap-2", showDate ? "grid-cols-3" : "grid-cols-2")}>
+                  <div>
+                    <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
+                    <Input value={entry.treatment} onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)} placeholder="Ex: Limpeza" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                    <Input type="number" value={entry.value || ''} onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)} placeholder="0" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                  </div>
+                  {showDate && (
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                      <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                    </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
+      {/* ===== FINANCEIRO ===== */}
+      <div className="rounded-lg border border-primary/30 p-3 space-y-3">
+        <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Valor do Orçamento</Label>
+          <CurrencyInput value={budgetValue} onChange={setBudgetValue} onBlur={() => {
+            if (budgetValue !== (opp.estimated_value || 0)) {
+              updateOpp.mutate({ id: opp.id, estimated_value: budgetValue });
+            }
+          }} />
+        </div>
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Recorrências</p>
-              <p className="text-sm font-bold text-primary">{filledPurchases.length}x</p>
+              <p className="text-[9px] text-muted-foreground">Tratamentos</p>
+              <p className="text-sm font-bold text-primary">{filledPurchases.length}</p>
             </div>
             <div className="rounded-md bg-success/5 border border-success/20 p-2">
               <p className="text-[9px] text-muted-foreground">LTV Total</p>
@@ -379,18 +474,21 @@ function DetailDialogContent({
             </div>
           </div>
         )}
-
-        <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-          {selectedCount === 1
-            ? '📌 Apenas 1ª compra (aquisição)'
-            : `🔄 ${filledPurchases.length} compra${filledPurchases.length > 1 ? 's' : ''} recorrente${filledPurchases.length > 1 ? 's' : ''}`
-          }
-        </Badge>
       </div>
 
+      {/* ===== SAVE EVOLUTION BUTTON ===== */}
+      <Button onClick={handleSaveEvolution} className="w-full gap-2" disabled={localPurchases.length === 0}>
+        <Save className="h-4 w-4" />
+        {canAdvance ? 'Salvar Evolução e Avançar' : 'Salvar Evolução'}
+      </Button>
+      {!canAdvance && (
+        <p className="text-[10px] text-muted-foreground text-center">Última etapa do pipeline</p>
+      )}
+
+      {/* Triage personalization */}
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs font-bold text-chart-5 flex items-center gap-1.5">🎁 Personalização de Brinde</p>
+          <p className="text-xs font-bold text-chart-5">🎁 Personalização de Brinde</p>
           {triage.ice_cream_flavor && (
             <div className="flex items-start gap-2 text-sm">
               <span>🍦</span>
@@ -469,7 +567,8 @@ function DetailDialogContent({
       <div className="rounded-lg border p-3 space-y-3">
         <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">🤝 Paciente Amigo</p>
         <div className="flex items-center gap-2">
-          <Badge className={cn("text-[10px]", opp.friendly_patient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>{opp.friendly_patient ? '✅ Aceitou participar' : '❌ Não participar'}</Badge>
+          <Checkbox checked={opp.friendly_patient} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, friendly_patient: !!checked })} className="h-4 w-4" />
+          <span className="text-xs">Aceitou participar</span>
         </div>
         {opp.friendly_patient && (
           <div className={cn("p-2.5 rounded-md border space-y-2", opp.friendly_patient_video_recorded ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5")}>
@@ -501,7 +600,7 @@ function DetailDialogContent({
         <Textarea value={opp.notes || ''} onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })} placeholder="Adicione observações..." className="text-sm min-h-[60px]" />
       </div>
 
-      <Button onClick={() => setContactDialogOpen(true)} size="sm" className="w-full">
+      <Button onClick={() => setContactDialogOpen(true)} size="sm" className="w-full" variant="outline">
         <Phone className="h-4 w-4 mr-1" /> Registrar Contato
       </Button>
 
@@ -528,6 +627,7 @@ function DetailDialogContent({
   );
 }
 
+/* ============ MAIN PAGE ============ */
 const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
   const { data: suggestions } = useTreatmentSuggestions();
@@ -549,7 +649,6 @@ const Comercial2 = () => {
 
   const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
 
-  // Keep selectedOpp in sync with optimistic cache updates
   useEffect(() => {
     if (selectedOpp && opportunities) {
       const updated = opportunities.find(o => o.id === selectedOpp.id);
@@ -558,8 +657,6 @@ const Comercial2 = () => {
       }
     }
   }, [opportunities, selectedOpp]);
-
-  // Auto-sync is handled by database trigger - no manual sync needed
 
   const filteredOpps = useMemo(() => {
     if (!opportunities) return [];
@@ -575,9 +672,16 @@ const Comercial2 = () => {
     return filteredOpps.filter(o => o.status === status);
   }, [filteredOpps]);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = (e: React.DragEvent, id: string, status: string) => {
+    // Block drag from locked column
+    const stage = UPSELL_STAGES.find(s => s.key === status);
+    if (stage?.locked) {
+      e.preventDefault();
+      return;
+    }
     setDraggedId(id);
     e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.setData('fromStatus', status);
   };
 
   const handleDragOver = (e: React.DragEvent, status: string) => {
@@ -597,7 +701,28 @@ const Comercial2 = () => {
     e.preventDefault();
     const id = e.dataTransfer.getData('text/plain');
     const opp = opportunities?.find(o => o.id === id);
+
     if (opp && opp.status !== newStatus) {
+      const fromIdx = getStageIndex(opp.status);
+      const toIdx = getStageIndex(newStatus);
+      const targetStage = UPSELL_STAGES[toIdx];
+
+      // Block: can't drop into locked column
+      if (targetStage?.locked) {
+        toast.error('❌ Não é possível mover para a coluna "Comprou 1 vez"');
+        setDraggedId(null);
+        setDropTarget(null);
+        return;
+      }
+
+      // Block: can only advance 1 step
+      if (toIdx !== fromIdx + 1) {
+        toast.error('❌ Só é permitido avançar 1 etapa por vez');
+        setDraggedId(null);
+        setDropTarget(null);
+        return;
+      }
+
       updateStatus.mutate({ id, status: newStatus });
     }
     setDraggedId(null);
@@ -621,11 +746,6 @@ const Comercial2 = () => {
     });
   };
 
-  const handleUpdateContactStatus = (newStatus: string) => {
-    if (!selectedOpp) return;
-    updateOpp.mutate({ id: selectedOpp.id, contact_status: newStatus });
-  };
-
   if (isLoading) {
     return (
       <AppLayout title="Comercial 2 – Pós-Venda e LTV">
@@ -636,9 +756,11 @@ const Comercial2 = () => {
     );
   }
 
+  const isLockedColumn = (stageKey: string) => UPSELL_STAGES.find(s => s.key === stageKey)?.locked;
+
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-        <Tabs defaultValue="pipeline" className="flex flex-col h-auto min-h-0">
+      <Tabs defaultValue="pipeline" className="flex flex-col h-auto min-h-0">
         <TabsList className="shrink-0 mb-3 w-fit">
           <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
@@ -647,409 +769,368 @@ const Comercial2 = () => {
           <LTVRecurrencePanel />
         </TabsContent>
         <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">
-      <div className="flex flex-col h-full min-h-0">
-        {/* Metrics Bar */}
-        {metrics && (
-          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-11 gap-2 sm:gap-3 mb-4">
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Pacientes</p>
-                    <p className="text-lg font-bold">{metrics.uniquePatients}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-chart-5" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Oportunidades</p>
-                    <p className="text-lg font-bold">{metrics.total}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Conversão</p>
-                    <p className="text-lg font-bold">{metrics.conversionRate}%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-success" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Faturamento Upsell</p>
-                    <p className="text-lg font-bold">{formatCurrency(metrics.totalRevenue)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-warning" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Ticket Médio</p>
-                    <p className="text-lg font-bold">{formatCurrency(metrics.avgTicket)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-chart-2" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">LTV/Paciente</p>
-                    <p className="text-lg font-bold">{formatCurrency(metrics.ltvPerPatient)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card border-warning/30">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-warning" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Pendentes</p>
-                    <p className="text-lg font-bold text-warning">{metrics.giftsPending}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card border-success/30">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-success" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">🎁 Brindes Enviados</p>
-                    <p className="text-lg font-bold text-success">{metrics.giftsSent}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card border-primary/30">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-primary" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">🤝 Pac. Amigo</p>
-                    <p className="text-lg font-bold text-primary">{metrics.friendlyAccepted}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card border-warning/30">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-warning" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Pendentes</p>
-                    <p className="text-lg font-bold text-warning">{metrics.videoPending}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="monday-card border-success/30">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-success" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">🎬 Dep. Realizados</p>
-                    <p className="text-lg font-bold text-success">{metrics.videoRecorded}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="shrink-0 flex flex-col gap-3 mb-3">
-            <p className="text-sm text-muted-foreground">
-              {filteredOpps.length} oportunidades no pipeline
-              <span className="text-success ml-2">• Sincronização automática ativa</span>
-            </p>
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar paciente ou tratamento..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-            {searchQuery && (
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6" onClick={() => setSearchQuery('')}>
-                <X className="h-3 w-3" />
-              </Button>
+          <div className="flex flex-col h-full min-h-0">
+            {/* Metrics Bar */}
+            {metrics && (
+              <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-11 gap-2 sm:gap-3 mb-4">
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Pacientes</p>
+                        <p className="text-lg font-bold">{metrics.uniquePatients}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-chart-5" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Oportunidades</p>
+                        <p className="text-lg font-bold">{metrics.total}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-success" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Conversão</p>
+                        <p className="text-lg font-bold">{metrics.conversionRate}%</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-success" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Faturamento</p>
+                        <p className="text-lg font-bold">{formatCurrency(metrics.totalRevenue)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-warning" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Ticket Médio</p>
+                        <p className="text-lg font-bold">{formatCurrency(metrics.avgTicket)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-chart-2" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">LTV/Paciente</p>
+                        <p className="text-lg font-bold">{formatCurrency(metrics.ltvPerPatient)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card border-warning/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-warning" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">🎁 Pendentes</p>
+                        <p className="text-lg font-bold text-warning">{metrics.giftsPending}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card border-success/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-success" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">🎁 Enviados</p>
+                        <p className="text-lg font-bold text-success">{metrics.giftsSent}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card border-primary/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">🤝 Pac. Amigo</p>
+                        <p className="text-lg font-bold text-primary">{metrics.friendlyAccepted}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card border-warning/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-warning" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">🎬 Pendentes</p>
+                        <p className="text-lg font-bold text-warning">{metrics.videoPending}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="monday-card border-success/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-success" />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">🎬 Realizados</p>
+                        <p className="text-lg font-bold text-success">{metrics.videoRecorded}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Kanban Board */}
-        <div className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x">
-          <div className="flex gap-3 min-w-max md:h-full pb-2 px-1">
-            {UPSELL_STAGES.map((stage) => {
-              const stageOpps = getOppsByStatus(stage.key);
-              const isDropping = dropTarget === stage.key && draggedId !== null;
-              const totalValue = stageOpps.reduce((sum, o) => sum + (o.estimated_value || 0), 0);
+            {/* Header */}
+            <div className="shrink-0 flex flex-col gap-3 mb-3">
+              <p className="text-sm text-muted-foreground">
+                {filteredOpps.length} oportunidades no pipeline
+                <span className="text-success ml-2">• Sincronização automática ativa</span>
+              </p>
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar paciente ou tratamento..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+                {searchQuery && (
+                  <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6" onClick={() => setSearchQuery('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={stage.key}
-                  className="w-56 sm:w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 md:h-full"
-                  onDragOver={(e) => handleDragOver(e, stage.key)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, stage.key)}
-                >
-                  <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
-                    isDropping && 'ring-2 ring-primary ring-offset-2'
-                  )}>
-                    <div className="shrink-0 px-3 pt-3 pb-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
-                        <span className="text-xs font-semibold flex-1 truncate">{stage.label}</span>
-                        <Badge variant="secondary" className="font-semibold bg-muted text-xs h-5 min-w-5 flex items-center justify-center">
-                          {stageOpps.length}
-                        </Badge>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {formatCurrency(totalValue)}
-                      </p>
-                    </div>
+            {/* Kanban Board */}
+            <div className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x">
+              <div className="flex gap-3 min-w-max md:h-full pb-2 px-1">
+                {UPSELL_STAGES.map((stage) => {
+                  const stageOpps = getOppsByStatus(stage.key);
+                  const isDropping = dropTarget === stage.key && draggedId !== null;
+                  const totalValue = stageOpps.reduce((sum, o) => sum + (o.estimated_value || 0), 0);
+                  const isLocked = stage.locked;
 
-                    <div className="flex-1 min-h-0 px-2 pb-2">
-                      <div className="h-full overflow-y-auto scroll-container-y space-y-2 pr-1">
-                        {stageOpps.map((opp) => {
-                          const contactCfg = CONTACT_STATUS_CONFIG[opp.contact_status] || CONTACT_STATUS_CONFIG.nao_contatado;
-                          return (
-                            <div
-                              key={opp.id}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, opp.id)}
-                              onDragEnd={() => { setDraggedId(null); setDropTarget(null); }}
-                              className={cn(
-                                "cursor-grab active:cursor-grabbing",
-                                draggedId === opp.id && 'opacity-40'
-                              )}
-                            >
-                              <Card
-                                className="monday-card cursor-pointer hover:shadow-md transition-shadow"
-                                onClick={() => { setSelectedOpp(opp); setDetailOpen(true); }}
-                              >
-                                <CardContent className="p-3 space-y-2">
-                                  <div className="flex items-start justify-between">
-                                    <p className="text-sm font-semibold truncate flex-1">
-                                      {opp.lead?.name || 'Paciente'}
-                                    </p>
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                    </div>
-                                    {/* Paciente Amigo on card */}
-                                    {opp.friendly_patient && (
-                                      <div className={cn(
-                                        "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
-                                        opp.friendly_patient_video_recorded
-                                          ? "border-success/30 bg-success/5 text-success"
-                                          : "border-warning/30 bg-warning/5 text-warning animate-pulse"
-                                      )}>
-                                        <span className="font-medium">
-                                          {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
-                                        </span>
-                                      </div>
-                                    )}
-                                  <div className="flex items-center gap-1.5">
-                                    <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                      🔄 {opp.purchase_count || 1}x
-                                    </Badge>
-                                    {(() => {
-                                      const entries = parsePurchaseEntries(opp.purchase_values);
-                                      const ltv = entries.reduce((s, p) => s + p.value, 0);
-                                      return ltv > 0 ? (
-                                        <Badge className="text-[9px] bg-success/10 text-success border-success/30">
-                                          💰 {formatCurrency(ltv)}
-                                        </Badge>
-                                      ) : null;
-                                    })()}
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <Badge className={cn('text-[9px]', contactCfg.color)}>
-                                      {contactCfg.label}
-                                    </Badge>
-                                    {opp.estimated_value > 0 && (
-                                      <span className="text-[10px] font-bold text-success">
-                                        {formatCurrency(opp.estimated_value)}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {opp.attempt_count > 0 && (
-                                    <p className="text-[10px] text-muted-foreground">
-                                      {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
-                                    </p>
-                                  )}
-                                  {stage.key === 'base_pacientes' && (
-                                    <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
-                                      {/* Surgery Gift */}
-                                      <div
-                                        className={cn(
-                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
-                                          opp.gift_surgery_sent
-                                            ? "border-success/30 bg-success/5 text-success"
-                                            : "border-warning/30 bg-warning/5 text-warning"
-                                        )}
-                                      >
-                                        <Checkbox
-                                          checked={opp.gift_surgery_sent}
-                                          onCheckedChange={(checked) => {
-                                            updateOpp.mutate({
-                                              id: opp.id,
-                                              gift_surgery_sent: !!checked,
-                                              gift_surgery_sent_at: checked ? new Date().toISOString() : null,
-                                            });
-                                          }}
-                                          className="h-3.5 w-3.5"
-                                        />
-                                        <Gift className="h-3 w-3" />
-                                        <span className="font-medium">
-                                          {opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}
-                                        </span>
-                                      </div>
-                                      {/* Prosthesis Gift */}
-                                      <div
-                                        className={cn(
-                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
-                                          opp.gift_prosthesis_sent
-                                            ? "border-success/30 bg-success/5 text-success"
-                                            : "border-warning/30 bg-warning/5 text-warning"
-                                        )}
-                                      >
-                                        <Checkbox
-                                          checked={opp.gift_prosthesis_sent}
-                                          onCheckedChange={(checked) => {
-                                            updateOpp.mutate({
-                                              id: opp.id,
-                                              gift_prosthesis_sent: !!checked,
-                                              gift_prosthesis_sent_at: checked ? new Date().toISOString() : null,
-                                            });
-                                          }}
-                                          className="h-3.5 w-3.5"
-                                        />
-                                        <Gift className="h-3 w-3" />
-                                        <span className="font-medium">
-                                          {opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            </div>
-                          );
-                        })}
-                        {stageOpps.length === 0 && (
-                          <div className={cn(
-                            "text-center py-8 rounded-lg",
-                            stage.bgColor,
-                            isDropping && 'border-2 border-dashed border-primary'
-                          )}>
-                            <p className="text-xs text-muted-foreground">
-                              {isDropping ? 'Solte aqui' : 'Nenhuma oportunidade'}
-                            </p>
+                  return (
+                    <div
+                      key={stage.key}
+                      className="w-56 sm:w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 md:h-full"
+                      onDragOver={(e) => !isLocked && handleDragOver(e, stage.key)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => !isLocked && handleDrop(e, stage.key)}
+                    >
+                      <div className={cn(
+                        "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
+                        isDropping && !isLocked && 'ring-2 ring-primary ring-offset-2',
+                        isLocked && 'border-warning/30 bg-warning/5'
+                      )}>
+                        <div className="shrink-0 px-3 pt-3 pb-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
+                            <span className="text-xs font-semibold flex-1 truncate">{stage.label}</span>
+                            {isLocked && <Lock className="h-3 w-3 text-warning" />}
+                            <Badge variant="secondary" className="font-semibold bg-muted text-xs h-5 min-w-5 flex items-center justify-center">
+                              {stageOpps.length}
+                            </Badge>
                           </div>
-                        )}
+                          <p className="text-[10px] text-muted-foreground font-medium">
+                            {isLocked ? '🔒 Somente leitura (CAC)' : formatCurrency(totalValue)}
+                          </p>
+                        </div>
+
+                        <div className="flex-1 min-h-0 px-2 pb-2">
+                          <div className="h-full overflow-y-auto scroll-container-y space-y-2 pr-1">
+                            {stageOpps.map((opp) => {
+                              const contactCfg = CONTACT_STATUS_CONFIG[opp.contact_status] || CONTACT_STATUS_CONFIG.nao_contatado;
+                              return (
+                                <div
+                                  key={opp.id}
+                                  draggable={!isLocked}
+                                  onDragStart={(e) => handleDragStart(e, opp.id, stage.key)}
+                                  onDragEnd={() => { setDraggedId(null); setDropTarget(null); }}
+                                  className={cn(
+                                    !isLocked && "cursor-grab active:cursor-grabbing",
+                                    isLocked && "cursor-pointer",
+                                    draggedId === opp.id && 'opacity-40'
+                                  )}
+                                >
+                                  <Card
+                                    className="monday-card cursor-pointer hover:shadow-md transition-shadow"
+                                    onClick={() => { setSelectedOpp(opp); setDetailOpen(true); }}
+                                  >
+                                    <CardContent className="p-3 space-y-2">
+                                      <div className="flex items-start justify-between">
+                                        <p className="text-sm font-semibold truncate flex-1">
+                                          {opp.lead?.name || 'Paciente'}
+                                        </p>
+                                        {isLocked ? <Lock className="h-3.5 w-3.5 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                                      </div>
+                                      {/* Paciente Amigo on card */}
+                                      {opp.friendly_patient && (
+                                        <div className={cn(
+                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                          opp.friendly_patient_video_recorded
+                                            ? "border-success/30 bg-success/5 text-success"
+                                            : "border-warning/30 bg-warning/5 text-warning animate-pulse"
+                                        )}>
+                                          <span className="font-medium">
+                                            {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-1.5">
+                                        <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+                                          🔄 {opp.purchase_count || 1}x
+                                        </Badge>
+                                        {(() => {
+                                          const entries = parsePurchaseEntries(opp.purchase_values);
+                                          const ltv = entries.reduce((s, p) => s + p.value, 0);
+                                          return ltv > 0 ? (
+                                            <Badge className="text-[9px] bg-success/10 text-success border-success/30">
+                                              💰 {formatCurrency(ltv)}
+                                            </Badge>
+                                          ) : null;
+                                        })()}
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <Badge className={cn('text-[9px]', contactCfg.color)}>
+                                          {contactCfg.label}
+                                        </Badge>
+                                        {!isLocked && opp.estimated_value > 0 && (
+                                          <span className="text-[10px] font-bold text-success">
+                                            {formatCurrency(opp.estimated_value)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {opp.attempt_count > 0 && (
+                                        <p className="text-[10px] text-muted-foreground">
+                                          {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
+                                        </p>
+                                      )}
+                                      {/* Gift indicators on card */}
+                                      <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                                        <div className={cn(
+                                          "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
+                                          opp.gift_surgery_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                        )}>
+                                          <Gift className="h-3 w-3" />
+                                          <span className="font-medium">{opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}</span>
+                                        </div>
+                                        <div className={cn(
+                                          "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
+                                          opp.gift_prosthesis_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                        )}>
+                                          <Gift className="h-3 w-3" />
+                                          <span className="font-medium">{opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}</span>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              );
+                            })}
+                            {stageOpps.length === 0 && (
+                              <div className={cn(
+                                "text-center py-8 rounded-lg",
+                                stage.bgColor,
+                                isDropping && !isLocked && 'border-2 border-dashed border-primary'
+                              )}>
+                                <p className="text-xs text-muted-foreground">
+                                  {isDropping && !isLocked ? 'Solte aqui' : 'Nenhuma oportunidade'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
         </TabsContent>
 
-      {/* Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              {selectedOpp?.lead?.name || 'Detalhes da Oportunidade'}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedOpp && (
-            <DetailDialogContent
-              opp={selectedOpp}
-              updateOpp={updateOpp}
-              handleUpdateContactStatus={handleUpdateContactStatus}
-              setContactDialogOpen={setContactDialogOpen}
-              contactHistory={contactHistory || []}
-              suggestions={suggestions || []}
-              createUpsell={createUpsell}
-              allOpps={opportunities || []}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* Detail Dialog */}
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                {selectedOpp?.lead?.name || 'Detalhes'}
+                {selectedOpp && isLockedColumn(selectedOpp.status) && (
+                  <Badge className="text-[9px] bg-warning/10 text-warning border-warning/30 ml-2">
+                    <Lock className="h-3 w-3 mr-1" /> Somente leitura
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedOpp && (
+              isLockedColumn(selectedOpp.status)
+                ? <LockedDetailContent opp={selectedOpp} />
+                : <EditableDetailContent
+                    opp={selectedOpp}
+                    updateOpp={updateOpp}
+                    setContactDialogOpen={setContactDialogOpen}
+                    contactHistory={contactHistory || []}
+                    allOpps={opportunities || []}
+                  />
+            )}
+          </DialogContent>
+        </Dialog>
 
-      {/* Register Contact Dialog */}
-      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Registrar Contato</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium mb-1">Tipo de Contato</p>
-              <Select value={contactType} onValueChange={setContactType}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ligacao">📞 Ligação</SelectItem>
-                  <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
-                  <SelectItem value="outro">📝 Outro</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Register Contact Dialog */}
+        <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Registrar Contato</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium mb-1">Tipo de Contato</p>
+                <Select value={contactType} onValueChange={setContactType}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ligacao">📞 Ligação</SelectItem>
+                    <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
+                    <SelectItem value="outro">📝 Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1">Resultado</p>
+                <Input value={contactResult} onChange={(e) => setContactResult(e.target.value)} placeholder="Ex: Paciente interessado em clareamento" className="h-9 text-sm" />
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1">Observações</p>
+                <Textarea value={contactNotes} onChange={(e) => setContactNotes(e.target.value)} placeholder="Detalhes adicionais..." className="text-sm min-h-[60px]" />
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium mb-1">Resultado</p>
-              <Input
-                value={contactResult}
-                onChange={(e) => setContactResult(e.target.value)}
-                placeholder="Ex: Paciente interessado em clareamento"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <p className="text-xs font-medium mb-1">Observações</p>
-              <Textarea
-                value={contactNotes}
-                onChange={(e) => setContactNotes(e.target.value)}
-                placeholder="Detalhes adicionais..."
-                className="text-sm min-h-[60px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setContactDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSaveContact} disabled={addContact.isPending}>
-              {addContact.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setContactDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSaveContact} disabled={addContact.isPending}>
+                {addContact.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Contato'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Tabs>
     </AppLayout>
   );

@@ -62,7 +62,11 @@ export interface ContactHistory {
 }
 
 export const UPSELL_STAGES = [
-  { key: 'base_pacientes', label: 'Base de Pacientes', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'comprou_1', label: 'Comprou 1 vez', color: 'bg-chart-2', bgColor: 'bg-chart-2/10', locked: true },
+  { key: 'comprou_2', label: 'Comprou 2 vezes', color: 'bg-chart-1', bgColor: 'bg-chart-1/10', locked: false },
+  { key: 'comprou_3', label: 'Comprou 3 vezes', color: 'bg-chart-3', bgColor: 'bg-chart-3/10', locked: false },
+  { key: 'comprou_4', label: 'Comprou 4 vezes', color: 'bg-chart-4', bgColor: 'bg-chart-4/10', locked: false },
+  { key: 'comprou_5', label: 'Comprou 5 vezes', color: 'bg-chart-5', bgColor: 'bg-chart-5/10', locked: false },
 ];
 
 export const CONTACT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -135,7 +139,7 @@ export function useCreateUpsellOpportunity() {
         treatment_category: data.treatment_category || 'geral',
         estimated_value: data.estimated_value || 0,
         agent_id: data.agent_id,
-        status: 'base_pacientes',
+        status: 'comprou_1',
       });
       if (error) throw error;
     },
@@ -285,18 +289,18 @@ export function useUpsellMetrics() {
   if (!opportunities) return null;
 
   const total = opportunities.length;
-  const closed = opportunities.filter(o => o.status === 'upsell_5');
+  const closed = opportunities.filter(o => o.status === 'comprou_5');
   const conversionRate = total > 0 ? Math.round((closed.length / total) * 100) : 0;
   const totalRevenue = closed.reduce((sum, o) => sum + (o.closed_value || o.estimated_value || 0), 0);
   const avgTicket = closed.length > 0 ? totalRevenue / closed.length : 0;
   const uniquePatients = new Set(opportunities.map(o => o.lead_id)).size;
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
-  const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
-  const giftsPending = basePatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
-  const giftsSent = basePatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
-  const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;
-  const prosthesisPending = basePatients.filter(o => !o.gift_prosthesis_sent).length;
+  const allPatients = opportunities;
+  const giftsPending = allPatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
+  const giftsSent = allPatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
+  const surgeryPending = allPatients.filter(o => !o.gift_surgery_sent).length;
+  const prosthesisPending = allPatients.filter(o => !o.gift_prosthesis_sent).length;
 
   const friendlyAccepted = opportunities.filter(o => o.friendly_patient);
   const videoPending = friendlyAccepted.filter(o => !o.friendly_patient_video_recorded).length;

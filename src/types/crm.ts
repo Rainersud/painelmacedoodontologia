@@ -143,6 +143,8 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'quase_cliente', label: 'Quase Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
 ];
 

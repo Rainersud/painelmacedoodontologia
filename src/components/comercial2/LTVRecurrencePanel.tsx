@@ -320,6 +320,18 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           </CardContent>
         </Card>
       )}
+      )}
+
+      {/* Stage Leads Popup */}
+      <LTVStageLeadsDialog
+        open={!!selectedStage}
+        onOpenChange={(open) => { if (!open) setSelectedStage(null); }}
+        stageLabel={selectedStage || ''}
+        leads={selectedStageLeads}
+        onLeadClick={(oppId) => {
+          if (onOpenLead) onOpenLead(oppId);
+        }}
+      />
     </div>
   );
 }

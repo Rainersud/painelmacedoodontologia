@@ -73,7 +73,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   }, [method, effectiveValue, installments]);
 
   const handleReset = () => {
-    setStep('budget');
+    setStep('method');
     setMethod(null);
     setInstallments(1);
     setBoletoCount(1);

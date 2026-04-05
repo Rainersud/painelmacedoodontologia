@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
+import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { usePayments, useConfirmBoletoPayment, useRevertPayment, useDeletePayment, useEditPayment } from '@/hooks/usePayments';

@@ -140,6 +140,7 @@ export function useCreatePayment() {
           paid_at: new Date().toISOString(),
           installment_number: 1,
           total_installments: 1,
+          upsell_opportunity_id: data.upsell_opportunity_id || null,
         });
         if (error) throw error;
       } else {

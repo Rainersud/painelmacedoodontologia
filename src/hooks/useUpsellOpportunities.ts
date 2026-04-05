@@ -140,7 +140,7 @@ export function useCreateUpsellOpportunity() {
         treatment_category: data.treatment_category || 'geral',
         estimated_value: data.estimated_value || 0,
         agent_id: data.agent_id,
-        status: 'upsell_1',
+        status: 'base_pacientes',
       });
       if (error) throw error;
     },

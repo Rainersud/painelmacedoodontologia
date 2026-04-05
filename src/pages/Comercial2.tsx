@@ -213,6 +213,7 @@ function EditableDetailContent({
   // Payments for this specific upsell opportunity (isolated per stage)
   const { data: stagePayments } = usePayments(undefined, opp.id);
   const confirmBoleto = useConfirmBoletoPayment();
+  const revertPayment = useRevertPayment();
 
   const totalPaidStage = useMemo(() => {
     return (stagePayments || [])

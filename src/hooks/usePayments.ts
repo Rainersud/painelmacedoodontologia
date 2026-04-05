@@ -26,9 +26,9 @@ export interface Payment {
   lead?: { name: string; phone: string } | null;
 }
 
-export function usePayments(leadId?: string) {
+export function usePayments(leadId?: string, upsellOpportunityId?: string) {
   return useQuery({
-    queryKey: ['payments', leadId],
+    queryKey: ['payments', leadId, upsellOpportunityId],
     queryFn: async (): Promise<Payment[]> => {
       let query = supabase
         .from('payments')
@@ -37,6 +37,9 @@ export function usePayments(leadId?: string) {
 
       if (leadId) {
         query = query.eq('lead_id', leadId);
+      }
+      if (upsellOpportunityId) {
+        query = query.eq('upsell_opportunity_id', upsellOpportunityId);
       }
 
       const { data, error } = await query;
@@ -96,7 +99,8 @@ export function useCreatePayment() {
       fee_percentage: number;
       fee_amount: number;
       net_value: number;
-      boleto_dates?: string[]; // For boleto installments
+      boleto_dates?: string[];
+      upsell_opportunity_id?: string;
     }) => {
       if (!user) throw new Error('Não autenticado');
 
@@ -116,6 +120,7 @@ export function useCreatePayment() {
           due_date: date,
           installment_number: idx + 1,
           total_installments: data.boleto_dates!.length,
+          upsell_opportunity_id: data.upsell_opportunity_id || null,
         }));
 
         const { error } = await supabase.from('payments').insert(payments);
@@ -135,6 +140,7 @@ export function useCreatePayment() {
           paid_at: new Date().toISOString(),
           installment_number: 1,
           total_installments: 1,
+          upsell_opportunity_id: data.upsell_opportunity_id || null,
         });
         if (error) throw error;
       } else {
@@ -152,6 +158,7 @@ export function useCreatePayment() {
           paid_at: new Date().toISOString(),
           installment_number: 1,
           total_installments: 1,
+          upsell_opportunity_id: data.upsell_opportunity_id || null,
         });
         if (error) throw error;
       }

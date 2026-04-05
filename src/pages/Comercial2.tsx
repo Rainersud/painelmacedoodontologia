@@ -242,9 +242,11 @@ function EditableDetailContent({
     setLocalPurchases(locked);
   }, [opp.purchase_values]);
 
+  // Auto-calculate budgetValue from treatments sum
   useEffect(() => {
-    setBudgetValue(opp.estimated_value || 0);
-  }, [opp.estimated_value]);
+    const total = localPurchases.reduce((sum, p) => sum + p.value, 0);
+    setBudgetValue(total);
+  }, [localPurchases]);
 
 
   const autoSuggestionNames = useMemo(() =>

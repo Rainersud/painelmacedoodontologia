@@ -87,6 +87,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     discount_percentage: '5',
     scheduled_appointment_at: '',
     sale_type: '' as '' | '1_etapa' | '2_etapas',
+    loss_reason: '',
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');

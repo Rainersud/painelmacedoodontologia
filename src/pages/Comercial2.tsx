@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
-import { usePayments, useConfirmBoletoPayment, useRevertPayment } from '@/hooks/usePayments';
+import { usePayments, useConfirmBoletoPayment, useRevertPayment, useDeletePayment, useEditPayment } from '@/hooks/usePayments';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useUpsellOpportunities,

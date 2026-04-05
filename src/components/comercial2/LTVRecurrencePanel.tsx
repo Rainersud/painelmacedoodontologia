@@ -239,7 +239,12 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                     key={group.label}
                     className={cn(
                       group.clientCount === 0 && 'opacity-40',
-                      group.label === metrics.bestProfitGroup && 'bg-success/5 border-l-2 border-l-success'
+                      group.label === metrics.bestProfitGroup && 'bg-success/5 border-l-2 border-l-success',
+                      group.clientCount > 0 && 'cursor-pointer hover:bg-muted/50 transition-colors'
+                    )}
+                    onClick={() => {
+                      if (group.clientCount > 0) setSelectedStage(group.label);
+                    }}
                     )}
                   >
                     <TableCell className="font-medium text-sm whitespace-nowrap">

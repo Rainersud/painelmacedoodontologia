@@ -243,6 +243,7 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       queryClient.invalidateQueries({ queryKey: ['loss-analysis'] });
+      toast.success('Lead atualizado!');
     },
     onError: () => {
       toast.error('Erro ao atualizar lead');

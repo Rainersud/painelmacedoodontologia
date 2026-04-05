@@ -79,11 +79,16 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
+    if (Array.isArray(parsed)) return parsed.map((p: Record<string, unknown>) => ({
+      treatment: String(p.treatment || ''),
+      value: Number(p.value || 0),
+      date: (p.date as string) || null,
+      locked: !!p.locked,
+    }));
   } catch {
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, locked: true }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, date: null, locked: true }));
     }
   }
   return [];
@@ -107,7 +112,7 @@ function DetailDialogContent({
   const [surgeryCalendarOpen, setSurgeryCalendarOpen] = useState(false);
   const [prosthesisCalendarOpen, setProsthesisCalendarOpen] = useState(false);
 
-  const handleDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
+  const handleGiftDateChange = (field: 'gift_surgery_date' | 'gift_prosthesis_date', date: Date | undefined) => {
     updateOpp.mutate({
       id: opp.id,
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
@@ -117,25 +122,15 @@ function DetailDialogContent({
         if (field === 'gift_surgery_date') setSurgeryCalendarOpen(false);
         if (field === 'gift_prosthesis_date') setProsthesisCalendarOpen(false);
       },
-      onError: () => {
-        toast.error('Erro ao salvar data. Tente novamente.');
-      },
+      onError: () => toast.error('Erro ao salvar data. Tente novamente.'),
     });
   };
 
-  // Parse structured purchase entries (only recurrent purchases, excluding first sale)
-  const purchases = useMemo(() =>
-    parsePurchaseEntries(opp.purchase_values),
-    [opp.purchase_values]
-  );
-
-  // selectedCount = total purchases including the initial (1 = only initial, no LTV)
-  const [selectedCount, setSelectedCount] = useState<number>(
-    Math.max(purchases.length + 1, 1)
-  );
+  const purchases = useMemo(() => parsePurchaseEntries(opp.purchase_values), [opp.purchase_values]);
+  const [selectedCount, setSelectedCount] = useState<number>(Math.max(purchases.length + 1, 1));
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
+  const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
 
-  // Sync local state when opp changes
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);
     const locked = parsed.map(p => ({ ...p, locked: p.value > 0 }));
@@ -143,7 +138,6 @@ function DetailDialogContent({
     setSelectedCount(Math.max(parsed.length + 1, 1));
   }, [opp.purchase_values]);
 
-  // Smart treatment suggestions based on interest_product
   const autoSuggestionNames = useMemo(() =>
     getSuggestionsForTreatment(opp.lead?.interest_product || null),
     [opp.lead?.interest_product]
@@ -153,93 +147,97 @@ function DetailDialogContent({
 
   useEffect(() => {
     if (autoSuggestionNames.length > 0 && treatmentSuggestions.length === 0) {
+      const existingTreatments = new Set(localPurchases.map(p => p.treatment.toLowerCase()));
       setTreatmentSuggestions(autoSuggestionNames.map(name => ({
-        name, value: 0, selected: false, date: null,
+        name, selected: existingTreatments.has(name.toLowerCase()),
       })));
     }
   }, [autoSuggestionNames]);
+
+  const isImplantPatient = (opp.lead?.interest_product || '').toLowerCase().includes('implante');
+  const needsDateField = (name: string) => isImplantPatient && name.toLowerCase().includes('revisão');
 
   const handleCountChange = (newCount: number) => {
     setSelectedCount(newCount);
     const recurrentCount = newCount - 1;
     const updated = [...localPurchases];
     while (updated.length < recurrentCount) {
-      updated.push({ treatment: '', value: 0, locked: false });
+      updated.push({ treatment: '', value: 0, date: null, locked: false });
     }
     if (updated.length > recurrentCount) {
       const lockedCount = updated.filter(p => p.locked).length;
-      if (recurrentCount >= lockedCount) {
-        updated.length = recurrentCount;
-      }
+      if (recurrentCount >= lockedCount) updated.length = recurrentCount;
     }
     setLocalPurchases(updated);
   };
 
-  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value', val: string) => {
+  const handleToggleSuggestion = (index: number) => {
+    const sug = treatmentSuggestions[index];
+    const newSelected = !sug.selected;
+    setTreatmentSuggestions(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], selected: newSelected };
+      return copy;
+    });
+    if (newSelected) {
+      const exists = localPurchases.some(p => p.treatment.toLowerCase() === sug.name.toLowerCase());
+      if (!exists) {
+        setLocalPurchases(prev => [...prev, { treatment: sug.name, value: 0, date: null, locked: false }]);
+        if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
+      }
+    } else {
+      setLocalPurchases(prev => prev.filter(p =>
+        p.treatment.toLowerCase() !== sug.name.toLowerCase() || p.locked
+      ));
+    }
+  };
+
+  const handleAddCustomSuggestion = () => {
+    if (!newSuggestionName.trim()) return;
+    const name = newSuggestionName.trim();
+    setTreatmentSuggestions(prev => [...prev, { name, selected: true }]);
+    const exists = localPurchases.some(p => p.treatment.toLowerCase() === name.toLowerCase());
+    if (!exists) {
+      setLocalPurchases(prev => [...prev, { treatment: name, value: 0, date: null, locked: false }]);
+      if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
+    }
+    setNewSuggestionName('');
+  };
+
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
-      if (copy[index].locked) return copy;
-      if (field === 'treatment') {
-        copy[index] = { ...copy[index], treatment: val };
-      } else {
-        copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
-      }
+      if (copy[index].locked && !stageEditing[index]) return copy;
+      if (field === 'treatment') copy[index] = { ...copy[index], treatment: val };
+      else if (field === 'value') copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
+      else copy[index] = { ...copy[index], date: val || null };
       return copy;
     });
   };
 
-  const handleSavePurchases = () => {
-    const toSave = localPurchases.map(p => ({
-      treatment: p.treatment,
-      value: p.value,
-      locked: p.value > 0 ? true : p.locked,
-    }));
-    const serialized = JSON.stringify(toSave);
+  const handleSaveStage = (index: number) => {
+    const updated = [...localPurchases];
+    updated[index] = { ...updated[index], locked: true };
+    const serialized = JSON.stringify(updated.map(p => ({
+      treatment: p.treatment, value: p.value, date: p.date, locked: true,
+    })));
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: toSave.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: updated.filter(p => p.value > 0).length || selectedCount,
     }, {
       onSuccess: () => {
-        setLocalPurchases(toSave);
-        toast.success('Histórico de compras salvo!');
+        setLocalPurchases(updated);
+        setStageEditing(prev => ({ ...prev, [index]: false }));
+        toast.success(`Compra ${index + 2} salva com sucesso!`);
       },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
     });
   };
 
-  const handleToggleSuggestion = (index: number) => {
-    setTreatmentSuggestions(prev => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], selected: !copy[index].selected };
-      return copy;
-    });
+  const handleEditStage = (index: number) => {
+    setStageEditing(prev => ({ ...prev, [index]: true }));
   };
-
-  const handleSuggestionFieldChange = (index: number, field: 'name' | 'value' | 'date', val: string) => {
-    setTreatmentSuggestions(prev => {
-      const copy = [...prev];
-      if (field === 'value') {
-        copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
-      } else if (field === 'date') {
-        copy[index] = { ...copy[index], date: val || null };
-      } else {
-        copy[index] = { ...copy[index], name: val };
-      }
-      return copy;
-    });
-  };
-
-  const handleAddCustomSuggestion = () => {
-    if (!newSuggestionName.trim()) return;
-    setTreatmentSuggestions(prev => [...prev, {
-      name: newSuggestionName.trim(), value: 0, selected: false, date: null,
-    }]);
-    setNewSuggestionName('');
-  };
-
-  const isImplantPatient = (opp.lead?.interest_product || '').toLowerCase().includes('implante');
-  const needsDateField = (name: string) => isImplantPatient && name.toLowerCase().includes('revisão');
 
   const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
@@ -267,19 +265,16 @@ function DetailDialogContent({
         </div>
       </div>
 
-      {/* ===== LTV DO PACIENTE BLOCK ===== */}
+      {/* ===== LTV DO PACIENTE ===== */}
       <div className="rounded-lg border border-primary/30 p-3 space-y-3">
-        <p className="text-xs font-bold flex items-center gap-1.5 text-primary">
+        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
           💰 LTV do Paciente
         </p>
 
-        {/* Step 1: Recurrence selector */}
         <div>
           <Label className="text-[10px] text-muted-foreground">Quantidade de compras (incluindo a 1ª)</Label>
           <Select value={String(selectedCount)} onValueChange={(v) => handleCountChange(parseInt(v))}>
-            <SelectTrigger className="h-8 text-sm mt-1">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-8 text-sm mt-1"><SelectValue /></SelectTrigger>
             <SelectContent>
               {recurrenceOptions.map(opt => (
                 <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
@@ -288,70 +283,93 @@ function DetailDialogContent({
           </Select>
         </div>
 
-        {/* Info for "Comprou 1 vez" */}
         {selectedCount === 1 && (
           <div className="rounded-md border border-muted bg-muted/30 p-3 text-center">
-            <p className="text-xs text-muted-foreground">
-              ℹ️ A 1ª compra é <strong>aquisição (CAC)</strong>, não gera LTV.
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Selecione "Comprou 2 vezes" ou mais para registrar compras recorrentes.
-            </p>
+            <p className="text-xs text-muted-foreground">ℹ️ A 1ª compra é <strong>aquisição (CAC)</strong>, não gera LTV.</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Selecione "Comprou 2 vezes" ou mais para registrar compras recorrentes.</p>
           </div>
         )}
 
-        {/* Step 2: Dynamic purchase fields (starting from Compra 2) */}
-        {selectedCount > 1 && (
+        {/* Sugestão de Tratamento */}
+        {treatmentSuggestions.length > 0 && selectedCount > 1 && (
+          <div className="rounded-md border border-chart-5/30 bg-chart-5/5 p-2.5 space-y-2">
+            <p className="text-[11px] font-bold text-chart-5">💡 Sugestão de Tratamento</p>
+            <div className="flex flex-wrap gap-1.5">
+              {treatmentSuggestions.map((sug, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                    sug.selected ? "border-primary/40 bg-primary/10 text-primary font-semibold" : "border-border bg-background hover:bg-muted/50"
+                  )}
+                  onClick={() => handleToggleSuggestion(i)}
+                >
+                  <Checkbox checked={sug.selected} className="h-3 w-3 pointer-events-none" />
+                  <span>{sug.name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={newSuggestionName}
+                onChange={(e) => setNewSuggestionName(e.target.value)}
+                placeholder="Adicionar sugestão manual..."
+                className="h-7 text-xs flex-1"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
+              />
+              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>+ Adicionar</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Tratamento (dynamic container) */}
+        {selectedCount > 1 && localPurchases.length > 0 && (
           <div className="space-y-2">
-            {localPurchases.map((entry, i) => (
-              <div key={i} className={cn(
-                "rounded-md border p-2.5 space-y-1.5",
-                entry.locked ? "border-success/30 bg-success/5" : "border-border"
-              )}>
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold text-muted-foreground">
-                    🔹 Compra {i + 2}
-                  </p>
-                  {entry.locked && (
-                    <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+            <p className="text-[11px] font-bold text-chart-5">📋 Tratamento</p>
+            {localPurchases.map((entry, i) => {
+              const isEditable = !entry.locked || stageEditing[i];
+              const showDate = needsDateField(entry.treatment);
+              return (
+                <div key={i} className={cn(
+                  "rounded-md border p-2.5 space-y-1.5",
+                  entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-chart-5">🔹 Compra {i + 2}</p>
+                    <div className="flex items-center gap-1">
+                      {entry.locked && !stageEditing[i] && (
+                        <>
+                          <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                          <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2" onClick={() => handleEditStage(i)}>✏️ Editar</Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className={cn("grid gap-2", showDate ? "grid-cols-3" : "grid-cols-2")}>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
+                      <Input value={entry.treatment} onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)} placeholder="Ex: Limpeza" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                    </div>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                      <Input type="number" value={entry.value || ''} onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)} placeholder="0" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                    </div>
+                    {showDate && (
+                      <div>
+                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                        <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                      </div>
+                    )}
+                  </div>
+                  {isEditable && (
+                    <Button size="sm" className="w-full h-7 text-[10px] mt-1" onClick={() => handleSaveStage(i)}>💾 Salvar Etapa</Button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
-                    <Input
-                      value={entry.treatment}
-                      onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)}
-                      placeholder="Ex: Implante"
-                      className="h-7 text-xs mt-0.5"
-                      disabled={entry.locked}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
-                    <Input
-                      type="number"
-                      value={entry.value || ''}
-                      onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)}
-                      placeholder="0"
-                      className="h-7 text-xs mt-0.5"
-                      disabled={entry.locked}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* Save button (only if there are unlocked recurrent purchases) */}
-        {selectedCount > 1 && localPurchases.some(p => !p.locked) && (
-          <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
-            💾 Salvar Compras Recorrentes
-          </Button>
-        )}
-
-        {/* Auto-calculated metrics (LTV = only recurrent) */}
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
@@ -369,7 +387,6 @@ function DetailDialogContent({
           </div>
         )}
 
-        {/* Recurrence badge */}
         <Badge className="text-[10px] bg-chart-2/10 text-chart-2 border-chart-2/30">
           {selectedCount === 1
             ? '📌 Apenas 1ª compra (aquisição)'
@@ -378,77 +395,9 @@ function DetailDialogContent({
         </Badge>
       </div>
 
-      {/* ===== SUGESTÃO DE TRATAMENTO BLOCK ===== */}
-      {treatmentSuggestions.length > 0 && (
-        <div className="rounded-lg border border-chart-5/30 p-3 space-y-3">
-          <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
-            💡 Sugestão de Tratamento
-          </p>
-          <div className="space-y-2">
-            {treatmentSuggestions.map((sug, i) => (
-              <div key={i} className={cn(
-                "rounded-md border p-2.5 space-y-1.5 transition-colors",
-                sug.selected ? "border-primary/30 bg-primary/5" : "border-border"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={sug.selected}
-                    onCheckedChange={() => handleToggleSuggestion(i)}
-                    className="h-4 w-4"
-                  />
-                  <Input
-                    value={sug.name}
-                    onChange={(e) => handleSuggestionFieldChange(i, 'name', e.target.value)}
-                    className="h-7 text-xs flex-1 border-none bg-transparent p-0 focus-visible:ring-0"
-                  />
-                </div>
-                {sug.selected && (
-                  <div className={cn("grid gap-2", needsDateField(sug.name) ? "grid-cols-2" : "grid-cols-1")}>
-                    <div>
-                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
-                      <Input
-                        type="number"
-                        value={sug.value || ''}
-                        onChange={(e) => handleSuggestionFieldChange(i, 'value', e.target.value)}
-                        placeholder="0"
-                        className="h-7 text-xs mt-0.5"
-                      />
-                    </div>
-                    {needsDateField(sug.name) && (
-                      <div>
-                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
-                        <Input
-                          type="date"
-                          value={sug.date || ''}
-                          onChange={(e) => handleSuggestionFieldChange(i, 'date', e.target.value)}
-                          className="h-7 text-xs mt-0.5"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {/* Add custom suggestion */}
-          <div className="flex items-center gap-2">
-            <Input
-              value={newSuggestionName}
-              onChange={(e) => setNewSuggestionName(e.target.value)}
-              placeholder="Adicionar sugestão manual..."
-              className="h-7 text-xs flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
-            />
-            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>
-              + Adicionar
-            </Button>
-          </div>
-        </div>
-      )}
-
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs font-semibold text-primary flex items-center gap-1.5">🎁 Personalização de Brinde</p>
+          <p className="text-xs font-bold text-chart-5 flex items-center gap-1.5">🎁 Personalização de Brinde</p>
           {triage.ice_cream_flavor && (
             <div className="flex items-start gap-2 text-sm">
               <span>🍦</span>
@@ -470,35 +419,18 @@ function DetailDialogContent({
         </div>
       )}
 
-      {/* Gift Management - Two Events */}
+      {/* Gift Management */}
       <div className="rounded-lg border p-3 space-y-3">
-        <p className="text-xs font-semibold flex items-center gap-1.5">
-          <Gift className="h-3.5 w-3.5 text-primary" /> Envio de Brindes
+        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
+          <Gift className="h-3.5 w-3.5" /> Envio de Brindes
         </p>
-
-        {/* Surgery Gift */}
-        <div className={cn(
-          "p-2.5 rounded-md border space-y-2",
-          opp.gift_surgery_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
-        )}>
+        <div className={cn("p-2.5 rounded-md border space-y-2", opp.gift_surgery_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Checkbox
-                checked={opp.gift_surgery_sent}
-                onCheckedChange={(checked) => {
-                  updateOpp.mutate({
-                    id: opp.id,
-                    gift_surgery_sent: !!checked,
-                    gift_surgery_sent_at: checked ? new Date().toISOString() : null,
-                  });
-                }}
-                className="h-4 w-4"
-              />
+              <Checkbox checked={opp.gift_surgery_sent} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, gift_surgery_sent: !!checked, gift_surgery_sent_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
               <span className="text-xs font-semibold">🎁 Brinde – Dia da Cirurgia</span>
             </div>
-            <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-              {opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}
-            </Badge>
+            <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}</Badge>
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
@@ -510,41 +442,18 @@ function DetailDialogContent({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} onOpenAutoFocus={(e) => e.preventDefault()}>
-                <Calendar
-                  mode="single"
-                  selected={opp.gift_surgery_date ? new Date(opp.gift_surgery_date + 'T12:00:00') : undefined}
-                  onSelect={(d) => handleDateChange('gift_surgery_date', d)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="single" selected={opp.gift_surgery_date ? new Date(opp.gift_surgery_date + 'T12:00:00') : undefined} onSelect={(d) => handleGiftDateChange('gift_surgery_date', d)} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
         </div>
-
-        {/* Prosthesis Gift */}
-        <div className={cn(
-          "p-2.5 rounded-md border space-y-2",
-          opp.gift_prosthesis_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
-        )}>
+        <div className={cn("p-2.5 rounded-md border space-y-2", opp.gift_prosthesis_sent ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Checkbox
-                checked={opp.gift_prosthesis_sent}
-                onCheckedChange={(checked) => {
-                  updateOpp.mutate({
-                    id: opp.id,
-                    gift_prosthesis_sent: !!checked,
-                    gift_prosthesis_sent_at: checked ? new Date().toISOString() : null,
-                  });
-                }}
-                className="h-4 w-4"
-              />
+              <Checkbox checked={opp.gift_prosthesis_sent} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, gift_prosthesis_sent: !!checked, gift_prosthesis_sent_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
               <span className="text-xs font-semibold">🎁 Brinde – Entrega da Prótese</span>
             </div>
-            <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-              {opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}
-            </Badge>
+            <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}</Badge>
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
@@ -556,62 +465,36 @@ function DetailDialogContent({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} onOpenAutoFocus={(e) => e.preventDefault()}>
-                <Calendar
-                  mode="single"
-                  selected={opp.gift_prosthesis_date ? new Date(opp.gift_prosthesis_date + 'T12:00:00') : undefined}
-                  onSelect={(d) => handleDateChange('gift_prosthesis_date', d)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="single" selected={opp.gift_prosthesis_date ? new Date(opp.gift_prosthesis_date + 'T12:00:00') : undefined} onSelect={(d) => handleGiftDateChange('gift_prosthesis_date', d)} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
         </div>
       </div>
 
-      {/* Paciente Amigo Section */}
+      {/* Paciente Amigo */}
       <div className="rounded-lg border p-3 space-y-3">
-        <p className="text-xs font-semibold flex items-center gap-1.5">
-          🤝 Paciente Amigo
-        </p>
+        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">🤝 Paciente Amigo</p>
         <div className="flex items-center gap-2">
-          <Badge className={cn("text-[10px]", opp.friendly_patient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
-            {opp.friendly_patient ? '✅ Aceitou participar' : '❌ Não participar'}
-          </Badge>
+          <Badge className={cn("text-[10px]", opp.friendly_patient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>{opp.friendly_patient ? '✅ Aceitou participar' : '❌ Não participar'}</Badge>
         </div>
         {opp.friendly_patient && (
-          <div className={cn(
-            "p-2.5 rounded-md border space-y-2",
-            opp.friendly_patient_video_recorded ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5"
-          )}>
+          <div className={cn("p-2.5 rounded-md border space-y-2", opp.friendly_patient_video_recorded ? "border-success/30 bg-success/5" : "border-warning/30 bg-warning/5")}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={opp.friendly_patient_video_recorded}
-                  onCheckedChange={(checked) => {
-                    updateOpp.mutate({
-                      id: opp.id,
-                      friendly_patient_video_recorded: !!checked,
-                      friendly_patient_video_recorded_at: checked ? new Date().toISOString() : null,
-                    });
-                  }}
-                  className="h-4 w-4"
-                />
+                <Checkbox checked={opp.friendly_patient_video_recorded} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, friendly_patient_video_recorded: !!checked, friendly_patient_video_recorded_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
                 <span className="text-xs font-semibold">🎬 Gravar Depoimento</span>
               </div>
-              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-                {opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}
-              </Badge>
+              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}</Badge>
             </div>
           </div>
         )}
       </div>
+
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Status do Contato</p>
+        <p className="text-xs font-bold text-chart-5 mb-1.5">Status do Contato</p>
         <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>
-          <SelectTrigger className="h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(CONTACT_STATUS_CONFIG).map(([key, cfg]) => (
               <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
@@ -620,27 +503,18 @@ function DetailDialogContent({
         </Select>
       </div>
 
-      {/* Notes */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Observações</p>
-        <Textarea
-          value={opp.notes || ''}
-          onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })}
-          placeholder="Adicione observações..."
-          className="text-sm min-h-[60px]"
-        />
+        <p className="text-xs font-bold text-chart-5 mb-1.5">Observações</p>
+        <Textarea value={opp.notes || ''} onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })} placeholder="Adicione observações..." className="text-sm min-h-[60px]" />
       </div>
 
-      {/* Register Contact Button */}
       <Button onClick={() => setContactDialogOpen(true)} size="sm" className="w-full">
-        <Phone className="h-4 w-4 mr-1" />
-        Registrar Contato
+        <Phone className="h-4 w-4 mr-1" /> Registrar Contato
       </Button>
 
-      {/* Contact History */}
       {contactHistory.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-2">Histórico de Contatos</p>
+          <p className="text-xs font-bold text-chart-5 mb-2">Histórico de Contatos</p>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {contactHistory.map((c) => (
               <div key={c.id} className="p-2 rounded-lg border bg-muted/30 text-xs">
@@ -648,9 +522,7 @@ function DetailDialogContent({
                   <Badge variant="outline" className="text-[9px]">
                     {c.contact_type === 'ligacao' ? '📞 Ligação' : c.contact_type === 'whatsapp' ? '💬 WhatsApp' : '📝 Outro'}
                   </Badge>
-                  <span className="text-muted-foreground">
-                    {format(new Date(c.created_at), 'dd/MM HH:mm', { locale: ptBR })}
-                  </span>
+                  <span className="text-muted-foreground">{format(new Date(c.created_at), 'dd/MM HH:mm', { locale: ptBR })}</span>
                 </div>
                 {c.result && <p className="mt-1 font-medium">{c.result}</p>}
                 {c.notes && <p className="mt-0.5 text-muted-foreground">{c.notes}</p>}

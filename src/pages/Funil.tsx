@@ -398,6 +398,11 @@ const Funil = () => {
             })}
           </div>
         </div>
+
+        {/* Loss Analysis Panel */}
+        <div className="mt-6">
+          <LossAnalysisPanel />
+        </div>
       </div>
 
       <LeadDetailDialog

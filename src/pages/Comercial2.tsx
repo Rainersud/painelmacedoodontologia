@@ -17,7 +17,6 @@ import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { usePayments, useConfirmBoletoPayment } from '@/hooks/usePayments';
-import { formatCurrency } from '@/lib/currency';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useUpsellOpportunities,

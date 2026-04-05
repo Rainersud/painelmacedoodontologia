@@ -150,41 +150,38 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5 text-primary" />
-            {step === 'budget' ? 'Orçamento do Tratamento' : step === 'method' ? 'Forma de Pagamento' : 'Detalhes do Pagamento'}
+            {step === 'method' ? 'Registrar Pagamento' : 'Detalhes do Pagamento'}
           </DialogTitle>
           <DialogDescription>
             Paciente: <span className="font-medium text-foreground">{leadName}</span>
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: Budget Value + Payment Type */}
-        {step === 'budget' && (
+        {/* Step 1: Payment Type + Method */}
+        {step === 'method' && (
           <div className="space-y-4 overflow-y-auto scroll-container-y">
-            <div className="space-y-2">
-              <Label>Valor do Tratamento Orçado</Label>
-              <CurrencyInput value={grossValue} onChange={setGrossValue} />
-            </div>
-
-            {/* Show balance info if there are previous payments */}
-            {totalPaid > 0 && (
-              <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total orçado</span>
-                  <span className="font-medium">{formatCurrency(grossValue)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Já pago</span>
-                  <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Saldo restante</span>
-                  <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
-                    {formatCurrency(remainingBalance)}
-                  </span>
-                </div>
+            {/* Budget summary (read-only, from treatments) */}
+            <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">💰 Total orçado</span>
+                <span className="font-bold text-primary">{formatCurrency(grossValue)}</span>
               </div>
-            )}
+              {totalPaid > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">✅ Já pago</span>
+                    <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Saldo restante</span>
+                    <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                      {formatCurrency(remainingBalance)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Payment type selection */}
             <div className="space-y-2">
@@ -230,47 +227,25 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
               </div>
             )}
 
-            <Button
-              className="w-full"
-              disabled={effectiveValue <= 0}
-              onClick={() => setStep('method')}
-            >
-              <Banknote className="h-4 w-4 mr-2" />
-              PAGAR {formatCurrency(effectiveValue)}
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Payment Method */}
-        {step === 'method' && (
-          <div className="space-y-4">
-            <div className="p-3 rounded-lg bg-muted/50 text-center">
-              <p className="text-sm text-muted-foreground">
-                {paymentType === 'parcial' ? 'Valor do pagamento parcial' : 'Valor do tratamento'}
-              </p>
-              <p className="text-2xl font-bold">{formatCurrency(effectiveValue)}</p>
-              {paymentType === 'parcial' && (
-                <p className="text-xs text-muted-foreground mt-1">de {formatCurrency(grossValue)} total</p>
-              )}
+            {/* Payment method selection */}
+            <div className="space-y-2">
+              <Label>Forma de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {PAYMENT_METHODS.map(({ key, label, icon: Icon, color }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleMethodSelect(key)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-[1.02]",
+                      color
+                    )}
+                  >
+                    <Icon className="h-6 w-6" />
+                    <span className="text-sm font-medium">{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {PAYMENT_METHODS.map(({ key, label, icon: Icon, color }) => (
-                <button
-                  key={key}
-                  onClick={() => handleMethodSelect(key)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-[1.02]",
-                    color
-                  )}
-                >
-                  <Icon className="h-6 w-6" />
-                  <span className="text-sm font-medium">{label}</span>
-                </button>
-              ))}
-            </div>
-            <Button variant="outline" onClick={() => setStep('budget')} className="w-full">
-              Voltar
-            </Button>
           </div>
         )}
 

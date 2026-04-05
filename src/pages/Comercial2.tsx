@@ -303,6 +303,7 @@ function EditableDetailContent({
     const lockedAll = localPurchases.map(p => ({ ...p, locked: true }));
     const serialized = JSON.stringify(lockedAll.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
+      payment_status: p.payment_status || 'pendente',
     })));
 
     const nextStage = getNextStage(opp.status);

@@ -545,9 +545,9 @@ function EditableDetailContent({
       <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
 
-        {/* Total Orçado (soma automática dos tratamentos) */}
+        {/* Valor do tratamento orçado (soma automática dos tratamentos) */}
         <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
-          <p className="text-[10px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+          <p className="text-[10px] text-muted-foreground">💰 Valor do tratamento orçado</p>
           <p className="text-lg font-bold text-primary">{formatCurrency(budgetValue)}</p>
           <p className="text-[8px] text-muted-foreground">Soma automática de {localPurchases.length} tratamento(s)</p>
         </div>

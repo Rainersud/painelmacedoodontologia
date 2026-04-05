@@ -17,6 +17,7 @@ import { FunnelActivityFilter } from '@/components/crm/FunnelActivityFilter';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
+import { LossAnalysisPanel } from '@/components/crm/LossAnalysisPanel';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
 import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';

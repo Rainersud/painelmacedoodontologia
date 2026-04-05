@@ -289,18 +289,18 @@ export function useUpsellMetrics() {
   if (!opportunities) return null;
 
   const total = opportunities.length;
-  const closed = opportunities.filter(o => o.status === 'upsell_5');
+  const closed = opportunities.filter(o => o.status === 'comprou_5');
   const conversionRate = total > 0 ? Math.round((closed.length / total) * 100) : 0;
   const totalRevenue = closed.reduce((sum, o) => sum + (o.closed_value || o.estimated_value || 0), 0);
   const avgTicket = closed.length > 0 ? totalRevenue / closed.length : 0;
   const uniquePatients = new Set(opportunities.map(o => o.lead_id)).size;
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
-  const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
-  const giftsPending = basePatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
-  const giftsSent = basePatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
-  const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;
-  const prosthesisPending = basePatients.filter(o => !o.gift_prosthesis_sent).length;
+  const allPatients = opportunities;
+  const giftsPending = allPatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
+  const giftsSent = allPatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
+  const surgeryPending = allPatients.filter(o => !o.gift_surgery_sent).length;
+  const prosthesisPending = allPatients.filter(o => !o.gift_prosthesis_sent).length;
 
   const friendlyAccepted = opportunities.filter(o => o.friendly_patient);
   const videoPending = friendlyAccepted.filter(o => !o.friendly_patient_video_recorded).length;

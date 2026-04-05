@@ -308,10 +308,18 @@ function DetailDialogContent({
         {selectedCount > 1 && (
           <div className="space-y-2">
             {localPurchases.map((entry, i) => (
-              <div key={i} className="rounded-md border border-border p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground">
-                  🔹 Compra {i + 2}
-                </p>
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5",
+                entry.locked ? "border-success/30 bg-success/5" : "border-border"
+              )}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold text-muted-foreground">
+                    🔹 Compra {i + 2}
+                  </p>
+                  {entry.locked && (
+                    <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
@@ -320,6 +328,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)}
                       placeholder="Ex: Implante"
                       className="h-7 text-xs mt-0.5"
+                      disabled={entry.locked}
                     />
                   </div>
                   <div>
@@ -330,6 +339,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)}
                       placeholder="0"
                       className="h-7 text-xs mt-0.5"
+                      disabled={entry.locked}
                     />
                   </div>
                 </div>
@@ -338,8 +348,8 @@ function DetailDialogContent({
           </div>
         )}
 
-        {/* Save button (only if there are recurrent purchases) */}
-        {selectedCount > 1 && (
+        {/* Save button (only if there are unlocked recurrent purchases) */}
+        {selectedCount > 1 && localPurchases.some(p => !p.locked) && (
           <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
             💾 Salvar Compras Recorrentes
           </Button>
@@ -371,6 +381,74 @@ function DetailDialogContent({
           }
         </Badge>
       </div>
+
+      {/* ===== SUGESTÃO DE TRATAMENTO BLOCK ===== */}
+      {treatmentSuggestions.length > 0 && (
+        <div className="rounded-lg border border-chart-5/30 p-3 space-y-3">
+          <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
+            💡 Sugestão de Tratamento
+          </p>
+          <div className="space-y-2">
+            {treatmentSuggestions.map((sug, i) => (
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5 transition-colors",
+                sug.selected ? "border-primary/30 bg-primary/5" : "border-border"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={sug.selected}
+                    onCheckedChange={() => handleToggleSuggestion(i)}
+                    className="h-4 w-4"
+                  />
+                  <Input
+                    value={sug.name}
+                    onChange={(e) => handleSuggestionFieldChange(i, 'name', e.target.value)}
+                    className="h-7 text-xs flex-1 border-none bg-transparent p-0 focus-visible:ring-0"
+                  />
+                </div>
+                {sug.selected && (
+                  <div className={cn("grid gap-2", needsDateField(sug.name) ? "grid-cols-2" : "grid-cols-1")}>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                      <Input
+                        type="number"
+                        value={sug.value || ''}
+                        onChange={(e) => handleSuggestionFieldChange(i, 'value', e.target.value)}
+                        placeholder="0"
+                        className="h-7 text-xs mt-0.5"
+                      />
+                    </div>
+                    {needsDateField(sug.name) && (
+                      <div>
+                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                        <Input
+                          type="date"
+                          value={sug.date || ''}
+                          onChange={(e) => handleSuggestionFieldChange(i, 'date', e.target.value)}
+                          className="h-7 text-xs mt-0.5"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Add custom suggestion */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={newSuggestionName}
+              onChange={(e) => setNewSuggestionName(e.target.value)}
+              placeholder="Adicionar sugestão manual..."
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
+            />
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>
+              + Adicionar
+            </Button>
+          </div>
+        </div>
+      )}
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">

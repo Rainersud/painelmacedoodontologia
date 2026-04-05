@@ -38,11 +38,17 @@ const SALE_TYPE_OPTIONS = [
   { value: '2_etapas', label: '2 Etapas' },
 ] as const;
 
-export function LTVRecurrencePanel() {
+interface LTVRecurrencePanelProps {
+  onOpenLead?: (oppId: string) => void;
+}
+
+export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
   const [period, setPeriod] = useState<PeriodFilter>('todos');
   const [saleType, setSaleType] = useState<SaleTypeFilter>('todos');
   const { data: metrics, isLoading } = useLTVMetrics(period, saleType);
+  const { data: opportunities } = useUpsellOpportunities();
   const queryClient = useQueryClient();
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   // Realtime sync: auto-refresh LTV when payments or upsell_opportunities change
   useEffect(() => {

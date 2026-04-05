@@ -555,12 +555,12 @@ function EditableDetailContent({
         {/* Resumo financeiro */}
         {(budgetValue > 0 || totalPaidStage > 0) && (
           <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total orçado</span>
+          <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Valor orçado</span>
               <span className="font-medium">{formatCurrency(budgetValue)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Já pago</span>
+              <span className="text-muted-foreground">✅ Já pago (automático)</span>
               <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
             </div>
             {pendingBoletos.length > 0 && (

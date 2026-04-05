@@ -545,9 +545,9 @@ function EditableDetailContent({
       <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
 
-        {/* Total Orçado (soma automática dos tratamentos) */}
+        {/* Valor do tratamento orçado (soma automática dos tratamentos) */}
         <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
-          <p className="text-[10px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+          <p className="text-[10px] text-muted-foreground">💰 Valor do tratamento orçado</p>
           <p className="text-lg font-bold text-primary">{formatCurrency(budgetValue)}</p>
           <p className="text-[8px] text-muted-foreground">Soma automática de {localPurchases.length} tratamento(s)</p>
         </div>
@@ -555,12 +555,12 @@ function EditableDetailContent({
         {/* Resumo financeiro */}
         {(budgetValue > 0 || totalPaidStage > 0) && (
           <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total orçado</span>
+          <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Valor orçado</span>
               <span className="font-medium">{formatCurrency(budgetValue)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Já pago</span>
+              <span className="text-muted-foreground">✅ Já pago (automático)</span>
               <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
             </div>
             {pendingBoletos.length > 0 && (
@@ -730,7 +730,7 @@ function EditableDetailContent({
             </div>
             {totalOrcamento > 0 && totalOrcamento !== calculatedLTV && (
               <div className="rounded-md bg-muted/50 border p-2 text-center">
-                <p className="text-[9px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+                <p className="text-[9px] text-muted-foreground">💰 Valor orçado</p>
                 <p className="text-sm font-bold">{formatCurrency(totalOrcamento)}</p>
               </div>
             )}

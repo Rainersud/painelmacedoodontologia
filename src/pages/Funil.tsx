@@ -318,8 +318,8 @@ const Funil = () => {
           </div>
         </div>
 
-        {/* Kanban board — fills remaining space, scrolls horizontally */}
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x">
+        {/* Kanban board */}
+        <div className="min-h-[500px] overflow-x-auto overflow-y-hidden scroll-container-x">
           <div className="flex gap-3 min-w-max h-full pb-2 px-1">
             {FUNNEL_STAGES.map((stage) => {
               const stageLeads = getLeadsByStatus(stage.key);

@@ -322,6 +322,8 @@ function EditableDetailContent({
     const serialized = JSON.stringify(lockedAll.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
       payment_status: p.payment_status || 'pendente',
+      upsell_date: p.upsell_date || null,
+      next_upsell_date: p.next_upsell_date || null,
     })));
 
     const nextStage = getNextStage(opp.status);

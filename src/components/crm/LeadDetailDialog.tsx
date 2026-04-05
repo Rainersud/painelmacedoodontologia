@@ -192,6 +192,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
+    if (newStatus === 'quase_cliente' && formData.loss_reason.trim()) {
+      (additionalData as any).loss_reason = formData.loss_reason.trim();
+    }
 
     updateStatus.mutate({
       leadId: lead.id,

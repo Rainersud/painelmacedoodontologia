@@ -156,7 +156,7 @@ export function useUpdateUpsellStatus() {
       additionalData?: Record<string, unknown>;
     }) => {
       const updateData: Record<string, unknown> = { status, ...additionalData };
-      if (status === 'venda_upsell' && !updateData.closed_at) {
+      if (status === 'upsell_5' && !updateData.closed_at) {
         updateData.closed_at = new Date().toISOString();
         updateData.contact_status = 'fechado';
       }

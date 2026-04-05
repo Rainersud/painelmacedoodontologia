@@ -40,18 +40,73 @@ import { ptBR } from 'date-fns/locale';
 interface PurchaseEntry {
   treatment: string;
   value: number;
+  locked?: boolean;
+  date?: string | null;
+}
+
+/* Smart treatment suggestions based on interest */
+const PROTESE_SUGGESTIONS = [
+  'Revisões a cada 6 meses',
+  'Reembasamento de manutenção',
+  'Higienização profissional da prótese',
+  'Upgrade para implantes',
+  'Limpeza',
+  'Clareamento',
+  'Troca de antagonico',
+];
+
+const IMPLANTE_EXTRA_SUGGESTIONS = [
+  'Revisão a cada 6 meses',
+  'Troca de resina por zircônia',
+];
+
+function getSuggestionsForInterest(interest: string | null | undefined): Array<{ name: string; hasDate: boolean }> {
+  const lower = (interest || '').toLowerCase();
+  const isProtese = lower.includes('prótese') || lower.includes('protese');
+  const isImplante = lower.includes('implante');
+
+  if (!isProtese && !isImplante) return [];
+
+  const base = PROTESE_SUGGESTIONS.map(s => ({ name: s, hasDate: false }));
+  if (isImplante) {
+    IMPLANTE_EXTRA_SUGGESTIONS.forEach(s => {
+      const hasDate = s.includes('Revisão a cada 6 meses');
+      base.push({ name: s, hasDate });
+    });
+  }
+  return base;
+}
+
+interface SuggestionEntry {
+  nome: string;
+  valor: number;
+  data: string | null;
+  selecionado: boolean;
+}
+
+function parseSuggestionEntries(raw: string | null): SuggestionEntry[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && 'nome' in parsed[0]) {
+      return parsed as SuggestionEntry[];
+    }
+  } catch { /* ignore */ }
+  return [];
 }
 
 function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
+    if (Array.isArray(parsed) && (parsed.length === 0 || !('nome' in (parsed[0] || {})))) {
+      return parsed as PurchaseEntry[];
+    }
   } catch {
     // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, locked: true }));
     }
   }
   return [];
@@ -106,6 +161,16 @@ function DetailDialogContent({
   );
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
 
+  // Treatment suggestions state
+  const smartSuggestions = useMemo(() => getSuggestionsForInterest(opp.lead?.interest_product), [opp.lead?.interest_product]);
+  const [localSuggestions, setLocalSuggestions] = useState<SuggestionEntry[]>(() => {
+    const saved = parseSuggestionEntries(opp.notes);
+    if (saved.length > 0) return saved;
+    // Initialize from smart suggestions
+    return smartSuggestions.map(s => ({ nome: s.name, valor: 0, data: null, selecionado: false }));
+  });
+  const [customSuggestionName, setCustomSuggestionName] = useState('');
+
   // Sync local state when opp changes
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);
@@ -118,11 +183,15 @@ function DetailDialogContent({
     setSelectedCount(newCount);
     const recurrentCount = newCount - 1; // exclude first purchase
     const updated = [...localPurchases];
+    // Only add new empty entries, never modify locked ones
     while (updated.length < recurrentCount) {
-      updated.push({ treatment: '', value: 0 });
+      updated.push({ treatment: '', value: 0, locked: false });
     }
     if (updated.length > recurrentCount) {
-      updated.length = recurrentCount;
+      // Don't remove locked entries
+      const lockedCount = updated.filter(p => p.locked).length;
+      const targetLength = Math.max(recurrentCount, lockedCount);
+      updated.length = targetLength;
     }
     setLocalPurchases(updated);
   };
@@ -130,6 +199,7 @@ function DetailDialogContent({
   const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
+      if (copy[index]?.locked) return copy; // Don't modify locked entries
       if (field === 'treatment') {
         copy[index] = { ...copy[index], treatment: val };
       } else {
@@ -140,14 +210,61 @@ function DetailDialogContent({
   };
 
   const handleSavePurchases = () => {
-    const serialized = serializePurchaseEntries(localPurchases);
+    // Lock all entries that have data before saving
+    const toSave = localPurchases.map(p => ({
+      ...p,
+      locked: p.value > 0 || p.treatment.trim() !== '',
+    }));
+    const serialized = serializePurchaseEntries(toSave);
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: localPurchases.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: toSave.filter(p => p.value > 0).length || selectedCount,
     }, {
-      onSuccess: () => toast.success('Histórico de compras salvo!'),
+      onSuccess: () => {
+        setLocalPurchases(toSave);
+        toast.success('Histórico de compras salvo! Etapas anteriores foram bloqueadas.');
+      },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
+    });
+  };
+
+  // Suggestion handlers
+  const handleToggleSuggestion = (index: number) => {
+    setLocalSuggestions(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], selecionado: !copy[index].selecionado };
+      return copy;
+    });
+  };
+
+  const handleSuggestionFieldChange = (index: number, field: 'nome' | 'valor' | 'data', val: string) => {
+    setLocalSuggestions(prev => {
+      const copy = [...prev];
+      if (field === 'valor') {
+        copy[index] = { ...copy[index], valor: parseFloat(val) || 0 };
+      } else if (field === 'data') {
+        copy[index] = { ...copy[index], data: val || null };
+      } else {
+        copy[index] = { ...copy[index], nome: val };
+      }
+      return copy;
+    });
+  };
+
+  const handleAddCustomSuggestion = () => {
+    if (!customSuggestionName.trim()) return;
+    setLocalSuggestions(prev => [...prev, { nome: customSuggestionName.trim(), valor: 0, data: null, selecionado: false }]);
+    setCustomSuggestionName('');
+  };
+
+  const handleSaveSuggestions = () => {
+    updateOpp.mutate({
+      id: opp.id,
+      notes: JSON.stringify(localSuggestions),
+    }, {
+      onSuccess: () => toast.success('Sugestões de tratamento salvas!'),
+      onError: () => toast.error('Erro ao salvar sugestões.'),
     });
   };
 
@@ -176,6 +293,77 @@ function DetailDialogContent({
           <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
         </div>
       </div>
+
+      {/* ===== SMART TREATMENT SUGGESTIONS ===== */}
+      {smartSuggestions.length > 0 && (
+        <div className="rounded-lg border border-chart-5/30 p-3 space-y-3">
+          <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
+            💡 Sugestão de Tratamento
+          </p>
+          <div className="space-y-2">
+            {localSuggestions.map((sug, i) => (
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5 transition-colors",
+                sug.selecionado ? "border-primary/40 bg-primary/5" : "border-border"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={sug.selecionado}
+                    onCheckedChange={() => handleToggleSuggestion(i)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <Input
+                    value={sug.nome}
+                    onChange={(e) => handleSuggestionFieldChange(i, 'nome', e.target.value)}
+                    className="h-7 text-xs flex-1 border-none bg-transparent p-0 focus-visible:ring-0"
+                  />
+                </div>
+                {sug.selecionado && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <div className="flex-1">
+                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                      <Input
+                        type="number"
+                        value={sug.valor || ''}
+                        onChange={(e) => handleSuggestionFieldChange(i, 'valor', e.target.value)}
+                        placeholder="0"
+                        className="h-7 text-xs mt-0.5"
+                      />
+                    </div>
+                    {(smartSuggestions[i]?.hasDate || sug.nome.toLowerCase().includes('revisão') || sug.nome.toLowerCase().includes('revisao')) && (
+                      <div className="flex-1">
+                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                        <Input
+                          type="date"
+                          value={sug.data || ''}
+                          onChange={(e) => handleSuggestionFieldChange(i, 'data', e.target.value)}
+                          className="h-7 text-xs mt-0.5"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Add custom suggestion */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={customSuggestionName}
+              onChange={(e) => setCustomSuggestionName(e.target.value)}
+              placeholder="Adicionar sugestão personalizada..."
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
+            />
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>
+              + Adicionar
+            </Button>
+          </div>
+          <Button size="sm" className="w-full h-8 text-xs" onClick={handleSaveSuggestions}>
+            💾 Salvar Sugestões
+          </Button>
+        </div>
+      )}
 
       {/* ===== LTV DO PACIENTE BLOCK ===== */}
       <div className="rounded-lg border border-primary/30 p-3 space-y-3">
@@ -214,10 +402,18 @@ function DetailDialogContent({
         {selectedCount > 1 && (
           <div className="space-y-2">
             {localPurchases.map((entry, i) => (
-              <div key={i} className="rounded-md border border-border p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground">
-                  🔹 Compra {i + 2}
-                </p>
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5",
+                entry.locked ? "border-success/30 bg-success/5 opacity-80" : "border-border"
+              )}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold text-muted-foreground">
+                    🔹 Compra {i + 2}
+                  </p>
+                  {entry.locked && (
+                    <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
@@ -226,6 +422,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)}
                       placeholder="Ex: Implante"
                       className="h-7 text-xs mt-0.5"
+                      disabled={!!entry.locked}
                     />
                   </div>
                   <div>
@@ -236,6 +433,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)}
                       placeholder="0"
                       className="h-7 text-xs mt-0.5"
+                      disabled={!!entry.locked}
                     />
                   </div>
                 </div>
@@ -605,12 +803,12 @@ const Comercial2 = () => {
 
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-      <Tabs defaultValue="pipeline" className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+      <Tabs defaultValue="pipeline" className="flex flex-col min-h-0">
         <TabsList className="shrink-0 mb-3 w-fit">
           <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
         </TabsList>
-        <TabsContent value="ltv" className="flex-1 overflow-y-auto">
+        <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)] pb-8">
           <LTVRecurrencePanel />
         </TabsContent>
         <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">

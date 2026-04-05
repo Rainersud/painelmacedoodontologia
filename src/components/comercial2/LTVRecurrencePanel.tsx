@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { useLTVMetrics, type PeriodFilter, type SaleTypeFilter } from '@/hooks/u
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/integrations/supabase/client';
 
 const HEALTH_STYLES = {
   success: 'bg-success/10 text-success border-success/30',

@@ -205,7 +205,10 @@ export function useUpdateUpsellOpportunity() {
         qc.setQueryData(['upsell-opportunities'], context.previous);
       }
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['upsell-opportunities'] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['upsell-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['ltv-metrics'] });
+    },
   });
 }
 

@@ -120,6 +120,7 @@ export function useCreatePayment() {
           due_date: date,
           installment_number: idx + 1,
           total_installments: data.boleto_dates!.length,
+          upsell_opportunity_id: data.upsell_opportunity_id || null,
         }));
 
         const { error } = await supabase.from('payments').insert(payments);

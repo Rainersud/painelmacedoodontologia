@@ -588,35 +588,85 @@ function EditableDetailContent({
           <div className="space-y-1.5">
             <p className="text-[10px] font-bold text-success">✅ Pagamentos Confirmados</p>
             {(stagePayments || []).filter(p => p.status === 'pago').map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-2 rounded-md border border-success/30 bg-success/5 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[8px]">
-                    {p.payment_method === 'credito' ? '💳 Crédito' :
-                     p.payment_method === 'debito' ? '💳 Débito' :
-                     p.payment_method === 'pix' ? '⚡ Pix' :
-                     p.payment_method === 'cheque' ? '📝 Cheque' :
-                     p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
-                  </Badge>
-                  {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    {p.fee_amount > 0 && (
-                      <p className="text-[9px] text-destructive line-through">{formatCurrency(p.gross_value)}</p>
-                    )}
-                    <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
+              <div key={p.id} className="rounded-md border border-success/30 bg-success/5 text-xs">
+                {editingPaymentId === p.id ? (
+                  <div className="p-2 space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[8px]">
+                        {p.payment_method === 'credito' ? '💳 Crédito' :
+                         p.payment_method === 'debito' ? '💳 Débito' :
+                         p.payment_method === 'pix' ? '⚡ Pix' :
+                         p.payment_method === 'cheque' ? '📝 Cheque' :
+                         p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
+                      </Badge>
+                      <span className="text-muted-foreground">Editando valor</span>
+                    </div>
+                    <CurrencyInput value={editingPaymentValue} onChange={setEditingPaymentValue} />
+                    <div className="flex gap-1">
+                      <Button size="sm" className="h-6 text-[9px] px-2 flex-1" onClick={() => {
+                        const feeRate = p.fee_percentage || 0;
+                        const feeAmt = editingPaymentValue * (feeRate / 100);
+                        editPayment.mutate({
+                          id: p.id,
+                          gross_value: editingPaymentValue,
+                          fee_percentage: feeRate,
+                          fee_amount: feeAmt,
+                          net_value: editingPaymentValue - feeAmt,
+                        }, { onSuccess: () => setEditingPaymentId(null) });
+                      }} disabled={editPayment.isPending || editingPaymentValue <= 0}>
+                        <Save className="h-3 w-3 mr-0.5" /> Salvar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2" onClick={() => setEditingPaymentId(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => revertPayment.mutate(p.id)}
-                    disabled={revertPayment.isPending}
-                    title="Reverter pagamento"
-                  >
-                    <Undo2 className="h-3 w-3" />
-                  </Button>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[8px]">
+                        {p.payment_method === 'credito' ? '💳 Crédito' :
+                         p.payment_method === 'debito' ? '💳 Débito' :
+                         p.payment_method === 'pix' ? '⚡ Pix' :
+                         p.payment_method === 'cheque' ? '📝 Cheque' :
+                         p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
+                      </Badge>
+                      {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-right">
+                        {p.fee_amount > 0 && (
+                          <p className="text-[9px] text-destructive line-through">{formatCurrency(p.gross_value)}</p>
+                        )}
+                        <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary hover:bg-primary/10" title="Editar valor"
+                        onClick={() => { setEditingPaymentId(p.id); setEditingPaymentValue(p.gross_value); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning hover:bg-warning/10" title="Reverter pagamento"
+                        onClick={() => revertPayment.mutate(p.id)} disabled={revertPayment.isPending}>
+                        <Undo2 className="h-3 w-3" />
+                      </Button>
+                      {deletePaymentConfirm === p.id ? (
+                        <div className="flex items-center gap-0.5">
+                          <Button size="sm" variant="destructive" className="h-6 text-[8px] px-1.5"
+                            onClick={() => { deletePayment.mutate(p.id); setDeletePaymentConfirm(null); }} disabled={deletePayment.isPending}>
+                            Sim
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-[8px] px-1.5" onClick={() => setDeletePaymentConfirm(null)}>
+                            Não
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10" title="Excluir pagamento"
+                          onClick={() => setDeletePaymentConfirm(p.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -200,6 +200,21 @@ export function useCreatePayment() {
   });
 }
 
+const PAYMENT_INVALIDATION_KEYS = [
+  ['payments'],
+  ['received-revenue'],
+  ['dashboard-metrics'],
+  ['clinic-goals'],
+  ['crm-leads'],
+  ['sales-metrics'],
+  ['ltv-metrics'],
+  ['agent-bonus'],
+];
+
+function invalidateAllPaymentQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  PAYMENT_INVALIDATION_KEYS.forEach(key => queryClient.invalidateQueries({ queryKey: key }));
+}
+
 export function useRevertPayment() {
   const queryClient = useQueryClient();
 
@@ -212,14 +227,58 @@ export function useRevertPayment() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      invalidateAllPaymentQueries(queryClient);
       toast.success('Pagamento revertido com sucesso!');
     },
     onError: () => {
       toast.error('Erro ao reverter pagamento');
+    },
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAllPaymentQueries(queryClient);
+      toast.success('Pagamento excluído com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir pagamento');
+    },
+  });
+}
+
+export function useEditPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; gross_value: number; net_value: number; fee_amount: number; fee_percentage: number }) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          gross_value: data.gross_value,
+          net_value: data.net_value,
+          fee_amount: data.fee_amount,
+          fee_percentage: data.fee_percentage,
+        })
+        .eq('id', data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAllPaymentQueries(queryClient);
+      toast.success('Pagamento atualizado com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar pagamento');
     },
   });
 }

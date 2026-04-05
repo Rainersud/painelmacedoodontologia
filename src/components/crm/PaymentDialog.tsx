@@ -28,6 +28,7 @@ interface PaymentDialogProps {
   leadId: string;
   leadName: string;
   budgetValue?: number;
+  upsellOpportunityId?: string;
 }
 
 type PaymentMethod = 'credito' | 'debito' | 'pix' | 'cheque' | 'boleto';

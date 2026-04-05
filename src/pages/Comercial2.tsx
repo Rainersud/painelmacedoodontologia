@@ -46,6 +46,8 @@ interface PurchaseEntry {
   date: string | null;
   locked?: boolean;
   payment_status?: 'pendente' | 'pago';
+  upsell_date?: string | null;
+  next_upsell_date?: string | null;
 }
 
 /* Treatment suggestion entry */

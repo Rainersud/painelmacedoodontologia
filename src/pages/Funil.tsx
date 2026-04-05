@@ -216,8 +216,8 @@ const Funil = () => {
 
   return (
     <AppLayout title="Comercial 1 – Aquisição">
-      {/* The entire funnel page is a flex column that fills available space */}
-      <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
+      {/* The entire funnel page */}
+      <div className="flex flex-col min-h-0">
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
           <div className="flex items-center justify-between">

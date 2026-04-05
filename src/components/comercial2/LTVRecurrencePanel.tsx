@@ -40,6 +40,24 @@ export function LTVRecurrencePanel() {
   const [period, setPeriod] = useState<PeriodFilter>('todos');
   const [saleType, setSaleType] = useState<SaleTypeFilter>('todos');
   const { data: metrics, isLoading } = useLTVMetrics(period, saleType);
+  const queryClient = useQueryClient();
+
+  // Realtime sync: auto-refresh LTV when payments or upsell_opportunities change
+  useEffect(() => {
+    const channel = supabase
+      .channel('ltv-realtime-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['ltv-metrics'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_opportunities' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['ltv-metrics'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   if (isLoading) {
     return (

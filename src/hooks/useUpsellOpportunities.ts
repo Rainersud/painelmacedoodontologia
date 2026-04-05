@@ -62,6 +62,7 @@ export interface ContactHistory {
 }
 
 export const UPSELL_STAGES = [
+  { key: 'base_pacientes', label: 'Base de Pacientes', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'upsell_1', label: 'Upsell 1', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'upsell_2', label: 'Upsell 2', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'upsell_3', label: 'Upsell 3', color: 'bg-warning', bgColor: 'bg-warning/10' },

@@ -40,18 +40,73 @@ import { ptBR } from 'date-fns/locale';
 interface PurchaseEntry {
   treatment: string;
   value: number;
+  locked?: boolean;
+  date?: string | null;
+}
+
+/* Smart treatment suggestions based on interest */
+const PROTESE_SUGGESTIONS = [
+  'Revisões a cada 6 meses',
+  'Reembasamento de manutenção',
+  'Higienização profissional da prótese',
+  'Upgrade para implantes',
+  'Limpeza',
+  'Clareamento',
+  'Troca de antagonico',
+];
+
+const IMPLANTE_EXTRA_SUGGESTIONS = [
+  'Revisão a cada 6 meses',
+  'Troca de resina por zircônia',
+];
+
+function getSuggestionsForInterest(interest: string | null | undefined): Array<{ name: string; hasDate: boolean }> {
+  const lower = (interest || '').toLowerCase();
+  const isProtese = lower.includes('prótese') || lower.includes('protese');
+  const isImplante = lower.includes('implante');
+
+  if (!isProtese && !isImplante) return [];
+
+  const base = PROTESE_SUGGESTIONS.map(s => ({ name: s, hasDate: false }));
+  if (isImplante) {
+    IMPLANTE_EXTRA_SUGGESTIONS.forEach(s => {
+      const hasDate = s.includes('Revisão a cada 6 meses');
+      base.push({ name: s, hasDate });
+    });
+  }
+  return base;
+}
+
+interface SuggestionEntry {
+  nome: string;
+  valor: number;
+  data: string | null;
+  selecionado: boolean;
+}
+
+function parseSuggestionEntries(raw: string | null): SuggestionEntry[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object' && 'nome' in parsed[0]) {
+      return parsed as SuggestionEntry[];
+    }
+  } catch { /* ignore */ }
+  return [];
 }
 
 function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
+    if (Array.isArray(parsed) && (parsed.length === 0 || !('nome' in (parsed[0] || {})))) {
+      return parsed as PurchaseEntry[];
+    }
   } catch {
     // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, locked: true }));
     }
   }
   return [];

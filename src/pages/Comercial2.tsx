@@ -40,15 +40,14 @@ import { ptBR } from 'date-fns/locale';
 interface PurchaseEntry {
   treatment: string;
   value: number;
+  date: string | null;
   locked?: boolean;
 }
 
 /* Treatment suggestion entry */
 interface TreatmentSuggestion {
   name: string;
-  value: number;
   selected: boolean;
-  date: string | null; // optional scheduling date
 }
 
 const PROSTHESIS_SUGGESTIONS = [

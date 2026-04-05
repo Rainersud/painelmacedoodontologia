@@ -167,7 +167,7 @@ export function useUpdateUpsellStatus() {
       await qc.cancelQueries({ queryKey: ['upsell-opportunities'] });
       const previous = qc.getQueryData<UpsellOpportunity[]>(['upsell-opportunities']);
       const merged: Record<string, unknown> = { status, ...additionalData };
-      if (status === 'venda_upsell' && !merged.closed_at) {
+      if (status === 'upsell_5' && !merged.closed_at) {
         merged.closed_at = new Date().toISOString();
         merged.contact_status = 'fechado';
       }

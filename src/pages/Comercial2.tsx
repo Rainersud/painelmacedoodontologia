@@ -297,11 +297,15 @@ function EditableDetailContent({
     setNewSuggestionName('');
   };
 
-  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status', val: string) => {
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status' | 'upsell_date' | 'next_upsell_date', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
       if (field === 'payment_status') {
         copy[index] = { ...copy[index], payment_status: val as 'pendente' | 'pago' };
+        return copy;
+      }
+      if (field === 'upsell_date' || field === 'next_upsell_date') {
+        copy[index] = { ...copy[index], [field]: val || null };
         return copy;
       }
       if (copy[index].locked && !stageEditing[index]) return copy;

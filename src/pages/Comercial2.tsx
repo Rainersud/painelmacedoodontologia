@@ -172,25 +172,18 @@ function DetailDialogContent({
   };
 
   const handleToggleSuggestion = (index: number) => {
-    const sug = treatmentSuggestions[index];
-    const newSelected = !sug.selected;
     setTreatmentSuggestions(prev => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], selected: newSelected };
+      copy[index] = { ...copy[index], selected: !copy[index].selected };
       return copy;
     });
-    if (newSelected) {
-      const exists = localPurchases.some(p => p.treatment.toLowerCase() === sug.name.toLowerCase());
-      if (!exists) {
-        setLocalPurchases(prev => [...prev, { treatment: sug.name, value: 0, date: null, locked: false }]);
-        if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
-      }
-    } else {
-      setLocalPurchases(prev => prev.filter(p =>
-        p.treatment.toLowerCase() !== sug.name.toLowerCase() || p.locked
-      ));
-    }
   };
+
+  // Get selected suggestion names for use as treatment name defaults
+  const selectedSuggestionNames = useMemo(() =>
+    treatmentSuggestions.filter(s => s.selected).map(s => s.name),
+    [treatmentSuggestions]
+  );
 
   const handleAddCustomSuggestion = () => {
     if (!newSuggestionName.trim()) return;

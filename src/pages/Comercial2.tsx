@@ -898,7 +898,7 @@ const Comercial2 = () => {
                                       {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
                                     </p>
                                   )}
-                                  {stage.key === 'base_pacientes' && (
+                                  {stage.key === 'upsell_1' && (
                                     <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
                                       {/* Surgery Gift */}
                                       <div

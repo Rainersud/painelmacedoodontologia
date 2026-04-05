@@ -203,6 +203,7 @@ function EditableDetailContent({
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
   const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
   const [budgetValue, setBudgetValue] = useState(opp.estimated_value || 0);
+  const [revenueValue, setRevenueValue] = useState(opp.closed_value || 0);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   useEffect(() => {

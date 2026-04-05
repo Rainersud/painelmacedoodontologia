@@ -162,6 +162,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   const handleChangeStatus = async () => {
     if (!newStatus) return;
+
+    // VALIDATION: Block move to quase_cliente without loss_reason
+    if (newStatus === 'quase_cliente' && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de mover para Quase Cliente.');
+      return;
+    }
     
     // VALIDATION: Block move to fechado without payment
     if (newStatus === 'fechado') {

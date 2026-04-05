@@ -245,7 +245,6 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                     onClick={() => {
                       if (group.clientCount > 0) setSelectedStage(group.label);
                     }}
-                    )}
                   >
                     <TableCell className="font-medium text-sm whitespace-nowrap">
                       <div className="flex items-center gap-1.5">

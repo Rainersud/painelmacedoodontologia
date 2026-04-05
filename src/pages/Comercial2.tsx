@@ -1036,7 +1036,13 @@ const Comercial2 = () => {
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
         </TabsList>
         <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <LTVRecurrencePanel />
+          <LTVRecurrencePanel onOpenLead={(oppId) => {
+            const opp = opportunities?.find(o => o.id === oppId);
+            if (opp) {
+              setSelectedOpp(opp);
+              setDetailOpen(true);
+            }
+          }} />
         </TabsContent>
         <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">
           <div className="flex flex-col h-full min-h-0">

@@ -593,11 +593,23 @@ function EditableDetailContent({
                   </Badge>
                   {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
                 </div>
-                <div className="text-right">
-                  {p.fee_amount > 0 && (
-                    <p className="text-[9px] text-destructive line-through">{formatCurrency(p.gross_value)}</p>
-                  )}
-                  <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    {p.fee_amount > 0 && (
+                      <p className="text-[9px] text-destructive line-through">{formatCurrency(p.gross_value)}</p>
+                    )}
+                    <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => revertPayment.mutate(p.id)}
+                    disabled={revertPayment.isPending}
+                    title="Reverter pagamento"
+                  >
+                    <Undo2 className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             ))}

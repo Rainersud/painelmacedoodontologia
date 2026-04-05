@@ -142,20 +142,39 @@ function DetailDialogContent({
   // Sync local state when opp changes
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);
-    setLocalPurchases(parsed);
+    const locked = parsed.map(p => ({ ...p, locked: p.value > 0 }));
+    setLocalPurchases(locked);
     setSelectedCount(Math.max(parsed.length + 1, 1));
   }, [opp.purchase_values]);
 
-  // When count changes, adjust local array (recurrent entries = count - 1)
+  // Smart treatment suggestions based on interest_product
+  const autoSuggestionNames = useMemo(() =>
+    getSuggestionsForTreatment(opp.lead?.interest_product || null),
+    [opp.lead?.interest_product]
+  );
+  const [treatmentSuggestions, setTreatmentSuggestions] = useState<TreatmentSuggestion[]>([]);
+  const [newSuggestionName, setNewSuggestionName] = useState('');
+
+  useEffect(() => {
+    if (autoSuggestionNames.length > 0 && treatmentSuggestions.length === 0) {
+      setTreatmentSuggestions(autoSuggestionNames.map(name => ({
+        name, value: 0, selected: false, date: null,
+      })));
+    }
+  }, [autoSuggestionNames]);
+
   const handleCountChange = (newCount: number) => {
     setSelectedCount(newCount);
-    const recurrentCount = newCount - 1; // exclude first purchase
+    const recurrentCount = newCount - 1;
     const updated = [...localPurchases];
     while (updated.length < recurrentCount) {
-      updated.push({ treatment: '', value: 0 });
+      updated.push({ treatment: '', value: 0, locked: false });
     }
     if (updated.length > recurrentCount) {
-      updated.length = recurrentCount;
+      const lockedCount = updated.filter(p => p.locked).length;
+      if (recurrentCount >= lockedCount) {
+        updated.length = recurrentCount;
+      }
     }
     setLocalPurchases(updated);
   };
@@ -163,6 +182,7 @@ function DetailDialogContent({
   const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
+      if (copy[index].locked) return copy;
       if (field === 'treatment') {
         copy[index] = { ...copy[index], treatment: val };
       } else {
@@ -173,16 +193,57 @@ function DetailDialogContent({
   };
 
   const handleSavePurchases = () => {
-    const serialized = serializePurchaseEntries(localPurchases);
+    const toSave = localPurchases.map(p => ({
+      treatment: p.treatment,
+      value: p.value,
+      locked: p.value > 0 ? true : p.locked,
+    }));
+    const serialized = JSON.stringify(toSave);
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: localPurchases.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: toSave.filter(p => p.value > 0).length || selectedCount,
     }, {
-      onSuccess: () => toast.success('Histórico de compras salvo!'),
+      onSuccess: () => {
+        setLocalPurchases(toSave);
+        toast.success('Histórico de compras salvo!');
+      },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
     });
   };
+
+  const handleToggleSuggestion = (index: number) => {
+    setTreatmentSuggestions(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], selected: !copy[index].selected };
+      return copy;
+    });
+  };
+
+  const handleSuggestionFieldChange = (index: number, field: 'name' | 'value' | 'date', val: string) => {
+    setTreatmentSuggestions(prev => {
+      const copy = [...prev];
+      if (field === 'value') {
+        copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
+      } else if (field === 'date') {
+        copy[index] = { ...copy[index], date: val || null };
+      } else {
+        copy[index] = { ...copy[index], name: val };
+      }
+      return copy;
+    });
+  };
+
+  const handleAddCustomSuggestion = () => {
+    if (!newSuggestionName.trim()) return;
+    setTreatmentSuggestions(prev => [...prev, {
+      name: newSuggestionName.trim(), value: 0, selected: false, date: null,
+    }]);
+    setNewSuggestionName('');
+  };
+
+  const isImplantPatient = (opp.lead?.interest_product || '').toLowerCase().includes('implante');
+  const needsDateField = (name: string) => isImplantPatient && name.toLowerCase().includes('revisão');
 
   const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);

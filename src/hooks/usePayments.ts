@@ -99,7 +99,8 @@ export function useCreatePayment() {
       fee_percentage: number;
       fee_amount: number;
       net_value: number;
-      boleto_dates?: string[]; // For boleto installments
+      boleto_dates?: string[];
+      upsell_opportunity_id?: string;
     }) => {
       if (!user) throw new Error('Não autenticado');
 

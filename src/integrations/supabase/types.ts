@@ -915,6 +915,7 @@ export type Database = {
           status: string
           total_installments: number | null
           updated_at: string
+          upsell_opportunity_id: string | null
         }
         Insert: {
           agent_id: string
@@ -935,6 +936,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           updated_at?: string
+          upsell_opportunity_id?: string | null
         }
         Update: {
           agent_id?: string
@@ -955,6 +957,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           updated_at?: string
+          upsell_opportunity_id?: string | null
         }
         Relationships: [
           {
@@ -969,6 +972,13 @@ export type Database = {
             columns: ["parent_payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_upsell_opportunity_id_fkey"
+            columns: ["upsell_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "upsell_opportunities"
             referencedColumns: ["id"]
           },
         ]

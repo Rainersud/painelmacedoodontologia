@@ -1,0 +1,1 @@
+ALTER TABLE public.payments ADD COLUMN upsell_opportunity_id uuid REFERENCES public.upsell_opportunities(id) ON DELETE SET NULL;

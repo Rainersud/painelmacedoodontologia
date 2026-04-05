@@ -471,6 +471,30 @@ function EditableDetailContent({
                     </div>
                   )}
                 </div>
+                {/* Status do Pagamento */}
+                <div className="flex items-center gap-3 mt-1.5">
+                  <Label className="text-[9px] text-muted-foreground whitespace-nowrap">Status:</Label>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                        entry.payment_status !== 'pago' ? "border-warning/40 bg-warning/10 text-warning font-semibold" : "border-border bg-background hover:bg-muted/50"
+                      )}
+                      onClick={() => handlePurchaseFieldChange(i, 'payment_status', 'pendente')}
+                    >
+                      <span>⏳</span> Pendente
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                        entry.payment_status === 'pago' ? "border-success/40 bg-success/10 text-success font-semibold" : "border-border bg-background hover:bg-muted/50"
+                      )}
+                      onClick={() => handlePurchaseFieldChange(i, 'payment_status', 'pago')}
+                    >
+                      <CheckCircle2 className="h-3 w-3" /> Pago
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}

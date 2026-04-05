@@ -295,7 +295,7 @@ function EditableDetailContent({
       updateData.purchase_count = (opp.purchase_count || 1) + 1;
     }
 
-    updateOpp.mutate(updateData, {
+    updateOpp.mutate(updateData as { id: string; [key: string]: unknown }, {
       onSuccess: () => {
         setLocalPurchases(lockedAll);
         setStageEditing({});

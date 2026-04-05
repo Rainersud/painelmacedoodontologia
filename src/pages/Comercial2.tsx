@@ -172,35 +172,23 @@ function DetailDialogContent({
   };
 
   const handleToggleSuggestion = (index: number) => {
-    const sug = treatmentSuggestions[index];
-    const newSelected = !sug.selected;
     setTreatmentSuggestions(prev => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], selected: newSelected };
+      copy[index] = { ...copy[index], selected: !copy[index].selected };
       return copy;
     });
-    if (newSelected) {
-      const exists = localPurchases.some(p => p.treatment.toLowerCase() === sug.name.toLowerCase());
-      if (!exists) {
-        setLocalPurchases(prev => [...prev, { treatment: sug.name, value: 0, date: null, locked: false }]);
-        if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
-      }
-    } else {
-      setLocalPurchases(prev => prev.filter(p =>
-        p.treatment.toLowerCase() !== sug.name.toLowerCase() || p.locked
-      ));
-    }
   };
+
+  // Get selected suggestion names for use as treatment name defaults
+  const selectedSuggestionNames = useMemo(() =>
+    treatmentSuggestions.filter(s => s.selected).map(s => s.name),
+    [treatmentSuggestions]
+  );
 
   const handleAddCustomSuggestion = () => {
     if (!newSuggestionName.trim()) return;
     const name = newSuggestionName.trim();
     setTreatmentSuggestions(prev => [...prev, { name, selected: true }]);
-    const exists = localPurchases.some(p => p.treatment.toLowerCase() === name.toLowerCase());
-    if (!exists) {
-      setLocalPurchases(prev => [...prev, { treatment: name, value: 0, date: null, locked: false }]);
-      if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
-    }
     setNewSuggestionName('');
   };
 
@@ -221,15 +209,20 @@ function DetailDialogContent({
     const serialized = JSON.stringify(updated.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
     })));
+    // Auto-progress funnel: purchase count = number of saved purchases + 1 (initial)
+    const savedCount = updated.filter(p => p.locked && p.value > 0).length;
+    const newPurchaseCount = savedCount + 1; // +1 for initial acquisition
+    const upsellStage = `upsell_${Math.min(savedCount, 5)}`;
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: updated.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: newPurchaseCount,
+      status: upsellStage,
     }, {
       onSuccess: () => {
         setLocalPurchases(updated);
         setStageEditing(prev => ({ ...prev, [index]: false }));
-        toast.success(`Compra ${index + 2} salva com sucesso!`);
+        toast.success(`Compra ${index + 2} salva! Paciente movido para Upsell ${Math.min(savedCount, 5)}`);
       },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
     });
@@ -905,7 +898,7 @@ const Comercial2 = () => {
                                       {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
                                     </p>
                                   )}
-                                  {stage.key === 'base_pacientes' && (
+                                  {stage.key === 'upsell_1' && (
                                     <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
                                       {/* Surgery Gift */}
                                       <div

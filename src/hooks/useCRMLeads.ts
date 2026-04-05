@@ -59,6 +59,7 @@ export function useCRMLeads() {
         discount_percentage: lead.discount_percentage as number ?? 5,
         no_show_count: (lead as any).no_show_count ?? 0,
         sale_type: (lead as any).sale_type as Lead['sale_type'],
+        loss_reason: (lead as any).loss_reason || null,
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));
@@ -241,6 +242,7 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['loss-analysis'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {

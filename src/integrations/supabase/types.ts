@@ -510,6 +510,7 @@ export type Database = {
           id: string
           interest_product: string | null
           interest_rating: number | null
+          loss_reason: string | null
           name: string
           no_show_count: number
           notes: string | null
@@ -540,6 +541,7 @@ export type Database = {
           id?: string
           interest_product?: string | null
           interest_rating?: number | null
+          loss_reason?: string | null
           name: string
           no_show_count?: number
           notes?: string | null
@@ -570,6 +572,7 @@ export type Database = {
           id?: string
           interest_product?: string | null
           interest_rating?: number | null
+          loss_reason?: string | null
           name?: string
           no_show_count?: number
           notes?: string | null
@@ -1561,6 +1564,7 @@ export type Database = {
         | "qualificado"
         | "tratamento_andamento"
         | "concluido"
+        | "quase_cliente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1756,6 +1760,7 @@ export const Constants = {
         "qualificado",
         "tratamento_andamento",
         "concluido",
+        "quase_cliente",
       ],
     },
   },

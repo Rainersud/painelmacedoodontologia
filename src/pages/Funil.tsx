@@ -17,6 +17,7 @@ import { FunnelActivityFilter } from '@/components/crm/FunnelActivityFilter';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
+import { LossAnalysisPanel } from '@/components/crm/LossAnalysisPanel';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
 import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
@@ -148,6 +149,16 @@ const Funil = () => {
         }
       }
 
+      if (newStatus === 'quase_cliente') {
+        // Open lead detail so user can fill in the loss_reason
+        setSelectedLead(lead);
+        setDialogOpen(true);
+        toast.info('Preencha o motivo de não fechamento na aba Status.');
+        setDraggedLeadId(null);
+        setDropTargetStatus(null);
+        return;
+      }
+
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);
@@ -215,8 +226,8 @@ const Funil = () => {
 
   return (
     <AppLayout title="Comercial 1 – Aquisição">
-      {/* The entire funnel page is a flex column that fills available space */}
-      <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
+      {/* The entire funnel page */}
+      <div className="flex flex-col min-h-0">
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
           <div className="flex items-center justify-between">
@@ -317,8 +328,8 @@ const Funil = () => {
           </div>
         </div>
 
-        {/* Kanban board — fills remaining space, scrolls horizontally */}
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x">
+        {/* Kanban board */}
+        <div className="min-h-[500px] overflow-x-auto overflow-y-hidden scroll-container-x">
           <div className="flex gap-3 min-w-max h-full pb-2 px-1">
             {FUNNEL_STAGES.map((stage) => {
               const stageLeads = getLeadsByStatus(stage.key);
@@ -396,6 +407,11 @@ const Funil = () => {
               );
             })}
           </div>
+        </div>
+
+        {/* Loss Analysis Panel */}
+        <div className="mt-6">
+          <LossAnalysisPanel />
         </div>
       </div>
 

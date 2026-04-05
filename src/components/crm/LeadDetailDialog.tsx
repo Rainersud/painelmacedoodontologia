@@ -87,6 +87,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     discount_percentage: '5',
     scheduled_appointment_at: '',
     sale_type: '' as '' | '1_etapa' | '2_etapas',
+    loss_reason: '',
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -119,6 +120,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
           : '',
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
+        loss_reason: (lead as any).loss_reason || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -160,6 +162,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   const handleChangeStatus = async () => {
     if (!newStatus) return;
+
+    // VALIDATION: Block move to quase_cliente without loss_reason
+    if (newStatus === 'quase_cliente' && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de mover para Quase Cliente.');
+      return;
+    }
     
     // VALIDATION: Block move to fechado without payment
     if (newStatus === 'fechado') {
@@ -183,6 +191,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     const additionalData: Partial<Lead> = {};
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
+    }
+    if (newStatus === 'quase_cliente' && formData.loss_reason.trim()) {
+      (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
 
     updateStatus.mutate({
@@ -661,6 +672,38 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       onChange={(e) => setScheduledAt(e.target.value)}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Loss reason field when moving to quase_cliente */}
+              {newStatus === 'quase_cliente' && (
+                <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
+                  <h4 className="font-medium text-chart-5 flex items-center gap-2">
+                    ❓ Não fechou porque:
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Campo obrigatório — descreva o motivo pelo qual o paciente não fechou o tratamento.
+                  </p>
+                  <Textarea
+                    value={formData.loss_reason}
+                    onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                    placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
+                    rows={3}
+                    className="border-chart-5/30"
+                  />
+                  {!formData.loss_reason.trim() && (
+                    <p className="text-[10px] text-destructive">* Campo obrigatório</p>
+                  )}
+                </div>
+              )}
+
+              {/* Show existing loss_reason for leads already in quase_cliente */}
+              {lead.status === 'quase_cliente' && (lead as any).loss_reason && newStatus !== 'quase_cliente' && (
+                <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
+                    ❓ Motivo de não fechamento
+                  </h4>
+                  <p className="text-sm">{(lead as any).loss_reason}</p>
                 </div>
               )}
 

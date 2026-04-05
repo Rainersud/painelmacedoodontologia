@@ -28,7 +28,9 @@ export type LeadStatus =
   | 'outro_momento'
   | 'qualificado'
   | 'tratamento_andamento'
-  | 'concluido';
+  | 'concluido'
+  | 'quase_cliente'
+  | 'potencial';
 
 export type LeadSource = 
   | 'whatsapp'
@@ -68,6 +70,7 @@ export interface Lead {
   discount_percentage?: number;
   no_show_count?: number;
   sale_type?: '1_etapa' | '2_etapas' | null;
+  loss_reason?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -140,6 +143,8 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'quase_cliente', label: 'Quase Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
+  { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
 ];
 

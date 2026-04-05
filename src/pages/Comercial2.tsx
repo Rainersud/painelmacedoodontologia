@@ -40,6 +40,40 @@ import { ptBR } from 'date-fns/locale';
 interface PurchaseEntry {
   treatment: string;
   value: number;
+  locked?: boolean;
+}
+
+/* Treatment suggestion entry */
+interface TreatmentSuggestion {
+  name: string;
+  value: number;
+  selected: boolean;
+  date: string | null; // optional scheduling date
+}
+
+const PROSTHESIS_SUGGESTIONS = [
+  'Revisões a cada 6 meses',
+  'Reembasamento de manutenção',
+  'Higienização profissional da prótese',
+  'Upgrade para implantes',
+  'Limpeza',
+  'Clareamento',
+  'Troca de antagonico',
+];
+
+const IMPLANT_EXTRA_SUGGESTIONS = [
+  'Revisão a cada 6 meses',
+  'Troca de resina por zircônia',
+];
+
+function getSuggestionsForTreatment(interestProduct: string | null): string[] {
+  if (!interestProduct) return [];
+  const lower = interestProduct.toLowerCase();
+  const isProsthesis = lower.includes('prótese') || lower.includes('protese');
+  const isImplant = lower.includes('implante');
+  if (isProsthesis) return PROSTHESIS_SUGGESTIONS;
+  if (isImplant) return [...PROSTHESIS_SUGGESTIONS, ...IMPLANT_EXTRA_SUGGESTIONS];
+  return [];
 }
 
 function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
@@ -48,10 +82,9 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
   } catch {
-    // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, locked: true }));
     }
   }
   return [];

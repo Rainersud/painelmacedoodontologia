@@ -289,7 +289,7 @@ export function useUpsellMetrics() {
   if (!opportunities) return null;
 
   const total = opportunities.length;
-  const closed = opportunities.filter(o => o.status === 'venda_upsell');
+  const closed = opportunities.filter(o => o.status === 'upsell_5');
   const conversionRate = total > 0 ? Math.round((closed.length / total) * 100) : 0;
   const totalRevenue = closed.reduce((sum, o) => sum + (o.closed_value || o.estimated_value || 0), 0);
   const avgTicket = closed.length > 0 ? totalRevenue / closed.length : 0;

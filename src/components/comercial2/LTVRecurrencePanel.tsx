@@ -80,8 +80,10 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     };
 
     opportunities.forEach((opp) => {
-      // Parse purchase_values to get count and LTV
-      let recurrentCount = 0;
+      // Use purchase_count from DB as source of truth for stage grouping
+      const totalCount = Math.max(opp.purchase_count || 1, 1);
+      
+      // Parse purchase_values only for LTV calculation
       let ltv = 0;
       if (opp.purchase_values) {
         try {
@@ -90,14 +92,12 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
             const paid = parsed.filter((p: { value?: number; payment_status?: string }) =>
               (p.value || 0) > 0 && p.payment_status === 'pago'
             );
-            recurrentCount = paid.length;
             ltv = paid.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
           }
         } catch {
           // ignore
         }
       }
-      const totalCount = recurrentCount + 1;
       const stageLabel = totalCount >= 5 ? 'Comprou 5+ vezes' : (STAGE_LABELS[totalCount] || `Comprou ${totalCount} vez${totalCount > 1 ? 'es' : ''}`);
 
       if (!map[stageLabel]) map[stageLabel] = [];

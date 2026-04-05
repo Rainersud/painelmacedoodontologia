@@ -205,8 +205,24 @@ function EditableDetailContent({
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
   const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
   const [budgetValue, setBudgetValue] = useState(opp.estimated_value || 0);
-  const [revenueValue, setRevenueValue] = useState(opp.closed_value || 0);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
+  // Payments for this specific upsell opportunity (isolated per stage)
+  const { data: stagePayments } = usePayments(undefined, opp.id);
+  const confirmBoleto = useConfirmBoletoPayment();
+
+  const totalPaidStage = useMemo(() => {
+    return (stagePayments || [])
+      .filter(p => p.status === 'pago')
+      .reduce((sum, p) => sum + (p.net_value || 0), 0);
+  }, [stagePayments]);
+
+  const pendingBoletos = useMemo(() => {
+    return (stagePayments || []).filter(p => p.status === 'pendente' && p.payment_method === 'boleto');
+  }, [stagePayments]);
+
+  const remainingBalance = Math.max(0, budgetValue - totalPaidStage);
 
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);

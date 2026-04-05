@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, TrendingUp, DollarSign, Users, Target, Lightbulb, BarChart3 } from 'lucide-react';
 import { useLTVMetrics, type PeriodFilter, type SaleTypeFilter } from '@/hooks/useLTVMetrics';
+import { useUpsellOpportunities } from '@/hooks/useUpsellOpportunities';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { LTVStageLeadsDialog, type LeadEntry } from './LTVStageLeadsDialog';
 
 const HEALTH_STYLES = {
   success: 'bg-success/10 text-success border-success/30',
@@ -36,11 +38,17 @@ const SALE_TYPE_OPTIONS = [
   { value: '2_etapas', label: '2 Etapas' },
 ] as const;
 
-export function LTVRecurrencePanel() {
+interface LTVRecurrencePanelProps {
+  onOpenLead?: (oppId: string) => void;
+}
+
+export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
   const [period, setPeriod] = useState<PeriodFilter>('todos');
   const [saleType, setSaleType] = useState<SaleTypeFilter>('todos');
   const { data: metrics, isLoading } = useLTVMetrics(period, saleType);
+  const { data: opportunities } = useUpsellOpportunities();
   const queryClient = useQueryClient();
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   // Realtime sync: auto-refresh LTV when payments or upsell_opportunities change
   useEffect(() => {
@@ -58,6 +66,58 @@ export function LTVRecurrencePanel() {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  // Build leads-by-stage map from upsell opportunities
+  const leadsByStage = useMemo(() => {
+    const map: Record<string, LeadEntry[]> = {};
+    if (!opportunities) return map;
+
+    const STAGE_LABELS: Record<number, string> = {
+      1: 'Comprou 1 vez',
+      2: 'Comprou 2 vezes',
+      3: 'Comprou 3 vezes',
+      4: 'Comprou 4 vezes',
+    };
+
+    opportunities.forEach((opp) => {
+      // Parse purchase_values to get count and LTV
+      let recurrentCount = 0;
+      let ltv = 0;
+      if (opp.purchase_values) {
+        try {
+          const parsed = JSON.parse(opp.purchase_values);
+          if (Array.isArray(parsed)) {
+            const paid = parsed.filter((p: { value?: number; payment_status?: string }) =>
+              (p.value || 0) > 0 && p.payment_status === 'pago'
+            );
+            recurrentCount = paid.length;
+            ltv = paid.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const totalCount = recurrentCount + 1;
+      const stageLabel = totalCount >= 5 ? 'Comprou 5+ vezes' : (STAGE_LABELS[totalCount] || `Comprou ${totalCount} vez${totalCount > 1 ? 'es' : ''}`);
+
+      if (!map[stageLabel]) map[stageLabel] = [];
+      map[stageLabel].push({
+        id: opp.id,
+        leadId: opp.lead_id,
+        name: opp.lead?.name || 'Paciente',
+        ltv,
+        purchaseCount: totalCount,
+        hasOpenUpsell: opp.contact_status !== 'convertido' && opp.contact_status !== 'sem_interesse',
+        status: opp.status,
+      });
+    });
+
+    // Sort each group by LTV descending
+    Object.values(map).forEach(arr => arr.sort((a, b) => b.ltv - a.ltv));
+    return map;
+  }, [opportunities]);
+
+  const selectedStageLeads = selectedStage ? (leadsByStage[selectedStage] || []) : [];
 
   if (isLoading) {
     return (
@@ -180,8 +240,12 @@ export function LTVRecurrencePanel() {
                     key={group.label}
                     className={cn(
                       group.clientCount === 0 && 'opacity-40',
-                      group.label === metrics.bestProfitGroup && 'bg-success/5 border-l-2 border-l-success'
+                      group.label === metrics.bestProfitGroup && 'bg-success/5 border-l-2 border-l-success',
+                      group.clientCount > 0 && 'cursor-pointer hover:bg-muted/50 transition-colors'
                     )}
+                    onClick={() => {
+                      if (group.clientCount > 0) setSelectedStage(group.label);
+                    }}
                   >
                     <TableCell className="font-medium text-sm whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
@@ -256,6 +320,17 @@ export function LTVRecurrencePanel() {
           </CardContent>
         </Card>
       )}
+
+      {/* Stage Leads Popup */}
+      <LTVStageLeadsDialog
+        open={!!selectedStage}
+        onOpenChange={(open) => { if (!open) setSelectedStage(null); }}
+        stageLabel={selectedStage || ''}
+        leads={selectedStageLeads}
+        onLeadClick={(oppId) => {
+          if (onOpenLead) onOpenLead(oppId);
+        }}
+      />
     </div>
   );
 }

@@ -62,6 +62,7 @@ export interface ContactHistory {
 }
 
 export const UPSELL_STAGES = [
+  { key: 'base_pacientes', label: 'Base de Pacientes', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'upsell_1', label: 'Upsell 1', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'upsell_2', label: 'Upsell 2', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'upsell_3', label: 'Upsell 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
@@ -139,7 +140,7 @@ export function useCreateUpsellOpportunity() {
         treatment_category: data.treatment_category || 'geral',
         estimated_value: data.estimated_value || 0,
         agent_id: data.agent_id,
-        status: 'upsell_1',
+        status: 'base_pacientes',
       });
       if (error) throw error;
     },
@@ -296,7 +297,7 @@ export function useUpsellMetrics() {
   const uniquePatients = new Set(opportunities.map(o => o.lead_id)).size;
   const ltvPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
 
-  const basePatients = opportunities.filter(o => o.status === 'upsell_1');
+  const basePatients = opportunities.filter(o => o.status === 'base_pacientes');
   const giftsPending = basePatients.filter(o => !o.gift_surgery_sent || !o.gift_prosthesis_sent).length;
   const giftsSent = basePatients.filter(o => o.gift_surgery_sent && o.gift_prosthesis_sent).length;
   const surgeryPending = basePatients.filter(o => !o.gift_surgery_sent).length;

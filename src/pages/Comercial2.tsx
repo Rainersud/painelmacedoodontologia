@@ -45,6 +45,7 @@ interface PurchaseEntry {
   value: number;
   date: string | null;
   locked?: boolean;
+  payment_status?: 'pendente' | 'pago';
 }
 
 /* Treatment suggestion entry */
@@ -87,6 +88,7 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
       value: Number(p.value || 0),
       date: (p.date as string) || null,
       locked: !!p.locked,
+      payment_status: (p.payment_status as 'pendente' | 'pago') || 'pendente',
     }));
   } catch {
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
@@ -285,9 +287,13 @@ function EditableDetailContent({
     setNewSuggestionName('');
   };
 
-  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date', val: string) => {
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
+      if (field === 'payment_status') {
+        copy[index] = { ...copy[index], payment_status: val as 'pendente' | 'pago' };
+        return copy;
+      }
       if (copy[index].locked && !stageEditing[index]) return copy;
       if (field === 'treatment') copy[index] = { ...copy[index], treatment: val };
       else if (field === 'value') copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
@@ -301,6 +307,7 @@ function EditableDetailContent({
     const lockedAll = localPurchases.map(p => ({ ...p, locked: true }));
     const serialized = JSON.stringify(lockedAll.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
+      payment_status: p.payment_status || 'pendente',
     })));
 
     const nextStage = getNextStage(opp.status);
@@ -353,9 +360,11 @@ function EditableDetailContent({
     updateOpp.mutate({ id: opp.id, contact_status: newStatus });
   };
 
-  const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  // LTV = soma dos tratamentos marcados como PAGO (valor total do tratamento, não parcelas)
+  const calculatedLTV = useMemo(() => localPurchases.filter(p => p.payment_status === 'pago').reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  const totalOrcamento = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
-  const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? calculatedLTV / filledPurchases.length : 0, [filledPurchases, calculatedLTV]);
+  const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? totalOrcamento / filledPurchases.length : 0, [filledPurchases, totalOrcamento]);
 
   const currentStageLabel = UPSELL_STAGES.find(s => s.key === opp.status)?.label || opp.status;
   const canAdvance = !!getNextStage(opp.status);
@@ -461,6 +470,30 @@ function EditableDetailContent({
                       <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
                     </div>
                   )}
+                </div>
+                {/* Status do Pagamento */}
+                <div className="flex items-center gap-3 mt-1.5">
+                  <Label className="text-[9px] text-muted-foreground whitespace-nowrap">Status:</Label>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                        entry.payment_status !== 'pago' ? "border-warning/40 bg-warning/10 text-warning font-semibold" : "border-border bg-background hover:bg-muted/50"
+                      )}
+                      onClick={() => handlePurchaseFieldChange(i, 'payment_status', 'pendente')}
+                    >
+                      <span>⏳</span> Pendente
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
+                        entry.payment_status === 'pago' ? "border-success/40 bg-success/10 text-success font-semibold" : "border-border bg-background hover:bg-muted/50"
+                      )}
+                      onClick={() => handlePurchaseFieldChange(i, 'payment_status', 'pago')}
+                    >
+                      <CheckCircle2 className="h-3 w-3" /> Pago
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -571,21 +604,37 @@ function EditableDetailContent({
           </div>
         )}
 
-        {/* Métricas */}
+        {/* Métricas: LTV vs Faturamento */}
         {filledPurchases.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Tratamentos</p>
-              <p className="text-sm font-bold text-primary">{filledPurchases.length}</p>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
+                <p className="text-[9px] text-muted-foreground">Tratamentos</p>
+                <p className="text-sm font-bold text-primary">{filledPurchases.length}</p>
+              </div>
+              <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
+                <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
+                <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
+              </div>
             </div>
-            <div className="rounded-md bg-success/5 border border-success/20 p-2">
-              <p className="text-[9px] text-muted-foreground">LTV Total</p>
-              <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-md bg-success/5 border border-success/20 p-2">
+                <p className="text-[9px] text-muted-foreground">📊 LTV (Pagos)</p>
+                <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+                <p className="text-[8px] text-muted-foreground">Valor total dos tratamentos pagos</p>
+              </div>
+              <div className="rounded-md bg-chart-5/5 border border-chart-5/20 p-2">
+                <p className="text-[9px] text-muted-foreground">💵 Faturamento (Caixa)</p>
+                <p className="text-sm font-bold text-chart-5">{formatCurrency(totalPaidStage)}</p>
+                <p className="text-[8px] text-muted-foreground">Parcelas efetivamente recebidas</p>
+              </div>
             </div>
-            <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
-              <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
-            </div>
+            {totalOrcamento > 0 && totalOrcamento !== calculatedLTV && (
+              <div className="rounded-md bg-muted/50 border p-2 text-center">
+                <p className="text-[9px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+                <p className="text-sm font-bold">{formatCurrency(totalOrcamento)}</p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -287,9 +287,13 @@ function EditableDetailContent({
     setNewSuggestionName('');
   };
 
-  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date', val: string) => {
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
+      if (field === 'payment_status') {
+        copy[index] = { ...copy[index], payment_status: val as 'pendente' | 'pago' };
+        return copy;
+      }
       if (copy[index].locked && !stageEditing[index]) return copy;
       if (field === 'treatment') copy[index] = { ...copy[index], treatment: val };
       else if (field === 'value') copy[index] = { ...copy[index], value: parseFloat(val) || 0 };

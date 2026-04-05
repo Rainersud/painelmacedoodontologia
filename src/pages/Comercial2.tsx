@@ -468,9 +468,11 @@ function EditableDetailContent({
         </div>
       )}
 
-      {/* ===== FINANCEIRO DA ETAPA ===== */}
-      <div className="rounded-lg border border-primary/30 p-3 space-y-3">
+      {/* ===== FINANCEIRO DA ETAPA (Replicação completa do Comercial 1) ===== */}
+      <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
+
+        {/* Valor do Orçamento */}
         <div>
           <Label className="text-[10px] text-muted-foreground">Valor do Orçamento</Label>
           <CurrencyInput value={budgetValue} onChange={setBudgetValue} onBlur={() => {
@@ -479,32 +481,97 @@ function EditableDetailContent({
             }
           }} />
         </div>
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Pagamento (Faturamento Real)</Label>
-          <CurrencyInput value={revenueValue} onChange={setRevenueValue} onBlur={() => {
-            if (revenueValue !== (opp.closed_value || 0)) {
-              updateOpp.mutate({ id: opp.id, closed_value: revenueValue });
-            }
-          }} />
-        </div>
-        {(budgetValue > 0 || revenueValue > 0) && (
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Orçamento</p>
-              <p className="text-sm font-bold text-primary">{formatCurrency(budgetValue)}</p>
+
+        {/* Resumo financeiro */}
+        {(budgetValue > 0 || totalPaidStage > 0) && (
+          <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total orçado</span>
+              <span className="font-medium">{formatCurrency(budgetValue)}</span>
             </div>
-            <div className={cn("rounded-md p-2 border",
-              revenueValue >= budgetValue && budgetValue > 0
-                ? "bg-success/5 border-success/20"
-                : "bg-warning/5 border-warning/20"
-            )}>
-              <p className="text-[9px] text-muted-foreground">Faturamento Real</p>
-              <p className={cn("text-sm font-bold",
-                revenueValue >= budgetValue && budgetValue > 0 ? "text-success" : "text-warning"
-              )}>{formatCurrency(revenueValue)}</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Já pago</span>
+              <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
+            </div>
+            {pendingBoletos.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Boletos pendentes</span>
+                <span className="font-medium text-warning">{pendingBoletos.length}x</span>
+              </div>
+            )}
+            <div className="border-t my-1" />
+            <div className="flex justify-between text-sm font-medium">
+              <span>Saldo restante</span>
+              <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                {formatCurrency(remainingBalance)}
+              </span>
             </div>
           </div>
         )}
+
+        {/* Botão Registrar Pagamento */}
+        <Button
+          onClick={() => setPaymentDialogOpen(true)}
+          className="w-full gap-2"
+          variant={totalPaidStage > 0 ? 'outline' : 'default'}
+        >
+          <CreditCard className="h-4 w-4" />
+          {totalPaidStage > 0 ? 'Registrar Novo Pagamento' : 'Registrar Pagamento'}
+        </Button>
+
+        {/* Boletos pendentes - confirmar pagamento */}
+        {pendingBoletos.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-warning">📄 Boletos Pendentes</p>
+            {pendingBoletos.map((boleto) => (
+              <div key={boleto.id} className="flex items-center justify-between p-2 rounded-md border border-warning/30 bg-warning/5">
+                <div className="text-xs">
+                  <span className="font-medium">{boleto.installment_number}ª parcela</span>
+                  <span className="text-muted-foreground ml-1">— {formatCurrency(boleto.net_value)}</span>
+                  {boleto.due_date && <span className="text-muted-foreground ml-1">vence {format(new Date(boleto.due_date + 'T12:00:00'), 'dd/MM/yyyy')}</span>}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-[9px] px-2 border-success/30 text-success hover:bg-success/10"
+                  onClick={() => confirmBoleto.mutate(boleto.id)}
+                  disabled={confirmBoleto.isPending}
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-0.5" /> Confirmar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Histórico de pagamentos desta etapa */}
+        {(stagePayments || []).filter(p => p.status === 'pago').length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-success">✅ Pagamentos Confirmados</p>
+            {(stagePayments || []).filter(p => p.status === 'pago').map((p) => (
+              <div key={p.id} className="flex items-center justify-between p-2 rounded-md border border-success/30 bg-success/5 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[8px]">
+                    {p.payment_method === 'credito' ? '💳 Crédito' :
+                     p.payment_method === 'debito' ? '💳 Débito' :
+                     p.payment_method === 'pix' ? '⚡ Pix' :
+                     p.payment_method === 'cheque' ? '📝 Cheque' :
+                     p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
+                  </Badge>
+                  {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
+                </div>
+                <div className="text-right">
+                  {p.fee_amount > 0 && (
+                    <p className="text-[9px] text-destructive line-through">{formatCurrency(p.gross_value)}</p>
+                  )}
+                  <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Métricas */}
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
@@ -522,6 +589,16 @@ function EditableDetailContent({
           </div>
         )}
       </div>
+
+      {/* PaymentDialog para esta etapa */}
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        leadId={opp.lead_id}
+        leadName={opp.lead?.name || 'Paciente'}
+        budgetValue={budgetValue}
+        upsellOpportunityId={opp.id}
+      />
 
       {/* ===== SAVE EVOLUTION BUTTON ===== */}
       <Button onClick={handleSaveEvolution} className="w-full gap-2" disabled={localPurchases.length === 0}>

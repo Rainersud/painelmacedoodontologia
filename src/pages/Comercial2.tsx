@@ -209,15 +209,20 @@ function DetailDialogContent({
     const serialized = JSON.stringify(updated.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
     })));
+    // Auto-progress funnel: purchase count = number of saved purchases + 1 (initial)
+    const savedCount = updated.filter(p => p.locked && p.value > 0).length;
+    const newPurchaseCount = savedCount + 1; // +1 for initial acquisition
+    const upsellStage = `upsell_${Math.min(savedCount, 5)}`;
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: updated.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: newPurchaseCount,
+      status: upsellStage,
     }, {
       onSuccess: () => {
         setLocalPurchases(updated);
         setStageEditing(prev => ({ ...prev, [index]: false }));
-        toast.success(`Compra ${index + 2} salva com sucesso!`);
+        toast.success(`Compra ${index + 2} salva! Paciente movido para Upsell ${Math.min(savedCount, 5)}`);
       },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
     });

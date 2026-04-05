@@ -295,10 +295,7 @@ export function useConfirmBoletoPayment() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      invalidateAllPaymentQueries(queryClient);
       toast.success('Boleto dado como pago!');
     },
     onError: () => {

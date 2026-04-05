@@ -46,6 +46,8 @@ interface PurchaseEntry {
   date: string | null;
   locked?: boolean;
   payment_status?: 'pendente' | 'pago';
+  upsell_date?: string | null;
+  next_upsell_date?: string | null;
 }
 
 /* Treatment suggestion entry */
@@ -89,6 +91,8 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
       date: (p.date as string) || null,
       locked: !!p.locked,
       payment_status: (p.payment_status as 'pendente' | 'pago') || 'pendente',
+      upsell_date: (p.upsell_date as string) || null,
+      next_upsell_date: (p.next_upsell_date as string) || null,
     }));
   } catch {
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
@@ -206,7 +210,7 @@ function EditableDetailContent({
   const purchases = useMemo(() => parsePurchaseEntries(opp.purchase_values), [opp.purchase_values]);
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
   const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
-  const [budgetValue, setBudgetValue] = useState(opp.estimated_value || 0);
+  const [budgetValue, setBudgetValue] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
@@ -238,9 +242,11 @@ function EditableDetailContent({
     setLocalPurchases(locked);
   }, [opp.purchase_values]);
 
+  // Auto-calculate budgetValue from treatments sum
   useEffect(() => {
-    setBudgetValue(opp.estimated_value || 0);
-  }, [opp.estimated_value]);
+    const total = localPurchases.reduce((sum, p) => sum + p.value, 0);
+    setBudgetValue(total);
+  }, [localPurchases]);
 
 
   const autoSuggestionNames = useMemo(() =>
@@ -293,11 +299,15 @@ function EditableDetailContent({
     setNewSuggestionName('');
   };
 
-  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status', val: string) => {
+  const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value' | 'date' | 'payment_status' | 'upsell_date' | 'next_upsell_date', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
       if (field === 'payment_status') {
         copy[index] = { ...copy[index], payment_status: val as 'pendente' | 'pago' };
+        return copy;
+      }
+      if (field === 'upsell_date' || field === 'next_upsell_date') {
+        copy[index] = { ...copy[index], [field]: val || null };
         return copy;
       }
       if (copy[index].locked && !stageEditing[index]) return copy;
@@ -314,6 +324,8 @@ function EditableDetailContent({
     const serialized = JSON.stringify(lockedAll.map(p => ({
       treatment: p.treatment, value: p.value, date: p.date, locked: true,
       payment_status: p.payment_status || 'pendente',
+      upsell_date: p.upsell_date || null,
+      next_upsell_date: p.next_upsell_date || null,
     })));
 
     const nextStage = getNextStage(opp.status);
@@ -433,11 +445,21 @@ function EditableDetailContent({
           {localPurchases.map((entry, i) => {
             const isEditable = !entry.locked || stageEditing[i];
             const showDate = needsDateField(entry.treatment);
+            const today = new Date().toISOString().split('T')[0];
+            const isUpsellPending = entry.upsell_date && entry.upsell_date <= today && entry.payment_status !== 'pago';
             return (
               <div key={i} className={cn(
                 "rounded-md border p-2.5 space-y-1.5",
+                isUpsellPending ? "border-warning/50 bg-warning/5" :
                 entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
               )}>
+                {/* Upsell pending alert */}
+                {isUpsellPending && (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-warning/10 border border-warning/30 text-warning text-[10px] font-semibold">
+                    <AlertTriangle className="h-3 w-3" />
+                    ⚠️ Upsell pendente — agendado para {format(new Date(entry.upsell_date + 'T12:00:00'), 'dd/MM/yyyy')}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-chart-5">🔹 {entry.treatment || `Tratamento ${i + 1}`}</p>
                   <div className="flex items-center gap-1">
@@ -468,7 +490,7 @@ function EditableDetailContent({
                   </div>
                   <div>
                     <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
-                    <Input type="number" value={entry.value || ''} onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)} placeholder="0" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                    <CurrencyInput value={entry.value} onChange={(v) => handlePurchaseFieldChange(i, 'value', String(v))} disabled={!isEditable} />
                   </div>
                   {showDate && (
                     <div>
@@ -476,6 +498,11 @@ function EditableDetailContent({
                       <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
                     </div>
                   )}
+                </div>
+                {/* Data do Upsell */}
+                <div>
+                  <Label className="text-[9px] text-muted-foreground">📅 Data do Upsell</Label>
+                  <Input type="date" value={entry.upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
                 </div>
                 {/* Status do Pagamento */}
                 <div className="flex items-center gap-3 mt-1.5">
@@ -501,6 +528,13 @@ function EditableDetailContent({
                     </div>
                   </div>
                 </div>
+                {/* Agendar novo Upsell after payment */}
+                {entry.payment_status === 'pago' && (
+                  <div className="rounded-md bg-primary/5 border border-primary/20 p-2 mt-1">
+                    <Label className="text-[9px] text-primary font-semibold">🔄 Agendar Novo Upsell</Label>
+                    <Input type="date" value={entry.next_upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'next_upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -511,14 +545,11 @@ function EditableDetailContent({
       <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
 
-        {/* Valor do Orçamento */}
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Valor do Orçamento</Label>
-          <CurrencyInput value={budgetValue} onChange={setBudgetValue} onBlur={() => {
-            if (budgetValue !== (opp.estimated_value || 0)) {
-              updateOpp.mutate({ id: opp.id, estimated_value: budgetValue });
-            }
-          }} />
+        {/* Total Orçado (soma automática dos tratamentos) */}
+        <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
+          <p className="text-[10px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+          <p className="text-lg font-bold text-primary">{formatCurrency(budgetValue)}</p>
+          <p className="text-[8px] text-muted-foreground">Soma automática de {localPurchases.length} tratamento(s)</p>
         </div>
 
         {/* Resumo financeiro */}

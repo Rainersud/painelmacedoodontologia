@@ -445,11 +445,21 @@ function EditableDetailContent({
           {localPurchases.map((entry, i) => {
             const isEditable = !entry.locked || stageEditing[i];
             const showDate = needsDateField(entry.treatment);
+            const today = new Date().toISOString().split('T')[0];
+            const isUpsellPending = entry.upsell_date && entry.upsell_date <= today && entry.payment_status !== 'pago';
             return (
               <div key={i} className={cn(
                 "rounded-md border p-2.5 space-y-1.5",
+                isUpsellPending ? "border-warning/50 bg-warning/5" :
                 entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
               )}>
+                {/* Upsell pending alert */}
+                {isUpsellPending && (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-warning/10 border border-warning/30 text-warning text-[10px] font-semibold">
+                    <AlertTriangle className="h-3 w-3" />
+                    ⚠️ Upsell pendente — agendado para {format(new Date(entry.upsell_date + 'T12:00:00'), 'dd/MM/yyyy')}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-chart-5">🔹 {entry.treatment || `Tratamento ${i + 1}`}</p>
                   <div className="flex items-center gap-1">
@@ -480,7 +490,7 @@ function EditableDetailContent({
                   </div>
                   <div>
                     <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
-                    <Input type="number" value={entry.value || ''} onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)} placeholder="0" className="h-7 text-xs mt-0.5" disabled={!isEditable} />
+                    <CurrencyInput value={entry.value} onChange={(v) => handlePurchaseFieldChange(i, 'value', String(v))} disabled={!isEditable} />
                   </div>
                   {showDate && (
                     <div>
@@ -488,6 +498,11 @@ function EditableDetailContent({
                       <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
                     </div>
                   )}
+                </div>
+                {/* Data do Upsell */}
+                <div>
+                  <Label className="text-[9px] text-muted-foreground">📅 Data do Upsell</Label>
+                  <Input type="date" value={entry.upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
                 </div>
                 {/* Status do Pagamento */}
                 <div className="flex items-center gap-3 mt-1.5">
@@ -513,6 +528,13 @@ function EditableDetailContent({
                     </div>
                   </div>
                 </div>
+                {/* Agendar novo Upsell after payment */}
+                {entry.payment_status === 'pago' && (
+                  <div className="rounded-md bg-primary/5 border border-primary/20 p-2 mt-1">
+                    <Label className="text-[9px] text-primary font-semibold">🔄 Agendar Novo Upsell</Label>
+                    <Input type="date" value={entry.next_upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'next_upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
+                  </div>
+                )}
               </div>
             );
           })}

@@ -234,9 +234,6 @@ function EditableDetailContent({
     setBudgetValue(opp.estimated_value || 0);
   }, [opp.estimated_value]);
 
-  useEffect(() => {
-    setRevenueValue(opp.closed_value || 0);
-  }, [opp.closed_value]);
 
   const autoSuggestionNames = useMemo(() =>
     getSuggestionsForTreatment(opp.lead?.interest_product || null),

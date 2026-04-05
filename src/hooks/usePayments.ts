@@ -26,9 +26,9 @@ export interface Payment {
   lead?: { name: string; phone: string } | null;
 }
 
-export function usePayments(leadId?: string) {
+export function usePayments(leadId?: string, upsellOpportunityId?: string) {
   return useQuery({
-    queryKey: ['payments', leadId],
+    queryKey: ['payments', leadId, upsellOpportunityId],
     queryFn: async (): Promise<Payment[]> => {
       let query = supabase
         .from('payments')
@@ -37,6 +37,9 @@ export function usePayments(leadId?: string) {
 
       if (leadId) {
         query = query.eq('lead_id', leadId);
+      }
+      if (upsellOpportunityId) {
+        query = query.eq('upsell_opportunity_id', upsellOpportunityId);
       }
 
       const { data, error } = await query;

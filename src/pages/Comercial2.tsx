@@ -604,21 +604,37 @@ function EditableDetailContent({
           </div>
         )}
 
-        {/* Métricas */}
+        {/* Métricas: LTV vs Faturamento */}
         {filledPurchases.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Tratamentos</p>
-              <p className="text-sm font-bold text-primary">{filledPurchases.length}</p>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
+                <p className="text-[9px] text-muted-foreground">Tratamentos</p>
+                <p className="text-sm font-bold text-primary">{filledPurchases.length}</p>
+              </div>
+              <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
+                <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
+                <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
+              </div>
             </div>
-            <div className="rounded-md bg-success/5 border border-success/20 p-2">
-              <p className="text-[9px] text-muted-foreground">LTV Total</p>
-              <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-md bg-success/5 border border-success/20 p-2">
+                <p className="text-[9px] text-muted-foreground">📊 LTV (Pagos)</p>
+                <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
+                <p className="text-[8px] text-muted-foreground">Valor total dos tratamentos pagos</p>
+              </div>
+              <div className="rounded-md bg-chart-5/5 border border-chart-5/20 p-2">
+                <p className="text-[9px] text-muted-foreground">💵 Faturamento (Caixa)</p>
+                <p className="text-sm font-bold text-chart-5">{formatCurrency(totalPaidStage)}</p>
+                <p className="text-[8px] text-muted-foreground">Parcelas efetivamente recebidas</p>
+              </div>
             </div>
-            <div className="rounded-md bg-chart-2/5 border border-chart-2/20 p-2">
-              <p className="text-[9px] text-muted-foreground">Ticket Médio</p>
-              <p className="text-sm font-bold text-chart-2">{formatCurrency(calculatedTicket)}</p>
-            </div>
+            {totalOrcamento > 0 && totalOrcamento !== calculatedLTV && (
+              <div className="rounded-md bg-muted/50 border p-2 text-center">
+                <p className="text-[9px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+                <p className="text-sm font-bold">{formatCurrency(totalOrcamento)}</p>
+              </div>
+            )}
           </div>
         )}
       </div>

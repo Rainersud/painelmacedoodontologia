@@ -209,6 +209,9 @@ const PAYMENT_INVALIDATION_KEYS = [
   ['sales-metrics'],
   ['ltv-metrics'],
   ['agent-bonus'],
+  ['revenue-projection'],
+  ['cac-monthly-chart'],
+  ['ltv-monthly-chart'],
 ];
 
 function invalidateAllPaymentQueries(queryClient: ReturnType<typeof useQueryClient>) {

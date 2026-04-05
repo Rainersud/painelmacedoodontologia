@@ -40,6 +40,40 @@ import { ptBR } from 'date-fns/locale';
 interface PurchaseEntry {
   treatment: string;
   value: number;
+  locked?: boolean;
+}
+
+/* Treatment suggestion entry */
+interface TreatmentSuggestion {
+  name: string;
+  value: number;
+  selected: boolean;
+  date: string | null; // optional scheduling date
+}
+
+const PROSTHESIS_SUGGESTIONS = [
+  'Revisões a cada 6 meses',
+  'Reembasamento de manutenção',
+  'Higienização profissional da prótese',
+  'Upgrade para implantes',
+  'Limpeza',
+  'Clareamento',
+  'Troca de antagonico',
+];
+
+const IMPLANT_EXTRA_SUGGESTIONS = [
+  'Revisão a cada 6 meses',
+  'Troca de resina por zircônia',
+];
+
+function getSuggestionsForTreatment(interestProduct: string | null): string[] {
+  if (!interestProduct) return [];
+  const lower = interestProduct.toLowerCase();
+  const isProsthesis = lower.includes('prótese') || lower.includes('protese');
+  const isImplant = lower.includes('implante');
+  if (isProsthesis) return PROSTHESIS_SUGGESTIONS;
+  if (isImplant) return [...PROSTHESIS_SUGGESTIONS, ...IMPLANT_EXTRA_SUGGESTIONS];
+  return [];
 }
 
 function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
@@ -48,18 +82,14 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as PurchaseEntry[];
   } catch {
-    // Legacy format: semicolon-separated numbers
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);
     if (nums.length > 0) {
-      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v }));
+      return nums.map((v, i) => ({ treatment: `Compra ${i + 2}`, value: v, locked: true }));
     }
   }
   return [];
 }
 
-function serializePurchaseEntries(entries: PurchaseEntry[]): string {
-  return JSON.stringify(entries);
-}
 
 /* Detail Dialog Content with Triage Integration */
 function DetailDialogContent({
@@ -109,20 +139,39 @@ function DetailDialogContent({
   // Sync local state when opp changes
   useEffect(() => {
     const parsed = parsePurchaseEntries(opp.purchase_values);
-    setLocalPurchases(parsed);
+    const locked = parsed.map(p => ({ ...p, locked: p.value > 0 }));
+    setLocalPurchases(locked);
     setSelectedCount(Math.max(parsed.length + 1, 1));
   }, [opp.purchase_values]);
 
-  // When count changes, adjust local array (recurrent entries = count - 1)
+  // Smart treatment suggestions based on interest_product
+  const autoSuggestionNames = useMemo(() =>
+    getSuggestionsForTreatment(opp.lead?.interest_product || null),
+    [opp.lead?.interest_product]
+  );
+  const [treatmentSuggestions, setTreatmentSuggestions] = useState<TreatmentSuggestion[]>([]);
+  const [newSuggestionName, setNewSuggestionName] = useState('');
+
+  useEffect(() => {
+    if (autoSuggestionNames.length > 0 && treatmentSuggestions.length === 0) {
+      setTreatmentSuggestions(autoSuggestionNames.map(name => ({
+        name, value: 0, selected: false, date: null,
+      })));
+    }
+  }, [autoSuggestionNames]);
+
   const handleCountChange = (newCount: number) => {
     setSelectedCount(newCount);
-    const recurrentCount = newCount - 1; // exclude first purchase
+    const recurrentCount = newCount - 1;
     const updated = [...localPurchases];
     while (updated.length < recurrentCount) {
-      updated.push({ treatment: '', value: 0 });
+      updated.push({ treatment: '', value: 0, locked: false });
     }
     if (updated.length > recurrentCount) {
-      updated.length = recurrentCount;
+      const lockedCount = updated.filter(p => p.locked).length;
+      if (recurrentCount >= lockedCount) {
+        updated.length = recurrentCount;
+      }
     }
     setLocalPurchases(updated);
   };
@@ -130,6 +179,7 @@ function DetailDialogContent({
   const handlePurchaseFieldChange = (index: number, field: 'treatment' | 'value', val: string) => {
     setLocalPurchases(prev => {
       const copy = [...prev];
+      if (copy[index].locked) return copy;
       if (field === 'treatment') {
         copy[index] = { ...copy[index], treatment: val };
       } else {
@@ -140,16 +190,57 @@ function DetailDialogContent({
   };
 
   const handleSavePurchases = () => {
-    const serialized = serializePurchaseEntries(localPurchases);
+    const toSave = localPurchases.map(p => ({
+      treatment: p.treatment,
+      value: p.value,
+      locked: p.value > 0 ? true : p.locked,
+    }));
+    const serialized = JSON.stringify(toSave);
     updateOpp.mutate({
       id: opp.id,
       purchase_values: serialized,
-      purchase_count: localPurchases.filter(p => p.value > 0).length || selectedCount,
+      purchase_count: toSave.filter(p => p.value > 0).length || selectedCount,
     }, {
-      onSuccess: () => toast.success('Histórico de compras salvo!'),
+      onSuccess: () => {
+        setLocalPurchases(toSave);
+        toast.success('Histórico de compras salvo!');
+      },
       onError: () => toast.error('Erro ao salvar. Tente novamente.'),
     });
   };
+
+  const handleToggleSuggestion = (index: number) => {
+    setTreatmentSuggestions(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], selected: !copy[index].selected };
+      return copy;
+    });
+  };
+
+  const handleSuggestionFieldChange = (index: number, field: 'name' | 'value' | 'date', val: string) => {
+    setTreatmentSuggestions(prev => {
+      const copy = [...prev];
+      if (field === 'value') {
+        copy[index] = { ...copy[index], value: parseFloat(val) || 0 };
+      } else if (field === 'date') {
+        copy[index] = { ...copy[index], date: val || null };
+      } else {
+        copy[index] = { ...copy[index], name: val };
+      }
+      return copy;
+    });
+  };
+
+  const handleAddCustomSuggestion = () => {
+    if (!newSuggestionName.trim()) return;
+    setTreatmentSuggestions(prev => [...prev, {
+      name: newSuggestionName.trim(), value: 0, selected: false, date: null,
+    }]);
+    setNewSuggestionName('');
+  };
+
+  const isImplantPatient = (opp.lead?.interest_product || '').toLowerCase().includes('implante');
+  const needsDateField = (name: string) => isImplantPatient && name.toLowerCase().includes('revisão');
 
   const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
@@ -214,10 +305,18 @@ function DetailDialogContent({
         {selectedCount > 1 && (
           <div className="space-y-2">
             {localPurchases.map((entry, i) => (
-              <div key={i} className="rounded-md border border-border p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground">
-                  🔹 Compra {i + 2}
-                </p>
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5",
+                entry.locked ? "border-success/30 bg-success/5" : "border-border"
+              )}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold text-muted-foreground">
+                    🔹 Compra {i + 2}
+                  </p>
+                  {entry.locked && (
+                    <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[9px] text-muted-foreground">Tratamento</Label>
@@ -226,6 +325,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'treatment', e.target.value)}
                       placeholder="Ex: Implante"
                       className="h-7 text-xs mt-0.5"
+                      disabled={entry.locked}
                     />
                   </div>
                   <div>
@@ -236,6 +336,7 @@ function DetailDialogContent({
                       onChange={(e) => handlePurchaseFieldChange(i, 'value', e.target.value)}
                       placeholder="0"
                       className="h-7 text-xs mt-0.5"
+                      disabled={entry.locked}
                     />
                   </div>
                 </div>
@@ -244,8 +345,8 @@ function DetailDialogContent({
           </div>
         )}
 
-        {/* Save button (only if there are recurrent purchases) */}
-        {selectedCount > 1 && (
+        {/* Save button (only if there are unlocked recurrent purchases) */}
+        {selectedCount > 1 && localPurchases.some(p => !p.locked) && (
           <Button size="sm" className="w-full h-8 text-xs" onClick={handleSavePurchases}>
             💾 Salvar Compras Recorrentes
           </Button>
@@ -277,6 +378,74 @@ function DetailDialogContent({
           }
         </Badge>
       </div>
+
+      {/* ===== SUGESTÃO DE TRATAMENTO BLOCK ===== */}
+      {treatmentSuggestions.length > 0 && (
+        <div className="rounded-lg border border-chart-5/30 p-3 space-y-3">
+          <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">
+            💡 Sugestão de Tratamento
+          </p>
+          <div className="space-y-2">
+            {treatmentSuggestions.map((sug, i) => (
+              <div key={i} className={cn(
+                "rounded-md border p-2.5 space-y-1.5 transition-colors",
+                sug.selected ? "border-primary/30 bg-primary/5" : "border-border"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={sug.selected}
+                    onCheckedChange={() => handleToggleSuggestion(i)}
+                    className="h-4 w-4"
+                  />
+                  <Input
+                    value={sug.name}
+                    onChange={(e) => handleSuggestionFieldChange(i, 'name', e.target.value)}
+                    className="h-7 text-xs flex-1 border-none bg-transparent p-0 focus-visible:ring-0"
+                  />
+                </div>
+                {sug.selected && (
+                  <div className={cn("grid gap-2", needsDateField(sug.name) ? "grid-cols-2" : "grid-cols-1")}>
+                    <div>
+                      <Label className="text-[9px] text-muted-foreground">Valor (R$)</Label>
+                      <Input
+                        type="number"
+                        value={sug.value || ''}
+                        onChange={(e) => handleSuggestionFieldChange(i, 'value', e.target.value)}
+                        placeholder="0"
+                        className="h-7 text-xs mt-0.5"
+                      />
+                    </div>
+                    {needsDateField(sug.name) && (
+                      <div>
+                        <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                        <Input
+                          type="date"
+                          value={sug.date || ''}
+                          onChange={(e) => handleSuggestionFieldChange(i, 'date', e.target.value)}
+                          className="h-7 text-xs mt-0.5"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Add custom suggestion */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={newSuggestionName}
+              onChange={(e) => setNewSuggestionName(e.target.value)}
+              placeholder="Adicionar sugestão manual..."
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomSuggestion()}
+            />
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={handleAddCustomSuggestion}>
+              + Adicionar
+            </Button>
+          </div>
+        </div>
+      )}
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
@@ -605,12 +774,12 @@ const Comercial2 = () => {
 
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
-      <Tabs defaultValue="pipeline" className="flex flex-col h-auto md:h-[calc(100vh-8rem)] min-h-0">
+        <Tabs defaultValue="pipeline" className="flex flex-col h-auto min-h-0">
         <TabsList className="shrink-0 mb-3 w-fit">
           <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
         </TabsList>
-        <TabsContent value="ltv" className="flex-1 overflow-y-auto">
+        <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
           <LTVRecurrencePanel />
         </TabsContent>
         <TabsContent value="pipeline" className="flex-1 min-h-0 flex flex-col">

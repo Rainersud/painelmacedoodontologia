@@ -452,7 +452,7 @@ function EditableDetailContent({
         </div>
       )}
 
-      {/* ===== FINANCEIRO ===== */}
+      {/* ===== FINANCEIRO DA ETAPA ===== */}
       <div className="rounded-lg border border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
         <div>
@@ -463,6 +463,32 @@ function EditableDetailContent({
             }
           }} />
         </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Pagamento (Faturamento Real)</Label>
+          <CurrencyInput value={revenueValue} onChange={setRevenueValue} onBlur={() => {
+            if (revenueValue !== (opp.closed_value || 0)) {
+              updateOpp.mutate({ id: opp.id, closed_value: revenueValue });
+            }
+          }} />
+        </div>
+        {(budgetValue > 0 || revenueValue > 0) && (
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-md bg-primary/5 border border-primary/20 p-2">
+              <p className="text-[9px] text-muted-foreground">Orçamento</p>
+              <p className="text-sm font-bold text-primary">{formatCurrency(budgetValue)}</p>
+            </div>
+            <div className={cn("rounded-md p-2 border",
+              revenueValue >= budgetValue && budgetValue > 0
+                ? "bg-success/5 border-success/20"
+                : "bg-warning/5 border-warning/20"
+            )}>
+              <p className="text-[9px] text-muted-foreground">Faturamento Real</p>
+              <p className={cn("text-sm font-bold",
+                revenueValue >= budgetValue && budgetValue > 0 ? "text-success" : "text-warning"
+              )}>{formatCurrency(revenueValue)}</p>
+            </div>
+          </div>
+        )}
         {filledPurchases.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-md bg-primary/5 border border-primary/20 p-2">

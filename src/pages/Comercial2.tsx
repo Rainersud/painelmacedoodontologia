@@ -189,11 +189,6 @@ function DetailDialogContent({
     if (!newSuggestionName.trim()) return;
     const name = newSuggestionName.trim();
     setTreatmentSuggestions(prev => [...prev, { name, selected: true }]);
-    const exists = localPurchases.some(p => p.treatment.toLowerCase() === name.toLowerCase());
-    if (!exists) {
-      setLocalPurchases(prev => [...prev, { treatment: name, value: 0, date: null, locked: false }]);
-      if (localPurchases.length + 2 > selectedCount) setSelectedCount(localPurchases.length + 2);
-    }
     setNewSuggestionName('');
   };
 

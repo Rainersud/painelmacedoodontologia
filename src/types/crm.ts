@@ -28,7 +28,9 @@ export type LeadStatus =
   | 'outro_momento'
   | 'qualificado'
   | 'tratamento_andamento'
-  | 'concluido';
+  | 'concluido'
+  | 'quase_cliente'
+  | 'potencial';
 
 export type LeadSource = 
   | 'whatsapp'

@@ -126,6 +126,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
       fee_amount: feeAmount,
       net_value: netValue,
       boleto_dates: method === 'boleto' ? boletoDates.filter(Boolean) : undefined,
+      upsell_opportunity_id: upsellOpportunityId,
     }, {
       onSuccess: () => {
         onOpenChange(false);

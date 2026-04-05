@@ -552,32 +552,30 @@ function EditableDetailContent({
           <p className="text-[8px] text-muted-foreground">Soma automática de {localPurchases.length} tratamento(s)</p>
         </div>
 
-        {/* Resumo financeiro */}
-        {(budgetValue > 0 || totalPaidStage > 0) && (
-          <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+        {/* Resumo financeiro — sempre visível */}
+        <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
           <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Valor orçado</span>
-              <span className="font-medium">{formatCurrency(budgetValue)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">✅ Já pago (automático)</span>
-              <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
-            </div>
-            {pendingBoletos.length > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Boletos pendentes</span>
-                <span className="font-medium text-warning">{pendingBoletos.length}x</span>
-              </div>
-            )}
-            <div className="border-t my-1" />
-            <div className="flex justify-between text-sm font-medium">
-              <span>Saldo restante</span>
-              <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
-                {formatCurrency(remainingBalance)}
-              </span>
-            </div>
+            <span className="text-muted-foreground">Valor orçado</span>
+            <span className="font-medium">{formatCurrency(budgetValue)}</span>
           </div>
-        )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">✅ Já pago (automático)</span>
+            <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
+          </div>
+          {pendingBoletos.length > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Boletos pendentes</span>
+              <span className="font-medium text-warning">{pendingBoletos.length}x</span>
+            </div>
+          )}
+          <div className="border-t my-1" />
+          <div className="flex justify-between text-sm font-medium">
+            <span>Saldo restante</span>
+            <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+              {formatCurrency(remainingBalance)}
+            </span>
+          </div>
+        </div>
 
         {/* Botão Registrar Pagamento */}
         <Button

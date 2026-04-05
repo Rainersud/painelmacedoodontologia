@@ -200,6 +200,30 @@ export function useCreatePayment() {
   });
 }
 
+export function useRevertPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'cancelado', paid_at: null })
+        .eq('id', paymentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      toast.success('Pagamento revertido com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao reverter pagamento');
+    },
+  });
+}
+
 export function useConfirmBoletoPayment() {
   const queryClient = useQueryClient();
 

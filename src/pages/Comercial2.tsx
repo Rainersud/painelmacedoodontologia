@@ -356,9 +356,11 @@ function EditableDetailContent({
     updateOpp.mutate({ id: opp.id, contact_status: newStatus });
   };
 
-  const calculatedLTV = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  // LTV = soma dos tratamentos marcados como PAGO (valor total do tratamento, não parcelas)
+  const calculatedLTV = useMemo(() => localPurchases.filter(p => p.payment_status === 'pago').reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  const totalOrcamento = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
-  const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? calculatedLTV / filledPurchases.length : 0, [filledPurchases, calculatedLTV]);
+  const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? totalOrcamento / filledPurchases.length : 0, [filledPurchases, totalOrcamento]);
 
   const currentStageLabel = UPSELL_STAGES.find(s => s.key === opp.status)?.label || opp.status;
   const canAdvance = !!getNextStage(opp.status);

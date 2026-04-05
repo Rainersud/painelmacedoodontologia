@@ -41,7 +41,7 @@ const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: React.ElementT
   { key: 'boleto', label: 'Boleto', icon: FileText, color: 'bg-chart-5/10 text-chart-5 border-chart-5/30' },
 ];
 
-export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValue = 0 }: PaymentDialogProps) {
+export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValue = 0, upsellOpportunityId }: PaymentDialogProps) {
   const [step, setStep] = useState<'budget' | 'method' | 'details'>('budget');
   const [grossValue, setGrossValue] = useState(budgetValue);
   const [method, setMethod] = useState<PaymentMethod | null>(null);

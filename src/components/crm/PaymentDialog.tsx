@@ -42,8 +42,8 @@ const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: React.ElementT
 ];
 
 export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValue = 0, upsellOpportunityId }: PaymentDialogProps) {
-  const [step, setStep] = useState<'budget' | 'method' | 'details'>('budget');
-  const [grossValue, setGrossValue] = useState(budgetValue);
+  const [step, setStep] = useState<'method' | 'details'>('method');
+  const grossValue = budgetValue;
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [installments, setInstallments] = useState(1);
   const [boletoCount, setBoletoCount] = useState(1);

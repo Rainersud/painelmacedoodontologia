@@ -1035,7 +1035,11 @@ const Comercial2 = () => {
         <TabsList className="shrink-0 mb-3 w-fit">
           <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
+          <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
         </TabsList>
+        <TabsContent value="financeiro" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
+          <FinancialDashboard />
+        </TabsContent>
         <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
           <LTVRecurrencePanel onOpenLead={(oppId) => {
             const opp = opportunities?.find(o => o.id === oppId);

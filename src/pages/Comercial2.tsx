@@ -45,6 +45,7 @@ interface PurchaseEntry {
   value: number;
   date: string | null;
   locked?: boolean;
+  payment_status?: 'pendente' | 'pago';
 }
 
 /* Treatment suggestion entry */

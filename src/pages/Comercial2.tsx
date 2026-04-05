@@ -730,7 +730,7 @@ function EditableDetailContent({
             </div>
             {totalOrcamento > 0 && totalOrcamento !== calculatedLTV && (
               <div className="rounded-md bg-muted/50 border p-2 text-center">
-                <p className="text-[9px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+                <p className="text-[9px] text-muted-foreground">💰 Valor orçado</p>
                 <p className="text-sm font-bold">{formatCurrency(totalOrcamento)}</p>
               </div>
             )}

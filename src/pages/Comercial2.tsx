@@ -91,6 +91,8 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
       date: (p.date as string) || null,
       locked: !!p.locked,
       payment_status: (p.payment_status as 'pendente' | 'pago') || 'pendente',
+      upsell_date: (p.upsell_date as string) || null,
+      next_upsell_date: (p.next_upsell_date as string) || null,
     }));
   } catch {
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);

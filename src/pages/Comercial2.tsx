@@ -210,7 +210,7 @@ function EditableDetailContent({
   const purchases = useMemo(() => parsePurchaseEntries(opp.purchase_values), [opp.purchase_values]);
   const [localPurchases, setLocalPurchases] = useState<PurchaseEntry[]>(purchases);
   const [stageEditing, setStageEditing] = useState<Record<number, boolean>>({});
-  const [budgetValue, setBudgetValue] = useState(opp.estimated_value || 0);
+  const [budgetValue, setBudgetValue] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 

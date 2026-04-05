@@ -545,14 +545,11 @@ function EditableDetailContent({
       <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
         <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
 
-        {/* Valor do Orçamento */}
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Valor do Orçamento</Label>
-          <CurrencyInput value={budgetValue} onChange={setBudgetValue} onBlur={() => {
-            if (budgetValue !== (opp.estimated_value || 0)) {
-              updateOpp.mutate({ id: opp.id, estimated_value: budgetValue });
-            }
-          }} />
+        {/* Total Orçado (soma automática dos tratamentos) */}
+        <div className="p-2.5 rounded-md bg-primary/5 border border-primary/20">
+          <p className="text-[10px] text-muted-foreground">📋 Total Orçado (todos tratamentos)</p>
+          <p className="text-lg font-bold text-primary">{formatCurrency(budgetValue)}</p>
+          <p className="text-[8px] text-muted-foreground">Soma automática de {localPurchases.length} tratamento(s)</p>
         </div>
 
         {/* Resumo financeiro */}

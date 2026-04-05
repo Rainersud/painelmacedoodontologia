@@ -67,7 +67,58 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     };
   }, [queryClient]);
 
-  if (isLoading) {
+  // Build leads-by-stage map from upsell opportunities
+  const leadsByStage = useMemo(() => {
+    const map: Record<string, LeadEntry[]> = {};
+    if (!opportunities) return map;
+
+    const STAGE_LABELS: Record<number, string> = {
+      1: 'Comprou 1 vez',
+      2: 'Comprou 2 vezes',
+      3: 'Comprou 3 vezes',
+      4: 'Comprou 4 vezes',
+    };
+
+    opportunities.forEach((opp) => {
+      // Parse purchase_values to get count and LTV
+      let recurrentCount = 0;
+      let ltv = 0;
+      if (opp.purchase_values) {
+        try {
+          const parsed = JSON.parse(opp.purchase_values);
+          if (Array.isArray(parsed)) {
+            const paid = parsed.filter((p: { value?: number; payment_status?: string }) =>
+              (p.value || 0) > 0 && p.payment_status === 'pago'
+            );
+            recurrentCount = paid.length;
+            ltv = paid.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const totalCount = recurrentCount + 1;
+      const stageLabel = totalCount >= 5 ? 'Comprou 5+ vezes' : (STAGE_LABELS[totalCount] || `Comprou ${totalCount} vez${totalCount > 1 ? 'es' : ''}`);
+
+      if (!map[stageLabel]) map[stageLabel] = [];
+      map[stageLabel].push({
+        id: opp.id,
+        leadId: opp.lead_id,
+        name: opp.lead?.name || 'Paciente',
+        ltv,
+        purchaseCount: totalCount,
+        hasOpenUpsell: opp.contact_status !== 'convertido' && opp.contact_status !== 'sem_interesse',
+        status: opp.status,
+      });
+    });
+
+    // Sort each group by LTV descending
+    Object.values(map).forEach(arr => arr.sort((a, b) => b.ltv - a.ltv));
+    return map;
+  }, [opportunities]);
+
+  const selectedStageLeads = selectedStage ? (leadsByStage[selectedStage] || []) : [];
+
     return (
       <div className="flex items-center justify-center h-48">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

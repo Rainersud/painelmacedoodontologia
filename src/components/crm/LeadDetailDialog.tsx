@@ -120,6 +120,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
           : '',
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
+        loss_reason: (lead as any).loss_reason || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');

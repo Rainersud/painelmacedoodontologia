@@ -62,7 +62,7 @@ export interface ContactHistory {
 }
 
 export const UPSELL_STAGES = [
-  { key: 'comprou_1', label: 'Comprou 1 vez', color: 'bg-chart-2', bgColor: 'bg-chart-2/10', locked: true },
+  { key: 'comprou_1', label: 'Comprou 1 vez', color: 'bg-chart-2', bgColor: 'bg-chart-2/10', locked: false },
   { key: 'comprou_2', label: 'Comprou 2 vezes', color: 'bg-chart-1', bgColor: 'bg-chart-1/10', locked: false },
   { key: 'comprou_3', label: 'Comprou 3 vezes', color: 'bg-chart-3', bgColor: 'bg-chart-3/10', locked: false },
   { key: 'comprou_4', label: 'Comprou 4 vezes', color: 'bg-chart-4', bgColor: 'bg-chart-4/10', locked: false },

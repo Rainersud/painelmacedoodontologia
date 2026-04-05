@@ -749,7 +749,7 @@ function EditableDetailContent({
       />
 
       {/* ===== SAVE EVOLUTION BUTTON ===== */}
-      <Button onClick={handleSaveEvolution} className="w-full gap-2" disabled={localPurchases.length === 0}>
+      <Button onClick={handleSaveEvolution} className="w-full gap-2">
         <Save className="h-4 w-4" />
         {canAdvance ? 'Salvar Evolução e Avançar' : 'Salvar Evolução'}
       </Button>

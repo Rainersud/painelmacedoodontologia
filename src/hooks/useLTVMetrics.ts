@@ -141,12 +141,15 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
           try {
             const parsed = JSON.parse(o.purchase_values);
             if (Array.isArray(parsed)) {
-              const filled = parsed.filter((p: { value?: number }) => (p.value || 0) > 0);
-              recurrentCount = filled.length;
-              ltvFromField = filled.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
+              // Only count treatments marked as "pago" for LTV
+              const paidEntries = parsed.filter((p: { value?: number; payment_status?: string }) =>
+                (p.value || 0) > 0 && p.payment_status === 'pago'
+              );
+              recurrentCount = paidEntries.length;
+              ltvFromField = paidEntries.reduce((s: number, p: { value?: number }) => s + (p.value || 0), 0);
             }
           } catch {
-            // Legacy semicolon format
+            // Legacy semicolon format - treat all as paid (backward compat)
             const nums = o.purchase_values.split(';').map((v: string) => parseFloat(v.trim())).filter((v: number) => !isNaN(v) && v > 0);
             if (nums.length > 0) {
               recurrentCount = nums.length;

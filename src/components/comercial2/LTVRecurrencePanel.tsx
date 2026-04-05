@@ -119,6 +119,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
 
   const selectedStageLeads = selectedStage ? (leadsByStage[selectedStage] || []) : [];
 
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

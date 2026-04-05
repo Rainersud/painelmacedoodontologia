@@ -149,6 +149,16 @@ const Funil = () => {
         }
       }
 
+      if (newStatus === 'quase_cliente') {
+        // Open lead detail so user can fill in the loss_reason
+        setSelectedLead(lead);
+        setDialogOpen(true);
+        toast.info('Preencha o motivo de não fechamento na aba Status.');
+        setDraggedLeadId(null);
+        setDropTargetStatus(null);
+        return;
+      }
+
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         setPendingScheduleLead(lead);
         setScheduleDialogOpen(true);

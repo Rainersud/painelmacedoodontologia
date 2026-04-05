@@ -308,7 +308,7 @@ function EditableDetailContent({
       id: opp.id,
       purchase_values: serialized,
       estimated_value: budgetValue,
-      closed_value: revenueValue,
+      closed_value: totalPaidStage,
     };
 
     if (nextStage) {

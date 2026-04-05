@@ -127,7 +127,7 @@ function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
           <p className="font-medium">{opp.lead?.interest_product || '-'}</p>
         </div>
         <div>
-          <p className="text-muted-foreground text-xs">Valor Original</p>
+          <p className="text-muted-foreground text-xs">Venda Comercial 1</p>
           <p className="font-medium">{formatCurrency(opp.lead?.treatment_value || 0)}</p>
         </div>
         <div>

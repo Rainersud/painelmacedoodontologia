@@ -90,9 +90,6 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
   return [];
 }
 
-function serializePurchaseEntries(entries: PurchaseEntry[]): string {
-  return JSON.stringify(entries);
-}
 
 /* Detail Dialog Content with Triage Integration */
 function DetailDialogContent({

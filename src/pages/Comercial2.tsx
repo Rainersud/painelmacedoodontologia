@@ -214,6 +214,11 @@ function EditableDetailContent({
   const { data: stagePayments } = usePayments(undefined, opp.id);
   const confirmBoleto = useConfirmBoletoPayment();
   const revertPayment = useRevertPayment();
+  const deletePayment = useDeletePayment();
+  const editPayment = useEditPayment();
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [editingPaymentValue, setEditingPaymentValue] = useState(0);
+  const [deletePaymentConfirm, setDeletePaymentConfirm] = useState<string | null>(null);
 
   const totalPaidStage = useMemo(() => {
     return (stagePayments || [])

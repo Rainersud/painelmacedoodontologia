@@ -88,6 +88,7 @@ function parsePurchaseEntries(raw: string | null): PurchaseEntry[] {
       value: Number(p.value || 0),
       date: (p.date as string) || null,
       locked: !!p.locked,
+      payment_status: (p.payment_status as 'pendente' | 'pago') || 'pendente',
     }));
   } catch {
     const nums = raw.split(';').map(v => parseFloat(v.trim())).filter(v => !isNaN(v) && v > 0);

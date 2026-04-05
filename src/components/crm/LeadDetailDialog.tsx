@@ -675,6 +675,38 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
+              {/* Loss reason field when moving to quase_cliente */}
+              {newStatus === 'quase_cliente' && (
+                <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
+                  <h4 className="font-medium text-chart-5 flex items-center gap-2">
+                    ❓ Não fechou porque:
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Campo obrigatório — descreva o motivo pelo qual o paciente não fechou o tratamento.
+                  </p>
+                  <Textarea
+                    value={formData.loss_reason}
+                    onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                    placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
+                    rows={3}
+                    className="border-chart-5/30"
+                  />
+                  {!formData.loss_reason.trim() && (
+                    <p className="text-[10px] text-destructive">* Campo obrigatório</p>
+                  )}
+                </div>
+              )}
+
+              {/* Show existing loss_reason for leads already in quase_cliente */}
+              {lead.status === 'quase_cliente' && (lead as any).loss_reason && newStatus !== 'quase_cliente' && (
+                <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
+                  <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
+                    ❓ Motivo de não fechamento
+                  </h4>
+                  <p className="text-sm">{(lead as any).loss_reason}</p>
+                </div>
+              )}
+
               {/* Paciente Amigo - show for already-fechado leads (read-only with edit) */}
               {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">

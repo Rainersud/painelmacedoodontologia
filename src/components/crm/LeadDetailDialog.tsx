@@ -64,7 +64,7 @@ interface LeadDetailDialogProps {
 }
 
 export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
   const updateRating = useUpdateLeadRating();

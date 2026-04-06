@@ -328,86 +328,20 @@ const Funil = () => {
           </div>
         </div>
 
-        {/* Kanban board */}
-        <div className="min-h-[500px] overflow-x-auto overflow-y-hidden scroll-container-x">
-          <div className="flex gap-3 min-w-max h-full pb-2 px-1">
-            {FUNNEL_STAGES.map((stage) => {
-              const stageLeads = getLeadsByStatus(stage.key);
-              const totalValue = getTotalBudgetByStatus(stage.key);
-              const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
-              
-              return (
-                <div 
-                  key={stage.key}
-                  className="w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 h-full"
-                  onDragOver={(e) => handleDragOver(e, stage.key)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, stage.key)}
-                >
-                  {/* Column container */}
-                  <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
-                    isDropTarget && 'ring-2 ring-primary ring-offset-2'
-                  )}>
-                    {/* Column header — fixed */}
-                    <div className="shrink-0 px-3 pt-3 pb-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
-                        <span className="text-xs font-semibold flex-1 truncate">
-                          {stage.label}
-                        </span>
-                        <Badge variant="secondary" className="font-semibold bg-muted text-xs h-5 min-w-5 flex items-center justify-center">
-                          {stageLeads.length}
-                        </Badge>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {formatCurrency(totalValue)}
-                      </p>
-                    </div>
-
-                    {/* Column body — scrolls vertically */}
-                    <div className="flex-1 min-h-0 px-2 pb-2">
-                      <div className="h-full overflow-y-auto scroll-container-y space-y-2 pr-1">
-                        {stageLeads.map((lead, index) => (
-                          <div
-                            key={lead.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, lead)}
-                            onDragEnd={handleDragEnd}
-                            className={cn(
-                              "cursor-grab active:cursor-grabbing",
-                              draggedLeadId === lead.id && 'opacity-40'
-                            )}
-                          >
-                            <LeadCard 
-                              lead={lead} 
-                              onClick={handleOpenDetail}
-                              compact
-                              index={index}
-                            />
-                          </div>
-                        ))}
-                        {stageLeads.length === 0 && (
-                          <div 
-                            className={cn(
-                              "text-center py-8 rounded-lg",
-                              stage.bgColor,
-                              isDropTarget && 'border-2 border-dashed border-primary'
-                            )}
-                          >
-                            <p className="text-xs text-muted-foreground">
-                              {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Kanban board with synced top scrollbar */}
+        <KanbanBoard
+          stages={FUNNEL_STAGES}
+          getLeadsByStatus={getLeadsByStatus}
+          getTotalBudgetByStatus={getTotalBudgetByStatus}
+          dropTargetStatus={dropTargetStatus}
+          draggedLeadId={draggedLeadId}
+          handleDragOver={handleDragOver}
+          handleDragLeave={handleDragLeave}
+          handleDrop={handleDrop}
+          handleDragStart={handleDragStart}
+          handleDragEnd={handleDragEnd}
+          handleOpenDetail={handleOpenDetail}
+        />
 
         {/* Loss Analysis Panel */}
         <div className="mt-6">

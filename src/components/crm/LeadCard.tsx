@@ -72,113 +72,87 @@ export function LeadCard({
         </div>
       )}
 
-      <CardContent className={cn("p-3", compact && "p-2")}>
-        {/* Header: Name + Referral icons */}
-        <div className="flex items-start justify-between mb-1.5">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className={cn(
-              "rounded-full bg-primary/10 flex items-center justify-center shrink-0",
-              compact ? "h-7 w-7" : "h-8 w-8"
-            )}>
-              <span className={cn("font-semibold text-primary", compact ? "text-[10px]" : "text-xs")}>
-                {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-            <p className={cn("font-semibold truncate", compact ? "text-xs" : "text-sm")}>{lead.name}</p>
+      <CardContent className="p-1.5">
+        {/* Row 1: Avatar + Name + Value */}
+        <div className="flex items-center gap-1.5 mb-1">
+          <div className="rounded-full bg-primary/10 flex items-center justify-center shrink-0 h-6 w-6">
+            <span className="font-semibold text-primary text-[9px]">
+              {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            </span>
           </div>
-          {/* Discrete referral icons */}
+          <p className="font-semibold truncate text-xs flex-1 min-w-0">{lead.name}</p>
           {hasReferralData && refTags && (
             <ReferralPopover lead={lead} refTags={refTags} />
           )}
         </div>
 
-        {/* Smart Alert Badge */}
-        {topAlert && (
-          <div className="mb-1.5">
+        {/* Row 2: Compact badges row */}
+        <div className="flex flex-wrap items-center gap-1 mb-1">
+          {topAlert && (
             <Badge variant="outline" className={cn(
-              "text-[10px] border-0 font-medium",
+              "text-[9px] border-0 font-medium px-1 py-0 h-4",
               topAlert.level === 'critical' ? 'bg-destructive/10 text-destructive' :
               topAlert.level === 'opportunity' ? 'bg-success/10 text-success' :
               'bg-warning/10 text-warning'
             )}>
-              <Zap className="h-2.5 w-2.5 mr-0.5" />
+              <Zap className="h-2 w-2 mr-0.5" />
               {topAlert.shortLabel}
             </Badge>
-          </div>
-        )}
-
-        {/* Treatment Interest */}
-        {lead.interest_product && (
-          <div className="mb-1.5">
-            <Badge variant="outline" className="text-[10px] bg-chart-3/10 text-chart-3 border-chart-3/20">
-              🦷 {lead.interest_product === 'implante' ? 'Implante' : 
-                   lead.interest_product === 'protese_flexivel' ? 'Prótese Flexível' :
-                   lead.interest_product === 'protese_total' ? 'Prótese Total' : lead.interest_product}
-            </Badge>
-          </div>
-        )}
-
-        {/* Days in stage */}
-        <div className="mb-1.5">
-          <Badge variant="outline" className={cn("text-[10px] border-0 font-medium", alertColors[alertLevel])}>
-            ⏳ {days} {days === 1 ? 'dia' : 'dias'} nesta etapa
+          )}
+          <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", alertColors[alertLevel])}>
+            ⏳ {days}d
           </Badge>
+          {lead.interest_product && (
+            <Badge variant="outline" className="text-[9px] bg-chart-3/10 text-chart-3 border-chart-3/20 px-1 py-0 h-4">
+              🦷 {lead.interest_product === 'implante' ? 'Impl.' : 
+                   lead.interest_product === 'protese_flexivel' ? 'P.Flex' :
+                   lead.interest_product === 'protese_total' ? 'P.Total' : lead.interest_product}
+            </Badge>
+          )}
+          {lead.scheduled_appointment_at && (
+            <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 px-1 py-0 h-4">
+              📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+            </Badge>
+          )}
+          {lead.no_show_count > 0 && (
+            <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-0 px-1 py-0 h-4">
+              ❌ {lead.no_show_count}x falta
+            </Badge>
+          )}
         </div>
 
-        {/* Scheduled date */}
-        {lead.scheduled_appointment_at && (
-          <div className="flex items-center gap-1.5 text-xs text-primary mb-1.5 p-1.5 rounded bg-primary/5">
-            <Calendar className="h-3 w-3" />
-            <span className="font-medium">
-              📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-            </span>
-            <span>
-              ⏰ {new Date(lead.scheduled_appointment_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-        )}
-
-        {/* Budget Pending */}
-        {(lead.budget_value || 0) > 0 && !(lead.treatment_value && lead.treatment_value > 0) && (
-          <div className="mb-1.5">
-            <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
-              📋 Orçamento: {formatCurrency(lead.budget_value || 0)}
-            </Badge>
-          </div>
-        )}
-
-        {/* Paciente Amigo Badge */}
+        {/* Paciente Amigo Badge - only for fechado */}
         {lead.status === 'fechado' && friendlyData && (
-          <div className="mb-1.5">
+          <div className="mb-1">
             <Badge variant="outline" className={cn(
-              "text-[10px] border-0 font-medium",
+              "text-[9px] border-0 font-medium px-1 py-0 h-4",
               friendlyData.friendly_patient ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
             )}>
-              🤝 Paciente Amigo: {friendlyData.friendly_patient ? 'Sim' : 'Não'}
+              🤝 {friendlyData.friendly_patient ? 'Amigo ✓' : 'Amigo ✗'}
             </Badge>
           </div>
         )}
 
-        {/* Value + Actions */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-border">
-          <div className="flex items-center gap-1">
-            <DollarSign className="h-3.5 w-3.5 text-success" />
-            <span className="font-bold text-xs">
+        {/* Row 3: Value + quick actions */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <div className="flex items-center gap-0.5">
+            <DollarSign className="h-3 w-3 text-success" />
+            <span className="font-bold text-[11px]">
               {formatCurrency(lead.treatment_value || 0)}
             </span>
           </div>
-          <div className="flex gap-0.5">
-            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-5/10 hover:text-chart-5"
+          <div className="flex gap-0">
+            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-5/10 hover:text-chart-5"
               onClick={(e) => { e.stopPropagation(); onAddNote?.(lead); }}>
-              <StickyNote className="h-3 w-3" />
+              <StickyNote className="h-2.5 w-2.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-2/10 hover:text-chart-2"
+            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-2/10 hover:text-chart-2"
               onClick={(e) => { e.stopPropagation(); onCall?.(lead); window.open(`tel:${lead.phone}`, '_blank'); }}>
-              <Phone className="h-3 w-3" />
+              <Phone className="h-2.5 w-2.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-success/10 hover:text-success"
+            <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-success/10 hover:text-success"
               onClick={(e) => { e.stopPropagation(); const phone = lead.whatsapp || lead.phone; window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank'); }}>
-              <MessageSquare className="h-3 w-3" />
+              <MessageSquare className="h-2.5 w-2.5" />
             </Button>
           </div>
         </div>

@@ -411,6 +411,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Select
                     value={formData.sale_type || undefined}
                     onValueChange={(v) => setFormData(prev => ({ ...prev, sale_type: v as '1_etapa' | '2_etapas' }))}
+                    key={formData.sale_type || 'empty-sale-type'}
                   >
                     <SelectTrigger id="sale_type">
                       <SelectValue placeholder="Selecione o tipo" />

@@ -293,14 +293,16 @@ export function useUpdateLead() {
 
       if (error) throw error;
 
-      // Log edit activity
+      // Log edit activity (non-blocking)
       if (user) {
-        await supabase.from('activity_logs').insert({
+        supabase.from('activity_logs').insert({
           lead_id: leadId,
           agent_id: user.id,
           activity_type: 'lead_edited',
           title: 'Lead editado',
           metadata: { fields: Object.keys(updates) },
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
     },

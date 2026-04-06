@@ -91,13 +91,15 @@ export function useCreateTask() {
 
       if (error) throw error;
 
-      // Log activity
+      // Log activity (non-blocking, don't fail the mutation)
       await supabase.from('activity_logs').insert({
         lead_id: data.lead_id,
         agent_id: user.id,
         activity_type: 'task_created',
         title: `Tarefa criada: ${data.title}`,
         description: data.description,
+      }).then(({ error: logError }) => {
+        if (logError) console.warn('Activity log failed:', logError);
       });
     },
     onSuccess: () => {

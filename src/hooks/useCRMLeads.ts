@@ -11,10 +11,12 @@ export function useCRMLeads() {
   return useQuery({
     queryKey: ['crm-leads'],
     queryFn: async (): Promise<Lead[]> => {
+      // Fetch all leads without the default 1000-row limit
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5000);
 
       if (error) throw error;
 

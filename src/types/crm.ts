@@ -2,6 +2,7 @@
 
 export type LeadStatus = 
   | 'novo_lead' 
+  | 'nao_respondeu'
   | 'contatos_indicados'
   | 'indicacoes'
   | 'nutricao'
@@ -135,6 +136,7 @@ export interface FunnelStage {
 
 export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'nao_respondeu', label: 'Não Respondeu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },

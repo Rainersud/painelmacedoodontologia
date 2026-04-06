@@ -155,6 +155,8 @@ export function useUpdateTask() {
             activity_type: 'task_completed',
             title: `Tarefa concluída: ${task.title}`,
             description: updates.response || undefined,
+          }).then(({ error: logError }) => {
+            if (logError) console.warn('Activity log failed:', logError);
           });
         }
       }

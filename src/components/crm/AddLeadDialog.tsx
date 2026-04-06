@@ -54,7 +54,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
-    interest_product: '' as string,
+    interest_product: undefined as string | undefined,
     notes: '',
   });
 

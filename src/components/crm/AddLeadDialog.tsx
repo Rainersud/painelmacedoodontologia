@@ -158,7 +158,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           <div className="space-y-2">
             <Label>Interesse de Tratamento *</Label>
             <Select
-              value={form.interest_product}
+              value={form.interest_product ?? undefined}
               onValueChange={(value) => setForm(prev => ({ ...prev, interest_product: value }))}
             >
               <SelectTrigger>

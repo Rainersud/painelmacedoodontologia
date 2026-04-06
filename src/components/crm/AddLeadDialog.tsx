@@ -59,7 +59,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   });
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim() || !form.interest_product) {
+    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim()) {
       toast.error('Preencha nome, telefone e interesse de tratamento');
       return;
     }

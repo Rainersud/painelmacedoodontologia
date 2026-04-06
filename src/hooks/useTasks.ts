@@ -229,6 +229,8 @@ export function useRescheduleTask() {
         activity_type: 'task_created',
         title: `Tarefa reagendada: ${original.title}`,
         description: `Motivo: ${reason}`,
+      }).then(({ error: logError }) => {
+        if (logError) console.warn('Activity log failed:', logError);
       });
     },
     onSuccess: () => {

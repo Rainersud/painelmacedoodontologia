@@ -393,6 +393,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Select
                     value={formData.interest_product || undefined}
                     onValueChange={(v) => setFormData(prev => ({ ...prev, interest_product: v }))}
+                    key={formData.interest_product || 'empty-interest'}
                   >
                     <SelectTrigger id="interest_product">
                       <SelectValue placeholder="Selecione o tratamento" />

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,7 +25,151 @@ import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 
-const Funil = () => {
+// Synced dual-scrollbar Kanban board
+interface KanbanBoardProps {
+  stages: typeof FUNNEL_STAGES;
+  getLeadsByStatus: (status: LeadStatus) => Lead[];
+  getTotalBudgetByStatus: (status: LeadStatus) => number;
+  dropTargetStatus: LeadStatus | null;
+  draggedLeadId: string | null;
+  handleDragOver: (e: React.DragEvent, stageKey: LeadStatus) => void;
+  handleDragLeave: (e: React.DragEvent) => void;
+  handleDrop: (e: React.DragEvent, newStatus: LeadStatus) => void;
+  handleDragStart: (e: React.DragEvent, lead: Lead) => void;
+  handleDragEnd: () => void;
+  handleOpenDetail: (lead: Lead) => void;
+}
+
+function KanbanBoard({
+  stages, getLeadsByStatus, getTotalBudgetByStatus,
+  dropTargetStatus, draggedLeadId,
+  handleDragOver, handleDragLeave, handleDrop,
+  handleDragStart, handleDragEnd, handleOpenDetail,
+}: KanbanBoardProps) {
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [innerWidth, setInnerWidth] = useState(0);
+  const syncing = useRef(false);
+
+  useEffect(() => {
+    if (!innerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setInnerWidth(entry.target.scrollWidth);
+    });
+    ro.observe(innerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const syncScroll = useCallback((source: 'top' | 'bottom') => {
+    if (syncing.current) return;
+    syncing.current = true;
+    const from = source === 'top' ? topScrollRef.current : bottomScrollRef.current;
+    const to = source === 'top' ? bottomScrollRef.current : topScrollRef.current;
+    if (from && to) to.scrollLeft = from.scrollLeft;
+    requestAnimationFrame(() => { syncing.current = false; });
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-0 flex-1">
+      {/* Top scrollbar */}
+      <div
+        ref={topScrollRef}
+        className="shrink-0 overflow-x-auto overflow-y-hidden"
+        style={{ height: 12 }}
+        onScroll={() => syncScroll('top')}
+      >
+        <div style={{ width: innerWidth, height: 1 }} />
+      </div>
+
+      {/* Kanban content */}
+      <div
+        ref={bottomScrollRef}
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x"
+        onScroll={() => syncScroll('bottom')}
+      >
+        <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">
+          {stages.map((stage) => {
+            const stageLeads = getLeadsByStatus(stage.key);
+            const totalValue = getTotalBudgetByStatus(stage.key);
+            const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
+
+            return (
+              <div
+                key={stage.key}
+                className="w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full"
+                onDragOver={(e) => handleDragOver(e, stage.key)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, stage.key)}
+              >
+                <div className={cn(
+                  "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
+                  isDropTarget && 'ring-2 ring-primary ring-offset-2'
+                )}>
+                  {/* Column header */}
+                  <div className="shrink-0 px-2 pt-2 pb-1.5">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <div className={`h-2 w-2 rounded-full ${stage.color}`} />
+                      <span className="text-[11px] font-semibold flex-1 truncate">
+                        {stage.label}
+                      </span>
+                      <Badge variant="secondary" className="font-semibold bg-muted text-[10px] h-4 min-w-4 px-1 flex items-center justify-center">
+                        {stageLeads.length}
+                      </Badge>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground font-medium">
+                      {formatCurrency(totalValue)}
+                    </p>
+                  </div>
+
+                  {/* Column body */}
+                  <div className="flex-1 min-h-0 px-1.5 pb-1.5">
+                    <div className="h-full overflow-y-auto scroll-container-y space-y-1 pr-0.5">
+                      {stageLeads.map((lead, index) => (
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, lead)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            "cursor-grab active:cursor-grabbing",
+                            draggedLeadId === lead.id && 'opacity-40'
+                          )}
+                        >
+                          <LeadCard
+                            lead={lead}
+                            onClick={handleOpenDetail}
+                            compact
+                            index={index}
+                          />
+                        </div>
+                      ))}
+                      {stageLeads.length === 0 && (
+                        <div
+                          className={cn(
+                            "text-center py-6 rounded-lg",
+                            stage.bgColor,
+                            isDropTarget && 'border-2 border-dashed border-primary'
+                          )}
+                        >
+                          <p className="text-[10px] text-muted-foreground">
+                            {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();
@@ -328,86 +472,20 @@ const Funil = () => {
           </div>
         </div>
 
-        {/* Kanban board */}
-        <div className="min-h-[500px] overflow-x-auto overflow-y-hidden scroll-container-x">
-          <div className="flex gap-3 min-w-max h-full pb-2 px-1">
-            {FUNNEL_STAGES.map((stage) => {
-              const stageLeads = getLeadsByStatus(stage.key);
-              const totalValue = getTotalBudgetByStatus(stage.key);
-              const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
-              
-              return (
-                <div 
-                  key={stage.key}
-                  className="w-64 lg:w-72 flex-shrink-0 flex flex-col min-h-0 h-full"
-                  onDragOver={(e) => handleDragOver(e, stage.key)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, stage.key)}
-                >
-                  {/* Column container */}
-                  <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
-                    isDropTarget && 'ring-2 ring-primary ring-offset-2'
-                  )}>
-                    {/* Column header — fixed */}
-                    <div className="shrink-0 px-3 pt-3 pb-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
-                        <span className="text-xs font-semibold flex-1 truncate">
-                          {stage.label}
-                        </span>
-                        <Badge variant="secondary" className="font-semibold bg-muted text-xs h-5 min-w-5 flex items-center justify-center">
-                          {stageLeads.length}
-                        </Badge>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {formatCurrency(totalValue)}
-                      </p>
-                    </div>
-
-                    {/* Column body — scrolls vertically */}
-                    <div className="flex-1 min-h-0 px-2 pb-2">
-                      <div className="h-full overflow-y-auto scroll-container-y space-y-2 pr-1">
-                        {stageLeads.map((lead, index) => (
-                          <div
-                            key={lead.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, lead)}
-                            onDragEnd={handleDragEnd}
-                            className={cn(
-                              "cursor-grab active:cursor-grabbing",
-                              draggedLeadId === lead.id && 'opacity-40'
-                            )}
-                          >
-                            <LeadCard 
-                              lead={lead} 
-                              onClick={handleOpenDetail}
-                              compact
-                              index={index}
-                            />
-                          </div>
-                        ))}
-                        {stageLeads.length === 0 && (
-                          <div 
-                            className={cn(
-                              "text-center py-8 rounded-lg",
-                              stage.bgColor,
-                              isDropTarget && 'border-2 border-dashed border-primary'
-                            )}
-                          >
-                            <p className="text-xs text-muted-foreground">
-                              {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Kanban board with synced top scrollbar */}
+        <KanbanBoard
+          stages={FUNNEL_STAGES}
+          getLeadsByStatus={getLeadsByStatus}
+          getTotalBudgetByStatus={getTotalBudgetByStatus}
+          dropTargetStatus={dropTargetStatus}
+          draggedLeadId={draggedLeadId}
+          handleDragOver={handleDragOver}
+          handleDragLeave={handleDragLeave}
+          handleDrop={handleDrop}
+          handleDragStart={handleDragStart}
+          handleDragEnd={handleDragEnd}
+          handleOpenDetail={handleOpenDetail}
+        />
 
         {/* Loss Analysis Panel */}
         <div className="mt-6">

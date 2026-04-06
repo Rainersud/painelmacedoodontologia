@@ -68,7 +68,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     try {
       const cleanPhone = form.phone.replace(/\D/g, '');
 
-      const { error } = await supabase.from('leads').insert({
+      const { data: newLead, error } = await supabase.from('leads').insert({
         name: form.name.trim(),
         phone: cleanPhone,
         whatsapp: cleanPhone,
@@ -77,17 +77,19 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
 
-      // Log activity
-      if (user) {
+      // Log activity with actual lead ID
+      if (user && newLead) {
         await supabase.from('activity_logs').insert({
-          lead_id: null,
+          lead_id: newLead.id,
           agent_id: user.id,
           activity_type: 'lead_created',
           title: `Novo lead: ${form.name.trim()}`,
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
 

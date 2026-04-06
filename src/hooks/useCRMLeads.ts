@@ -217,15 +217,17 @@ export function useUpdateLeadStatus() {
         await recordStageTransition(leadId, oldLead.status, newStatus);
       }
 
-      // Log activity
+      // Log activity (non-blocking)
       if (user && oldLead) {
-        await supabase.from('activity_logs').insert({
+        supabase.from('activity_logs').insert({
           lead_id: leadId,
           agent_id: user.id,
           activity_type: 'status_changed',
           title: `Status alterado: ${oldLead.name}`,
           old_value: oldLead.status,
           new_value: newStatus,
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
     },

@@ -169,7 +169,7 @@ function KanbanBoard({
   );
 }
 
-const Funil = () => {
+const Funil = () => { // v2
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();

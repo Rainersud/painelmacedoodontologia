@@ -284,6 +284,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               >
               <MessageSquare className="h-4 w-4" />
             </Button>
+            {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -314,6 +315,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            )}
           </div>
         </DialogTitle>
       </DialogHeader>

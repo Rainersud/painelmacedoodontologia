@@ -184,6 +184,8 @@ export function useCreatePayment() {
         description: `${data.payment_method.toUpperCase()} - R$ ${data.gross_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}${data.payment_method === 'credito' ? ` (${data.installments}x, líquido: R$ ${data.net_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` : ''}`,
         new_value: String(data.net_value),
         metadata: { payment_method: data.payment_method, gross_value: data.gross_value, net_value: data.net_value, installments: data.installments },
+      }).then(({ error: logError }) => {
+        if (logError) console.warn('Activity log failed:', logError);
       });
     },
     onSuccess: () => {

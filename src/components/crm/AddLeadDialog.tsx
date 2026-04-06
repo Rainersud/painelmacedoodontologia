@@ -54,12 +54,12 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
-    interest_product: '' as string,
+    interest_product: undefined as string | undefined,
     notes: '',
   });
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim() || !form.interest_product) {
+    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim()) {
       toast.error('Preencha nome, telefone e interesse de tratamento');
       return;
     }
@@ -68,7 +68,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     try {
       const cleanPhone = form.phone.replace(/\D/g, '');
 
-      const { error } = await supabase.from('leads').insert({
+      const { data: newLead, error } = await supabase.from('leads').insert({
         name: form.name.trim(),
         phone: cleanPhone,
         whatsapp: cleanPhone,
@@ -77,24 +77,26 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
 
-      // Log activity
-      if (user) {
+      // Log activity with actual lead ID
+      if (user && newLead) {
         await supabase.from('activity_logs').insert({
-          lead_id: null,
+          lead_id: newLead.id,
           agent_id: user.id,
           activity_type: 'lead_created',
           title: `Novo lead: ${form.name.trim()}`,
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
 
       toast.success('Lead adicionado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      setForm({ name: '', phone: '', source: 'outro', interest_product: '', notes: '' });
+      setForm({ name: '', phone: '', source: 'outro', interest_product: undefined, notes: '' });
       onOpenChange(false);
     } catch (err) {
       toast.error('Erro ao adicionar lead');
@@ -158,7 +160,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           <div className="space-y-2">
             <Label>Interesse de Tratamento *</Label>
             <Select
-              value={form.interest_product}
+              value={form.interest_product ?? undefined}
               onValueChange={(value) => setForm(prev => ({ ...prev, interest_product: value }))}
             >
               <SelectTrigger>

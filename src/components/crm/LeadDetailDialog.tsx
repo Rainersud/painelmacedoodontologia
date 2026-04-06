@@ -64,7 +64,7 @@ interface LeadDetailDialogProps {
 }
 
 export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
   const updateRating = useUpdateLeadRating();
@@ -284,6 +284,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               >
               <MessageSquare className="h-4 w-4" />
             </Button>
+            {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -314,6 +315,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            )}
           </div>
         </DialogTitle>
       </DialogHeader>
@@ -391,6 +393,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Select
                     value={formData.interest_product || undefined}
                     onValueChange={(v) => setFormData(prev => ({ ...prev, interest_product: v }))}
+                    key={formData.interest_product || 'empty-interest'}
                   >
                     <SelectTrigger id="interest_product">
                       <SelectValue placeholder="Selecione o tratamento" />
@@ -408,6 +411,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Select
                     value={formData.sale_type || undefined}
                     onValueChange={(v) => setFormData(prev => ({ ...prev, sale_type: v as '1_etapa' | '2_etapas' }))}
+                    key={formData.sale_type || 'empty-sale-type'}
                   >
                     <SelectTrigger id="sale_type">
                       <SelectValue placeholder="Selecione o tipo" />

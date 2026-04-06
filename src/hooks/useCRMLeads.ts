@@ -11,10 +11,12 @@ export function useCRMLeads() {
   return useQuery({
     queryKey: ['crm-leads'],
     queryFn: async (): Promise<Lead[]> => {
+      // Fetch all leads without the default 1000-row limit
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5000);
 
       if (error) throw error;
 
@@ -215,15 +217,17 @@ export function useUpdateLeadStatus() {
         await recordStageTransition(leadId, oldLead.status, newStatus);
       }
 
-      // Log activity
+      // Log activity (non-blocking)
       if (user && oldLead) {
-        await supabase.from('activity_logs').insert({
+        supabase.from('activity_logs').insert({
           lead_id: leadId,
           agent_id: user.id,
           activity_type: 'status_changed',
           title: `Status alterado: ${oldLead.name}`,
           old_value: oldLead.status,
           new_value: newStatus,
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
     },
@@ -289,14 +293,16 @@ export function useUpdateLead() {
 
       if (error) throw error;
 
-      // Log edit activity
+      // Log edit activity (non-blocking)
       if (user) {
-        await supabase.from('activity_logs').insert({
+        supabase.from('activity_logs').insert({
           lead_id: leadId,
           agent_id: user.id,
           activity_type: 'lead_edited',
           title: 'Lead editado',
           metadata: { fields: Object.keys(updates) },
+        }).then(({ error: logError }) => {
+          if (logError) console.warn('Activity log failed:', logError);
         });
       }
     },

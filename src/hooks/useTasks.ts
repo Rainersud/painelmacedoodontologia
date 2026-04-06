@@ -91,13 +91,15 @@ export function useCreateTask() {
 
       if (error) throw error;
 
-      // Log activity
+      // Log activity (non-blocking, don't fail the mutation)
       await supabase.from('activity_logs').insert({
         lead_id: data.lead_id,
         agent_id: user.id,
         activity_type: 'task_created',
         title: `Tarefa criada: ${data.title}`,
         description: data.description,
+      }).then(({ error: logError }) => {
+        if (logError) console.warn('Activity log failed:', logError);
       });
     },
     onSuccess: () => {
@@ -153,6 +155,8 @@ export function useUpdateTask() {
             activity_type: 'task_completed',
             title: `Tarefa concluída: ${task.title}`,
             description: updates.response || undefined,
+          }).then(({ error: logError }) => {
+            if (logError) console.warn('Activity log failed:', logError);
           });
         }
       }
@@ -225,6 +229,8 @@ export function useRescheduleTask() {
         activity_type: 'task_created',
         title: `Tarefa reagendada: ${original.title}`,
         description: `Motivo: ${reason}`,
+      }).then(({ error: logError }) => {
+        if (logError) console.warn('Activity log failed:', logError);
       });
     },
     onSuccess: () => {

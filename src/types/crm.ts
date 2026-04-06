@@ -2,6 +2,7 @@
 
 export type LeadStatus = 
   | 'novo_lead' 
+  | 'nao_respondeu'
   | 'contatos_indicados'
   | 'indicacoes'
   | 'nutricao'

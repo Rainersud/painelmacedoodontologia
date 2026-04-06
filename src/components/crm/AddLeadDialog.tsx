@@ -94,7 +94,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       toast.success('Lead adicionado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      setForm({ name: '', phone: '', source: 'outro', interest_product: '', notes: '' });
+      setForm({ name: '', phone: '', source: 'outro', interest_product: undefined, notes: '' });
       onOpenChange(false);
     } catch (err) {
       toast.error('Erro ao adicionar lead');

@@ -342,7 +342,7 @@ export function useUpdateLead() {
     }) => {
       const { error } = await supabase
         .from('leads')
-        .update(updates)
+        .update(updates as any)
         .eq('id', leadId);
 
       if (error) throw error;

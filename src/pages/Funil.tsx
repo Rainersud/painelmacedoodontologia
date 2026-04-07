@@ -293,7 +293,7 @@ const Funil = () => { // v2
         }
       }
 
-      if (newStatus === 'quase_cliente') {
+      if (newStatus === 'nao_cliente') {
         // Open lead detail so user can fill in the loss_reason
         setSelectedLead(lead);
         setDialogOpen(true);

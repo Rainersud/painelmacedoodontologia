@@ -511,6 +511,7 @@ export type Database = {
           interest_product: string | null
           interest_rating: number | null
           last_interaction_at: string | null
+          lead_score: number
           loss_reason: string | null
           name: string
           no_show_count: number
@@ -524,6 +525,7 @@ export type Database = {
           rmkt_status: string
           sale_type: string | null
           scheduled_appointment_at: string | null
+          score_category: string
           source: Database["public"]["Enums"]["lead_source"]
           stage_entered_at: string | null
           status: Database["public"]["Enums"]["lead_status"]
@@ -547,6 +549,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           last_interaction_at?: string | null
+          lead_score?: number
           loss_reason?: string | null
           name: string
           no_show_count?: number
@@ -560,6 +563,7 @@ export type Database = {
           rmkt_status?: string
           sale_type?: string | null
           scheduled_appointment_at?: string | null
+          score_category?: string
           source?: Database["public"]["Enums"]["lead_source"]
           stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -583,6 +587,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           last_interaction_at?: string | null
+          lead_score?: number
           loss_reason?: string | null
           name?: string
           no_show_count?: number
@@ -596,6 +601,7 @@ export type Database = {
           rmkt_status?: string
           sale_type?: string | null
           scheduled_appointment_at?: string | null
+          score_category?: string
           source?: Database["public"]["Enums"]["lead_source"]
           stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -1188,6 +1194,39 @@ export type Database = {
           },
         ]
       }
+      rmkt_copy_templates: {
+        Row: {
+          created_at: string
+          custom_copy: string | null
+          id: string
+          phase: string
+          stage_key: string
+          suggested_copy: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_copy?: string | null
+          id?: string
+          phase?: string
+          stage_key: string
+          suggested_copy?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_copy?: string | null
+          id?: string
+          phase?: string
+          stage_key?: string
+          suggested_copy?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           agent_id: string
@@ -1672,6 +1711,7 @@ export type Database = {
         | "concluido"
         | "quase_cliente"
         | "nao_respondeu"
+        | "nao_cliente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1869,6 +1909,7 @@ export const Constants = {
         "concluido",
         "quase_cliente",
         "nao_respondeu",
+        "nao_cliente",
       ],
     },
   },

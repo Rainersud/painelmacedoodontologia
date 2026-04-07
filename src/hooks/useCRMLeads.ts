@@ -63,6 +63,8 @@ export function useCRMLeads() {
         no_show_count: (lead as any).no_show_count ?? 0,
         sale_type: (lead as any).sale_type as Lead['sale_type'],
         loss_reason: (lead as any).loss_reason || null,
+        lead_score: (lead as any).lead_score ?? 50,
+        score_category: ((lead as any).score_category || 'morno') as Lead['score_category'],
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));
@@ -342,7 +344,7 @@ export function useUpdateLead() {
     }) => {
       const { error } = await supabase
         .from('leads')
-        .update(updates)
+        .update(updates as any)
         .eq('id', leadId);
 
       if (error) throw error;

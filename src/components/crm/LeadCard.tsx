@@ -7,6 +7,7 @@ import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';
 import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
+import { getScoreColor } from '@/hooks/useLeadScoring';
 import { cn } from '@/lib/utils';
 
 interface LeadCardProps {
@@ -31,6 +32,7 @@ export function LeadCard({
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const { data: friendlyData } = useFriendlyPatientStatus(lead.status === 'fechado' ? lead.id : undefined);
   const leadAlerts = useLeadAlerts(lead);
+  const scoreColors = getScoreColor(lead.score_category || 'morno');
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
 
@@ -88,6 +90,10 @@ export function LeadCard({
 
         {/* Row 2: Compact badges row */}
         <div className="flex flex-wrap items-center gap-1 mb-1">
+          {/* Score indicator */}
+          <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", scoreColors.bg, scoreColors.text)}>
+            {scoreColors.dot} {lead.lead_score ?? 50}
+          </Badge>
           {topAlert && (
             <Badge variant="outline" className={cn(
               "text-[9px] border-0 font-medium px-1 py-0 h-4",

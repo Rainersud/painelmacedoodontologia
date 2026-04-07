@@ -32,6 +32,7 @@ export function LeadCard({
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const { data: friendlyData } = useFriendlyPatientStatus(lead.status === 'fechado' ? lead.id : undefined);
   const leadAlerts = useLeadAlerts(lead);
+  const scoreColors = getScoreColor(lead.score_category || 'morno');
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
 

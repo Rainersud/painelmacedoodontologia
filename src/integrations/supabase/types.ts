@@ -1711,6 +1711,7 @@ export type Database = {
         | "concluido"
         | "quase_cliente"
         | "nao_respondeu"
+        | "nao_cliente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1908,6 +1909,7 @@ export const Constants = {
         "concluido",
         "quase_cliente",
         "nao_respondeu",
+        "nao_cliente",
       ],
     },
   },

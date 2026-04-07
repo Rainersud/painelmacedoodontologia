@@ -34,6 +34,7 @@ const Reunioes = lazy(() => import("./pages/Reunioes"));
 const FunilTrafego = lazy(() => import("./pages/FunilTrafego"));
 const CentralFunis = lazy(() => import("./pages/CentralFunis"));
 const Comercial2 = lazy(() => import("./pages/Comercial2"));
+const Remarketing = lazy(() => import("./pages/Remarketing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({

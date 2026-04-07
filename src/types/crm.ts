@@ -18,6 +18,7 @@ export type LeadStatus =
   | 'faltou'
   | 'nao_compareceu'
   | 'compareceu'
+  | 'nao_cliente'
   | 'potencial'
   | 'acompanhamento'
   | 'fechado'
@@ -29,9 +30,7 @@ export type LeadStatus =
   | 'outro_momento'
   | 'qualificado'
   | 'tratamento_andamento'
-  | 'concluido'
-  | 'quase_cliente'
-  | 'potencial';
+  | 'concluido';
 
 export type LeadSource = 
   | 'whatsapp'

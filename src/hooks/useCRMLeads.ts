@@ -300,6 +300,7 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       queryClient.invalidateQueries({ queryKey: ['loss-analysis'] });
+      queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {

@@ -32,7 +32,7 @@ export function LossAnalysisPanel() {
       const { data, error } = await supabase
         .from('leads')
         .select('id, name, phone, loss_reason, source, assigned_agent_id, stage_entered_at, created_at')
-        .eq('status', 'quase_cliente' as any)
+        .eq('status', 'nao_cliente' as any)
         .not('loss_reason', 'is', null)
         .order('stage_entered_at', { ascending: false });
 

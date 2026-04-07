@@ -164,8 +164,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (!newStatus) return;
 
     // VALIDATION: Block move to quase_cliente without loss_reason
-    if (newStatus === 'quase_cliente' && !formData.loss_reason.trim()) {
-      toast.error('Preencha o campo "Não fechou porque:" antes de mover para Quase Cliente.');
+    if (newStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de mover para Não Cliente.');
       return;
     }
     
@@ -192,7 +192,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
-    if (newStatus === 'quase_cliente' && formData.loss_reason.trim()) {
+    if (newStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
 
@@ -680,7 +680,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Loss reason field when moving to quase_cliente */}
-              {newStatus === 'quase_cliente' && (
+              {newStatus === 'nao_cliente' && (
                 <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
                   <h4 className="font-medium text-chart-5 flex items-center gap-2">
                     ❓ Não fechou porque:
@@ -702,7 +702,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Show existing loss_reason for leads already in quase_cliente */}
-              {lead.status === 'quase_cliente' && (lead as any).loss_reason && newStatus !== 'quase_cliente' && (
+              {lead.status === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
                 <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
                     ❓ Motivo de não fechamento

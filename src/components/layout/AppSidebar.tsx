@@ -47,6 +47,7 @@ const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
   { title: 'Call Center', url: '/call-center', icon: Phone, module: 'call_center' },
   { title: 'Comercial 1', url: '/funil', icon: Phone, module: 'funil' },
+  { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
   { title: 'Tarefas', url: '/tarefas', icon: Calendar, module: 'tarefas' },

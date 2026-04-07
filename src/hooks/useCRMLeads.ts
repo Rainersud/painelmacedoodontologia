@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Lead, LeadStatus, LeadSource } from '@/types/crm';
 import { recordStageTransition } from './useStageHistory';
+import { getNextRmktStage, getRmktPhase } from '@/types/remarketing';
 
 export function useCRMLeads() {
   const { user } = useAuth();

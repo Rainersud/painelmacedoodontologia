@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Lead, LeadStatus, LeadSource } from '@/types/crm';
 import { recordStageTransition } from './useStageHistory';
+import { getNextRmktStage, getRmktPhase } from '@/types/remarketing';
 
 export function useCRMLeads() {
   const { user } = useAuth();
@@ -194,6 +195,58 @@ export function useUpdateLeadStatus() {
         }
       }
 
+      // Auto-enter RMKT when moving to followup_4
+      if (newStatus === 'followup_4') {
+        // Non-blocking: after 1 day in followup_4, system should migrate to RMKT
+        // For now, we flag it. The actual auto-migration can be done via scheduled check.
+        supabase.from('leads').update({
+          last_interaction_at: new Date().toISOString(),
+        }).eq('id', leadId).then(() => {});
+      }
+
+      // If lead was in RMKT and gets scheduled (agendou), exit RMKT
+      if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
+        supabase.from('remarketing_entries')
+          .update({ is_active: false })
+          .eq('lead_id', leadId)
+          .eq('is_active', true)
+          .then(() => {});
+        updates.rmkt_status = 'inativo';
+      }
+
+      // If lead reaches fechado, exit RMKT definitively
+      if (effectiveStatus === 'fechado') {
+        supabase.from('remarketing_entries')
+          .update({ is_active: false })
+          .eq('lead_id', leadId)
+          .eq('is_active', true)
+          .then(() => {});
+        updates.rmkt_status = 'inativo';
+      }
+
+      // If lead faltou (no-show), return to RMKT at last position
+      if (newStatus === 'faltou' || newStatus === 'nao_compareceu') {
+        const { data: lastRmkt } = await supabase
+          .from('remarketing_entries')
+          .select('current_stage')
+          .eq('lead_id', leadId)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastRmkt) {
+          await supabase.from('remarketing_entries').insert({
+            lead_id: leadId,
+            current_stage: lastRmkt.current_stage,
+            phase: getRmktPhase(lastRmkt.current_stage),
+            origin_status: newStatus,
+            is_active: true,
+          });
+          updates.rmkt_status = 'ativo';
+          updates.rmkt_last_stage = lastRmkt.current_stage;
+        }
+      }
+
       // Auto-create appointment when moving to agendou
       if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && user) {
         const scheduledAt = (additionalData?.scheduled_appointment_at as string) || new Date().toISOString();
@@ -247,6 +300,7 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       queryClient.invalidateQueries({ queryKey: ['loss-analysis'] });
+      queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       toast.success('Lead atualizado!');
     },
     onError: () => {

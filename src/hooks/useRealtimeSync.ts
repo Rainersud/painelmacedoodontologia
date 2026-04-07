@@ -66,6 +66,9 @@ export function useRealtimeSync() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_opportunities' }, () => {
         queryClient.invalidateQueries({ queryKey: ['upsell-opportunities'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'remarketing_entries' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
+      })
       .subscribe();
 
     return () => {

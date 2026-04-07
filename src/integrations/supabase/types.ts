@@ -510,6 +510,7 @@ export type Database = {
           id: string
           interest_product: string | null
           interest_rating: number | null
+          last_interaction_at: string | null
           loss_reason: string | null
           name: string
           no_show_count: number
@@ -517,6 +518,10 @@ export type Database = {
           payment_method: string | null
           phone: string
           rescued_at: string | null
+          rmkt_entered_at: string | null
+          rmkt_last_stage: string | null
+          rmkt_origin_status: string | null
+          rmkt_status: string
           sale_type: string | null
           scheduled_appointment_at: string | null
           source: Database["public"]["Enums"]["lead_source"]
@@ -541,6 +546,7 @@ export type Database = {
           id?: string
           interest_product?: string | null
           interest_rating?: number | null
+          last_interaction_at?: string | null
           loss_reason?: string | null
           name: string
           no_show_count?: number
@@ -548,6 +554,10 @@ export type Database = {
           payment_method?: string | null
           phone: string
           rescued_at?: string | null
+          rmkt_entered_at?: string | null
+          rmkt_last_stage?: string | null
+          rmkt_origin_status?: string | null
+          rmkt_status?: string
           sale_type?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
@@ -572,6 +582,7 @@ export type Database = {
           id?: string
           interest_product?: string | null
           interest_rating?: number | null
+          last_interaction_at?: string | null
           loss_reason?: string | null
           name?: string
           no_show_count?: number
@@ -579,6 +590,10 @@ export type Database = {
           payment_method?: string | null
           phone?: string
           rescued_at?: string | null
+          rmkt_entered_at?: string | null
+          rmkt_last_stage?: string | null
+          rmkt_origin_status?: string | null
+          rmkt_status?: string
           sale_type?: string | null
           scheduled_appointment_at?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
@@ -1076,6 +1091,97 @@ export type Database = {
           {
             foreignKeyName: "referrals_referrer_lead_id_fkey"
             columns: ["referrer_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remarketing_entries: {
+        Row: {
+          created_at: string
+          current_stage: string
+          entered_at: string
+          id: string
+          is_active: boolean
+          last_advanced_at: string | null
+          lead_id: string
+          notes: string | null
+          origin_status: string | null
+          phase: string
+          return_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_stage?: string
+          entered_at?: string
+          id?: string
+          is_active?: boolean
+          last_advanced_at?: string | null
+          lead_id: string
+          notes?: string | null
+          origin_status?: string | null
+          phase?: string
+          return_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_stage?: string
+          entered_at?: string
+          id?: string
+          is_active?: boolean
+          last_advanced_at?: string | null
+          lead_id?: string
+          notes?: string | null
+          origin_status?: string | null
+          phase?: string
+          return_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remarketing_entries_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remarketing_logs: {
+        Row: {
+          action: string
+          created_at: string
+          from_stage: string | null
+          id: string
+          lead_id: string
+          to_stage: string | null
+          triggered_by: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id: string
+          to_stage?: string | null
+          triggered_by?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id?: string
+          to_stage?: string | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remarketing_logs_lead_id_fkey"
+            columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]

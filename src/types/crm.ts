@@ -71,6 +71,12 @@ export interface Lead {
   no_show_count?: number;
   sale_type?: '1_etapa' | '2_etapas' | null;
   loss_reason?: string | null;
+  rmkt_status?: string;
+  rmkt_entered_at?: string | null;
+  rmkt_last_stage?: string | null;
+  rmkt_origin_status?: string | null;
+  lead_score?: number;
+  score_category?: 'frio' | 'morno' | 'quente';
   created_at: string;
   updated_at: string;
   // Joined data

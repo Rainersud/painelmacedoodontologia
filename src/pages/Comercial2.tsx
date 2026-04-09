@@ -1323,6 +1323,19 @@ const Comercial2 = () => {
                                           {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
                                         </p>
                                       )}
+                                      {/* Return status indicator */}
+                                      {(() => {
+                                        const rs = getReturnStatus(opp);
+                                        if (!rs) return null;
+                                        const colorMap = { success: 'border-success/30 bg-success/5 text-success', warning: 'border-warning/30 bg-warning/5 text-warning', destructive: 'border-destructive/30 bg-destructive/5 text-destructive' };
+                                        return (
+                                          <div className={cn("flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]", colorMap[rs.color])}>
+                                            <Timer className="h-3 w-3" />
+                                            <span className="font-medium">{rs.label}</span>
+                                            {!opp.return_scheduled && <span className="ml-auto text-[8px] opacity-75">⚠️ Não agendado</span>}
+                                          </div>
+                                        );
+                                      })()}
                                       {/* Gift indicators on card */}
                                       <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
                                         <div className={cn(

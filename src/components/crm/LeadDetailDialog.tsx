@@ -163,9 +163,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const handleChangeStatus = async () => {
     if (!newStatus) return;
 
-    // VALIDATION: Block move to quase_cliente without loss_reason
-    if (newStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
-      toast.error('Preencha o campo "Não fechou porque:" antes de mover para Não Cliente.');
+    // VALIDATION: Block move to nao_cliente or quase_cliente without loss_reason
+    if ((newStatus === 'nao_cliente' || newStatus === 'quase_cliente') && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de mover.');
       return;
     }
     
@@ -192,7 +192,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
-    if (newStatus === 'nao_cliente' && formData.loss_reason.trim()) {
+    if ((newStatus === 'nao_cliente' || newStatus === 'quase_cliente') && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
 
@@ -679,8 +679,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Loss reason field when moving to quase_cliente */}
-              {newStatus === 'nao_cliente' && (
+              {/* Loss reason field when moving to quase_cliente or nao_cliente */}
+              {(newStatus === 'nao_cliente' || newStatus === 'quase_cliente') && (
                 <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
                   <h4 className="font-medium text-chart-5 flex items-center gap-2">
                     ❓ Não fechou porque:
@@ -701,13 +701,53 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Show existing loss_reason for leads already in quase_cliente */}
-              {lead.status === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
+              {/* Show existing loss_reason for leads already in quase_cliente/nao_cliente */}
+              {(lead.status === 'nao_cliente' || lead.status === 'quase_cliente') && (lead as any).loss_reason && newStatus !== 'nao_cliente' && newStatus !== 'quase_cliente' && (
                 <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
                     ❓ Motivo de não fechamento
                   </h4>
                   <p className="text-sm">{(lead as any).loss_reason}</p>
+                </div>
+              )}
+
+              {/* Contact attempts counter for nao_respondeu */}
+              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu') && (
+                <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
+                  <h4 className="font-medium text-warning flex items-center gap-2">
+                    📞 Tentativas de contato
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Tentativa:</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          const current = (lead as any).contact_attempts ?? 0;
+                          if (current > 0) {
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current - 1 } as any });
+                          }
+                        }}
+                      >-</Button>
+                      <span className="font-bold text-lg min-w-[3ch] text-center">
+                        {(lead as any).contact_attempts ?? 0}
+                      </span>
+                      <span className="text-muted-foreground">/9</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          const current = (lead as any).contact_attempts ?? 0;
+                          if (current < 9) {
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current + 1 } as any });
+                          }
+                        }}
+                      >+</Button>
+                    </div>
+                  </div>
                 </div>
               )}
 

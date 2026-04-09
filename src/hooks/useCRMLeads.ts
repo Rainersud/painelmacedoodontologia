@@ -363,15 +363,39 @@ export function useUpdateLead() {
         });
       }
     },
-    onSuccess: () => {
+    onMutate: async ({ leadId, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['crm-leads'] });
+
+      // Snapshot previous value
+      const previousLeads = queryClient.getQueryData<Lead[]>(['crm-leads']);
+
+      // Optimistically update the cache
+      if (previousLeads) {
+        queryClient.setQueryData<Lead[]>(['crm-leads'], 
+          previousLeads.map(lead => 
+            lead.id === leadId ? { ...lead, ...updates } : lead
+          )
+        );
+      }
+
+      return { previousLeads };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousLeads) {
+        queryClient.setQueryData(['crm-leads'], context.previousLeads);
+      }
+      toast.error('Erro ao atualizar lead');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      toast.success('Lead atualizado!');
     },
-    onError: () => {
-      toast.error('Erro ao atualizar lead');
+    onSuccess: () => {
+      toast.success('Lead atualizado!');
     },
   });
 }

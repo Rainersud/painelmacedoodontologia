@@ -43,13 +43,14 @@ const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: React.ElementT
 
 export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValue = 0, upsellOpportunityId }: PaymentDialogProps) {
   const [step, setStep] = useState<'method' | 'details'>('method');
-  const grossValue = budgetValue;
+  const [grossValue, setGrossValue] = useState(budgetValue);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [installments, setInstallments] = useState(1);
   const [boletoCount, setBoletoCount] = useState(1);
   const [boletoDates, setBoletoDates] = useState<string[]>([]);
   const [paymentType, setPaymentType] = useState<'total' | 'parcial'>('total');
   const [partialValue, setPartialValue] = useState(0);
+  const [manualValue, setManualValue] = useState(0);
 
   const createPayment = useCreatePayment();
   const { data: existingPayments } = usePayments(leadId);
@@ -64,7 +65,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   const remainingBalance = Math.max(0, grossValue - totalPaid);
 
   // The actual payment value based on type
-  const effectiveValue = paymentType === 'parcial' ? partialValue : grossValue;
+  const effectiveValue = budgetValue <= 0 ? manualValue : (paymentType === 'parcial' ? partialValue : grossValue);
 
   // Credit card calculation
   const creditCalc = useMemo(() => {
@@ -80,6 +81,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
     setBoletoDates([]);
     setPaymentType('total');
     setPartialValue(0);
+    setManualValue(0);
+    setGrossValue(budgetValue);
   };
 
   const handleMethodSelect = (m: PaymentMethod) => {

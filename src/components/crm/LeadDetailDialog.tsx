@@ -94,6 +94,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [statusNotes, setStatusNotes] = useState('');
   const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
   const [contactAttempts, setContactAttempts] = useState(0);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [noteData, setNoteData] = useState({
     content: '',
   });

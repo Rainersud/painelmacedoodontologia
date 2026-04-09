@@ -23,6 +23,9 @@ export function useRealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
         queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
         queryClient.invalidateQueries({ queryKey: ['credit-approved-patients'] });
+        queryClient.invalidateQueries({ queryKey: ['smart-alerts-leads'] });
+        queryClient.invalidateQueries({ queryKey: ['lead-alerts-payments'] });
+        queryClient.invalidateQueries({ queryKey: ['lead-alerts-tasks'] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => {
         queryClient.invalidateQueries({ queryKey: ['referrals'] });
@@ -55,6 +58,8 @@ export function useRealtimeSync() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['smart-alerts-tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['lead-alerts-tasks'] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
         queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -62,6 +67,8 @@ export function useRealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
         queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
         queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
+        queryClient.invalidateQueries({ queryKey: ['smart-alerts-payments'] });
+        queryClient.invalidateQueries({ queryKey: ['lead-alerts-payments'] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_opportunities' }, () => {
         queryClient.invalidateQueries({ queryKey: ['upsell-opportunities'] });

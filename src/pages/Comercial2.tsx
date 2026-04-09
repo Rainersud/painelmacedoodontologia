@@ -884,6 +884,109 @@ function EditableDetailContent({
         </Select>
       </div>
 
+      {/* ===== CONTROLE DE RETORNO PERIÓDICO ===== */}
+      <div className="rounded-lg border-2 border-chart-2/30 p-3 space-y-3">
+        <p className="text-xs font-bold text-chart-2 flex items-center gap-1.5">
+          <RotateCcw className="h-3.5 w-3.5" /> Controle de Retorno (6 meses)
+        </p>
+        
+        {(() => {
+          const rs = getReturnStatus(opp);
+          if (rs) {
+            const colorMap = {
+              success: 'border-success/30 bg-success/5 text-success',
+              warning: 'border-warning/30 bg-warning/5 text-warning',
+              destructive: 'border-destructive/30 bg-destructive/5 text-destructive',
+            };
+            return (
+              <div className={cn("p-2.5 rounded-md border", colorMap[rs.color])}>
+                <div className="flex items-center gap-2">
+                  <Timer className="h-4 w-4" />
+                  <span className="text-sm font-semibold">{rs.label}</span>
+                </div>
+                {opp.next_return_date && (
+                  <p className="text-[10px] mt-1 opacity-75">
+                    Data prevista: {format(new Date(opp.next_return_date + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                  </p>
+                )}
+              </div>
+            );
+          }
+          return (
+            <div className="p-2.5 rounded-md border border-muted bg-muted/30 text-muted-foreground text-xs">
+              Nenhum retorno configurado. Defina a data abaixo.
+            </div>
+          );
+        })()}
+
+        {/* Return scheduling */}
+        <div className="space-y-2">
+          <div>
+            <Label className="text-[10px] text-muted-foreground">📅 Data do Próximo Retorno</Label>
+            <Input
+              type="date"
+              value={opp.next_return_date || ''}
+              onChange={(e) => updateOpp.mutate({
+                id: opp.id,
+                next_return_date: e.target.value || null,
+                return_scheduled: !!e.target.value,
+              })}
+              className="h-8 text-xs mt-0.5"
+            />
+          </div>
+          
+          {!opp.return_scheduled && opp.next_return_date && (
+            <Button
+              size="sm"
+              className="w-full gap-1.5 text-xs"
+              onClick={() => updateOpp.mutate({
+                id: opp.id,
+                return_scheduled: true,
+              }, {
+                onSuccess: () => toast.success('✅ Retorno marcado como agendado!'),
+              })}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Marcar Retorno como Agendado
+            </Button>
+          )}
+
+          {opp.return_scheduled && (
+            <div className="flex items-center gap-2 p-2 rounded-md border border-success/30 bg-success/5">
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              <span className="text-xs font-medium text-success">Retorno agendado</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto h-6 text-[9px] text-muted-foreground"
+                onClick={() => updateOpp.mutate({ id: opp.id, return_scheduled: false })}
+              >
+                Desmarcar
+              </Button>
+            </div>
+          )}
+
+          {(() => {
+            const rs = getReturnStatus(opp);
+            if (rs?.urgent && !opp.return_scheduled) {
+              return (
+                <div className="flex items-center gap-2 p-2 rounded-md border border-destructive/30 bg-destructive/5 text-destructive text-xs font-semibold animate-pulse">
+                  <AlertTriangle className="h-4 w-4" />
+                  URGENTE: retorno em atraso — agende agora!
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </div>
+
+        {opp.last_stage_change_at && (
+          <p className="text-[9px] text-muted-foreground">
+            Última movimentação: {format(new Date(opp.last_stage_change_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+          </p>
+        )}
+      </div>
+
       <div>
         <p className="text-xs font-bold text-chart-5 mb-1.5">Observações</p>
         <Textarea value={opp.notes || ''} onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })} placeholder="Adicione observações..." className="text-sm min-h-[60px]" />

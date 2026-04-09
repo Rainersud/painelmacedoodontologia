@@ -2,6 +2,7 @@
 
 export type LeadStatus = 
   | 'novo_lead' 
+  | 'em_contato'
   | 'nao_respondeu'
   | 'contatos_indicados'
   | 'indicacoes'
@@ -18,6 +19,7 @@ export type LeadStatus =
   | 'faltou'
   | 'nao_compareceu'
   | 'compareceu'
+  | 'quase_cliente'
   | 'nao_cliente'
   | 'potencial'
   | 'acompanhamento'
@@ -77,6 +79,7 @@ export interface Lead {
   rmkt_origin_status?: string | null;
   lead_score?: number;
   score_category?: 'frio' | 'morno' | 'quente';
+  contact_attempts?: number;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -141,6 +144,7 @@ export interface FunnelStage {
 
 export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'em_contato', label: 'Em Contato', color: 'bg-chart-1', bgColor: 'bg-chart-1/10' },
   { key: 'nao_respondeu', label: 'Não Respondeu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'followup_1', label: 'Follow-up 1', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
@@ -151,6 +155,7 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
+  { key: 'quase_cliente', label: 'Quase Cliente', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
   { key: 'nao_cliente', label: 'Não Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },

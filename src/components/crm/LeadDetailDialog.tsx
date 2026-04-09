@@ -736,7 +736,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           if (contactAttempts > 0) {
                             const newVal = contactAttempts - 1;
                             setContactAttempts(newVal);
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
+                            // Auto-move to corresponding followup stage
+                            if (newVal >= 1 && newVal <= 9) {
+                              const targetStatus = `followup_${newVal}` as LeadStatus;
+                              updateStatus.mutate({ 
+                                leadId: lead.id, 
+                                newStatus: targetStatus,
+                                additionalData: { contact_attempts: newVal } as any,
+                              });
+                            } else {
+                              updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
+                            }
                           }
                         }}
                       >-</Button>
@@ -748,11 +758,48 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         variant="outline"
                         size="sm"
                         className="h-7 w-7 p-0"
-                        onClick={() => {
+                        onClick={async () => {
                           if (contactAttempts < 9) {
                             const newVal = contactAttempts + 1;
                             setContactAttempts(newVal);
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
+                            if (newVal === 9) {
+                              // Move to followup_9 first, then auto-enter remarketing
+                              updateStatus.mutate({ 
+                                leadId: lead.id, 
+                                newStatus: 'followup_9' as LeadStatus,
+                                additionalData: { contact_attempts: newVal } as any,
+                              }, {
+                                onSuccess: async () => {
+                                  // Auto-enter remarketing
+                                  try {
+                                    await supabase.from('remarketing_entries').insert({
+                                      lead_id: lead.id,
+                                      current_stage: 'dia_1',
+                                      phase: 'aquecimento',
+                                      origin_status: 'followup_9',
+                                      is_active: true,
+                                    });
+                                    await supabase.from('leads').update({
+                                      rmkt_status: 'ativo',
+                                      rmkt_entered_at: new Date().toISOString(),
+                                      rmkt_origin_status: 'followup_9',
+                                      rmkt_last_stage: 'dia_1',
+                                    }).eq('id', lead.id);
+                                    toast.success('Lead migrado para Remarketing automaticamente!');
+                                  } catch (err) {
+                                    console.warn('RMKT auto-entry failed:', err);
+                                  }
+                                },
+                              });
+                            } else {
+                              // Move to corresponding followup stage
+                              const targetStatus = `followup_${newVal}` as LeadStatus;
+                              updateStatus.mutate({ 
+                                leadId: lead.id, 
+                                newStatus: targetStatus,
+                                additionalData: { contact_attempts: newVal } as any,
+                              });
+                            }
                           }
                         }}
                       >+</Button>

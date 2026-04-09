@@ -31,6 +31,9 @@ export interface UpsellOpportunity {
   updated_at: string;
   purchase_count: number;
   purchase_values: string | null;
+  next_return_date: string | null;
+  last_stage_change_at: string | null;
+  return_scheduled: boolean;
   lead?: {
     name: string;
     phone: string;
@@ -155,9 +158,18 @@ export function useUpdateUpsellStatus() {
       status: string;
       additionalData?: Record<string, unknown>;
     }) => {
-      const updateData: Record<string, unknown> = { status, ...additionalData };
+      const now = new Date();
+      const nextReturn = new Date(now);
+      nextReturn.setDate(nextReturn.getDate() + 180);
+      const updateData: Record<string, unknown> = {
+        status,
+        last_stage_change_at: now.toISOString(),
+        next_return_date: nextReturn.toISOString().split('T')[0],
+        return_scheduled: false,
+        ...additionalData,
+      };
       if (status === 'upsell_5' && !updateData.closed_at) {
-        updateData.closed_at = new Date().toISOString();
+        updateData.closed_at = now.toISOString();
         updateData.contact_status = 'fechado';
       }
       const { error } = await supabase.from('upsell_opportunities').update(updateData).eq('id', id);

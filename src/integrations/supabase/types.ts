@@ -1422,11 +1422,14 @@ export type Database = {
           gift_surgery_sent: boolean
           gift_surgery_sent_at: string | null
           id: string
+          last_stage_change_at: string | null
           lead_id: string
           next_contact_at: string | null
+          next_return_date: string | null
           notes: string | null
           purchase_count: number
           purchase_values: string | null
+          return_scheduled: boolean
           status: string
           suggested_treatment: string
           treatment_category: string | null
@@ -1452,11 +1455,14 @@ export type Database = {
           gift_surgery_sent?: boolean
           gift_surgery_sent_at?: string | null
           id?: string
+          last_stage_change_at?: string | null
           lead_id: string
           next_contact_at?: string | null
+          next_return_date?: string | null
           notes?: string | null
           purchase_count?: number
           purchase_values?: string | null
+          return_scheduled?: boolean
           status?: string
           suggested_treatment: string
           treatment_category?: string | null
@@ -1482,11 +1488,14 @@ export type Database = {
           gift_surgery_sent?: boolean
           gift_surgery_sent_at?: string | null
           id?: string
+          last_stage_change_at?: string | null
           lead_id?: string
           next_contact_at?: string | null
+          next_return_date?: string | null
           notes?: string | null
           purchase_count?: number
           purchase_values?: string | null
+          return_scheduled?: boolean
           status?: string
           suggested_treatment?: string
           treatment_category?: string | null

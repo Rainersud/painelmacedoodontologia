@@ -55,6 +55,7 @@ const mainNavItems = [
 ];
 
 const managementNavItems = [
+  { title: 'Dashboard BI', url: '/bi', icon: LayoutDashboard, module: 'bi' },
   { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
   { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
   { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target, module: 'plano_incentivo' },

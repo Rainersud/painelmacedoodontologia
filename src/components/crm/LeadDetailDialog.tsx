@@ -34,7 +34,7 @@ import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead 
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
-import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
+import { FUNNEL_STAGES, FOLLOWUP_COPY_TEMPLATES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';

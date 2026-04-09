@@ -163,28 +163,39 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
         {/* Step 1: Payment Type + Method */}
         {step === 'method' && (
           <div className="space-y-4 overflow-y-auto scroll-container-y">
-            {/* Budget summary (read-only, from treatments) */}
-            <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">💰 Total orçado</span>
-                <span className="font-bold text-primary">{formatCurrency(grossValue)}</span>
+            {/* Budget summary or manual value entry */}
+            {budgetValue > 0 ? (
+              <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">💰 Total orçado</span>
+                  <span className="font-bold text-primary">{formatCurrency(grossValue)}</span>
+                </div>
+                {totalPaid > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">✅ Já pago</span>
+                      <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Saldo restante</span>
+                      <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                        {formatCurrency(remainingBalance)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
-              {totalPaid > 0 && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">✅ Já pago</span>
-                    <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>Saldo restante</span>
-                    <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
-                      {formatCurrency(remainingBalance)}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+            ) : (
+              <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-warning">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">Nenhum orçamento definido</span>
+                </div>
+                <Label>Valor do pagamento</Label>
+                <CurrencyInput value={manualValue} onChange={setManualValue} />
+              </div>
+            )}
 
             {/* Payment type selection */}
             <div className="space-y-2">

@@ -713,12 +713,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Contact attempts counter for nao_respondeu */}
-              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu') && (
+              {/* Contact attempts counter - show for follow-up stages and nao_respondeu */}
+              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu' || 
+                lead.status?.startsWith('followup_') || newStatus?.startsWith('followup_')) && (
                 <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
                   <h4 className="font-medium text-warning flex items-center gap-2">
                     📞 Tentativas de contato
                   </h4>
+                  {contactAttempts >= 2 && (
+                    <div className="text-xs text-destructive bg-destructive/10 rounded p-2 font-medium">
+                      ⚠️ Você pode queimar esse lead e reduzir sua conversão
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">Tentativa:</span>
                     <div className="flex items-center gap-2">
@@ -727,14 +733,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         size="sm"
                         className="h-7 w-7 p-0"
                         onClick={() => {
-                          const current = (lead as any).contact_attempts ?? 0;
-                          if (current > 0) {
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current - 1 } as any });
+                          if (contactAttempts > 0) {
+                            const newVal = contactAttempts - 1;
+                            setContactAttempts(newVal);
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
                           }
                         }}
                       >-</Button>
                       <span className="font-bold text-lg min-w-[3ch] text-center">
-                        {(lead as any).contact_attempts ?? 0}
+                        {contactAttempts}
                       </span>
                       <span className="text-muted-foreground">/9</span>
                       <Button
@@ -742,13 +749,20 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         size="sm"
                         className="h-7 w-7 p-0"
                         onClick={() => {
-                          const current = (lead as any).contact_attempts ?? 0;
-                          if (current < 9) {
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current + 1 } as any });
+                          if (contactAttempts < 9) {
+                            const newVal = contactAttempts + 1;
+                            setContactAttempts(newVal);
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
                           }
                         }}
                       >+</Button>
                     </div>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground space-y-1 bg-muted/50 rounded p-2">
+                    <p>✅ Evita parecer desespero</p>
+                    <p>✅ Aumenta taxa de resposta</p>
+                    <p>✅ Gera presença sem ser invasivo</p>
+                    <p>✅ Dá tempo de decisão para o lead</p>
                   </div>
                 </div>
               )}

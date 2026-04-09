@@ -115,6 +115,24 @@ function getNextStage(currentStatus: string): string | null {
   return UPSELL_STAGES[idx + 1].key;
 }
 
+/** Return status helper */
+function getReturnStatus(opp: UpsellOpportunity): { label: string; daysLeft: number; color: 'success' | 'warning' | 'destructive'; urgent: boolean } | null {
+  if (!opp.next_return_date) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const returnDate = new Date(opp.next_return_date + 'T00:00:00');
+  const diffMs = returnDate.getTime() - today.getTime();
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0) {
+    return { label: `Atrasado há ${Math.abs(daysLeft)} dias`, daysLeft, color: 'destructive', urgent: true };
+  }
+  if (daysLeft <= 30) {
+    return { label: `Retorno em ${daysLeft} dias`, daysLeft, color: 'warning', urgent: false };
+  }
+  return { label: `Retorno em ${daysLeft} dias`, daysLeft, color: 'success', urgent: false };
+}
+
 /* ============ LOCKED DETAIL (Comprou 1 vez) ============ */
 function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
   const { data: triage } = usePatientTriage(opp.lead_id);

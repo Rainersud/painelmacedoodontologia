@@ -12,6 +12,11 @@ export type LeadStatus =
   | 'followup_2' 
   | 'followup_3' 
   | 'followup_4'
+  | 'followup_5'
+  | 'followup_6'
+  | 'followup_7'
+  | 'followup_8'
+  | 'followup_9'
   | 'em_atendimento'
   | 'agendou'
   | 'consulta_agendada'
@@ -146,20 +151,73 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'em_contato', label: 'Em Contato', color: 'bg-chart-1', bgColor: 'bg-chart-1/10' },
   { key: 'nao_respondeu', label: 'Não Respondeu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
-  { key: 'followup_1', label: 'Follow-up 1', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_2', label: 'Follow-up 2', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_3', label: 'Follow-up 3', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_4', label: 'Follow-up 4', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_1', label: 'D1 Manhã (T1)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_2', label: 'D1 Noite (T2)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_3', label: 'D2 Tarde (T3)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_4', label: 'D2 Noite (T4)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_5', label: 'D3 Manhã (T5)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_6', label: 'D3 Noite (T6)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_7', label: 'D4 (T7)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_8', label: 'D5 (T8)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_9', label: 'D7 Última (T9)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
-  { key: 'em_atendimento', label: 'Em Atendimento', color: 'bg-chart-1', bgColor: 'bg-chart-1/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
   { key: 'quase_cliente', label: 'Quase Cliente', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
-  { key: 'nao_cliente', label: 'Não Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
+  { key: 'nao_cliente', label: 'Não Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
 ];
+
+// Follow-up copy templates
+export const FOLLOWUP_COPY_TEMPLATES: Record<string, { label: string; format: 'texto' | 'audio'; copy: string }> = {
+  followup_1: {
+    label: 'D1 – Manhã (Mensagem leve)',
+    format: 'texto',
+    copy: 'Oi, [Nome]! Vi que você mostrou interesse no seu tratamento 😊\nQueria te ajudar a dar o próximo passo, posso te explicar rapidinho como funciona?',
+  },
+  followup_2: {
+    label: 'D1 – Noite (Áudio curto)',
+    format: 'audio',
+    copy: 'Oi [Nome], tudo bem? Passando rapidinho pra te explicar como funciona aqui na clínica… é bem simples e posso te orientar sem compromisso, tá?',
+  },
+  followup_3: {
+    label: 'D2 – Tarde (Pergunta)',
+    format: 'texto',
+    copy: '[Nome], me diz uma coisa… você ainda tem interesse em resolver isso ou prefere que eu te chame outro momento?',
+  },
+  followup_4: {
+    label: 'D2 – Noite (Prova social)',
+    format: 'texto',
+    copy: '[Nome], hoje mesmo atendemos um paciente que estava na mesma situação que você e já saiu com tudo encaminhado 🙌\nSe quiser, posso fazer o mesmo por você',
+  },
+  followup_5: {
+    label: 'D3 – Manhã (Quebra de objeção)',
+    format: 'texto',
+    copy: '[Nome], muita gente acha que é caro ou complicado, mas na maioria dos casos tem soluções bem acessíveis 🙂\nQuer que eu te explique sem compromisso?',
+  },
+  followup_6: {
+    label: 'D3 – Noite (Reforço + proximidade)',
+    format: 'texto',
+    copy: 'Só pra não te deixar sem resposta, estou por aqui pra te ajudar no que precisar, viu? 👍',
+  },
+  followup_7: {
+    label: 'D4 – Tentativa 7 (Leve urgência)',
+    format: 'texto',
+    copy: '[Nome], estou finalizando algumas vagas dessa semana e lembrei de você.\nSe ainda quiser, consigo tentar encaixar seu atendimento',
+  },
+  followup_8: {
+    label: 'D5 – Tentativa 8 (Escassez)',
+    format: 'texto',
+    copy: '[Nome], últimas vagas realmente disponíveis agora… depois disso só na próxima agenda 😬\nQuer que eu reserve pra você?',
+  },
+  followup_9: {
+    label: 'D7 – Última tentativa (Encerramento)',
+    format: 'texto',
+    copy: '[Nome], como não tive retorno, vou encerrar seu atendimento por aqui pra não ficar te incomodando 🙏\nMas se ainda quiser, é só me chamar que te ajudo com prioridade',
+  },
+};
 
 export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }> = {
   whatsapp: { color: 'bg-success/10 text-success', label: 'WhatsApp' },

@@ -34,7 +34,7 @@ import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead 
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
-import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
+import { FUNNEL_STAGES, FOLLOWUP_COPY_TEMPLATES, type Lead, type LeadStatus } from '@/types/crm';
 import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';
@@ -93,6 +93,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
   const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
+  const [contactAttempts, setContactAttempts] = useState(0);
   const [scheduledAt, setScheduledAt] = useState('');
   const [noteData, setNoteData] = useState({
     content: '',
@@ -132,6 +133,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         setFriendlyPatient(null);
       }
       setScheduledAt('');
+      setContactAttempts(lead.contact_attempts ?? 0);
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');
@@ -711,12 +713,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Contact attempts counter for nao_respondeu */}
-              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu') && (
+              {/* Contact attempts counter - show for follow-up stages and nao_respondeu */}
+              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu' || 
+                lead.status?.startsWith('followup_') || newStatus?.startsWith('followup_')) && (
                 <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
                   <h4 className="font-medium text-warning flex items-center gap-2">
                     📞 Tentativas de contato
                   </h4>
+                  {contactAttempts >= 2 && (
+                    <div className="text-xs text-destructive bg-destructive/10 rounded p-2 font-medium">
+                      ⚠️ Você pode queimar esse lead e reduzir sua conversão
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">Tentativa:</span>
                     <div className="flex items-center gap-2">
@@ -725,14 +733,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         size="sm"
                         className="h-7 w-7 p-0"
                         onClick={() => {
-                          const current = (lead as any).contact_attempts ?? 0;
-                          if (current > 0) {
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current - 1 } as any });
+                          if (contactAttempts > 0) {
+                            const newVal = contactAttempts - 1;
+                            setContactAttempts(newVal);
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
                           }
                         }}
                       >-</Button>
                       <span className="font-bold text-lg min-w-[3ch] text-center">
-                        {(lead as any).contact_attempts ?? 0}
+                        {contactAttempts}
                       </span>
                       <span className="text-muted-foreground">/9</span>
                       <Button
@@ -740,18 +749,51 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         size="sm"
                         className="h-7 w-7 p-0"
                         onClick={() => {
-                          const current = (lead as any).contact_attempts ?? 0;
-                          if (current < 9) {
-                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: current + 1 } as any });
+                          if (contactAttempts < 9) {
+                            const newVal = contactAttempts + 1;
+                            setContactAttempts(newVal);
+                            updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
                           }
                         }}
                       >+</Button>
                     </div>
                   </div>
+                  <div className="text-[11px] text-muted-foreground space-y-1 bg-muted/50 rounded p-2">
+                    <p>✅ Evita parecer desespero</p>
+                    <p>✅ Aumenta taxa de resposta</p>
+                    <p>✅ Gera presença sem ser invasivo</p>
+                    <p>✅ Dá tempo de decisão para o lead</p>
+                  </div>
                 </div>
               )}
 
-              {/* Paciente Amigo - show for already-fechado leads (read-only with edit) */}
+              {/* Follow-up Copy Template */}
+              {lead.status?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[lead.status] && (
+                <div className="p-4 bg-chart-1/5 rounded-lg border border-chart-1/20 space-y-2">
+                  <h4 className="font-medium text-chart-1 flex items-center gap-2 text-sm">
+                    💬 Sugestão de Copy – {FOLLOWUP_COPY_TEMPLATES[lead.status].label}
+                  </h4>
+                  <Badge variant="outline" className="text-[10px]">
+                    {FOLLOWUP_COPY_TEMPLATES[lead.status].format === 'audio' ? '🎙️ Áudio' : '📝 Texto'}
+                  </Badge>
+                  <div className="bg-background rounded p-3 text-sm whitespace-pre-line border">
+                    {FOLLOWUP_COPY_TEMPLATES[lead.status].copy.replace(/\[Nome\]/g, lead.name)}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      const text = FOLLOWUP_COPY_TEMPLATES[lead.status].copy.replace(/\[Nome\]/g, lead.name);
+                      navigator.clipboard.writeText(text);
+                      toast.success('Copy copiada!');
+                    }}
+                  >
+                    📋 Copiar mensagem
+                  </Button>
+                </div>
+              )}
+
               {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">

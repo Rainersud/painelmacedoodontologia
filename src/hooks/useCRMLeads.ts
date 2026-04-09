@@ -198,10 +198,9 @@ export function useUpdateLeadStatus() {
         }
       }
 
-      // Auto-enter RMKT when moving to followup_4
-      if (newStatus === 'followup_4') {
-        // Non-blocking: after 1 day in followup_4, system should migrate to RMKT
-        // For now, we flag it. The actual auto-migration can be done via scheduled check.
+      // Auto-enter RMKT when moving to followup_9 (last follow-up attempt)
+      if (newStatus === 'followup_9') {
+        // Flag for RMKT entry after staying in followup_9
         supabase.from('leads').update({
           last_interaction_at: new Date().toISOString(),
         }).eq('id', leadId).then(() => {});

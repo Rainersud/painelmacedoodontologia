@@ -93,7 +93,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
   const [statusNotes, setStatusNotes] = useState('');
   const [friendlyPatient, setFriendlyPatient] = useState<boolean | null>(null);
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [contactAttempts, setContactAttempts] = useState(0);
   const [noteData, setNoteData] = useState({
     content: '',
   });
@@ -132,6 +132,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         setFriendlyPatient(null);
       }
       setScheduledAt('');
+      setContactAttempts(lead.contact_attempts ?? 0);
       setNoteData({ content: '' });
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');

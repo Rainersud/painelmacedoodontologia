@@ -41,6 +41,15 @@ export function LeadCard({
 
   const days = getDaysInStage(lead.stage_entered_at);
   const alertLevel = getStageAlertLevel(days);
+  const isFollowUpStage = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
+
+  // Calculate total days in follow-up (from first follow-up entry)
+  const totalFollowUpDays = isFollowUpStage && lead.stage_entered_at
+    ? Math.max(days, Math.floor((Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  // Excess attempts warning (>2 same day approximation based on contact_attempts and days)
+  const showExcessWarning = isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && days === 0 && (lead.contact_attempts ?? 0) >= 2;
   const alertColors = {
     normal: 'bg-success/10 text-success',
     attention: 'bg-warning/10 text-warning',
@@ -125,12 +134,26 @@ export function LeadCard({
               ❌ {lead.no_show_count}x falta
             </Badge>
           )}
-          {(lead.status === 'nao_respondeu' || lead.status?.startsWith('followup_')) && (lead.contact_attempts ?? 0) > 0 && (
+          {isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && (
             <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning border-0 px-1 py-0 h-4">
               📞 {lead.contact_attempts}/9
             </Badge>
           )}
+          {isFollowUpStage && totalFollowUpDays > 0 && (
+            <Badge variant="outline" className="text-[9px] bg-chart-5/10 text-chart-5 border-0 px-1 py-0 h-4">
+              🔄 {totalFollowUpDays}d total
+            </Badge>
+          )}
         </div>
+
+        {/* Excess attempts warning */}
+        {showExcessWarning && (
+          <div className="bg-destructive/10 rounded px-1.5 py-0.5 mb-1">
+            <p className="text-[8px] text-destructive font-medium">
+              ⚠️ Excesso de tentativas hoje – pode reduzir conversão
+            </p>
+          </div>
+        )}
 
         {/* Paciente Amigo Badge - only for fechado */}
         {lead.status === 'fechado' && friendlyData && (

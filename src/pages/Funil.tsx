@@ -22,8 +22,14 @@ import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentD
 import { TriageFormDialog } from '@/components/crm/TriageFormDialog';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
+import { FollowUpCopyPopover } from '@/components/crm/FollowUpCopyPopover';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
+
+const FOLLOWUP_KEYS = new Set([
+  'followup_1','followup_2','followup_3','followup_4','followup_5',
+  'followup_6','followup_7','followup_8','followup_9',
+]);
 
 // Synced dual-scrollbar Kanban board
 interface KanbanBoardProps {
@@ -89,38 +95,58 @@ function KanbanBoard({
         onScroll={() => syncScroll('bottom')}
       >
         <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">
-          {stages.map((stage) => {
+          {stages.map((stage, stageIdx) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalBudgetByStatus(stage.key);
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
+            const isFollowUp = FOLLOWUP_KEYS.has(stage.key);
+            const isFirstFollowUp = stage.key === 'followup_1';
+            const isLastFollowUp = stage.key === 'followup_9';
 
             return (
-              <div
-                key={stage.key}
-                className="w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full"
-                onDragOver={(e) => handleDragOver(e, stage.key)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, stage.key)}
-              >
-                <div className={cn(
-                  "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
-                  isDropTarget && 'ring-2 ring-primary ring-offset-2'
-                )}>
-                  {/* Column header */}
-                  <div className="shrink-0 px-2 pt-2 pb-1.5">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <div className={`h-2 w-2 rounded-full ${stage.color}`} />
-                      <span className="text-[11px] font-semibold flex-1 truncate">
-                        {stage.label}
-                      </span>
-                      <Badge variant="secondary" className="font-semibold bg-muted text-[10px] h-4 min-w-4 px-1 flex items-center justify-center">
-                        {stageLeads.length}
-                      </Badge>
+              <div key={stage.key} className="flex gap-2 h-full">
+                {/* Section separator before first follow-up */}
+                {isFirstFollowUp && (
+                  <div className="flex flex-col items-center justify-start shrink-0 py-2">
+                    <div className="bg-warning/20 text-warning rounded-lg px-2 py-1.5 text-center whitespace-nowrap">
+                      <p className="text-[10px] font-bold">🔄 FOLLOW-UP</p>
+                      <p className="text-[8px] font-medium">INTELIGENTE</p>
                     </div>
-                    <p className="text-[9px] text-muted-foreground font-medium">
-                      {formatCurrency(totalValue)}
-                    </p>
+                    <div className="flex-1 w-px bg-warning/30 mt-1" />
                   </div>
+                )}
+
+                <div
+                  className={cn(
+                    "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full",
+                  )}
+                  onDragOver={(e) => handleDragOver(e, stage.key)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, stage.key)}
+                >
+                  <div className={cn(
+                    "flex flex-col min-h-0 h-full rounded-xl bg-card border shadow-sm transition-all duration-200",
+                    isFollowUp ? 'border-warning/30' : 'border-border/50',
+                    isDropTarget && 'ring-2 ring-primary ring-offset-2'
+                  )}>
+                    {/* Column header */}
+                    <div className="shrink-0 px-2 pt-2 pb-1.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <div className={`h-2 w-2 rounded-full ${stage.color}`} />
+                        <span className="text-[11px] font-semibold flex-1 truncate">
+                          {stage.label}
+                        </span>
+                        {isFollowUp && (
+                          <FollowUpCopyPopover stageKey={stage.key} />
+                        )}
+                        <Badge variant="secondary" className="font-semibold bg-muted text-[10px] h-4 min-w-4 px-1 flex items-center justify-center">
+                          {stageLeads.length}
+                        </Badge>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground font-medium">
+                        {formatCurrency(totalValue)}
+                      </p>
+                    </div>
 
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
@@ -161,6 +187,14 @@ function KanbanBoard({
                   </div>
                 </div>
               </div>
+
+              {/* Section separator after last follow-up */}
+              {isLastFollowUp && (
+                <div className="flex flex-col items-center justify-start shrink-0 py-2">
+                  <div className="flex-1 w-px bg-warning/30" />
+                </div>
+              )}
+            </div>
             );
           })}
         </div>

@@ -31,6 +31,9 @@ export interface UpsellOpportunity {
   updated_at: string;
   purchase_count: number;
   purchase_values: string | null;
+  next_return_date: string | null;
+  last_stage_change_at: string | null;
+  return_scheduled: boolean;
   lead?: {
     name: string;
     phone: string;

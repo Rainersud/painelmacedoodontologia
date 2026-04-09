@@ -767,7 +767,33 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Paciente Amigo - show for already-fechado leads (read-only with edit) */}
+              {/* Follow-up Copy Template */}
+              {lead.status?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[lead.status] && (
+                <div className="p-4 bg-chart-1/5 rounded-lg border border-chart-1/20 space-y-2">
+                  <h4 className="font-medium text-chart-1 flex items-center gap-2 text-sm">
+                    💬 Sugestão de Copy – {FOLLOWUP_COPY_TEMPLATES[lead.status].label}
+                  </h4>
+                  <Badge variant="outline" className="text-[10px]">
+                    {FOLLOWUP_COPY_TEMPLATES[lead.status].format === 'audio' ? '🎙️ Áudio' : '📝 Texto'}
+                  </Badge>
+                  <div className="bg-background rounded p-3 text-sm whitespace-pre-line border">
+                    {FOLLOWUP_COPY_TEMPLATES[lead.status].copy.replace(/\[Nome\]/g, lead.name)}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      const text = FOLLOWUP_COPY_TEMPLATES[lead.status].copy.replace(/\[Nome\]/g, lead.name);
+                      navigator.clipboard.writeText(text);
+                      toast.success('Copy copiada!');
+                    }}
+                  >
+                    📋 Copiar mensagem
+                  </Button>
+                </div>
+              )}
+
               {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">

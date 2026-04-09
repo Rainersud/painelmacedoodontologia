@@ -65,6 +65,7 @@ export function useCRMLeads() {
         loss_reason: (lead as any).loss_reason || null,
         lead_score: (lead as any).lead_score ?? 50,
         score_category: ((lead as any).score_category || 'morno') as Lead['score_category'],
+        contact_attempts: (lead as any).contact_attempts ?? 0,
         profiles: lead.assigned_agent_id ? { full_name: agentMap[lead.assigned_agent_id] || 'Sem agente' } : null,
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));

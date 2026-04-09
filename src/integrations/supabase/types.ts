@@ -501,6 +501,7 @@ export type Database = {
           budget_value: number | null
           closed_at: string | null
           completed_at: string | null
+          contact_attempts: number
           converted_at: string | null
           created_at: string
           discount_percentage: number
@@ -539,6 +540,7 @@ export type Database = {
           budget_value?: number | null
           closed_at?: string | null
           completed_at?: string | null
+          contact_attempts?: number
           converted_at?: string | null
           created_at?: string
           discount_percentage?: number
@@ -577,6 +579,7 @@ export type Database = {
           budget_value?: number | null
           closed_at?: string | null
           completed_at?: string | null
+          contact_attempts?: number
           converted_at?: string | null
           created_at?: string
           discount_percentage?: number
@@ -1712,6 +1715,7 @@ export type Database = {
         | "quase_cliente"
         | "nao_respondeu"
         | "nao_cliente"
+        | "em_contato"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1910,6 +1914,7 @@ export const Constants = {
         "quase_cliente",
         "nao_respondeu",
         "nao_cliente",
+        "em_contato",
       ],
     },
   },

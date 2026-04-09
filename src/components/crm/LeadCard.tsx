@@ -125,6 +125,11 @@ export function LeadCard({
               ❌ {lead.no_show_count}x falta
             </Badge>
           )}
+          {lead.status === 'nao_respondeu' && (lead.contact_attempts ?? 0) > 0 && (
+            <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning border-0 px-1 py-0 h-4">
+              📞 {lead.contact_attempts}/9
+            </Badge>
+          )}
         </div>
 
         {/* Paciente Amigo Badge - only for fechado */}

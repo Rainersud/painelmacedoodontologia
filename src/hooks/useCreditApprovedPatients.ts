@@ -23,7 +23,7 @@ export function useCreditApprovedPatients() {
     queryFn: async (): Promise<CreditApprovedPatient[]> => {
       const { data: triages, error: triageError } = await supabase
         .from('patient_triage')
-        .select('id, lead_id, credit_approved_value, credit_status, credit_pagmais_value, credit_capim_value, credit_maioral_value, filled_at, updated_at')
+        .select('id, lead_id, credit_approved_value, credit_status, credit_pagmais_value, credit_capim_value, credit_maioral_value, credit_drgestao_value, filled_at, updated_at')
         .eq('credit_status', 'aprovado');
 
       if (triageError) throw triageError;
@@ -33,7 +33,8 @@ export function useCreditApprovedPatients() {
       const validTriages = triages.filter(t => 
         (Number(t.credit_pagmais_value) || 0) > 0 ||
         (Number(t.credit_capim_value) || 0) > 0 ||
-        (Number(t.credit_maioral_value) || 0) > 0
+        (Number(t.credit_maioral_value) || 0) > 0 ||
+        (Number((t as any).credit_drgestao_value) || 0) > 0
       );
 
       if (validTriages.length === 0) return [];
@@ -58,6 +59,7 @@ export function useCreditApprovedPatients() {
             { name: 'PAGMAIS', value: Number(t.credit_pagmais_value) || 0 },
             { name: 'CAPIM', value: Number(t.credit_capim_value) || 0 },
             { name: 'MAIORAL', value: Number(t.credit_maioral_value) || 0 },
+            { name: 'DR GESTÃO', value: Number((t as any).credit_drgestao_value) || 0 },
           ].filter(c => c.value > 0);
 
           return {

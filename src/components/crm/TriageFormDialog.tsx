@@ -170,7 +170,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
-      (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0);
+      (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0) + (form.credit_drgestao_value || 0);
     
     saveTriage.mutate(
       { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
@@ -596,6 +596,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       updateField('credit_pagmais_value', 0);
                       updateField('credit_capim_value', 0);
                       updateField('credit_maioral_value', 0);
+                      updateField('credit_drgestao_value', 0);
                       updateField('credit_approved_value', 0);
                     }
                   }}
@@ -620,7 +621,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                   <Building2 className="h-4 w-4 text-primary" />
                   <h3 className="text-sm font-semibold text-primary">Empresas de Crédito</h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold">PAGMAIS</Label>
                     <CurrencyInput
@@ -651,6 +652,16 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       disabled={form.credit_status === 'negado'}
                     />
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">DR GESTÃO</Label>
+                    <CurrencyInput
+                      value={form.credit_drgestao_value || 0}
+                      onChange={(v) => updateField('credit_drgestao_value', v)}
+                      placeholder="Valor liberado"
+                      className="h-8 text-xs"
+                      disabled={form.credit_status === 'negado'}
+                    />
+                  </div>
                 </div>
 
                 {/* Credit summary - per company, no sum */}
@@ -661,6 +672,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                       { name: 'PAGMAIS', value: form.credit_pagmais_value || 0 },
                       { name: 'CAPIM', value: form.credit_capim_value || 0 },
                       { name: 'MAIORAL', value: form.credit_maioral_value || 0 },
+                      { name: 'DR GESTÃO', value: form.credit_drgestao_value || 0 },
                     ].filter(e => e.value > 0);
 
                     if (form.credit_status === 'negado' || entries.length === 0) {

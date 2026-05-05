@@ -25,6 +25,7 @@ import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { FollowUpCopyPopover } from '@/components/crm/FollowUpCopyPopover';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
+import { normalize, fuzzyMatch } from '@/lib/searchUtils';
 
 const FOLLOWUP_KEYS = new Set([
   'followup_1','followup_2','followup_3','followup_4','followup_5',
@@ -258,11 +259,12 @@ const Funil = () => { // v2
     const filterDate = getFilterDate();
     
     return leads.filter(lead => {
-      const query = searchQuery.toLowerCase().trim();
-      const matchesSearch = !query || 
-        lead.name.toLowerCase().includes(query) ||
-        lead.phone.includes(query) ||
-        (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
+      const query = searchQuery.trim();
+      const digitsQ = query.replace(/\D/g, '');
+      const matchesSearch = !query ||
+        fuzzyMatch(lead.name, query) ||
+        (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
+        (lead.interest_product && fuzzyMatch(lead.interest_product, query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
       
       // Date filter: only applies to agendou/consulta_agendada/compareceu
@@ -428,7 +430,7 @@ const Funil = () => { // v2
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou telefone..."
+                placeholder="Buscar (ignora acentos: jose = josé)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-9 text-sm"
@@ -443,6 +445,42 @@ const Funil = () => { // v2
                   <X className="h-3 w-3" />
                 </Button>
               )}
+              {searchQuery.trim().length >= 1 && (() => {
+                const q = searchQuery.trim();
+                const suggestions = (leads || [])
+                  .filter(l => fuzzyMatch(l.name, q))
+                  .slice(0, 8);
+                if (suggestions.length === 0) return null;
+                // Don't show if exactly one match equals current query
+                if (suggestions.length === 1 && normalize(suggestions[0].name) === normalize(q)) return null;
+                return (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                    {suggestions.map(s => {
+                      const stage = FUNNEL_STAGES.find(st => st.key === s.status);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleOpenDetail(s);
+                            setSearchQuery('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-accent flex items-center justify-between gap-2 text-sm border-b last:border-0"
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium truncate">{s.name}</span>
+                            <span className="text-xs text-muted-foreground truncate">{s.phone}</span>
+                          </div>
+                          {stage && (
+                            <Badge variant="secondary" className="text-[10px] shrink-0">{stage.label}</Badge>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
             <Select value={treatmentFilter} onValueChange={setTreatmentFilter}>
               <SelectTrigger className="w-44 h-9 text-sm">

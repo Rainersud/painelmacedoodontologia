@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_triage ADD COLUMN IF NOT EXISTS credit_drgestao_value numeric DEFAULT 0;

@@ -322,7 +322,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         </DialogTitle>
       </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
+        <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = lead.status === 'compareceu' || 
               ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
@@ -338,7 +338,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     <span className="hidden sm:inline">Status</span>
                   </TabsTrigger>
                   {showTriage && (
-                    <TabsTrigger value="triage" onClick={() => setTriageOpen(true)} className="text-xs sm:text-sm gap-1">
+                    <TabsTrigger
+                      value="triage"
+                      onPointerDown={(e) => { e.preventDefault(); setActiveTab('triage'); setTriageOpen(true); }}
+                      className="text-xs sm:text-sm gap-1"
+                    >
                       <FileText className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Triagem</span>
                     </TabsTrigger>
@@ -427,16 +431,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="whatsapp">WhatsApp</Label>
                   <Input
                     id="whatsapp"
@@ -512,16 +506,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
-              <div className="sticky bottom-0 pt-3 bg-card">
-                <Button 
-                  className="w-full"
-                  onClick={handleSaveInfo}
-                  disabled={updateLead.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateLead.isPending ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
-              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                ✨ Salvamento automático ao trocar de aba
+              </p>
             </TabsContent>
 
             {/* Status Tab */}
@@ -555,32 +542,22 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
               <hr className="border-border" />
 
-              {/* Universal Scheduled Appointment - editable from any stage */}
+              {/* Date of consultation - editable from any stage */}
               <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
-                  📅 Consulta Agendada
+                  <Calendar className="h-4 w-4" /> DATA DA CONSULTA
                 </h4>
                 <Input
                   type="datetime-local"
                   value={formData.scheduled_appointment_at}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }))}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  disabled={!formData.scheduled_appointment_at || updateLead.isPending}
-                  onClick={() => {
-                    const updates: Partial<Lead> = {};
-                    if (formData.scheduled_appointment_at) {
-                      updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFormData(prev => ({ ...prev, scheduled_appointment_at: v }));
+                    if (v) {
+                      updateLead.mutate({ leadId: lead.id, updates: { scheduled_appointment_at: new Date(v).toISOString() } });
                     }
-                    updateLead.mutate({ leadId: lead.id, updates });
                   }}
-                >
-                  <Save className="h-3 w-3 mr-1" />
-                  Salvar Agendamento
-                </Button>
+                />
               </div>
 
               {/* No-show count */}
@@ -1060,6 +1037,22 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </TabsContent>
           </div>
         </Tabs>
+
+        {/* Global footer - single primary action */}
+        <div className="shrink-0 border-t bg-card px-4 sm:px-6 py-3">
+          <Button
+            className="w-full"
+            onClick={() => {
+              handleSaveInfo();
+              toast.success('Evolução salva!');
+              onOpenChange(false);
+            }}
+            disabled={updateLead.isPending}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateLead.isPending ? 'Salvando...' : 'Salvar Evolução'}
+          </Button>
+        </div>
 
         <TriageFormDialog
           lead={lead}

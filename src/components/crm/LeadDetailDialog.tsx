@@ -338,7 +338,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     <span className="hidden sm:inline">Status</span>
                   </TabsTrigger>
                   {showTriage && (
-                    <TabsTrigger value="triage" onClick={() => setTriageOpen(true)} className="text-xs sm:text-sm gap-1">
+                    <TabsTrigger
+                      value="triage"
+                      onPointerDown={(e) => { e.preventDefault(); setActiveTab('triage'); setTriageOpen(true); }}
+                      className="text-xs sm:text-sm gap-1"
+                    >
                       <FileText className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Triagem</span>
                     </TabsTrigger>

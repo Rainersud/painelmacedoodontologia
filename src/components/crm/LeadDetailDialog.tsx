@@ -1038,6 +1038,22 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           </div>
         </Tabs>
 
+        {/* Global footer - single primary action */}
+        <div className="shrink-0 border-t bg-card px-4 sm:px-6 py-3">
+          <Button
+            className="w-full"
+            onClick={() => {
+              handleSaveInfo();
+              toast.success('Evolução salva!');
+              onOpenChange(false);
+            }}
+            disabled={updateLead.isPending}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateLead.isPending ? 'Salvando...' : 'Salvar Evolução'}
+          </Button>
+        </div>
+
         <TriageFormDialog
           lead={lead}
           open={triageOpen}

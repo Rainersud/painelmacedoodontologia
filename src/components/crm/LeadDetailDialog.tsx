@@ -549,32 +549,22 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
               <hr className="border-border" />
 
-              {/* Universal Scheduled Appointment - editable from any stage */}
+              {/* Date of consultation - editable from any stage */}
               <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
-                  📅 Consulta Agendada
+                  <Calendar className="h-4 w-4" /> DATA DA CONSULTA
                 </h4>
                 <Input
                   type="datetime-local"
                   value={formData.scheduled_appointment_at}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }))}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  disabled={!formData.scheduled_appointment_at || updateLead.isPending}
-                  onClick={() => {
-                    const updates: Partial<Lead> = {};
-                    if (formData.scheduled_appointment_at) {
-                      updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFormData(prev => ({ ...prev, scheduled_appointment_at: v }));
+                    if (v) {
+                      updateLead.mutate({ leadId: lead.id, updates: { scheduled_appointment_at: new Date(v).toISOString() } });
                     }
-                    updateLead.mutate({ leadId: lead.id, updates });
                   }}
-                >
-                  <Save className="h-3 w-3 mr-1" />
-                  Salvar Agendamento
-                </Button>
+                />
               </div>
 
               {/* No-show count */}

@@ -799,6 +799,7 @@ export type Database = {
           created_at: string
           credit_approved_value: number | null
           credit_capim_value: number | null
+          credit_drgestao_value: number | null
           credit_maioral_value: number | null
           credit_pagmais_value: number | null
           credit_status: string | null
@@ -840,6 +841,7 @@ export type Database = {
           created_at?: string
           credit_approved_value?: number | null
           credit_capim_value?: number | null
+          credit_drgestao_value?: number | null
           credit_maioral_value?: number | null
           credit_pagmais_value?: number | null
           credit_status?: string | null
@@ -881,6 +883,7 @@ export type Database = {
           created_at?: string
           credit_approved_value?: number | null
           credit_capim_value?: number | null
+          credit_drgestao_value?: number | null
           credit_maioral_value?: number | null
           credit_pagmais_value?: number | null
           credit_status?: string | null

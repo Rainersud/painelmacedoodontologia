@@ -430,7 +430,7 @@ const Funil = () => { // v2
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou telefone..."
+                placeholder="Buscar (ignora acentos: jose = josé)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-9 text-sm"
@@ -445,6 +445,42 @@ const Funil = () => { // v2
                   <X className="h-3 w-3" />
                 </Button>
               )}
+              {searchQuery.trim().length >= 1 && (() => {
+                const q = searchQuery.trim();
+                const suggestions = (leads || [])
+                  .filter(l => fuzzyMatch(l.name, q))
+                  .slice(0, 8);
+                if (suggestions.length === 0) return null;
+                // Don't show if exactly one match equals current query
+                if (suggestions.length === 1 && normalize(suggestions[0].name) === normalize(q)) return null;
+                return (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                    {suggestions.map(s => {
+                      const stage = FUNNEL_STAGES.find(st => st.key === s.status);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleOpenDetail(s);
+                            setSearchQuery('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-accent flex items-center justify-between gap-2 text-sm border-b last:border-0"
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium truncate">{s.name}</span>
+                            <span className="text-xs text-muted-foreground truncate">{s.phone}</span>
+                          </div>
+                          {stage && (
+                            <Badge variant="secondary" className="text-[10px] shrink-0">{stage.label}</Badge>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
             <Select value={treatmentFilter} onValueChange={setTreatmentFilter}>
               <SelectTrigger className="w-44 h-9 text-sm">

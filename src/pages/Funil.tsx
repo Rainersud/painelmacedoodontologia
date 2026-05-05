@@ -25,6 +25,7 @@ import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { FollowUpCopyPopover } from '@/components/crm/FollowUpCopyPopover';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
+import { normalize, fuzzyMatch } from '@/lib/searchUtils';
 
 const FOLLOWUP_KEYS = new Set([
   'followup_1','followup_2','followup_3','followup_4','followup_5',
@@ -258,11 +259,11 @@ const Funil = () => { // v2
     const filterDate = getFilterDate();
     
     return leads.filter(lead => {
-      const query = searchQuery.toLowerCase().trim();
-      const matchesSearch = !query || 
-        lead.name.toLowerCase().includes(query) ||
-        lead.phone.includes(query) ||
-        (lead.interest_product && lead.interest_product.toLowerCase().includes(query));
+      const query = searchQuery.trim();
+      const matchesSearch = !query ||
+        fuzzyMatch(lead.name, query) ||
+        lead.phone.replace(/\D/g, '').includes(query.replace(/\D/g, '')) && query.replace(/\D/g, '').length > 0 ||
+        (lead.interest_product && fuzzyMatch(lead.interest_product, query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
       
       // Date filter: only applies to agendou/consulta_agendada/compareceu

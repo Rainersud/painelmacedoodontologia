@@ -40,6 +40,7 @@ export interface PatientTriageData {
   credit_pagmais_value?: number | null;
   credit_capim_value?: number | null;
   credit_maioral_value?: number | null;
+  credit_drgestao_value?: number | null;
 }
 
 export function usePatientTriage(leadId: string | undefined) {

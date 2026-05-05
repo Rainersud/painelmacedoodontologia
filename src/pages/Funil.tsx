@@ -260,9 +260,10 @@ const Funil = () => { // v2
     
     return leads.filter(lead => {
       const query = searchQuery.trim();
+      const digitsQ = query.replace(/\D/g, '');
       const matchesSearch = !query ||
         fuzzyMatch(lead.name, query) ||
-        lead.phone.replace(/\D/g, '').includes(query.replace(/\D/g, '')) && query.replace(/\D/g, '').length > 0 ||
+        (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
         (lead.interest_product && fuzzyMatch(lead.interest_product, query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
       

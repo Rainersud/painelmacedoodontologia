@@ -760,4 +760,3 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
     </Dialog>
   );
 }
-}

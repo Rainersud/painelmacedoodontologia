@@ -728,6 +728,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         className="h-7 w-7 p-0"
                         onClick={async () => {
                           if (contactAttempts < 9) {
+                            // Daily limit: max 4 attempts per day per lead
+                            const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                            const todayCount = parseInt(localStorage.getItem(todayKey) || '0');
+                            if (todayCount >= 4) {
+                              toast.error('Limite atingido: máximo 4 tentativas por dia para este lead.');
+                              return;
+                            }
+                            localStorage.setItem(todayKey, String(todayCount + 1));
                             const newVal = contactAttempts + 1;
                             setContactAttempts(newVal);
                             if (newVal === 9) {

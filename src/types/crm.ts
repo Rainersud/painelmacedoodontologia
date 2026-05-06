@@ -173,47 +173,47 @@ export const FUNNEL_STAGES: FunnelStage[] = [
 // Follow-up copy templates
 export const FOLLOWUP_COPY_TEMPLATES: Record<string, { label: string; format: 'texto' | 'audio'; copy: string }> = {
   followup_1: {
-    label: 'D1 – Manhã (Mensagem leve)',
+    label: 'D1 MANHÃ',
     format: 'texto',
     copy: 'Oi, [Nome]! Vi que você mostrou interesse no seu tratamento 😊\nQueria te ajudar a dar o próximo passo, posso te explicar rapidinho como funciona?',
   },
   followup_2: {
-    label: 'D1 – Tarde (Áudio curto)',
+    label: 'D1 TARDE',
     format: 'audio',
     copy: 'Oi [Nome], tudo bem? Passando rapidinho pra te explicar como funciona aqui na clínica… é bem simples e posso te orientar sem compromisso, tá?',
   },
   followup_3: {
-    label: 'D2 – Manhã (Pergunta)',
+    label: 'D2 MANHÃ',
     format: 'texto',
     copy: '[Nome], me diz uma coisa… você ainda tem interesse em resolver isso ou prefere que eu te chame outro momento?',
   },
   followup_4: {
-    label: 'D2 – Tarde (Prova social)',
+    label: 'D2 TARDE',
     format: 'texto',
     copy: '[Nome], hoje mesmo atendemos um paciente que estava na mesma situação que você e já saiu com tudo encaminhado 🙌\nSe quiser, posso fazer o mesmo por você',
   },
   followup_5: {
-    label: 'D3 – Manhã (Quebra de objeção)',
+    label: 'D3 MANHÃ',
     format: 'texto',
     copy: '[Nome], muita gente acha que é caro ou complicado, mas na maioria dos casos tem soluções bem acessíveis 🙂\nQuer que eu te explique sem compromisso?',
   },
   followup_6: {
-    label: 'D3 – Tarde (Reforço + proximidade)',
+    label: 'D3 TARDE',
     format: 'texto',
     copy: 'Só pra não te deixar sem resposta, estou por aqui pra te ajudar no que precisar, viu? 👍',
   },
   followup_7: {
-    label: 'D4 – Tentativa 7 (Leve urgência)',
+    label: 'D4 MANHÃ',
     format: 'texto',
     copy: '[Nome], estou finalizando algumas vagas dessa semana e lembrei de você.\nSe ainda quiser, consigo tentar encaixar seu atendimento',
   },
   followup_8: {
-    label: 'D5 – Tentativa 8 (Escassez)',
+    label: 'D5 MANHÃ',
     format: 'texto',
     copy: '[Nome], últimas vagas realmente disponíveis agora… depois disso só na próxima agenda 😬\nQuer que eu reserve pra você?',
   },
   followup_9: {
-    label: 'D7 – Última tentativa (Encerramento)',
+    label: 'D7 MANHÃ',
     format: 'texto',
     copy: '[Nome], como não tive retorno, vou encerrar seu atendimento por aqui pra não ficar te incomodando 🙏\nMas se ainda quiser, é só me chamar que te ajudo com prioridade',
   },

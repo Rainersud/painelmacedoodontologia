@@ -28,8 +28,10 @@ import type { Lead } from '@/types/crm';
 
 interface TriageFormDialogProps {
   lead: Lead | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  inline?: boolean;
+  readOnly?: boolean;
 }
 
 const MOTIVATION_OPTIONS = [

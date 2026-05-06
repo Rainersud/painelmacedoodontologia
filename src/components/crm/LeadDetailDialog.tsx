@@ -180,7 +180,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     friendlyOverride: boolean | null = friendlyPatient
   ) => {
     const targetStatus = statusOverride || newStatus;
-    if (!targetStatus || !lead || targetStatus === lead.status) return;
+    if (!targetStatus || !lead || targetStatus === lead.status) return true;
 
     const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
     if (resetDailyStages.includes(targetStatus)) {
@@ -188,13 +188,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       localStorage.removeItem(todayKey);
     }
 
-    // VALIDATION: Block move to nao_cliente without loss_reason
-    
+    if (targetStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de salvar.');
+      return false;
+    }
+
     // VALIDATION: Block move to fechado without payment
     if (targetStatus === 'fechado') {
       if (friendlyOverride === null) {
         toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
-        return;
+        return false;
       }
 
       const { count } = await supabase
@@ -205,7 +208,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       
       if (!count || count === 0) {
         toast.error('Não é possível marcar como Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
-        return;
+        return false;
       }
     }
 
@@ -225,23 +228,26 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
 
-    updateStatus.mutate({
-      leadId: lead.id,
-      newStatus: targetStatus,
-      additionalData,
-    }, {
-      onSuccess: async () => {
-        // Save friendly_patient to upsell_opportunities after closing
-        if (targetStatus === 'fechado' && friendlyOverride !== null) {
-          await new Promise(r => setTimeout(r, 500));
-          await supabase
-            .from('upsell_opportunities')
-            .update({ friendly_patient: friendlyOverride })
-            .eq('lead_id', lead.id);
-        }
-        if (closeAfterSave) onOpenChange(false);
-      },
-    });
+    try {
+      await updateStatus.mutateAsync({
+        leadId: lead.id,
+        newStatus: targetStatus,
+        additionalData,
+      });
+
+      if (targetStatus === 'fechado' && friendlyOverride !== null) {
+        await new Promise(r => setTimeout(r, 500));
+        await supabase
+          .from('upsell_opportunities')
+          .update({ friendly_patient: friendlyOverride })
+          .eq('lead_id', lead.id);
+      }
+
+      if (closeAfterSave) onOpenChange(false);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleCreateTask = () => {

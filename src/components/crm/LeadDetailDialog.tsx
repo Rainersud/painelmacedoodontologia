@@ -143,14 +143,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   // Auto-switch to triage tab when lead reaches 'compareceu'
   useEffect(() => {
-    if (lead?.status === 'compareceu' && open) {
+    if ((newStatus || lead?.status) === 'compareceu' && open) {
       setActiveTab('triage');
     }
-  }, [lead?.status, open]);
+  }, [lead?.status, newStatus, open]);
 
   if (!lead) return null;
 
-  const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);
+  const statusForView = (newStatus || lead.status) as LeadStatus;
+  const currentStage = FUNNEL_STAGES.find(s => s.key === statusForView);
+  const displayedNoShowCount = statusForView === 'faltou' && lead.status !== 'faltou'
+    ? (lead.no_show_count || 0) + 1
+    : (lead.no_show_count || 0);
 
   const handleSaveInfo = () => {
     const updates: Partial<Lead> = {
@@ -449,23 +453,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <div className="space-y-2">
                 <Label>Alterar Status</Label>
                 <Select
-                  value={newStatus || lead.status}
+                  value={statusForView}
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
-                    // Auto-save immediately for stages that don't require extra inputs
-                    const requiresInput =
-                      target === 'nao_cliente' ||
-                      target === 'fechado';
-                    if (!requiresInput) {
-                      // Reset daily attempts counter when entering follow-up / nao_respondeu
-                      const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
-                      if (resetDailyStages.includes(target)) {
-                        const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
-                        localStorage.removeItem(todayKey);
-                      }
-                      updateStatus.mutate({ leadId: lead.id, newStatus: target });
+                    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+                    if (resetDailyStages.includes(target)) {
+                      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                      localStorage.removeItem(todayKey);
                     }
+                    handleChangeStatus(target);
                   }}
                 >
                   <SelectTrigger>
@@ -488,7 +485,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
 
               {/* Data da Consulta — visible right after status when status is agendou/consulta_agendada */}
-              {(['agendou','consulta_agendada'].includes(lead.status) || newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
+              {(['agendou','consulta_agendada'].includes(statusForView)) && (
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
@@ -515,7 +512,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Reagendamento quando faltou */}
-              {(lead.status === 'faltou' || newStatus === 'faltou') && (
+              {statusForView === 'faltou' && (
                 <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20 space-y-3">
                   <h4 className="font-medium text-destructive flex items-center gap-2">
                     🔁 Reagendar para

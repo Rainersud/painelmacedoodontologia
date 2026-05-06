@@ -35,6 +35,7 @@ import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { FUNNEL_STAGES, FOLLOWUP_COPY_TEMPLATES, type Lead, type LeadStatus } from '@/types/crm';
+import { EditableFollowUpCopy } from './EditableFollowUpCopy';
 import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';

@@ -140,11 +140,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   }, [lead, friendlyData]);
 
-  // Auto-open triage when lead reaches 'compareceu'
+  // Auto-switch to triage tab when lead reaches 'compareceu'
   useEffect(() => {
     if (lead?.status === 'compareceu' && open) {
       setActiveTab('triage');
-      setTriageOpen(true);
     }
   }, [lead?.status, open]);
 
@@ -332,7 +331,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
         <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
-            const showTriage = ['compareceu', 'fechado'].includes(lead.status);
+            const showTriage = true;
             return (
               <div className="shrink-0 overflow-x-auto -mx-1 px-1 border-b border-border">
                 <TabsList className="inline-flex w-auto min-w-full">
@@ -347,7 +346,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {showTriage && (
                     <TabsTrigger
                       value="triage"
-                      onPointerDown={(e) => { e.preventDefault(); setActiveTab('triage'); setTriageOpen(true); }}
                       className="text-xs sm:text-sm gap-1"
                     >
                       <FileText className="h-3.5 w-3.5" />
@@ -1061,6 +1059,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
             </TabsContent>
 
+            {/* Triage Tab - always visible, editable only when status = compareceu */}
+            <TabsContent value="triage" className="m-0">
+              <TriageFormDialog
+                lead={lead}
+                inline
+                readOnly={lead.status !== 'compareceu'}
+              />
+            </TabsContent>
+
             {/* Referral Tab */}
             <TabsContent value="referral" className="m-0">
               <ReferralSection leadId={lead.id} leadName={lead.name} />
@@ -1094,11 +1101,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           </Button>
         </div>
 
-        <TriageFormDialog
-          lead={lead}
-          open={triageOpen}
-          onOpenChange={setTriageOpen}
-        />
         <PaymentDialog
           open={paymentOpen}
           onOpenChange={setPaymentOpen}

@@ -28,8 +28,10 @@ import type { Lead } from '@/types/crm';
 
 interface TriageFormDialogProps {
   lead: Lead | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  inline?: boolean;
+  readOnly?: boolean;
 }
 
 const MOTIVATION_OPTIONS = [
@@ -48,7 +50,7 @@ const DISCOMFORT_OPTIONS = [
 
 const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 
-export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogProps) {
+export function TriageFormDialog({ lead, open, onOpenChange, inline = false, readOnly = false }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);
   const { data: existingReferrals } = useTriageReferrals(lead?.id);
@@ -262,9 +264,9 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
 
   const isCompleted = existingTriage?.triage_completed;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] h-[92vh] flex flex-col p-0 overflow-hidden">
+  const body = (
+    <>
+      {!inline && (
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -284,14 +286,22 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             )}
           </div>
         </DialogHeader>
+      )}
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4">
-            <div ref={printRef} className="space-y-5 sm:space-y-6">
+      {inline && readOnly && (
+        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+          A ficha de triagem está em modo leitura. Edição liberada apenas quando o status do lead for "Compareceu".
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className={inline ? "px-4 sm:px-6 pb-4" : "flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4"}>
+          <fieldset disabled={readOnly} className={readOnly ? "opacity-90" : ""}>
+          <div ref={printRef} className="space-y-5 sm:space-y-6">
               {/* Intro text */}
               <div className="bg-primary/5 rounded-lg p-4 text-center">
                 <p className="text-sm font-medium text-primary">
@@ -706,11 +716,13 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
                   Preenchida em {new Date(existingTriage.filled_at).toLocaleString('pt-BR')}
                 </div>
               )}
-            </div>
           </div>
-        )}
+          </fieldset>
+        </div>
+      )}
 
-        {/* Action buttons - placed right after the form content */}
+      {/* Action buttons - placed right after the form content */}
+      {!readOnly && (
         <div className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30">
           <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha" className="shrink-0">
             <Printer className="h-4 w-4" />
@@ -719,7 +731,7 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             onClick={() => {
               handleSave();
               if (!isCompleted) handleMarkCompleted();
-              onOpenChange(false);
+              if (!inline) onOpenChange?.(false);
             }}
             disabled={saveTriage.isPending || markCompleted.isPending}
             className="flex-1"
@@ -732,6 +744,18 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
             Concluir Triagem
           </Button>
         </div>
+      )}
+    </>
+  );
+
+  if (inline) {
+    return <div className="rounded-lg border bg-card overflow-hidden">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] h-[92vh] flex flex-col p-0 overflow-hidden">
+        {body}
       </DialogContent>
     </Dialog>
   );

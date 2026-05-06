@@ -1101,11 +1101,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           </Button>
         </div>
 
-        <TriageFormDialog
-          lead={lead}
-          open={triageOpen}
-          onOpenChange={setTriageOpen}
-        />
         <PaymentDialog
           open={paymentOpen}
           onOpenChange={setPaymentOpen}

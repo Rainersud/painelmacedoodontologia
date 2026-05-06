@@ -463,7 +463,19 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 <Label>Alterar Status</Label>
                 <Select
                   value={newStatus || undefined}
-                  onValueChange={(v) => setNewStatus(v as LeadStatus)}
+                  onValueChange={(v) => {
+                    const target = v as LeadStatus;
+                    setNewStatus(target);
+                    // Auto-save immediately for stages that don't require extra inputs
+                    const requiresInput =
+                      target === 'nao_cliente' ||
+                      target === 'fechado' ||
+                      target === 'agendou' ||
+                      target === 'consulta_agendada';
+                    if (!requiresInput) {
+                      updateStatus.mutate({ leadId: lead.id, newStatus: target });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o novo status" />

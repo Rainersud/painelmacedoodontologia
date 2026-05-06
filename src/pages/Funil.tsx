@@ -102,7 +102,7 @@ function KanbanBoard({
             const isDropTarget = dropTargetStatus === stage.key && draggedLeadId !== null;
             const isFollowUp = FOLLOWUP_KEYS.has(stage.key);
             const isFirstFollowUp = stage.key === 'followup_1';
-            const isLastFollowUp = stage.key === 'followup_9';
+            const isLastFollowUp = stage.key === 'followup_14';
 
             return (
               <div key={stage.key} className="flex gap-2 h-full">

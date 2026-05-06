@@ -665,14 +665,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Textarea
                     value={formData.loss_reason}
                     onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
-                    onBlur={() => {
-                      if (formData.loss_reason.trim()) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { loss_reason: formData.loss_reason.trim() } as any,
-                        });
-                      }
-                    }}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -868,10 +860,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === true}
-                          onChange={() => {
-                            setFriendlyPatient(true);
-                            handleChangeStatus('fechado' as LeadStatus, false, true);
-                          }}
+                          onChange={() => setFriendlyPatient(true)}
                           className="h-4 w-4 accent-primary"
                         />
                         <span className="text-sm font-medium">✅ Sim</span>
@@ -881,10 +870,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === false}
-                          onChange={() => {
-                            setFriendlyPatient(false);
-                            handleChangeStatus('fechado' as LeadStatus, false, false);
-                          }}
+                          onChange={() => setFriendlyPatient(false)}
                           className="h-4 w-4 accent-destructive"
                         />
                         <span className="text-sm font-medium">❌ Não</span>

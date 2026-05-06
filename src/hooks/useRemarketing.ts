@@ -82,12 +82,17 @@ export function useEnterRemarketing() {
         triggered_by: 'system',
       });
 
-      return data;
+      return { ...data, resumed: !!previous, resumeStage } as any;
     },
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      toast.success('Lead enviado para Remarketing');
+      if (result?.resumed) {
+        const stageLabel = RMKT_STAGES.find(s => s.key === result.resumeStage)?.label || result.resumeStage;
+        toast.success(`Lead retomado no Remarketing em ${stageLabel} (continuidade preservada)`);
+      } else {
+        toast.success('Lead enviado para Remarketing');
+      }
     },
     onError: () => toast.error('Erro ao enviar para Remarketing'),
   });

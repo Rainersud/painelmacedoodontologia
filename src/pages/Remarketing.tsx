@@ -395,6 +395,13 @@ export default function Remarketing() {
           </Card>
         )}
       </div>
+      {selectedLead && (
+        <LeadDetailDialog
+          lead={selectedLead}
+          open={!!selectedLead}
+          onOpenChange={(open) => { if (!open) setSelectedLead(null); }}
+        />
+      )}
     </AppLayout>
   );
 }

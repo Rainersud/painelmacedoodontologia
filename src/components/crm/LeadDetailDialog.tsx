@@ -469,17 +469,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <div className="space-y-2">
                 <Label>Alterar Status</Label>
                 <Select
-                  value={newStatus || undefined}
+                  value={newStatus || lead.status}
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
                     // Auto-save immediately for stages that don't require extra inputs
                     const requiresInput =
                       target === 'nao_cliente' ||
-                      target === 'fechado' ||
-                      target === 'agendou' ||
-                      target === 'consulta_agendada';
+                      target === 'fechado';
                     if (!requiresInput) {
+                      // Reset daily attempts counter when entering follow-up / nao_respondeu
+                      const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+                      if (resetDailyStages.includes(target)) {
+                        const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                        localStorage.removeItem(todayKey);
+                      }
                       updateStatus.mutate({ leadId: lead.id, newStatus: target });
                     }
                   }}
@@ -489,10 +493,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </SelectTrigger>
                   <SelectContent>
                     {FUNNEL_STAGES.map((stage) => (
-                      <SelectItem 
-                        key={stage.key} 
+                      <SelectItem
+                        key={stage.key}
                         value={stage.key}
-                        disabled={stage.key === lead.status}
                       >
                         <div className="flex items-center gap-2">
                           <div className={`h-2 w-2 rounded-full ${stage.color}`} />
@@ -503,6 +506,59 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Data da Consulta — visible right after status when status is agendou/consulta_agendada */}
+              {(['agendou','consulta_agendada'].includes(lead.status) || newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+                  <h4 className="font-medium text-primary flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data da Consulta
+                  </h4>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt || formData.scheduled_appointment_at}
+                    onChange={(e) => {
+                      setScheduledAt(e.target.value);
+                      setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }));
+                    }}
+                    onBlur={() => {
+                      const val = scheduledAt || formData.scheduled_appointment_at;
+                      if (val) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { scheduled_appointment_at: new Date(val).toISOString() },
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Reagendamento quando faltou */}
+              {(lead.status === 'faltou' || newStatus === 'faltou') && (
+                <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20 space-y-3">
+                  <h4 className="font-medium text-destructive flex items-center gap-2">
+                    🔁 Reagendar para
+                  </h4>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    onBlur={() => {
+                      if (scheduledAt) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { scheduled_appointment_at: new Date(scheduledAt).toISOString() },
+                        });
+                        // Move back to agendou
+                        updateStatus.mutate({ leadId: lead.id, newStatus: 'agendou' as LeadStatus });
+                        toast.success('Reagendamento salvo e lead movido para Agendado.');
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar — o lead voltará automaticamente para "Agendado".</p>
+                </div>
+              )}
 
               <hr className="border-border" />
 

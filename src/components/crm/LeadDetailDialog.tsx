@@ -187,7 +187,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     const targetStatus = statusOverride || newStatus;
     if (!targetStatus || !lead || targetStatus === lead.status) return true;
 
-    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9','followup_10','followup_11','followup_12','followup_13','followup_14'];
     if (resetDailyStages.includes(targetStatus)) {
       const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
       localStorage.removeItem(todayKey);

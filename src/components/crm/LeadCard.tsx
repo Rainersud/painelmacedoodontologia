@@ -128,6 +128,11 @@ export function LeadCard({
           <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", alertColors[alertLevel])}>
             ⏳ {days}d
           </Badge>
+          {timeCategory && (
+            <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", timeCategory.cls)}>
+              {timeCategory.label}
+            </Badge>
+          )}
           {lead.interest_product && (
             <Badge variant="outline" className="text-[9px] bg-chart-3/10 text-chart-3 border-chart-3/20 px-1 py-0 h-4">
               🦷 {lead.interest_product === 'implante' ? 'Impl.' : 

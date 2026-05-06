@@ -508,15 +508,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       setScheduledAt(e.target.value);
                       setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }));
                     }}
-                    onBlur={() => {
-                      const val = scheduledAt || formData.scheduled_appointment_at;
-                      if (val) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { scheduled_appointment_at: new Date(val).toISOString() },
-                        });
-                      }
-                    }}
                   />
                 </div>
               )}
@@ -531,19 +522,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    onBlur={() => {
-                      if (scheduledAt) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { scheduled_appointment_at: new Date(scheduledAt).toISOString() },
-                        });
-                        // Move back to agendou
-                        updateStatus.mutate({ leadId: lead.id, newStatus: 'agendou' as LeadStatus });
-                        toast.success('Reagendamento salvo e lead movido para Agendado.');
-                      }
-                    }}
                   />
-                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar — o lead voltará automaticamente para "Agendado".</p>
+                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar antes de salvar a evolução.</p>
                 </div>
               )}
 

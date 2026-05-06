@@ -765,21 +765,23 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <span className="font-bold text-lg min-w-[3ch] text-center">
                         {contactAttempts}
                       </span>
-                      <span className="text-muted-foreground">/4 hoje</span>
+                      <span className="text-muted-foreground">/2 neste período</span>
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-7 w-7 p-0"
                         onClick={async () => {
                           if (contactAttempts < 9) {
-                            // Daily limit: max 4 attempts per day per lead
-                            const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
-                            const todayCount = parseInt(localStorage.getItem(todayKey) || '0');
-                            if (todayCount >= 4) {
-                              toast.error('Limite atingido: máximo 4 tentativas por dia para este lead.');
+                            // Period limit: max 2 attempts per period (manhã/tarde) per lead
+                            const now = new Date();
+                            const period = now.getHours() < 12 ? 'manha' : 'tarde';
+                            const periodKey = `attempts_${lead.id}_${now.toISOString().slice(0,10)}_${period}`;
+                            const periodCount = parseInt(localStorage.getItem(periodKey) || '0');
+                            if (periodCount >= 2) {
+                              toast.error('Limite atingido: máximo 2 tentativas neste período (manhã/tarde) para este lead.');
                               return;
                             }
-                            localStorage.setItem(todayKey, String(todayCount + 1));
+                            localStorage.setItem(periodKey, String(periodCount + 1));
                             const newVal = contactAttempts + 1;
                             setContactAttempts(newVal);
                             if (newVal === 9) {

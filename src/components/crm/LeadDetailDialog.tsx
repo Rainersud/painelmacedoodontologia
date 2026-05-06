@@ -703,7 +703,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Show existing loss_reason for leads already in nao_cliente */}
-              {lead.status === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
+              {statusForView === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
                 <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
                     ❓ Motivo de não fechamento
@@ -830,7 +830,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 />
               )}
 
-              {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
+              {statusForView === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">
                     🤝 Paciente Amigo

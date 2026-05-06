@@ -45,7 +45,7 @@ export function LeadCard({
 
   // Time-based grouping category badge (visual only)
   const createdDays = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000);
-  const lastActivity = lead.last_interaction_at || lead.updated_at || lead.created_at;
+  const lastActivity = (lead as any).last_interaction_at || lead.updated_at || lead.created_at;
   const inactivityDays = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86400000);
   let timeCategory: { label: string; cls: string } | null = null;
   if (inactivityDays >= 7) timeCategory = { label: '⚠️ Sem acomp.', cls: 'bg-destructive/10 text-destructive' };

@@ -607,9 +607,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         <div key={apt.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
                           <span className="text-muted-foreground">{idx + 1}º agendamento</span>
                           <span>
-                            {new Date(apt.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            {new Date(apt.scheduled_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' })}
                             {' '}
-                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <span className={cn("font-medium", statusColor)}>{status}</span>
                         </div>

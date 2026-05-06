@@ -101,7 +101,7 @@ const CRMDashboard = () => {
 
   // Group activities by date
   const groupedActivities = activities?.reduce((acc, activity) => {
-    const date = new Date(activity.created_at).toLocaleDateString('pt-BR');
+    const date = new Date(activity.created_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     if (!acc[date]) acc[date] = [];
     acc[date].push(activity);
     return acc;

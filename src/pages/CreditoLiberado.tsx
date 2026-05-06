@@ -90,7 +90,7 @@ const CreditoLiberado = () => {
                           {getStageLabel(patient.lead_status)}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          {new Date(patient.updated_at).toLocaleDateString('pt-BR')}
+                          {new Date(patient.updated_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                         </span>
                       </div>
                     </div>

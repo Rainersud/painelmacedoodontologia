@@ -691,17 +691,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </p>
                   <Textarea
                     value={formData.loss_reason}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setFormData(prev => ({ ...prev, loss_reason: value }));
-                      if (statusForView === 'nao_cliente' && value.trim()) {
-                        updateStatus.mutate({
-                          leadId: lead.id,
-                          newStatus: 'nao_cliente' as LeadStatus,
-                          additionalData: { loss_reason: value.trim() } as any,
-                        });
-                      }
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -940,7 +930,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
 
               {/* Rescue button for Follow-up 4 */}
-              {(lead.status === 'followup_4') && (
+              {statusForView === 'followup_4' && (
                 <div className="p-3 rounded-lg border-2 border-warning/40 bg-warning/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
                     🔄 Lead em Follow-up 4

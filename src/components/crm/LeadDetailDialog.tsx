@@ -170,17 +170,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     updateLead.mutate({ leadId: lead.id, updates });
   };
 
-  const handleChangeStatus = async () => {
-    if (!newStatus) return;
+  const handleChangeStatus = async (statusOverride?: LeadStatus, closeAfterSave = false) => {
+    const targetStatus = statusOverride || newStatus;
+    if (!targetStatus || !lead || targetStatus === lead.status) return;
 
     // VALIDATION: Block move to nao_cliente without loss_reason
-    if (newStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
-      toast.error('Preencha o campo "Não fechou porque:" antes de mover.');
-      return;
-    }
     
     // VALIDATION: Block move to fechado without payment
-    if (newStatus === 'fechado') {
+    if (targetStatus === 'fechado') {
       if (friendlyPatient === null) {
         toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
         return;
@@ -199,28 +196,30 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
 
     const additionalData: Partial<Lead> = {};
-    if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
-      additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
+    if (targetStatus === 'agendou' || targetStatus === 'consulta_agendada') {
+      additionalData.scheduled_appointment_at = scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : new Date().toISOString();
     }
-    if (newStatus === 'nao_cliente' && formData.loss_reason.trim()) {
+    if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
 
     updateStatus.mutate({
       leadId: lead.id,
-      newStatus,
+      newStatus: targetStatus,
       additionalData,
     }, {
       onSuccess: async () => {
         // Save friendly_patient to upsell_opportunities after closing
-        if (newStatus === 'fechado' && friendlyPatient !== null) {
+        if (targetStatus === 'fechado' && friendlyPatient !== null) {
           await new Promise(r => setTimeout(r, 500));
           await supabase
             .from('upsell_opportunities')
             .update({ friendly_patient: friendlyPatient })
             .eq('lead_id', lead.id);
         }
-        onOpenChange(false);
+        if (closeAfterSave) onOpenChange(false);
       },
     });
   };

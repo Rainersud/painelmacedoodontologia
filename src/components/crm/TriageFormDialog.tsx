@@ -716,11 +716,13 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   Preenchida em {new Date(existingTriage.filled_at).toLocaleString('pt-BR')}
                 </div>
               )}
-            </div>
           </div>
-        )}
+          </fieldset>
+        </div>
+      )}
 
-        {/* Action buttons - placed right after the form content */}
+      {/* Action buttons - placed right after the form content */}
+      {!readOnly && (
         <div className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30">
           <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha" className="shrink-0">
             <Printer className="h-4 w-4" />
@@ -729,7 +731,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             onClick={() => {
               handleSave();
               if (!isCompleted) handleMarkCompleted();
-              onOpenChange(false);
+              if (!inline) onOpenChange?.(false);
             }}
             disabled={saveTriage.isPending || markCompleted.isPending}
             className="flex-1"
@@ -742,7 +744,20 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             Concluir Triagem
           </Button>
         </div>
+      )}
+    </>
+  );
+
+  if (inline) {
+    return <div className="rounded-lg border bg-card overflow-hidden">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] h-[92vh] flex flex-col p-0 overflow-hidden">
+        {body}
       </DialogContent>
     </Dialog>
   );
+}
 }

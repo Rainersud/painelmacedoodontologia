@@ -143,14 +143,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   // Auto-switch to triage tab when lead reaches 'compareceu'
   useEffect(() => {
-    if (lead?.status === 'compareceu' && open) {
+    if ((newStatus || lead?.status) === 'compareceu' && open) {
       setActiveTab('triage');
     }
-  }, [lead?.status, open]);
+  }, [lead?.status, newStatus, open]);
 
   if (!lead) return null;
 
-  const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);
+  const statusForView = (newStatus || lead.status) as LeadStatus;
+  const currentStage = FUNNEL_STAGES.find(s => s.key === statusForView);
+  const displayedNoShowCount = statusForView === 'faltou' && lead.status !== 'faltou'
+    ? (lead.no_show_count || 0) + 1
+    : (lead.no_show_count || 0);
 
   const handleSaveInfo = () => {
     const updates: Partial<Lead> = {
@@ -170,18 +174,19 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     updateLead.mutate({ leadId: lead.id, updates });
   };
 
-  const handleChangeStatus = async () => {
-    if (!newStatus) return;
+  const handleChangeStatus = async (
+    statusOverride?: LeadStatus,
+    closeAfterSave = false,
+    friendlyOverride: boolean | null = friendlyPatient
+  ) => {
+    const targetStatus = statusOverride || newStatus;
+    if (!targetStatus || !lead || targetStatus === lead.status) return;
 
     // VALIDATION: Block move to nao_cliente without loss_reason
-    if (newStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
-      toast.error('Preencha o campo "Não fechou porque:" antes de mover.');
-      return;
-    }
     
     // VALIDATION: Block move to fechado without payment
-    if (newStatus === 'fechado') {
-      if (friendlyPatient === null) {
+    if (targetStatus === 'fechado') {
+      if (friendlyOverride === null) {
         toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
         return;
       }
@@ -199,28 +204,33 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
 
     const additionalData: Partial<Lead> = {};
-    if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && scheduledAt) {
-      additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
+    if (targetStatus === 'agendou' || targetStatus === 'consulta_agendada') {
+      const scheduledValue = scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : new Date().toISOString();
+      additionalData.scheduled_appointment_at = scheduledValue;
+      setScheduledAt(scheduledValue.slice(0, 16));
+      setFormData(prev => ({ ...prev, scheduled_appointment_at: scheduledValue.slice(0, 16) }));
     }
-    if (newStatus === 'nao_cliente' && formData.loss_reason.trim()) {
+    if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
 
     updateStatus.mutate({
       leadId: lead.id,
-      newStatus,
+      newStatus: targetStatus,
       additionalData,
     }, {
       onSuccess: async () => {
         // Save friendly_patient to upsell_opportunities after closing
-        if (newStatus === 'fechado' && friendlyPatient !== null) {
+        if (targetStatus === 'fechado' && friendlyOverride !== null) {
           await new Promise(r => setTimeout(r, 500));
           await supabase
             .from('upsell_opportunities')
-            .update({ friendly_patient: friendlyPatient })
+            .update({ friendly_patient: friendlyOverride })
             .eq('lead_id', lead.id);
         }
-        onOpenChange(false);
+        if (closeAfterSave) onOpenChange(false);
       },
     });
   };
@@ -450,23 +460,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <div className="space-y-2">
                 <Label>Alterar Status</Label>
                 <Select
-                  value={newStatus || lead.status}
+                  value={statusForView}
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
-                    // Auto-save immediately for stages that don't require extra inputs
-                    const requiresInput =
-                      target === 'nao_cliente' ||
-                      target === 'fechado';
-                    if (!requiresInput) {
-                      // Reset daily attempts counter when entering follow-up / nao_respondeu
-                      const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
-                      if (resetDailyStages.includes(target)) {
-                        const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
-                        localStorage.removeItem(todayKey);
-                      }
-                      updateStatus.mutate({ leadId: lead.id, newStatus: target });
+                    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+                    if (resetDailyStages.includes(target)) {
+                      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                      localStorage.removeItem(todayKey);
                     }
+                    if (target === 'fechado') return;
+                    handleChangeStatus(target);
                   }}
                 >
                   <SelectTrigger>
@@ -489,7 +493,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
 
               {/* Data da Consulta — visible right after status when status is agendou/consulta_agendada */}
-              {(['agendou','consulta_agendada'].includes(lead.status) || newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
+              {(['agendou','consulta_agendada'].includes(statusForView)) && (
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
@@ -516,7 +520,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Reagendamento quando faltou */}
-              {(lead.status === 'faltou' || newStatus === 'faltou') && (
+              {statusForView === 'faltou' && (
                 <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20 space-y-3">
                   <h4 className="font-medium text-destructive flex items-center gap-2">
                     🔁 Reagendar para
@@ -544,8 +548,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <hr className="border-border" />
 
               {/* Discount status — visible from 'agendou' onwards */}
-              {(['agendou','consulta_agendada','confirmado','compareceu','faltou','quase_cliente','potencial','nao_cliente','fechado'].includes(lead.status)) && (() => {
-                const hasNoShow = (lead.no_show_count || 0) > 0;
+              {(['agendou','consulta_agendada','confirmado','compareceu','faltou','quase_cliente','potencial','nao_cliente','fechado'].includes(statusForView)) && (() => {
+                const hasNoShow = displayedNoShowCount > 0;
                 const pct = parseFloat(formData.discount_percentage) || 0;
                 return (
                   <div className="p-4 rounded-lg border space-y-3" style={{
@@ -557,7 +561,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     </h4>
                     {hasNoShow ? (
                       <p className="text-sm font-semibold text-destructive">❌ Não disponível por falta</p>
-                    ) : lead.status === 'compareceu' ? (
+                    ) : statusForView === 'compareceu' ? (
                       <div className="space-y-2">
                         <p className="text-2xl font-bold text-success">{pct}%</p>
                         <p className="text-xs text-muted-foreground">Desconto ativo por comparecimento sem faltas.</p>
@@ -591,7 +595,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     type="number"
                     min="0"
                     className="w-24 text-2xl font-bold text-destructive h-12"
-                    value={lead.no_show_count || 0}
+                    value={displayedNoShowCount}
                     onChange={(e) => {
                       const newCount = Math.max(0, parseInt(e.target.value) || 0);
                       const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
@@ -688,6 +692,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Textarea
                     value={formData.loss_reason}
                     onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                    onBlur={() => {
+                      if (formData.loss_reason.trim()) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { loss_reason: formData.loss_reason.trim() } as any,
+                        });
+                      }
+                    }}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -699,7 +711,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Show existing loss_reason for leads already in nao_cliente */}
-              {lead.status === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
+              {statusForView === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
                 <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
                     ❓ Motivo de não fechamento
@@ -709,8 +721,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Contact attempts counter - show for follow-up stages and nao_respondeu */}
-              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu' || 
-                lead.status?.startsWith('followup_') || newStatus?.startsWith('followup_')) && (
+              {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (
                 <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
                   <h4 className="font-medium text-warning flex items-center gap-2">
                     📞 Tentativas de contato
@@ -820,14 +831,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Follow-up Copy Template */}
-              {lead.status?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[lead.status] && (
+              {statusForView?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[statusForView] && (
                 <EditableFollowUpCopy
-                  stageKey={lead.status}
+                  stageKey={statusForView}
                   leadName={lead.name}
                 />
               )}
 
-              {lead.status === 'fechado' && newStatus !== 'fechado' && friendlyData && (
+              {statusForView === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">
                     🤝 Paciente Amigo
@@ -868,7 +879,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {newStatus === 'fechado' && (
+              {statusForView === 'fechado' && (
                 <div className="space-y-4">
                   {/* Paciente Amigo Section */}
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
@@ -884,7 +895,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === true}
-                          onChange={() => setFriendlyPatient(true)}
+                          onChange={() => {
+                            setFriendlyPatient(true);
+                            handleChangeStatus('fechado' as LeadStatus, false, true);
+                          }}
                           className="h-4 w-4 accent-primary"
                         />
                         <span className="text-sm font-medium">✅ Sim</span>
@@ -894,7 +908,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === false}
-                          onChange={() => setFriendlyPatient(false)}
+                          onChange={() => {
+                            setFriendlyPatient(false);
+                            handleChangeStatus('fechado' as LeadStatus, false, false);
+                          }}
                           className="h-4 w-4 accent-destructive"
                         />
                         <span className="text-sm font-medium">❌ Não</span>
@@ -921,7 +938,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
 
               {/* Rescue button for Follow-up 4 */}
-              {(lead.status === 'followup_4') && (
+              {statusForView === 'followup_4' && (
                 <div className="p-3 rounded-lg border-2 border-warning/40 bg-warning/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
                     🔄 Lead em Follow-up 4
@@ -947,21 +964,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Status changes auto-save — global "Salvar Evolução" button is in the footer.
-                  Stages requiring extra inputs (nao_cliente / fechado) still use handleChangeStatus implicitly
-                  via the loss_reason field validation and the friendly_patient confirmation flow below. */}
-              {(newStatus === 'nao_cliente' || newStatus === 'fechado') && (
-                <div className="sticky bottom-0 pt-3 bg-card">
-                  <Button
-                    className="w-full"
-                    onClick={handleChangeStatus}
-                    disabled={updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    {updateStatus.isPending ? 'Confirmando...' : (newStatus === 'fechado' ? 'Confirmar Venda' : 'Confirmar Não Cliente')}
-                  </Button>
-                </div>
-              )}
             </TabsContent>
 
             {/* Task Tab */}
@@ -1030,7 +1032,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <TriageFormDialog
                 lead={lead}
                 inline
-                readOnly={lead.status !== 'compareceu'}
+                readOnly={statusForView !== 'compareceu'}
               />
             </TabsContent>
 

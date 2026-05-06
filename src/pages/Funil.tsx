@@ -278,6 +278,14 @@ const Funil = () => { // v2
       }
     }
   }, [leads, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!selectedLead?.id || !leads) return;
+    const freshLead = leads.find(l => l.id === selectedLead.id);
+    if (freshLead && freshLead.updated_at !== selectedLead.updated_at) {
+      setSelectedLead(freshLead);
+    }
+  }, [leads, selectedLead?.id, selectedLead?.updated_at]);
   
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);

@@ -693,115 +693,133 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Contact attempts counter - show for follow-up stages and nao_respondeu */}
-              {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (
-                <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
-                  <h4 className="font-medium text-warning flex items-center gap-2">
-                    📞 Tentativas de contato
-                  </h4>
-                  {contactAttempts >= 2 && (
-                    <div className="text-xs text-destructive bg-destructive/10 rounded p-2 font-medium">
-                      ⚠️ Você pode queimar esse lead e reduzir sua conversão
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">Tentativa:</span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => {
-                          if (contactAttempts > 0) {
-                            const newVal = contactAttempts - 1;
-                            setContactAttempts(newVal);
-                            // Auto-move to corresponding followup stage
-                            if (newVal >= 1 && newVal <= 9) {
-                              const targetStatus = `followup_${newVal}` as LeadStatus;
-                              updateStatus.mutate({ 
-                                leadId: lead.id, 
-                                newStatus: targetStatus,
-                                additionalData: { contact_attempts: newVal } as any,
-                              });
-                            } else {
-                              updateLead.mutate({ leadId: lead.id, updates: { contact_attempts: newVal } as any });
+              {/* Contact attempts counter - per stage period (manhã/tarde) */}
+              {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (() => {
+                const stageKey = `stage_attempts_${lead.id}_${statusForView}`;
+                const stageAttempts = parseInt(typeof window !== 'undefined' ? (localStorage.getItem(stageKey) || '0') : '0');
+                const followupNum = statusForView?.startsWith('followup_') ? parseInt(statusForView.replace('followup_','')) : 0;
+                const isLastFollowup = statusForView === 'followup_14';
+                const stageLabel = FOLLOWUP_COPY_TEMPLATES[statusForView]?.label || statusForView;
+
+                const advanceToNext = () => {
+                  if (followupNum >= 1 && followupNum < 14) {
+                    const nextStatus = `followup_${followupNum + 1}` as LeadStatus;
+                    updateStatus.mutate({
+                      leadId: lead.id,
+                      newStatus: nextStatus,
+                      additionalData: { contact_attempts: 0 } as any,
+                    });
+                  }
+                };
+
+                const sendToRmkt = async () => {
+                  try {
+                    await supabase.from('remarketing_entries').insert({
+                      lead_id: lead.id,
+                      current_stage: 'dia_1',
+                      phase: 'aquecimento',
+                      origin_status: statusForView,
+                      is_active: true,
+                    });
+                    await supabase.from('leads').update({
+                      rmkt_status: 'ativo',
+                      rmkt_entered_at: new Date().toISOString(),
+                      rmkt_origin_status: statusForView,
+                      rmkt_last_stage: 'dia_1',
+                      status: 'nutricao' as any,
+                      stage_entered_at: new Date().toISOString(),
+                    }).eq('id', lead.id);
+                    await supabase.from('remarketing_logs').insert({
+                      lead_id: lead.id,
+                      action: 'entrada',
+                      to_stage: 'dia_1',
+                      from_stage: statusForView,
+                      triggered_by: 'manual',
+                    });
+                    toast.success('Lead migrado para Remarketing!');
+                    onOpenChange(false);
+                  } catch (err: any) {
+                    toast.error('Erro ao migrar para Remarketing: ' + (err?.message || ''));
+                  }
+                };
+
+                return (
+                  <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
+                    <h4 className="font-medium text-warning flex items-center gap-2">
+                      📞 Tentativas de contato — {stageLabel}
+                    </h4>
+                    {stageAttempts >= 2 && (
+                      <div className="text-xs text-destructive bg-destructive/10 rounded p-2 font-medium">
+                        ⚠️ Limite de 2 tentativas atingido neste período
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">Tentativa:</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => {
+                            if (stageAttempts > 0) {
+                              localStorage.setItem(stageKey, String(stageAttempts - 1));
+                              setContactAttempts((c) => c); // force rerender
+                              setContactAttempts(stageAttempts - 1);
                             }
-                          }
-                        }}
-                      >-</Button>
-                      <span className="font-bold text-lg min-w-[3ch] text-center">
-                        {contactAttempts}
-                      </span>
-                      <span className="text-muted-foreground">/2 neste período</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={async () => {
-                          if (contactAttempts < 9) {
-                            // Period limit: max 2 attempts per period (manhã/tarde) per lead
-                            const now = new Date();
-                            const period = now.getHours() < 12 ? 'manha' : 'tarde';
-                            const periodKey = `attempts_${lead.id}_${now.toISOString().slice(0,10)}_${period}`;
-                            const periodCount = parseInt(localStorage.getItem(periodKey) || '0');
-                            if (periodCount >= 2) {
-                              toast.error('Limite atingido: máximo 2 tentativas neste período (manhã/tarde) para este lead.');
+                          }}
+                        >-</Button>
+                        <span className="font-bold text-lg min-w-[3ch] text-center">
+                          {stageAttempts}
+                        </span>
+                        <span className="text-muted-foreground">/2 neste período</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          disabled={stageAttempts >= 2}
+                          onClick={() => {
+                            if (stageAttempts >= 2) {
+                              toast.error('Máximo 2 tentativas por período. Avance para o próximo período.');
                               return;
                             }
-                            localStorage.setItem(periodKey, String(periodCount + 1));
-                            const newVal = contactAttempts + 1;
+                            const newVal = stageAttempts + 1;
+                            localStorage.setItem(stageKey, String(newVal));
                             setContactAttempts(newVal);
-                            if (newVal === 9) {
-                              // Move to followup_9 first, then auto-enter remarketing
-                              updateStatus.mutate({ 
-                                leadId: lead.id, 
-                                newStatus: 'followup_9' as LeadStatus,
-                                additionalData: { contact_attempts: newVal } as any,
-                              }, {
-                                onSuccess: async () => {
-                                  // Auto-enter remarketing
-                                  try {
-                                    await supabase.from('remarketing_entries').insert({
-                                      lead_id: lead.id,
-                                      current_stage: 'dia_1',
-                                      phase: 'aquecimento',
-                                      origin_status: 'followup_9',
-                                      is_active: true,
-                                    });
-                                    await supabase.from('leads').update({
-                                      rmkt_status: 'ativo',
-                                      rmkt_entered_at: new Date().toISOString(),
-                                      rmkt_origin_status: 'followup_9',
-                                      rmkt_last_stage: 'dia_1',
-                                    }).eq('id', lead.id);
-                                    toast.success('Lead migrado para Remarketing automaticamente!');
-                                  } catch (err) {
-                                    console.warn('RMKT auto-entry failed:', err);
-                                  }
-                                },
-                              });
-                            } else {
-                              // Move to corresponding followup stage
-                              const targetStatus = `followup_${newVal}` as LeadStatus;
-                              updateStatus.mutate({ 
-                                leadId: lead.id, 
-                                newStatus: targetStatus,
-                                additionalData: { contact_attempts: newVal } as any,
-                              });
-                            }
-                          }
-                        }}
-                      >+</Button>
+                          }}
+                        >+</Button>
+                      </div>
+                    </div>
+
+                    {stageAttempts >= 2 && !isLastFollowup && followupNum >= 1 && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="w-full"
+                        onClick={advanceToNext}
+                      >
+                        ➡️ Avançar para próximo período
+                      </Button>
+                    )}
+
+                    {isLastFollowup && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="w-full"
+                        onClick={sendToRmkt}
+                      >
+                        🚀 Enviar para RMKT (Dia 1)
+                      </Button>
+                    )}
+
+                    <div className="text-[11px] text-muted-foreground space-y-1 bg-muted/50 rounded p-2">
+                      <p>✅ Máximo 2 tentativas por período (Manhã/Tarde)</p>
+                      <p>✅ Histórico mantido por período</p>
+                      <p>✅ Avanço automático para o próximo período</p>
                     </div>
                   </div>
-                  <div className="text-[11px] text-muted-foreground space-y-1 bg-muted/50 rounded p-2">
-                    <p>✅ Evita parecer desespero</p>
-                    <p>✅ Aumenta taxa de resposta</p>
-                    <p>✅ Gera presença sem ser invasivo</p>
-                    <p>✅ Dá tempo de decisão para o lead</p>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Follow-up Copy Template */}
               {statusForView?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[statusForView] && (

@@ -441,61 +441,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               </div>
 
-              {/* Discount Status */}
-              <div className="p-4 rounded-lg border space-y-4" style={{
-                backgroundColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.05)' :
-                  formData.attendance_discount_status === 'cancelado' ? 'hsl(var(--destructive) / 0.05)' : 'hsl(var(--warning) / 0.05)',
-                borderColor: formData.attendance_discount_status === 'liberado' ? 'hsl(var(--success) / 0.2)' :
-                  formData.attendance_discount_status === 'cancelado' ? 'hsl(var(--destructive) / 0.2)' : 'hsl(var(--warning) / 0.2)',
-              }}>
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  🎁 Status do Desconto de Comparecimento
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-2">
-                    <Label>Status do desconto</Label>
-                    <Select
-                      value={formData.attendance_discount_status}
-                      onValueChange={(v) => {
-                        const newStatus = v as 'elegivel' | 'liberado' | 'cancelado';
-                        setFormData(prev => ({
-                          ...prev,
-                          attendance_discount_status: newStatus,
-                          discount_percentage: newStatus === 'cancelado' ? '0' : prev.discount_percentage === '0' ? '5' : prev.discount_percentage,
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="elegivel">🟡 Elegível para desconto</SelectItem>
-                        <SelectItem value="liberado">🟢 Desconto disponível</SelectItem>
-                        <SelectItem value="cancelado">🔴 Cancelado por falta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Porcentagem do desconto (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={formData.discount_percentage}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
-                      disabled={formData.attendance_discount_status === 'cancelado'}
-                      placeholder="5"
-                    />
-                  </div>
-                </div>
-                {formData.attendance_discount_status === 'cancelado' && (
-                  <p className="text-xs text-destructive">
-                    ❌ Desconto removido automaticamente. O paciente perdeu o benefício por falta no comparecimento.
-                  </p>
-                )}
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea
@@ -518,7 +463,19 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 <Label>Alterar Status</Label>
                 <Select
                   value={newStatus || undefined}
-                  onValueChange={(v) => setNewStatus(v as LeadStatus)}
+                  onValueChange={(v) => {
+                    const target = v as LeadStatus;
+                    setNewStatus(target);
+                    // Auto-save immediately for stages that don't require extra inputs
+                    const requiresInput =
+                      target === 'nao_cliente' ||
+                      target === 'fechado' ||
+                      target === 'agendou' ||
+                      target === 'consulta_agendada';
+                    if (!requiresInput) {
+                      updateStatus.mutate({ leadId: lead.id, newStatus: target });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o novo status" />
@@ -542,35 +499,69 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
               <hr className="border-border" />
 
-              {/* Date of consultation - editable from any stage */}
-              <div className="p-3 rounded-lg border bg-primary/5 border-primary/20 space-y-2">
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> DATA DA CONSULTA
-                </h4>
-                <Input
-                  type="datetime-local"
-                  value={formData.scheduled_appointment_at}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFormData(prev => ({ ...prev, scheduled_appointment_at: v }));
-                    if (v) {
-                      updateLead.mutate({ leadId: lead.id, updates: { scheduled_appointment_at: new Date(v).toISOString() } });
-                    }
-                  }}
-                />
-              </div>
+              {/* Discount status — visible from 'agendou' onwards */}
+              {(['agendou','consulta_agendada','confirmado','compareceu','faltou','quase_cliente','potencial','nao_cliente','fechado'].includes(lead.status)) && (() => {
+                const hasNoShow = (lead.no_show_count || 0) > 0;
+                const pct = parseFloat(formData.discount_percentage) || 0;
+                return (
+                  <div className="p-4 rounded-lg border space-y-3" style={{
+                    backgroundColor: hasNoShow ? 'hsl(var(--destructive) / 0.05)' : 'hsl(var(--success) / 0.05)',
+                    borderColor: hasNoShow ? 'hsl(var(--destructive) / 0.2)' : 'hsl(var(--success) / 0.2)',
+                  }}>
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      🎁 Status do Desconto de Comparecimento
+                    </h4>
+                    {hasNoShow ? (
+                      <p className="text-sm font-semibold text-destructive">❌ Não disponível por falta</p>
+                    ) : lead.status === 'compareceu' ? (
+                      <div className="space-y-2">
+                        <p className="text-2xl font-bold text-success">{pct}%</p>
+                        <p className="text-xs text-muted-foreground">Desconto ativo por comparecimento sem faltas.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Porcentagem do desconto (%)</Label>
+                        <Input
+                          type="number" min="0" max="100" step="1"
+                          value={formData.discount_percentage}
+                          onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
+                          onBlur={() => {
+                            const newPct = parseFloat(formData.discount_percentage) || 0;
+                            updateLead.mutate({ leadId: lead.id, updates: { discount_percentage: newPct, attendance_discount_status: 'liberado' } });
+                          }}
+                        />
+                        <p className="text-xs text-success">🟢 Disponível — sem faltas registradas.</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
-              {/* No-show count */}
-              <div className="p-3 rounded-lg border space-y-1">
+              {/* No-show count — editable */}
+              <div className="p-3 rounded-lg border space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
                   ❌ Faltas Registradas
                 </h4>
-                <p className="text-2xl font-bold text-destructive">
-                  {lead.no_show_count || 0}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Faltas são registradas automaticamente ao mover o lead para "Faltou"
-                </p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    className="w-24 text-2xl font-bold text-destructive h-12"
+                    value={lead.no_show_count || 0}
+                    onChange={(e) => {
+                      const newCount = Math.max(0, parseInt(e.target.value) || 0);
+                      const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
+                      const newPct = newCount > 0 ? 0 : (parseFloat(formData.discount_percentage) || 5);
+                      setFormData(prev => ({ ...prev, attendance_discount_status: newStatus, discount_percentage: String(newPct) }));
+                      updateLead.mutate({ leadId: lead.id, updates: {
+                        no_show_count: newCount,
+                        attendance_discount_status: newStatus,
+                        discount_percentage: newPct,
+                      } as any });
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">Edite para corrigir manualmente. Recalcula o desconto automaticamente.</span>
+                </div>
               </div>
 
               {/* Appointment History */}
@@ -737,6 +728,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         className="h-7 w-7 p-0"
                         onClick={async () => {
                           if (contactAttempts < 9) {
+                            // Daily limit: max 4 attempts per day per lead
+                            const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                            const todayCount = parseInt(localStorage.getItem(todayKey) || '0');
+                            if (todayCount >= 4) {
+                              toast.error('Limite atingido: máximo 4 tentativas por dia para este lead.');
+                              return;
+                            }
+                            localStorage.setItem(todayKey, String(todayCount + 1));
                             const newVal = contactAttempts + 1;
                             setContactAttempts(newVal);
                             if (newVal === 9) {
@@ -910,16 +909,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="status_notes">Observações (opcional)</Label>
-                <Textarea
-                  id="status_notes"
-                  value={statusNotes}
-                  onChange={(e) => setStatusNotes(e.target.value)}
-                  placeholder="Motivo da mudança..."
-                  rows={2}
-                />
-              </div>
 
               {/* Rescue button for Follow-up 4 */}
               {(lead.status === 'followup_4') && (

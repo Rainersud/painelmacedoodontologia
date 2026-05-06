@@ -151,38 +151,88 @@ function KanbanBoard({
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
                     <div className="h-full overflow-y-auto scroll-container-y space-y-1 pr-0.5">
-                      {stageLeads.map((lead, index) => (
-                        <div
-                          key={lead.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, lead)}
-                          onDragEnd={handleDragEnd}
-                          className={cn(
-                            "cursor-grab active:cursor-grabbing",
-                            draggedLeadId === lead.id && 'opacity-40'
-                          )}
-                        >
-                          <LeadCard
-                            lead={lead}
-                            onClick={handleOpenDetail}
-                            compact
-                            index={index}
-                          />
-                        </div>
-                      ))}
-                      {stageLeads.length === 0 && (
-                        <div
-                          className={cn(
-                            "text-center py-6 rounded-lg",
-                            stage.bgColor,
-                            isDropTarget && 'border-2 border-dashed border-primary'
-                          )}
-                        >
-                          <p className="text-[10px] text-muted-foreground">
-                            {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
-                          </p>
-                        </div>
-                      )}
+                      {(() => {
+                        const groupsOrder: { key: string; label: string; cls: string }[] = [
+                          { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
+                          { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
+                          { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
+                          { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
+                          { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
+                          { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
+                          { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
+                          { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
+                          { key: 'antigo', label: '📦 Antigos', cls: 'bg-muted text-muted-foreground' },
+                        ];
+                        const now = Date.now();
+                        const categorize = (lead: Lead): string => {
+                          const created = new Date(lead.created_at).getTime();
+                          const updated = new Date(lead.updated_at || lead.created_at).getTime();
+                          const stageEntered = lead.stage_entered_at ? new Date(lead.stage_entered_at).getTime() : updated;
+                          const createdDays = Math.floor((now - created) / 86400000);
+                          const updatedDays = Math.floor((now - updated) / 86400000);
+                          const stageDays = Math.floor((now - stageEntered) / 86400000);
+                          const isFollowUp = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
+                          if (lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() < now && (lead.status === 'agendou' || lead.status === 'consulta_agendada')) return 'atrasados';
+                          if (isFollowUp || ((lead.contact_attempts ?? 0) >= 3 && stageDays >= 3)) return 'sem_retorno';
+                          if (stageDays >= 5 && !['fechado','nao_cliente','descartados'].includes(lead.status)) return 'parados';
+                          if (lead.status === 'faltou' || ((lead.no_show_count || 0) > 0 && !!lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() > now)) return 'reagendados';
+                          if (createdDays === 0) return 'hoje';
+                          if (createdDays === 1) return 'ontem';
+                          if (createdDays <= 7) return 'semana';
+                          if (updatedDays >= 7) return 'sem_movimento';
+                          return 'antigo';
+                        };
+                        const buckets: Record<string, typeof stageLeads> = {};
+                        stageLeads.forEach(l => {
+                          const k = categorize(l);
+                          (buckets[k] ||= []).push(l);
+                        });
+                        let globalIndex = 0;
+                        const rendered: React.ReactNode[] = [];
+                        groupsOrder.forEach(g => {
+                          const items = buckets[g.key];
+                          if (!items || items.length === 0) return;
+                          rendered.push(
+                            <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-1.5 py-0.5 mt-1 first:mt-0 flex items-center justify-between", g.cls)}>
+                              <span className="text-[9px] font-bold uppercase tracking-wide">{g.label}</span>
+                              <span className="text-[9px] font-bold">{items.length}</span>
+                            </div>
+                          );
+                          items.forEach(lead => {
+                            rendered.push(
+                              <div
+                                key={lead.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, lead)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "cursor-grab active:cursor-grabbing",
+                                  draggedLeadId === lead.id && 'opacity-40'
+                                )}
+                              >
+                                <LeadCard lead={lead} onClick={handleOpenDetail} compact index={globalIndex++} />
+                              </div>
+                            );
+                          });
+                        });
+                        if (stageLeads.length === 0) {
+                          rendered.push(
+                            <div
+                              key="empty"
+                              className={cn(
+                                "text-center py-6 rounded-lg",
+                                stage.bgColor,
+                                isDropTarget && 'border-2 border-dashed border-primary'
+                              )}
+                            >
+                              <p className="text-[10px] text-muted-foreground">
+                                {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return rendered;
+                      })()}
                     </div>
                   </div>
                 </div>

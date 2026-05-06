@@ -710,29 +710,27 @@ export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogP
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30">
-          <Button onClick={handleSave} disabled={saveTriage.isPending} className="flex-1">
-            {saveTriage.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Salvar Ficha
+        {/* Action buttons - placed right after the form content */}
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/30">
+          <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha" className="shrink-0">
+            <Printer className="h-4 w-4" />
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint} size="icon" title="Imprimir Ficha" className="shrink-0">
-              <Printer className="h-4 w-4" />
-            </Button>
-            {!isCompleted && (
-              <Button
-                variant="outline"
-                onClick={handleMarkCompleted}
-                disabled={markCompleted.isPending}
-                className="text-success border-success/30 hover:bg-success/10 flex-1 sm:flex-none"
-                title="Marcar como Triagem Concluída"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                Concluir
-              </Button>
+          <Button
+            onClick={() => {
+              handleSave();
+              if (!isCompleted) handleMarkCompleted();
+              onOpenChange(false);
+            }}
+            disabled={saveTriage.isPending || markCompleted.isPending}
+            className="flex-1"
+          >
+            {(saveTriage.isPending || markCompleted.isPending) ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             )}
-          </div>
+            Concluir Triagem
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

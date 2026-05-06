@@ -140,6 +140,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   }, [lead, friendlyData]);
 
+  // Auto-open triage when lead reaches 'compareceu'
+  useEffect(() => {
+    if (lead?.status === 'compareceu' && open) {
+      setActiveTab('triage');
+      setTriageOpen(true);
+    }
+  }, [lead?.status, open]);
+
   if (!lead) return null;
 
   const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);
@@ -324,8 +332,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
         <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
-            const showTriage = lead.status === 'compareceu' || 
-              ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
+            const showTriage = ['compareceu', 'fechado'].includes(lead.status);
             return (
               <div className="shrink-0 overflow-x-auto -mx-1 px-1 border-b border-border">
                 <TabsList className="inline-flex w-auto min-w-full">
@@ -462,17 +469,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <div className="space-y-2">
                 <Label>Alterar Status</Label>
                 <Select
-                  value={newStatus || undefined}
+                  value={newStatus || lead.status}
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
                     // Auto-save immediately for stages that don't require extra inputs
                     const requiresInput =
                       target === 'nao_cliente' ||
-                      target === 'fechado' ||
-                      target === 'agendou' ||
-                      target === 'consulta_agendada';
+                      target === 'fechado';
                     if (!requiresInput) {
+                      // Reset daily attempts counter when entering follow-up / nao_respondeu
+                      const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+                      if (resetDailyStages.includes(target)) {
+                        const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+                        localStorage.removeItem(todayKey);
+                      }
                       updateStatus.mutate({ leadId: lead.id, newStatus: target });
                     }
                   }}
@@ -482,10 +493,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </SelectTrigger>
                   <SelectContent>
                     {FUNNEL_STAGES.map((stage) => (
-                      <SelectItem 
-                        key={stage.key} 
+                      <SelectItem
+                        key={stage.key}
                         value={stage.key}
-                        disabled={stage.key === lead.status}
                       >
                         <div className="flex items-center gap-2">
                           <div className={`h-2 w-2 rounded-full ${stage.color}`} />
@@ -496,6 +506,59 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Data da Consulta — visible right after status when status is agendou/consulta_agendada */}
+              {(['agendou','consulta_agendada'].includes(lead.status) || newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+                  <h4 className="font-medium text-primary flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data da Consulta
+                  </h4>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt || formData.scheduled_appointment_at}
+                    onChange={(e) => {
+                      setScheduledAt(e.target.value);
+                      setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }));
+                    }}
+                    onBlur={() => {
+                      const val = scheduledAt || formData.scheduled_appointment_at;
+                      if (val) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { scheduled_appointment_at: new Date(val).toISOString() },
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Reagendamento quando faltou */}
+              {(lead.status === 'faltou' || newStatus === 'faltou') && (
+                <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20 space-y-3">
+                  <h4 className="font-medium text-destructive flex items-center gap-2">
+                    🔁 Reagendar para
+                  </h4>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    onBlur={() => {
+                      if (scheduledAt) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { scheduled_appointment_at: new Date(scheduledAt).toISOString() },
+                        });
+                        // Move back to agendou
+                        updateStatus.mutate({ leadId: lead.id, newStatus: 'agendou' as LeadStatus });
+                        toast.success('Reagendamento salvo e lead movido para Agendado.');
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar — o lead voltará automaticamente para "Agendado".</p>
+                </div>
+              )}
 
               <hr className="border-border" />
 
@@ -630,24 +693,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
 
 
-              {/* Schedule fields when status is agendou */}
-              {(newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
-                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-4">
-                  <h4 className="font-medium text-primary flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Data da Consulta
-                  </h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled_at">Data e Horário</Label>
-                    <Input
-                      id="scheduled_at"
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
+              {/* (Data da Consulta now rendered right after the status select) */}
 
               {/* Loss reason field when moving to nao_cliente */}
               {newStatus === 'nao_cliente' && (
@@ -721,7 +767,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <span className="font-bold text-lg min-w-[3ch] text-center">
                         {contactAttempts}
                       </span>
-                      <span className="text-muted-foreground">/9</span>
+                      <span className="text-muted-foreground">/4 hoje</span>
                       <Button
                         variant="outline"
                         size="sm"
@@ -937,16 +983,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <div className="sticky bottom-0 pt-3 bg-card">
-                <Button
-                  className="w-full"
-                  onClick={handleChangeStatus}
-                  disabled={!newStatus || updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
-                >
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
-                </Button>
-              </div>
+              {/* Status changes auto-save — global "Salvar Evolução" button is in the footer.
+                  Stages requiring extra inputs (nao_cliente / fechado) still use handleChangeStatus implicitly
+                  via the loss_reason field validation and the friendly_patient confirmation flow below. */}
+              {(newStatus === 'nao_cliente' || newStatus === 'fechado') && (
+                <div className="sticky bottom-0 pt-3 bg-card">
+                  <Button
+                    className="w-full"
+                    onClick={handleChangeStatus}
+                    disabled={updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    {updateStatus.isPending ? 'Confirmando...' : (newStatus === 'fechado' ? 'Confirmar Venda' : 'Confirmar Não Cliente')}
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             {/* Task Tab */}

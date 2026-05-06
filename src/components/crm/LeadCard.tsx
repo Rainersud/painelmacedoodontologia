@@ -43,6 +43,17 @@ export function LeadCard({
   const alertLevel = getStageAlertLevel(days);
   const isFollowUpStage = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
 
+  // Time-based grouping category badge (visual only)
+  const createdDays = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000);
+  const lastActivity = lead.last_interaction_at || lead.updated_at || lead.created_at;
+  const inactivityDays = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86400000);
+  let timeCategory: { label: string; cls: string } | null = null;
+  if (inactivityDays >= 7) timeCategory = { label: '⚠️ Sem acomp.', cls: 'bg-destructive/10 text-destructive' };
+  else if (createdDays === 0) timeCategory = { label: '🟢 Hoje', cls: 'bg-success/10 text-success' };
+  else if (createdDays === 1) timeCategory = { label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' };
+  else if (createdDays <= 7) timeCategory = { label: '📅 Semana', cls: 'bg-primary/10 text-primary' };
+  else timeCategory = { label: '📦 Antigo', cls: 'bg-muted text-muted-foreground' };
+
   // Calculate total days in follow-up (from first follow-up entry)
   const totalFollowUpDays = isFollowUpStage && lead.stage_entered_at
     ? Math.max(days, Math.floor((Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60 * 24)))

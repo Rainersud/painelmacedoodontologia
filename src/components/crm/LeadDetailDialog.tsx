@@ -983,16 +983,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <div className="sticky bottom-0 pt-3 bg-card">
-                <Button
-                  className="w-full"
-                  onClick={handleChangeStatus}
-                  disabled={!newStatus || updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
-                >
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  {updateStatus.isPending ? 'Atualizando...' : 'Atualizar Status'}
-                </Button>
-              </div>
+              {/* Status changes auto-save — global "Salvar Evolução" button is in the footer.
+                  Stages requiring extra inputs (nao_cliente / fechado) still use handleChangeStatus implicitly
+                  via the loss_reason field validation and the friendly_patient confirmation flow below. */}
+              {(newStatus === 'nao_cliente' || newStatus === 'fechado') && (
+                <div className="sticky bottom-0 pt-3 bg-card">
+                  <Button
+                    className="w-full"
+                    onClick={handleChangeStatus}
+                    disabled={updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    {updateStatus.isPending ? 'Confirmando...' : (newStatus === 'fechado' ? 'Confirmar Venda' : 'Confirmar Não Cliente')}
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             {/* Task Tab */}

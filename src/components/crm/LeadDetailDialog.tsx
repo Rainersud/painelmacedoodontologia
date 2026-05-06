@@ -182,6 +182,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     const targetStatus = statusOverride || newStatus;
     if (!targetStatus || !lead || targetStatus === lead.status) return;
 
+    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+    if (resetDailyStages.includes(targetStatus)) {
+      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+      localStorage.removeItem(todayKey);
+    }
+
     // VALIDATION: Block move to nao_cliente without loss_reason
     
     // VALIDATION: Block move to fechado without payment
@@ -214,6 +220,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
     if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
+    }
+    if (targetStatus === 'faltou' && scheduledAt) {
+      additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
     }
 
     updateStatus.mutate({
@@ -464,13 +473,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
-                    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
-                    if (resetDailyStages.includes(target)) {
-                      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
-                      localStorage.removeItem(todayKey);
-                    }
-                    if (target === 'fechado') return;
-                    handleChangeStatus(target);
                   }}
                 >
                   <SelectTrigger>

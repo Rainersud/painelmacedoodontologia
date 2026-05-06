@@ -140,11 +140,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   }, [lead, friendlyData]);
 
-  // Auto-open triage when lead reaches 'compareceu'
+  // Auto-switch to triage tab when lead reaches 'compareceu'
   useEffect(() => {
     if (lead?.status === 'compareceu' && open) {
       setActiveTab('triage');
-      setTriageOpen(true);
     }
   }, [lead?.status, open]);
 

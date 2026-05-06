@@ -149,6 +149,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   }, [lead?.status, newStatus, open]);
 
+  // Sync per-period attempt counter from localStorage when status/lead changes
+  useEffect(() => {
+    if (!lead) return;
+    const status = (newStatus || lead.status) as string;
+    if (status === 'nao_respondeu' || status?.startsWith('followup_')) {
+      const key = `stage_attempts_${lead.id}_${status}`;
+      const val = typeof window !== 'undefined' ? parseInt(localStorage.getItem(key) || '0') : 0;
+      setStagePeriodAttempts(val);
+    }
+  }, [lead?.id, lead?.status, newStatus, open]);
+
+
   if (!lead) return null;
 
   const statusForView = (newStatus || lead.status) as LeadStatus;

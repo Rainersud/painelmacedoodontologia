@@ -692,6 +692,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Textarea
                     value={formData.loss_reason}
                     onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                    onBlur={() => {
+                      if (formData.loss_reason.trim()) {
+                        updateLead.mutate({
+                          leadId: lead.id,
+                          updates: { loss_reason: formData.loss_reason.trim() } as any,
+                        });
+                      }
+                    }}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -956,21 +964,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Status changes auto-save — global "Salvar Evolução" button is in the footer.
-                  Stages requiring extra inputs (nao_cliente / fechado) still use handleChangeStatus implicitly
-                  via the loss_reason field validation and the friendly_patient confirmation flow below. */}
-              {(newStatus === 'nao_cliente' || newStatus === 'fechado') && (
-                <div className="sticky bottom-0 pt-3 bg-card">
-                  <Button
-                    className="w-full"
-                    onClick={() => handleChangeStatus()}
-                    disabled={updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    {updateStatus.isPending ? 'Confirmando...' : (newStatus === 'fechado' ? 'Confirmar Venda' : 'Confirmar Não Cliente')}
-                  </Button>
-                </div>
-              )}
             </TabsContent>
 
             {/* Task Tab */}

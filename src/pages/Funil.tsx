@@ -584,6 +584,41 @@ const Funil = () => { // v2
               </Button>
             )}
           </div>
+
+          {/* Smart visual category chips — automatic in-funnel filters */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
+              { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
+              { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
+              { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
+              { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
+              { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
+              { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
+              { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
+              { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
+            ].map(c => {
+              const active = smartCategory === c.key;
+              const count = smartCounts[c.key] ?? 0;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setSmartCategory(c.key)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-all",
+                    active ? "border-primary ring-1 ring-primary shadow-sm" : "border-border hover:border-primary/50",
+                    c.cls
+                  )}
+                >
+                  {c.label}
+                  <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-background/70 px-1.5 text-[10px] font-bold min-w-[18px]">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Kanban board with synced top scrollbar */}

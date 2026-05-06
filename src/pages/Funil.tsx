@@ -13,7 +13,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Plus, Search, X, CalendarIcon } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
-import { FunnelActivityFilter } from '@/components/crm/FunnelActivityFilter';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
@@ -241,6 +240,7 @@ const Funil = () => { // v2
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('none');
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  const [smartCategory, setSmartCategory] = useState<string>('all');
 
   // Stages affected by date filter
   const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
@@ -253,6 +253,34 @@ const Funil = () => { // v2
     if (dateFilter === 'custom' && customDate) return customDate;
     return null;
   }, [dateFilter, customDate]);
+
+  // Smart visual categorization helpers
+  const matchesSmartCategory = useCallback((lead: Lead, cat: string): boolean => {
+    if (cat === 'all') return true;
+    const now = Date.now();
+    const created = new Date(lead.created_at).getTime();
+    const updated = new Date(lead.updated_at || lead.created_at).getTime();
+    const stageEntered = lead.stage_entered_at ? new Date(lead.stage_entered_at).getTime() : updated;
+    const createdDays = Math.floor((now - created) / 86400000);
+    const updatedDays = Math.floor((now - updated) / 86400000);
+    const stageDays = Math.floor((now - stageEntered) / 86400000);
+    const isFollowUp = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
+    switch (cat) {
+      case 'hoje': return createdDays === 0;
+      case 'ontem': return createdDays === 1;
+      case 'semana': return createdDays >= 0 && createdDays <= 7;
+      case 'parados': return stageDays >= 5 && !['fechado','nao_cliente','descartados'].includes(lead.status);
+      case 'sem_movimento': return updatedDays >= 7 && !['fechado','nao_cliente'].includes(lead.status);
+      case 'atrasados': {
+        if (!lead.scheduled_appointment_at) return false;
+        const apt = new Date(lead.scheduled_appointment_at).getTime();
+        return apt < now && (lead.status === 'agendou' || lead.status === 'consulta_agendada');
+      }
+      case 'reagendados': return lead.status === 'faltou' || ((lead.no_show_count || 0) > 0 && !!lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() > now);
+      case 'sem_retorno': return isFollowUp || ((lead.contact_attempts ?? 0) >= 3 && stageDays >= 3);
+      default: return true;
+    }
+  }, []);
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
@@ -280,9 +308,27 @@ const Funil = () => { // v2
         }
       }
       
-      return matchesSearch && matchesTreatment && matchesDate;
+      return matchesSearch && matchesTreatment && matchesDate && matchesSmartCategory(lead, smartCategory);
     });
-  }, [leads, searchQuery, treatmentFilter, getFilterDate]);
+  }, [leads, searchQuery, treatmentFilter, getFilterDate, smartCategory, matchesSmartCategory]);
+
+  // Counts per smart category (against base + search/treatment but ignoring smart filter)
+  const smartCounts = useMemo(() => {
+    const base = (leads || []).filter(lead => {
+      const query = searchQuery.trim();
+      const digitsQ = query.replace(/\D/g, '');
+      const matchesSearch = !query ||
+        fuzzyMatch(lead.name, query) ||
+        (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
+        (lead.interest_product && fuzzyMatch(lead.interest_product, query));
+      const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
+      return matchesSearch && matchesTreatment;
+    });
+    const cats = ['hoje','ontem','semana','parados','sem_movimento','atrasados','reagendados','sem_retorno'];
+    const out: Record<string, number> = { all: base.length };
+    cats.forEach(c => { out[c] = base.filter(l => matchesSmartCategory(l, c)).length; });
+    return out;
+  }, [leads, searchQuery, treatmentFilter, matchesSmartCategory]);
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -416,10 +462,6 @@ const Funil = () => { // v2
               {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
             </p>
             <div className="flex items-center gap-2">
-              <FunnelActivityFilter onLeadClick={(leadId) => {
-                const lead = leads?.find(l => l.id === leadId);
-                if (lead) handleOpenDetail(lead);
-              }} />
               <Button onClick={() => setAddLeadOpen(true)} size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Lead
@@ -541,6 +583,41 @@ const Funil = () => { // v2
                 <X className="h-4 w-4" />
               </Button>
             )}
+          </div>
+
+          {/* Smart visual category chips — automatic in-funnel filters */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
+              { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
+              { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
+              { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
+              { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
+              { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
+              { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
+              { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
+              { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
+            ].map(c => {
+              const active = smartCategory === c.key;
+              const count = smartCounts[c.key] ?? 0;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setSmartCategory(c.key)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-all",
+                    active ? "border-primary ring-1 ring-primary shadow-sm" : "border-border hover:border-primary/50",
+                    c.cls
+                  )}
+                >
+                  {c.label}
+                  <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-background/70 px-1.5 text-[10px] font-bold min-w-[18px]">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -140,6 +140,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   }, [lead, friendlyData]);
 
+  // Auto-open triage when lead reaches 'compareceu'
+  useEffect(() => {
+    if (lead?.status === 'compareceu' && open) {
+      setActiveTab('triage');
+      setTriageOpen(true);
+    }
+  }, [lead?.status, open]);
+
   if (!lead) return null;
 
   const currentStage = FUNNEL_STAGES.find(s => s.key === lead.status);

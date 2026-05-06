@@ -540,8 +540,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <hr className="border-border" />
 
               {/* Discount status — visible from 'agendou' onwards */}
-              {(['agendou','consulta_agendada','confirmado','compareceu','faltou','quase_cliente','potencial','nao_cliente','fechado'].includes(lead.status)) && (() => {
-                const hasNoShow = (lead.no_show_count || 0) > 0;
+              {(['agendou','consulta_agendada','confirmado','compareceu','faltou','quase_cliente','potencial','nao_cliente','fechado'].includes(statusForView)) && (() => {
+                const hasNoShow = displayedNoShowCount > 0;
                 const pct = parseFloat(formData.discount_percentage) || 0;
                 return (
                   <div className="p-4 rounded-lg border space-y-3" style={{
@@ -553,7 +553,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     </h4>
                     {hasNoShow ? (
                       <p className="text-sm font-semibold text-destructive">❌ Não disponível por falta</p>
-                    ) : lead.status === 'compareceu' ? (
+                    ) : statusForView === 'compareceu' ? (
                       <div className="space-y-2">
                         <p className="text-2xl font-bold text-success">{pct}%</p>
                         <p className="text-xs text-muted-foreground">Desconto ativo por comparecimento sem faltas.</p>
@@ -587,7 +587,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     type="number"
                     min="0"
                     className="w-24 text-2xl font-bold text-destructive h-12"
-                    value={lead.no_show_count || 0}
+                    value={displayedNoShowCount}
                     onChange={(e) => {
                       const newCount = Math.max(0, parseInt(e.target.value) || 0);
                       const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
@@ -705,8 +705,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Contact attempts counter - show for follow-up stages and nao_respondeu */}
-              {(lead.status === 'nao_respondeu' || newStatus === 'nao_respondeu' || 
-                lead.status?.startsWith('followup_') || newStatus?.startsWith('followup_')) && (
+              {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (
                 <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
                   <h4 className="font-medium text-warning flex items-center gap-2">
                     📞 Tentativas de contato
@@ -816,9 +815,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               )}
 
               {/* Follow-up Copy Template */}
-              {lead.status?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[lead.status] && (
+              {statusForView?.startsWith('followup_') && FOLLOWUP_COPY_TEMPLATES[statusForView] && (
                 <EditableFollowUpCopy
-                  stageKey={lead.status}
+                  stageKey={statusForView}
                   leadName={lead.name}
                 />
               )}

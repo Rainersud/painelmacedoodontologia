@@ -286,6 +286,48 @@ export function useUpdateLeadStatus() {
         });
       }
     },
+    onMutate: async ({ leadId, newStatus, additionalData }) => {
+      await queryClient.cancelQueries({ queryKey: ['crm-leads'] });
+
+      const previousLeads = queryClient.getQueryData<Lead[]>(['crm-leads']);
+      const now = new Date().toISOString();
+      const effectiveStatus = (newStatus === 'concluido' || newStatus === 'tratamento_andamento') ? 'fechado' : newStatus;
+
+      if (previousLeads) {
+        queryClient.setQueryData<Lead[]>(['crm-leads'],
+          previousLeads.map(lead => {
+            if (lead.id !== leadId) return lead;
+
+            const optimisticUpdates: Partial<Lead> = {
+              status: effectiveStatus as LeadStatus,
+              stage_entered_at: now,
+              updated_at: now,
+              ...additionalData,
+            };
+
+            if (effectiveStatus === 'compareceu') {
+              optimisticUpdates.attendance_discount_status = 'liberado';
+            }
+
+            if (newStatus === 'faltou' || newStatus === 'nao_compareceu') {
+              optimisticUpdates.attendance_discount_status = 'cancelado';
+              optimisticUpdates.discount_percentage = 0;
+              optimisticUpdates.no_show_count = lead.status === 'faltou'
+                ? (lead.no_show_count || 0)
+                : (lead.no_show_count || 0) + 1;
+            }
+
+            if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && !additionalData?.scheduled_appointment_at) {
+              optimisticUpdates.scheduled_appointment_at = now;
+            }
+
+            return { ...lead, ...optimisticUpdates };
+          })
+        );
+      }
+
+      return { previousLeads };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
@@ -305,7 +347,10 @@ export function useUpdateLeadStatus() {
       queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       toast.success('Lead atualizado!');
     },
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      if (context?.previousLeads) {
+        queryClient.setQueryData(['crm-leads'], context.previousLeads);
+      }
       toast.error('Erro ao atualizar lead');
     },
   });

@@ -331,7 +331,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
         <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
-            const showTriage = ['compareceu', 'fechado'].includes(lead.status);
+            const showTriage = true;
             return (
               <div className="shrink-0 overflow-x-auto -mx-1 px-1 border-b border-border">
                 <TabsList className="inline-flex w-auto min-w-full">
@@ -346,7 +346,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {showTriage && (
                     <TabsTrigger
                       value="triage"
-                      onPointerDown={(e) => { e.preventDefault(); setActiveTab('triage'); setTriageOpen(true); }}
                       className="text-xs sm:text-sm gap-1"
                     >
                       <FileText className="h-3.5 w-3.5" />

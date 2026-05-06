@@ -178,17 +178,17 @@ export const FOLLOWUP_COPY_TEMPLATES: Record<string, { label: string; format: 't
     copy: 'Oi, [Nome]! Vi que você mostrou interesse no seu tratamento 😊\nQueria te ajudar a dar o próximo passo, posso te explicar rapidinho como funciona?',
   },
   followup_2: {
-    label: 'D1 – Noite (Áudio curto)',
+    label: 'D1 – Tarde (Áudio curto)',
     format: 'audio',
     copy: 'Oi [Nome], tudo bem? Passando rapidinho pra te explicar como funciona aqui na clínica… é bem simples e posso te orientar sem compromisso, tá?',
   },
   followup_3: {
-    label: 'D2 – Tarde (Pergunta)',
+    label: 'D2 – Manhã (Pergunta)',
     format: 'texto',
     copy: '[Nome], me diz uma coisa… você ainda tem interesse em resolver isso ou prefere que eu te chame outro momento?',
   },
   followup_4: {
-    label: 'D2 – Noite (Prova social)',
+    label: 'D2 – Tarde (Prova social)',
     format: 'texto',
     copy: '[Nome], hoje mesmo atendemos um paciente que estava na mesma situação que você e já saiu com tudo encaminhado 🙌\nSe quiser, posso fazer o mesmo por você',
   },
@@ -198,7 +198,7 @@ export const FOLLOWUP_COPY_TEMPLATES: Record<string, { label: string; format: 't
     copy: '[Nome], muita gente acha que é caro ou complicado, mas na maioria dos casos tem soluções bem acessíveis 🙂\nQuer que eu te explique sem compromisso?',
   },
   followup_6: {
-    label: 'D3 – Noite (Reforço + proximidade)',
+    label: 'D3 – Tarde (Reforço + proximidade)',
     format: 'texto',
     copy: 'Só pra não te deixar sem resposta, estou por aqui pra te ajudar no que precisar, viu? 👍',
   },

@@ -156,7 +156,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     ? (lead.no_show_count || 0) + 1
     : (lead.no_show_count || 0);
 
-  const handleSaveInfo = () => {
+  const handleSaveInfo = async () => {
     const updates: Partial<Lead> = {
       name: formData.name,
       phone: formData.phone,
@@ -171,7 +171,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
-    updateLead.mutate({ leadId: lead.id, updates });
+    try {
+      await updateLead.mutateAsync({ leadId: lead.id, updates });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleChangeStatus = async (
@@ -180,15 +185,24 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     friendlyOverride: boolean | null = friendlyPatient
   ) => {
     const targetStatus = statusOverride || newStatus;
-    if (!targetStatus || !lead || targetStatus === lead.status) return;
+    if (!targetStatus || !lead || targetStatus === lead.status) return true;
 
-    // VALIDATION: Block move to nao_cliente without loss_reason
-    
+    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
+    if (resetDailyStages.includes(targetStatus)) {
+      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
+      localStorage.removeItem(todayKey);
+    }
+
+    if (targetStatus === 'nao_cliente' && !formData.loss_reason.trim()) {
+      toast.error('Preencha o campo "Não fechou porque:" antes de salvar.');
+      return false;
+    }
+
     // VALIDATION: Block move to fechado without payment
     if (targetStatus === 'fechado') {
       if (friendlyOverride === null) {
         toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
-        return;
+        return false;
       }
 
       const { count } = await supabase
@@ -199,7 +213,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       
       if (!count || count === 0) {
         toast.error('Não é possível marcar como Venda Realizada sem pagamento confirmado. Registre um pagamento primeiro.');
-        return;
+        return false;
       }
     }
 
@@ -215,24 +229,30 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
     }
+    if (targetStatus === 'faltou' && scheduledAt) {
+      additionalData.scheduled_appointment_at = new Date(scheduledAt).toISOString();
+    }
 
-    updateStatus.mutate({
-      leadId: lead.id,
-      newStatus: targetStatus,
-      additionalData,
-    }, {
-      onSuccess: async () => {
-        // Save friendly_patient to upsell_opportunities after closing
-        if (targetStatus === 'fechado' && friendlyOverride !== null) {
-          await new Promise(r => setTimeout(r, 500));
-          await supabase
-            .from('upsell_opportunities')
-            .update({ friendly_patient: friendlyOverride })
-            .eq('lead_id', lead.id);
-        }
-        if (closeAfterSave) onOpenChange(false);
-      },
-    });
+    try {
+      await updateStatus.mutateAsync({
+        leadId: lead.id,
+        newStatus: targetStatus,
+        additionalData,
+      });
+
+      if (targetStatus === 'fechado' && friendlyOverride !== null) {
+        await new Promise(r => setTimeout(r, 500));
+        await supabase
+          .from('upsell_opportunities')
+          .update({ friendly_patient: friendlyOverride })
+          .eq('lead_id', lead.id);
+      }
+
+      if (closeAfterSave) onOpenChange(false);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleCreateTask = () => {
@@ -322,7 +342,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         </DialogTitle>
       </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = true;
             return (
@@ -449,9 +469,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">
-                ✨ Salvamento automático ao trocar de aba
-              </p>
             </TabsContent>
 
             {/* Status Tab */}
@@ -464,13 +481,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
-                    const resetDailyStages = ['nao_respondeu', 'followup_1','followup_2','followup_3','followup_4','followup_5','followup_6','followup_7','followup_8','followup_9'];
-                    if (resetDailyStages.includes(target)) {
-                      const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
-                      localStorage.removeItem(todayKey);
-                    }
-                    if (target === 'fechado') return;
-                    handleChangeStatus(target);
                   }}
                 >
                   <SelectTrigger>
@@ -506,15 +516,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       setScheduledAt(e.target.value);
                       setFormData(prev => ({ ...prev, scheduled_appointment_at: e.target.value }));
                     }}
-                    onBlur={() => {
-                      const val = scheduledAt || formData.scheduled_appointment_at;
-                      if (val) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { scheduled_appointment_at: new Date(val).toISOString() },
-                        });
-                      }
-                    }}
                   />
                 </div>
               )}
@@ -529,19 +530,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    onBlur={() => {
-                      if (scheduledAt) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { scheduled_appointment_at: new Date(scheduledAt).toISOString() },
-                        });
-                        // Move back to agendou
-                        updateStatus.mutate({ leadId: lead.id, newStatus: 'agendou' as LeadStatus });
-                        toast.success('Reagendamento salvo e lead movido para Agendado.');
-                      }
-                    }}
                   />
-                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar — o lead voltará automaticamente para "Agendado".</p>
+                  <p className="text-[10px] text-muted-foreground">Defina uma nova data para reagendar antes de salvar a evolução.</p>
                 </div>
               )}
 
@@ -573,10 +563,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="number" min="0" max="100" step="1"
                           value={formData.discount_percentage}
                           onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
-                          onBlur={() => {
-                            const newPct = parseFloat(formData.discount_percentage) || 0;
-                            updateLead.mutate({ leadId: lead.id, updates: { discount_percentage: newPct, attendance_discount_status: 'liberado' } });
-                          }}
                         />
                         <p className="text-xs text-success">🟢 Disponível — sem faltas registradas.</p>
                       </div>
@@ -601,11 +587,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
                       const newPct = newCount > 0 ? 0 : (parseFloat(formData.discount_percentage) || 5);
                       setFormData(prev => ({ ...prev, attendance_discount_status: newStatus, discount_percentage: String(newPct) }));
-                      updateLead.mutate({ leadId: lead.id, updates: {
-                        no_show_count: newCount,
-                        attendance_discount_status: newStatus,
-                        discount_percentage: newPct,
-                      } as any });
                     }}
                   />
                   <span className="text-xs text-muted-foreground">Edite para corrigir manualmente. Recalcula o desconto automaticamente.</span>
@@ -692,14 +673,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <Textarea
                     value={formData.loss_reason}
                     onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
-                    onBlur={() => {
-                      if (formData.loss_reason.trim()) {
-                        updateLead.mutate({
-                          leadId: lead.id,
-                          updates: { loss_reason: formData.loss_reason.trim() } as any,
-                        });
-                      }
-                    }}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -895,10 +868,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === true}
-                          onChange={() => {
-                            setFriendlyPatient(true);
-                            handleChangeStatus('fechado' as LeadStatus, false, true);
-                          }}
+                          onChange={() => setFriendlyPatient(true)}
                           className="h-4 w-4 accent-primary"
                         />
                         <span className="text-sm font-medium">✅ Sim</span>
@@ -908,10 +878,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === false}
-                          onChange={() => {
-                            setFriendlyPatient(false);
-                            handleChangeStatus('fechado' as LeadStatus, false, false);
-                          }}
+                          onChange={() => setFriendlyPatient(false)}
                           className="h-4 w-4 accent-destructive"
                         />
                         <span className="text-sm font-medium">❌ Não</span>
@@ -1057,15 +1024,21 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         <div className="shrink-0 border-t bg-card px-4 sm:px-6 py-3">
           <Button
             className="w-full"
-            onClick={() => {
-              handleSaveInfo();
+            onClick={async () => {
+              const infoSaved = await handleSaveInfo();
+              if (!infoSaved) return;
+
+              if (newStatus && newStatus !== lead.status) {
+                const saved = await handleChangeStatus();
+                if (!saved) return;
+              }
               toast.success('Evolução salva!');
               onOpenChange(false);
             }}
-            disabled={updateLead.isPending}
+            disabled={updateLead.isPending || updateStatus.isPending}
           >
             <Save className="h-4 w-4 mr-2" />
-            {updateLead.isPending ? 'Salvando...' : 'Salvar Evolução'}
+            {updateLead.isPending || updateStatus.isPending ? 'Salvando...' : 'Salvar Evolução'}
           </Button>
         </div>
 

@@ -198,9 +198,8 @@ export function useUpdateLeadStatus() {
         }
       }
 
-      // Auto-enter RMKT when moving to followup_9 (last follow-up attempt)
-      if (newStatus === 'followup_9') {
-        // Flag for RMKT entry after staying in followup_9
+      // Touch interaction timestamp at the last follow-up
+      if (newStatus === 'followup_14') {
         supabase.from('leads').update({
           last_interaction_at: new Date().toISOString(),
         }).eq('id', leadId).then(() => {});

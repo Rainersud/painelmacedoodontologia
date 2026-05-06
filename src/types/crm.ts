@@ -17,6 +17,11 @@ export type LeadStatus =
   | 'followup_7'
   | 'followup_8'
   | 'followup_9'
+  | 'followup_10'
+  | 'followup_11'
+  | 'followup_12'
+  | 'followup_13'
+  | 'followup_14'
   | 'em_atendimento'
   | 'agendou'
   | 'consulta_agendada'
@@ -157,9 +162,14 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_4', label: 'D2 Tarde (T4)', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_5', label: 'D3 Manhã (T5)', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_6', label: 'D3 Tarde (T6)', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_7', label: 'D4 (T7)', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_8', label: 'D5 (T8)', color: 'bg-warning', bgColor: 'bg-warning/10' },
-  { key: 'followup_9', label: 'D7 Última (T9)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'followup_7', label: 'D4 Manhã (T7)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_8', label: 'D4 Tarde (T8)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_9', label: 'D5 Manhã (T9)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_10', label: 'D5 Tarde (T10)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_11', label: 'D6 Manhã (T11)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_12', label: 'D6 Tarde (T12)', color: 'bg-warning', bgColor: 'bg-warning/10' },
+  { key: 'followup_13', label: 'D7 Manhã (T13)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'followup_14', label: 'D7 Tarde (T14)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
@@ -208,14 +218,39 @@ export const FOLLOWUP_COPY_TEMPLATES: Record<string, { label: string; format: 't
     copy: '[Nome], estou finalizando algumas vagas dessa semana e lembrei de você.\nSe ainda quiser, consigo tentar encaixar seu atendimento',
   },
   followup_8: {
+    label: 'D4 TARDE',
+    format: 'texto',
+    copy: '[Nome], passando rapidinho de novo… ainda dá tempo de garantir seu encaixe pra esta semana 😊',
+  },
+  followup_9: {
     label: 'D5 MANHÃ',
     format: 'texto',
     copy: '[Nome], últimas vagas realmente disponíveis agora… depois disso só na próxima agenda 😬\nQuer que eu reserve pra você?',
   },
-  followup_9: {
+  followup_10: {
+    label: 'D5 TARDE',
+    format: 'texto',
+    copy: '[Nome], só conferindo se você ainda quer aproveitar essa janela essa semana. Posso garantir seu horário?',
+  },
+  followup_11: {
+    label: 'D6 MANHÃ',
+    format: 'texto',
+    copy: '[Nome], bom dia! Lembrei de você hoje. Quer que eu te ajude a dar o próximo passo agora?',
+  },
+  followup_12: {
+    label: 'D6 TARDE',
+    format: 'texto',
+    copy: '[Nome], antes de encerrar seu atendimento, queria te dar mais uma oportunidade. Posso te ligar?',
+  },
+  followup_13: {
     label: 'D7 MANHÃ',
     format: 'texto',
     copy: '[Nome], como não tive retorno, vou encerrar seu atendimento por aqui pra não ficar te incomodando 🙏\nMas se ainda quiser, é só me chamar que te ajudo com prioridade',
+  },
+  followup_14: {
+    label: 'D7 TARDE',
+    format: 'texto',
+    copy: '[Nome], última tentativa por aqui 🙏 Se quiser retomar a qualquer momento, é só me chamar — vou te atender com prioridade.',
   },
 };
 

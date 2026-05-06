@@ -142,7 +142,7 @@ export function LeadCard({
           )}
           {lead.scheduled_appointment_at && (
             <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 px-1 py-0 h-4">
-              📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' })}
             </Badge>
           )}
           {lead.no_show_count > 0 && (

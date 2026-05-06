@@ -222,7 +222,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
       </head>
       <body>
         <h1>Ficha de Triagem do Paciente</h1>
-        <p class="intro">Preenchida em ${form.filled_at ? new Date(form.filled_at).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR')}</p>
+        <p class="intro">Preenchida em ${form.filled_at ? new Date(form.filled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
         <h2>Identificação</h2>
         <div class="grid">
           <div class="field"><label>Nome Completo:</label> <span>${form.full_name || '-'}</span></div>
@@ -713,7 +713,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
               {/* Filled info */}
               {existingTriage?.filled_at && (
                 <div className="text-[10px] text-muted-foreground text-right">
-                  Preenchida em {new Date(existingTriage.filled_at).toLocaleString('pt-BR')}
+                  Preenchida em {new Date(existingTriage.filled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                 </div>
               )}
           </div>

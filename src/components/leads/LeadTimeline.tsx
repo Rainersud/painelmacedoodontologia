@@ -1,5 +1,5 @@
-import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatBR, distanceBR } from '@/lib/datetime';
 import { useLeadTimeline, TimelineEvent } from '@/hooks/useLeadTimeline';
 import { 
   MessageCircle, 
@@ -74,7 +74,7 @@ function TimelineItem({ event, isLast }: { event: TimelineEvent; isLast: boolean
             )}
           </div>
           <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
-            {format(event.createdAt, "dd/MM/yy HH:mm", { locale: ptBR })}
+            {formatBR(event.createdAt, "dd/MM/yy HH:mm")}
           </span>
         </div>
         
@@ -98,7 +98,7 @@ function TimelineItem({ event, isLast }: { event: TimelineEvent; isLast: boolean
         )}
 
         <p className="text-[11px] text-muted-foreground/60 mt-1">
-          {formatDistanceToNow(event.createdAt, { addSuffix: true, locale: ptBR })}
+          {distanceBR(event.createdAt)}
         </p>
       </div>
     </div>

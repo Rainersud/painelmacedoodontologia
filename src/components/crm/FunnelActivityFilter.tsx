@@ -347,7 +347,7 @@ export function FunnelActivityFilter({ onLeadClick }: FunnelActivityFilterProps)
               >
                 {/* Time */}
                 <span className="text-[10px] text-muted-foreground font-mono shrink-0 w-10 pt-0.5">
-                  {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '--:--'}
                 </span>
 
                 {/* Dot */}

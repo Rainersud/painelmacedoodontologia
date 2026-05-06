@@ -184,6 +184,7 @@ export default function Remarketing() {
   const advanceMutation = useAdvanceRmktStage();
   const returnMutation = useReturnToComercial();
   const updateCopyMutation = useUpdateRmktCopy();
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activePhase, setActivePhase] = useState<RemarketingPhase | 'todos'>('todos');
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
     aquecimento: true, nutricao: true, reativacao: true, urgencia: true

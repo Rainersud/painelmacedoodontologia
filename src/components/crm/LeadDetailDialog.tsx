@@ -342,7 +342,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         </DialogTitle>
       </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
             const showTriage = true;
             return (
@@ -469,9 +469,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">
-                ✨ Salvamento automático ao trocar de aba
-              </p>
             </TabsContent>
 
             {/* Status Tab */}

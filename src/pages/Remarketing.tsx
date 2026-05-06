@@ -344,10 +344,12 @@ export default function Remarketing() {
 
                               {/* Lead Cards */}
                               <div className="border border-t-0 rounded-b-lg bg-muted/30 min-h-[200px] p-1.5 space-y-1.5">
-                                {stageEntries.map(entry => (
+                                {stageEntries.map((entry, idx) => (
                                   <RmktLeadCard
                                     key={entry.id}
                                     entry={entry}
+                                    index={idx}
+                                    onOpen={(l) => setSelectedLead(l)}
                                     onAdvance={() => advanceMutation.mutate({ entryId: entry.id, leadId: entry.lead_id })}
                                     onReturn={() => returnMutation.mutate({ entryId: entry.id, leadId: entry.lead_id })}
                                   />

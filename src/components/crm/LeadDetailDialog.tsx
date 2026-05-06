@@ -696,7 +696,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {/* Contact attempts counter - per stage period (manhã/tarde) */}
               {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (() => {
                 const stageKey = `stage_attempts_${lead.id}_${statusForView}`;
-                const stageAttempts = parseInt(typeof window !== 'undefined' ? (localStorage.getItem(stageKey) || '0') : '0');
+                const stageAttempts = stagePeriodAttempts;
                 const followupNum = statusForView?.startsWith('followup_') ? parseInt(statusForView.replace('followup_','')) : 0;
                 const isLastFollowup = statusForView === 'followup_14';
                 const stageLabel = FOLLOWUP_COPY_TEMPLATES[statusForView]?.label || statusForView;
@@ -762,9 +762,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           className="h-7 w-7 p-0"
                           onClick={() => {
                             if (stageAttempts > 0) {
-                              localStorage.setItem(stageKey, String(stageAttempts - 1));
-                              setContactAttempts((c) => c); // force rerender
-                              setContactAttempts(stageAttempts - 1);
+                              const newVal = stageAttempts - 1;
+                              localStorage.setItem(stageKey, String(newVal));
+                              setStagePeriodAttempts(newVal);
                             }
                           }}
                         >-</Button>
@@ -784,7 +784,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                             }
                             const newVal = stageAttempts + 1;
                             localStorage.setItem(stageKey, String(newVal));
-                            setContactAttempts(newVal);
+                            setStagePeriodAttempts(newVal);
                           }}
                         >+</Button>
                       </div>

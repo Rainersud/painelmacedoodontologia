@@ -682,7 +682,11 @@ const Funil = () => { // v2
 
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
-          stages={FUNNEL_STAGES}
+          stages={(() => {
+            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'none' || smartCategory !== 'all';
+            if (!anyFilterActive) return FUNNEL_STAGES;
+            return FUNNEL_STAGES.filter(s => getLeadsByStatus(s.key).length > 0);
+          })()}
           getLeadsByStatus={getLeadsByStatus}
           getTotalBudgetByStatus={getTotalBudgetByStatus}
           dropTargetStatus={dropTargetStatus}

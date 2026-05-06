@@ -36,6 +36,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { LeadCard } from '@/components/crm/LeadCard';
+import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import type { Lead } from '@/types/crm';
 
 const PHASE_ORIENTATION: Record<RemarketingPhase, { objetivo: string; acao: string }> = {
   aquecimento: {

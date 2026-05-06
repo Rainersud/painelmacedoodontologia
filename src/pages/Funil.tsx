@@ -29,6 +29,7 @@ import { normalize, fuzzyMatch } from '@/lib/searchUtils';
 const FOLLOWUP_KEYS = new Set([
   'followup_1','followup_2','followup_3','followup_4','followup_5',
   'followup_6','followup_7','followup_8','followup_9',
+  'followup_10','followup_11','followup_12','followup_13','followup_14',
 ]);
 
 // Synced dual-scrollbar Kanban board

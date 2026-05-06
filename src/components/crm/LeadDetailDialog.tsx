@@ -555,10 +555,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="number" min="0" max="100" step="1"
                           value={formData.discount_percentage}
                           onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
-                          onBlur={() => {
-                            const newPct = parseFloat(formData.discount_percentage) || 0;
-                            updateLead.mutate({ leadId: lead.id, updates: { discount_percentage: newPct, attendance_discount_status: 'liberado' } });
-                          }}
                         />
                         <p className="text-xs text-success">🟢 Disponível — sem faltas registradas.</p>
                       </div>
@@ -583,11 +579,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
                       const newPct = newCount > 0 ? 0 : (parseFloat(formData.discount_percentage) || 5);
                       setFormData(prev => ({ ...prev, attendance_discount_status: newStatus, discount_percentage: String(newPct) }));
-                      updateLead.mutate({ leadId: lead.id, updates: {
-                        no_show_count: newCount,
-                        attendance_discount_status: newStatus,
-                        discount_percentage: newPct,
-                      } as any });
                     }}
                   />
                   <span className="text-xs text-muted-foreground">Edite para corrigir manualmente. Recalcula o desconto automaticamente.</span>

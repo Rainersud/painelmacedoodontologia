@@ -469,6 +469,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       const todayKey = `attempts_${lead.id}_${new Date().toISOString().slice(0,10)}`;
                       localStorage.removeItem(todayKey);
                     }
+                    if (target === 'fechado') return;
                     handleChangeStatus(target);
                   }}
                 >
@@ -690,7 +691,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </p>
                   <Textarea
                     value={formData.loss_reason}
-                    onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData(prev => ({ ...prev, loss_reason: value }));
+                      if (statusForView === 'nao_cliente' && value.trim()) {
+                        updateStatus.mutate({
+                          leadId: lead.id,
+                          newStatus: 'nao_cliente' as LeadStatus,
+                          additionalData: { loss_reason: value.trim() } as any,
+                        });
+                      }
+                    }}
                     placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
                     rows={3}
                     className="border-chart-5/30"
@@ -886,7 +897,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === true}
-                          onChange={() => setFriendlyPatient(true)}
+                          onChange={() => {
+                            setFriendlyPatient(true);
+                            handleChangeStatus('fechado' as LeadStatus, false, true);
+                          }}
                           className="h-4 w-4 accent-primary"
                         />
                         <span className="text-sm font-medium">✅ Sim</span>
@@ -896,7 +910,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           type="radio"
                           name="friendly_patient_detail"
                           checked={friendlyPatient === false}
-                          onChange={() => setFriendlyPatient(false)}
+                          onChange={() => {
+                            setFriendlyPatient(false);
+                            handleChangeStatus('fechado' as LeadStatus, false, false);
+                          }}
                           className="h-4 w-4 accent-destructive"
                         />
                         <span className="text-sm font-medium">❌ Não</span>

@@ -1733,6 +1733,11 @@ export type Database = {
         | "followup_7"
         | "followup_8"
         | "followup_9"
+        | "followup_10"
+        | "followup_11"
+        | "followup_12"
+        | "followup_13"
+        | "followup_14"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1937,6 +1942,11 @@ export const Constants = {
         "followup_7",
         "followup_8",
         "followup_9",
+        "followup_10",
+        "followup_11",
+        "followup_12",
+        "followup_13",
+        "followup_14",
       ],
     },
   },

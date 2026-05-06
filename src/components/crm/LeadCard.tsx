@@ -166,7 +166,7 @@ export function LeadCard({
         {showExcessWarning && (
           <div className="bg-destructive/10 rounded px-1.5 py-0.5 mb-1">
             <p className="text-[8px] text-destructive font-medium">
-              ⚠️ Excesso de tentativas hoje – pode reduzir conversão
+              ⚠️ Excesso de tentativas neste período – pode reduzir conversão
             </p>
           </div>
         )}

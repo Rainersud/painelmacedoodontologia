@@ -13,7 +13,7 @@ export function useRemarketingEntries() {
     queryFn: async (): Promise<RemarketingEntry[]> => {
       const { data, error } = await supabase
         .from('remarketing_entries')
-        .select('*, lead:leads(name, phone, source, interest_product, last_interaction_at, status)')
+        .select('*, lead:leads(*)')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 

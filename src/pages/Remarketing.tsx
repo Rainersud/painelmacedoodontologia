@@ -36,6 +36,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { LeadCard } from '@/components/crm/LeadCard';
+import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import type { Lead } from '@/types/crm';
 
 const PHASE_ORIENTATION: Record<RemarketingPhase, { objetivo: string; acao: string }> = {
   aquecimento: {
@@ -56,14 +59,14 @@ const PHASE_ORIENTATION: Record<RemarketingPhase, { objetivo: string; acao: stri
   },
 };
 
-function RmktLeadCard({ entry, onAdvance, onReturn }: { 
-  entry: RemarketingEntry; 
-  onAdvance: () => void; 
+function RmktLeadCard({ entry, onAdvance, onReturn, onOpen, index }: {
+  entry: RemarketingEntry;
+  onAdvance: () => void;
   onReturn: () => void;
+  onOpen: (lead: Lead) => void;
+  index: number;
 }) {
-  const lead = entry.lead;
-  const enteredAgo = formatDistanceToNow(new Date(entry.entered_at), { addSuffix: true, locale: ptBR });
-  const scoreColors = getScoreColor((lead as any)?.score_category || 'morno');
+  const lead = entry.lead as unknown as Lead | null;
 
   // Time-gated advance: compute day gap between current and next stage
   const currentIdx = RMKT_STAGES.findIndex(s => s.key === entry.current_stage);
@@ -75,59 +78,39 @@ function RmktLeadCard({ entry, onAdvance, onReturn }: {
   const canAdvance = !!nextStage && daysElapsed >= requiredDays;
   const daysRemaining = Math.max(0, requiredDays - daysElapsed);
 
+  if (!lead) return null;
+
   return (
-    <div className="p-2.5 rounded-lg border border-border bg-card hover:shadow-md transition-shadow space-y-1.5">
-      <div className="flex items-center justify-between gap-1">
-        <span className="text-sm font-medium truncate">{lead?.name || 'Lead'}</span>
-        <div className="flex items-center gap-1">
-          <span className="text-[10px]">{scoreColors.dot}</span>
-          {entry.return_count > 0 && (
-            <Badge variant="outline" className="text-[10px] px-1 py-0" title={`Retornou ao RMKT ${entry.return_count}x — retomado no estágio ${currentStage?.label}`}>
-              🔁 {entry.return_count}x
-            </Badge>
-          )}
-        </div>
-      </div>
+    <div className="space-y-1">
+      <LeadCard lead={lead} index={index} onClick={onOpen} />
       {entry.return_count > 0 && (
         <div className="text-[9px] bg-primary/10 text-primary rounded px-1.5 py-0.5">
-          ↩️ Retomado em {currentStage?.label}
+          ↩️ Retomado em {currentStage?.label} ({entry.return_count}x)
         </div>
       )}
-      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-        <Phone className="h-3 w-3" />
-        <span className="truncate">{lead?.phone}</span>
-      </div>
-      {lead?.interest_product && (
-        <div className="text-[11px] text-muted-foreground truncate">
-          💊 {lead.interest_product}
-        </div>
-      )}
-      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        {enteredAgo}
-      </div>
       {nextStage && (
         <div className={cn(
           "text-[9px] rounded px-1.5 py-0.5 text-center font-medium",
           canAdvance ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
         )}>
           {canAdvance
-            ? `✅ Disponível avançar para ${nextStage.label}`
+            ? `✅ Pode avançar para ${nextStage.label}`
             : `⏳ Avança em ${daysRemaining}d (req. ${requiredDays}d)`}
         </div>
       )}
-      <div className="flex gap-1 pt-1">
+      <div className="flex gap-1">
         <Button
           size="sm"
           variant="outline"
           className="h-6 text-[10px] flex-1"
-          onClick={onAdvance}
+          onClick={(e) => { e.stopPropagation(); onAdvance(); }}
           disabled={!canAdvance}
           title={canAdvance ? 'Avançar etapa' : `Aguardar ${daysRemaining} dia(s) para avançar`}
         >
           <ChevronRight className="h-3 w-3 mr-0.5" /> Avançar
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={onReturn}
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2"
+          onClick={(e) => { e.stopPropagation(); onReturn(); }}
           title="Retornar ao Comercial 1 (mantém histórico)">
           <RotateCcw className="h-3 w-3" />
         </Button>
@@ -201,6 +184,7 @@ export default function Remarketing() {
   const advanceMutation = useAdvanceRmktStage();
   const returnMutation = useReturnToComercial();
   const updateCopyMutation = useUpdateRmktCopy();
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activePhase, setActivePhase] = useState<RemarketingPhase | 'todos'>('todos');
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
     aquecimento: true, nutricao: true, reativacao: true, urgencia: true
@@ -360,10 +344,12 @@ export default function Remarketing() {
 
                               {/* Lead Cards */}
                               <div className="border border-t-0 rounded-b-lg bg-muted/30 min-h-[200px] p-1.5 space-y-1.5">
-                                {stageEntries.map(entry => (
+                                {stageEntries.map((entry, idx) => (
                                   <RmktLeadCard
                                     key={entry.id}
                                     entry={entry}
+                                    index={idx}
+                                    onOpen={(l) => setSelectedLead(l)}
                                     onAdvance={() => advanceMutation.mutate({ entryId: entry.id, leadId: entry.lead_id })}
                                     onReturn={() => returnMutation.mutate({ entryId: entry.id, leadId: entry.lead_id })}
                                   />
@@ -409,6 +395,13 @@ export default function Remarketing() {
           </Card>
         )}
       </div>
+      {selectedLead && (
+        <LeadDetailDialog
+          lead={selectedLead}
+          open={!!selectedLead}
+          onOpenChange={(open) => { if (!open) setSelectedLead(null); }}
+        />
+      )}
     </AppLayout>
   );
 }

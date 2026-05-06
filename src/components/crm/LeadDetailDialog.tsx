@@ -863,7 +863,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {newStatus === 'fechado' && (
+              {statusForView === 'fechado' && (
                 <div className="space-y-4">
                   {/* Paciente Amigo Section */}
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
@@ -949,7 +949,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 <div className="sticky bottom-0 pt-3 bg-card">
                   <Button
                     className="w-full"
-                    onClick={handleChangeStatus}
+                    onClick={() => handleChangeStatus()}
                     disabled={updateStatus.isPending || (newStatus === 'fechado' && friendlyPatient === null)}
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />
@@ -1025,7 +1025,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <TriageFormDialog
                 lead={lead}
                 inline
-                readOnly={lead.status !== 'compareceu'}
+                readOnly={statusForView !== 'compareceu'}
               />
             </TabsContent>
 

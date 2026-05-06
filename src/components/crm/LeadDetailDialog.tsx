@@ -767,7 +767,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <span className="font-bold text-lg min-w-[3ch] text-center">
                         {contactAttempts}
                       </span>
-                      <span className="text-muted-foreground">/9</span>
+                      <span className="text-muted-foreground">/4 hoje</span>
                       <Button
                         variant="outline"
                         size="sm"

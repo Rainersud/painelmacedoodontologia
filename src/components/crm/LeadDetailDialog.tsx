@@ -1059,6 +1059,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
             </TabsContent>
 
+            {/* Triage Tab - always visible, editable only when status = compareceu */}
+            <TabsContent value="triage" className="m-0">
+              <TriageFormDialog
+                lead={lead}
+                inline
+                readOnly={lead.status !== 'compareceu'}
+              />
+            </TabsContent>
+
             {/* Referral Tab */}
             <TabsContent value="referral" className="m-0">
               <ReferralSection leadId={lead.id} leadName={lead.name} />

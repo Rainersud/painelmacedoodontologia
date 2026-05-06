@@ -156,7 +156,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     ? (lead.no_show_count || 0) + 1
     : (lead.no_show_count || 0);
 
-  const handleSaveInfo = () => {
+  const handleSaveInfo = async () => {
     const updates: Partial<Lead> = {
       name: formData.name,
       phone: formData.phone,
@@ -171,7 +171,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
-    updateLead.mutate({ leadId: lead.id, updates });
+    try {
+      await updateLead.mutateAsync({ leadId: lead.id, updates });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleChangeStatus = async (
@@ -1023,11 +1028,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           <Button
             className="w-full"
             onClick={async () => {
+              const infoSaved = await handleSaveInfo();
+              if (!infoSaved) return;
+
               if (newStatus && newStatus !== lead.status) {
                 const saved = await handleChangeStatus();
                 if (!saved) return;
-              } else {
-                handleSaveInfo();
               }
               toast.success('Evolução salva!');
               onOpenChange(false);

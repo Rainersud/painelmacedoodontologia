@@ -1024,7 +1024,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             className="w-full"
             onClick={async () => {
               if (newStatus && newStatus !== lead.status) {
-                await handleChangeStatus();
+                const saved = await handleChangeStatus();
+                if (!saved) return;
               } else {
                 handleSaveInfo();
               }

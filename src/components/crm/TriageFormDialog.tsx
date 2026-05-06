@@ -264,9 +264,9 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
   const isCompleted = existingTriage?.triage_completed;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-[700px] lg:max-w-[800px] max-h-[92vh] h-[92vh] flex flex-col p-0 overflow-hidden">
+  const body = (
+    <>
+      {!inline && (
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -286,14 +286,22 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             )}
           </div>
         </DialogHeader>
+      )}
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4">
-            <div ref={printRef} className="space-y-5 sm:space-y-6">
+      {inline && readOnly && (
+        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+          A ficha de triagem está em modo leitura. Edição liberada apenas quando o status do lead for "Compareceu".
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className={inline ? "px-4 sm:px-6 pb-4" : "flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4"}>
+          <fieldset disabled={readOnly} className={readOnly ? "opacity-90" : ""}>
+          <div ref={printRef} className="space-y-5 sm:space-y-6">
               {/* Intro text */}
               <div className="bg-primary/5 rounded-lg p-4 text-center">
                 <p className="text-sm font-medium text-primary">

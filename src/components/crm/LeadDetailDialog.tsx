@@ -324,7 +324,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
         <Tabs value={activeTab} onValueChange={(v) => { handleSaveInfo(); setActiveTab(v); }} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
-            const showTriage = lead.status === 'compareceu' || 
+            const showTriage = lead.status === 'compareceu' ||
               ['followup_1', 'followup_2', 'followup_3', 'followup_4', 'fechado'].includes(lead.status);
             return (
               <div className="shrink-0 overflow-x-auto -mx-1 px-1 border-b border-border">

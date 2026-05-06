@@ -174,7 +174,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     updateLead.mutate({ leadId: lead.id, updates });
   };
 
-  const handleChangeStatus = async (statusOverride?: LeadStatus, closeAfterSave = false) => {
+  const handleChangeStatus = async (
+    statusOverride?: LeadStatus,
+    closeAfterSave = false,
+    friendlyOverride: boolean | null = friendlyPatient
+  ) => {
     const targetStatus = statusOverride || newStatus;
     if (!targetStatus || !lead || targetStatus === lead.status) return;
 
@@ -182,7 +186,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     
     // VALIDATION: Block move to fechado without payment
     if (targetStatus === 'fechado') {
-      if (friendlyPatient === null) {
+      if (friendlyOverride === null) {
         toast.error('Responda a pergunta "Paciente Amigo" antes de confirmar a venda.');
         return;
       }
@@ -201,9 +205,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
     const additionalData: Partial<Lead> = {};
     if (targetStatus === 'agendou' || targetStatus === 'consulta_agendada') {
-      additionalData.scheduled_appointment_at = scheduledAt
+      const scheduledValue = scheduledAt
         ? new Date(scheduledAt).toISOString()
         : new Date().toISOString();
+      additionalData.scheduled_appointment_at = scheduledValue;
+      setScheduledAt(scheduledValue.slice(0, 16));
+      setFormData(prev => ({ ...prev, scheduled_appointment_at: scheduledValue.slice(0, 16) }));
     }
     if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
@@ -216,11 +223,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }, {
       onSuccess: async () => {
         // Save friendly_patient to upsell_opportunities after closing
-        if (targetStatus === 'fechado' && friendlyPatient !== null) {
+        if (targetStatus === 'fechado' && friendlyOverride !== null) {
           await new Promise(r => setTimeout(r, 500));
           await supabase
             .from('upsell_opportunities')
-            .update({ friendly_patient: friendlyPatient })
+            .update({ friendly_patient: friendlyOverride })
             .eq('lead_id', lead.id);
         }
         if (closeAfterSave) onOpenChange(false);

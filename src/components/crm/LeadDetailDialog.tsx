@@ -693,24 +693,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
 
 
-              {/* Schedule fields when status is agendou */}
-              {(newStatus === 'agendou' || newStatus === 'consulta_agendada') && (
-                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-4">
-                  <h4 className="font-medium text-primary flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Data da Consulta
-                  </h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled_at">Data e Horário</Label>
-                    <Input
-                      id="scheduled_at"
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
+              {/* (Data da Consulta now rendered right after the status select) */}
 
               {/* Loss reason field when moving to nao_cliente */}
               {newStatus === 'nao_cliente' && (

@@ -176,8 +176,9 @@ export default function Remarketing() {
 
   const filteredStages = useMemo(() => {
     if (activePhase === 'todos') return RMKT_STAGES;
-    return RMKT_STAGES.filter(s => s.phase === activePhase);
-  }, [activePhase]);
+    // When filtering by phase, hide empty stages to focus on active leads only
+    return RMKT_STAGES.filter(s => s.phase === activePhase && entries.some(e => e.current_stage === s.key));
+  }, [activePhase, entries]);
 
   const entriesByStage = useMemo(() => {
     const map: Record<string, RemarketingEntry[]> = {};

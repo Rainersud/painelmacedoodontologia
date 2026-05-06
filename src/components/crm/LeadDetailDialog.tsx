@@ -269,7 +269,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 />
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
-                <span>{lead.phone}</span>
                 <Badge className={`${currentStage?.color} text-white text-xs`}>
                   {currentStage?.label}
                 </Badge>
@@ -277,23 +276,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </div>
             {/* Quick actions */}
             <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => window.open(`tel:${lead.phone}`, '_blank')}
-              >
-                <Phone className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const phone = lead.whatsapp || lead.phone;
-                  window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
-                }}
-              >
-              <MessageSquare className="h-4 w-4" />
-            </Button>
             {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>

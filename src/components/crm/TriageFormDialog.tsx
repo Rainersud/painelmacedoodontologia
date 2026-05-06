@@ -50,7 +50,7 @@ const DISCOMFORT_OPTIONS = [
 
 const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 
-export function TriageFormDialog({ lead, open, onOpenChange }: TriageFormDialogProps) {
+export function TriageFormDialog({ lead, open, onOpenChange, inline = false, readOnly = false }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);
   const { data: existingReferrals } = useTriageReferrals(lead?.id);

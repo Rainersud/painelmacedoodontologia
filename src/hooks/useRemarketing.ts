@@ -82,12 +82,17 @@ export function useEnterRemarketing() {
         triggered_by: 'system',
       });
 
-      return data;
+      return { ...data, resumed: !!previous, resumeStage } as any;
     },
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      toast.success('Lead enviado para Remarketing');
+      if (result?.resumed) {
+        const stageLabel = RMKT_STAGES.find(s => s.key === result.resumeStage)?.label || result.resumeStage;
+        toast.success(`Lead retomado no Remarketing em ${stageLabel} (continuidade preservada)`);
+      } else {
+        toast.success('Lead enviado para Remarketing');
+      }
     },
     onError: () => toast.error('Erro ao enviar para Remarketing'),
   });
@@ -100,7 +105,7 @@ export function useAdvanceRmktStage() {
     mutationFn: async ({ entryId, leadId }: { entryId: string; leadId: string }) => {
       const { data: entry } = await supabase
         .from('remarketing_entries')
-        .select('current_stage')
+        .select('current_stage, last_advanced_at, entered_at')
         .eq('id', entryId)
         .single();
 
@@ -108,6 +113,16 @@ export function useAdvanceRmktStage() {
 
       const nextStage = getNextRmktStage(entry.current_stage);
       if (!nextStage) throw new Error('Último estágio alcançado');
+
+      // Time-gate enforcement
+      const curr = RMKT_STAGES.find(s => s.key === entry.current_stage);
+      const next = RMKT_STAGES.find(s => s.key === nextStage);
+      const requiredDays = curr && next ? Math.max(1, next.day - curr.day) : 0;
+      const refTs = new Date(entry.last_advanced_at || entry.entered_at).getTime();
+      const daysElapsed = Math.floor((Date.now() - refTs) / 86400000);
+      if (daysElapsed < requiredDays) {
+        throw new Error(`Aguarde ${requiredDays - daysElapsed} dia(s) para avançar`);
+      }
 
       const { error } = await supabase
         .from('remarketing_entries')

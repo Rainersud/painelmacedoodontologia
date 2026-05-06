@@ -65,6 +65,16 @@ function RmktLeadCard({ entry, onAdvance, onReturn }: {
   const enteredAgo = formatDistanceToNow(new Date(entry.entered_at), { addSuffix: true, locale: ptBR });
   const scoreColors = getScoreColor((lead as any)?.score_category || 'morno');
 
+  // Time-gated advance: compute day gap between current and next stage
+  const currentIdx = RMKT_STAGES.findIndex(s => s.key === entry.current_stage);
+  const currentStage = RMKT_STAGES[currentIdx];
+  const nextStage = currentIdx >= 0 && currentIdx < RMKT_STAGES.length - 1 ? RMKT_STAGES[currentIdx + 1] : null;
+  const requiredDays = nextStage && currentStage ? Math.max(1, nextStage.day - currentStage.day) : 0;
+  const referenceTs = new Date(entry.last_advanced_at || entry.entered_at).getTime();
+  const daysElapsed = Math.floor((Date.now() - referenceTs) / 86400000);
+  const canAdvance = !!nextStage && daysElapsed >= requiredDays;
+  const daysRemaining = Math.max(0, requiredDays - daysElapsed);
+
   return (
     <div className="p-2.5 rounded-lg border border-border bg-card hover:shadow-md transition-shadow space-y-1.5">
       <div className="flex items-center justify-between gap-1">
@@ -72,12 +82,17 @@ function RmktLeadCard({ entry, onAdvance, onReturn }: {
         <div className="flex items-center gap-1">
           <span className="text-[10px]">{scoreColors.dot}</span>
           {entry.return_count > 0 && (
-            <Badge variant="outline" className="text-[10px] px-1 py-0">
+            <Badge variant="outline" className="text-[10px] px-1 py-0" title={`Retornou ao RMKT ${entry.return_count}x — retomado no estágio ${currentStage?.label}`}>
               🔁 {entry.return_count}x
             </Badge>
           )}
         </div>
       </div>
+      {entry.return_count > 0 && (
+        <div className="text-[9px] bg-primary/10 text-primary rounded px-1.5 py-0.5">
+          ↩️ Retomado em {currentStage?.label}
+        </div>
+      )}
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
         <Phone className="h-3 w-3" />
         <span className="truncate">{lead?.phone}</span>
@@ -91,12 +106,29 @@ function RmktLeadCard({ entry, onAdvance, onReturn }: {
         <Clock className="h-3 w-3" />
         {enteredAgo}
       </div>
+      {nextStage && (
+        <div className={cn(
+          "text-[9px] rounded px-1.5 py-0.5 text-center font-medium",
+          canAdvance ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+        )}>
+          {canAdvance
+            ? `✅ Disponível avançar para ${nextStage.label}`
+            : `⏳ Avança em ${daysRemaining}d (req. ${requiredDays}d)`}
+        </div>
+      )}
       <div className="flex gap-1 pt-1">
-        <Button size="sm" variant="outline" className="h-6 text-[10px] flex-1" onClick={onAdvance}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 text-[10px] flex-1"
+          onClick={onAdvance}
+          disabled={!canAdvance}
+          title={canAdvance ? 'Avançar etapa' : `Aguardar ${daysRemaining} dia(s) para avançar`}
+        >
           <ChevronRight className="h-3 w-3 mr-0.5" /> Avançar
         </Button>
         <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={onReturn}
-          title="Retornar ao Comercial 1">
+          title="Retornar ao Comercial 1 (mantém histórico)">
           <RotateCcw className="h-3 w-3" />
         </Button>
       </div>

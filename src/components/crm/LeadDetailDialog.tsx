@@ -901,16 +901,6 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="status_notes">Observações (opcional)</Label>
-                <Textarea
-                  id="status_notes"
-                  value={statusNotes}
-                  onChange={(e) => setStatusNotes(e.target.value)}
-                  placeholder="Motivo da mudança..."
-                  rows={2}
-                />
-              </div>
 
               {/* Rescue button for Follow-up 4 */}
               {(lead.status === 'followup_4') && (

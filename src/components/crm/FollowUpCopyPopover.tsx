@@ -75,20 +75,28 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold">{template.label}</p>
-            <Badge variant="outline" className="text-[9px] h-4 px-1.5">
-              {template.format === 'audio' ? (
-                <><Mic className="h-2 w-2 mr-0.5" /> Áudio</>
-              ) : (
-                <><MessageSquare className="h-2 w-2 mr-0.5" /> Texto</>
+            <div className="flex items-center gap-1">
+              {isCustom && (
+                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/40 text-primary">
+                  ✏️ Personalizada
+                </Badge>
               )}
-            </Badge>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                {template.format === 'audio' ? (
+                  <><Mic className="h-2 w-2 mr-0.5" /> Áudio</>
+                ) : (
+                  <><MessageSquare className="h-2 w-2 mr-0.5" /> Texto</>
+                )}
+              </Badge>
+            </div>
           </div>
 
           {isEditing ? (
             <Textarea
-              value={editedCopy || template.copy}
+              value={editedCopy}
               onChange={(e) => setEditedCopy(e.target.value)}
               className="text-xs min-h-[80px] resize-none"
+              placeholder={template.copy}
             />
           ) : (
             <div className="bg-muted/50 rounded-md p-2">
@@ -98,31 +106,34 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
             </div>
           )}
 
-          <div className="flex items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="default"
-              className="h-7 text-xs flex-1 gap-1"
-              onClick={handleCopy}
-            >
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-              {copied ? 'Copiado!' : 'Copiar'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => {
-                if (isEditing) {
-                  setIsEditing(false);
-                } else {
-                  setEditedCopy(template.copy);
-                  setIsEditing(true);
-                }
-              }}
-            >
-              {isEditing ? 'Fechar' : 'Editar'}
-            </Button>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {isEditing ? (
+              <>
+                <Button size="sm" variant="default" className="h-7 text-xs flex-1 gap-1" onClick={handleSave}>
+                  <Save className="h-3 w-3" /> Salvar
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs"
+                  onClick={() => { setEditedCopy(savedCopy || template.copy); setIsEditing(false); }}>
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" variant="default" className="h-7 text-xs flex-1 gap-1" onClick={handleCopy}>
+                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs"
+                  onClick={() => { setEditedCopy(savedCopy || template.copy); setIsEditing(true); }}>
+                  Editar
+                </Button>
+                {isCustom && (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleResetToDefault} title="Restaurar padrão">
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </PopoverContent>

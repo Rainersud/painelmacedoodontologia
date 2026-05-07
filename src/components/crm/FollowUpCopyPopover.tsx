@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Copy, Check, MessageSquare, Mic } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Copy, Check, MessageSquare, Mic, Save, RotateCcw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,13 +13,45 @@ interface FollowUpCopyPopoverProps {
 
 export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
   const template = FOLLOWUP_COPY_TEMPLATES[stageKey];
+  const storageKey = `followup_copy_${stageKey}`;
   const [copied, setCopied] = useState(false);
-  const [editedCopy, setEditedCopy] = useState('');
+  const [savedCopy, setSavedCopy] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem(storageKey) ?? '';
+  });
+  const [editedCopy, setEditedCopy] = useState<string>(savedCopy);
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(storageKey) ?? '';
+    setSavedCopy(stored);
+    setEditedCopy(stored);
+  }, [storageKey]);
 
   if (!template) return null;
 
-  const currentCopy = isEditing && editedCopy ? editedCopy : template.copy;
+  const baseCopy = savedCopy || template.copy;
+  const currentCopy = isEditing ? (editedCopy || template.copy) : baseCopy;
+  const isCustom = !!savedCopy && savedCopy !== template.copy;
+
+  const handleSave = () => {
+    const value = editedCopy.trim();
+    if (!value) {
+      toast.error('Copy vazia');
+      return;
+    }
+    localStorage.setItem(storageKey, value);
+    setSavedCopy(value);
+    setIsEditing(false);
+    toast.success('Copy salva!');
+  };
+
+  const handleResetToDefault = () => {
+    localStorage.removeItem(storageKey);
+    setSavedCopy('');
+    setEditedCopy(template.copy);
+    toast.success('Copy restaurada para o padrão');
+  };
 
   const handleCopy = async () => {
     try {

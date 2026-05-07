@@ -225,6 +225,50 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
               </>
             )}
           </div>
+
+          {/* Imagens anexadas */}
+          <div className="border-t pt-2 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" /> Imagens ({attachments.length})
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload className="h-3 w-3" /> {uploading ? 'Enviando...' : 'Adicionar'}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
+              />
+            </div>
+            {attachments.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1.5">
+                {attachments.map((att) => (
+                  <div key={att.id} className="relative group rounded border overflow-hidden bg-muted/30">
+                    <img src={att.url} alt={att.file_name} className="w-full h-20 object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                      <Button size="icon" variant="secondary" className="h-6 w-6" onClick={() => handleDownload(att)} title="Baixar">
+                        <Download className="h-3 w-3" />
+                      </Button>
+                      <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => handleDeleteAttachment(att)} title="Remover">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground italic">Nenhuma imagem. Clique em "Adicionar".</p>
+            )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>

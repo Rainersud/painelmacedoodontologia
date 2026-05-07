@@ -1,14 +1,24 @@
-import { useEffect, useState } from 'react';
-import { Copy, Check, MessageSquare, Mic, Save, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Copy, Check, MessageSquare, Mic, Save, RotateCcw, Image as ImageIcon, Download, Trash2, Upload } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { FOLLOWUP_COPY_TEMPLATES } from '@/types/crm';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface FollowUpCopyPopoverProps {
   stageKey: string;
+}
+
+interface Attachment {
+  id: string;
+  file_path: string;
+  file_name: string;
+  mime_type: string | null;
+  url: string;
 }
 
 export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {

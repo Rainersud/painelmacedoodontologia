@@ -346,6 +346,36 @@ export type Database = {
           },
         ]
       }
+      copy_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          mime_type: string | null
+          stage_key: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          mime_type?: string | null
+          stage_key: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          mime_type?: string | null
+          stage_key?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           created_at: string

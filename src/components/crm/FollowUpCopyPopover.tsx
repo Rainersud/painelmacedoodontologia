@@ -31,6 +31,86 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
   });
   const [editedCopy, setEditedCopy] = useState<string>(savedCopy);
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const { data: attachments = [] } = useQuery<Attachment[]>({
+    queryKey: ['copy-attachments', stageKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('copy_attachments')
+        .select('id, file_path, file_name, mime_type')
+        .eq('stage_key', stageKey)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).map((a) => ({
+        ...a,
+        url: supabase.storage.from('copy-attachments').getPublicUrl(a.file_path).data.publicUrl,
+      }));
+    },
+  });
+
+  const handleUpload = async (file: File) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Arquivo muito grande (máx 10MB)');
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${stageKey}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('copy-attachments')
+        .upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: dbErr } = await supabase.from('copy_attachments').insert({
+        stage_key: stageKey,
+        file_path: path,
+        file_name: file.name,
+        mime_type: file.type,
+        uploaded_by: user?.id,
+      });
+      if (dbErr) throw dbErr;
+      toast.success('Imagem salva!');
+      queryClient.invalidateQueries({ queryKey: ['copy-attachments', stageKey] });
+    } catch (e: any) {
+      toast.error('Erro ao enviar: ' + e.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAttachment = async (att: Attachment) => {
+    try {
+      await supabase.storage.from('copy-attachments').remove([att.file_path]);
+      await supabase.from('copy_attachments').delete().eq('id', att.id);
+      toast.success('Imagem removida');
+      queryClient.invalidateQueries({ queryKey: ['copy-attachments', stageKey] });
+    } catch (e: any) {
+      toast.error('Erro ao remover');
+    }
+  };
+
+  const handleDownload = async (att: Attachment) => {
+    try {
+      const res = await fetch(att.url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.file_name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Erro ao baixar');
+    }
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) ?? '';

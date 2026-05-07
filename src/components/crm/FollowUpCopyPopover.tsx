@@ -161,7 +161,7 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
           <MessageSquare className="h-3 w-3 text-primary" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-3" align="start">
+      <PopoverContent className="w-96 p-3 max-h-[80vh] overflow-y-auto" align="start">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold">{template.label}</p>

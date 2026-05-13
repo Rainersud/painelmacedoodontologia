@@ -163,11 +163,21 @@ export function useCreatePayment() {
         if (error) throw error;
       }
 
-      // Update lead treatment_value
-      await supabase
+      // Update lead treatment_value and mark as "Venda Realizada" (only for main sale, not upsell)
+      const leadUpdate: Record<string, unknown> = {
+        treatment_value: data.gross_value,
+        budget_value: data.gross_value,
+      };
+      if (!data.upsell_opportunity_id) {
+        leadUpdate.status = 'fechado';
+        leadUpdate.closed_at = new Date().toISOString();
+        leadUpdate.stage_entered_at = new Date().toISOString();
+      }
+      const { error: leadUpdateError } = await supabase
         .from('leads')
-        .update({ treatment_value: data.gross_value, budget_value: data.gross_value })
+        .update(leadUpdate)
         .eq('id', data.lead_id);
+      if (leadUpdateError) console.warn('Lead update failed:', leadUpdateError);
 
       // Log the payment activity
       const { data: leadData } = await supabase

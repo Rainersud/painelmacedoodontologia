@@ -24,7 +24,7 @@ export function ROIAnalyticsWidget() {
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">Retorno sobre investimento com análise multidimensional · {range.label}</p>
           </div>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} />
+          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
       </CardHeader>
       <CardContent>

@@ -15,13 +15,12 @@ export function DashboardHeader() {
           <Sparkles className="h-6 w-6 text-primary" />
           {greeting}!
         </h1>
-        <p className="text-sm text-muted-foreground">{range.label} · Visão estratégica em tempo real</p>
+        <p className="text-sm text-muted-foreground">{range.label} · {range.businessDays} dia{range.businessDays !== 1 ? 's' : ''} útil{range.businessDays !== 1 ? 'eis' : ''} · Visão estratégica em tempo real</p>
       </div>
       <Tabs value={period} onValueChange={(v) => setPeriod(v as DashboardPeriod)}>
         <TabsList className="bg-card border shadow-sm">
           <TabsTrigger value="hoje" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Hoje</TabsTrigger>
-          <TabsTrigger value="7d" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">7 dias</TabsTrigger>
-          <TabsTrigger value="30d" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">30 dias</TabsTrigger>
+          <TabsTrigger value="semana" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Semana</TabsTrigger>
           <TabsTrigger value="mes" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mês</TabsTrigger>
         </TabsList>
       </Tabs>

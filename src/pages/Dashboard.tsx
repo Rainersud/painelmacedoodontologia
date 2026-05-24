@@ -37,6 +37,9 @@ const Dashboard = () => {
           {/* Principais Métricas do Negócio (com benchmarks) */}
           <BusinessMetricsWidget />
 
+          {/* Origens Estratégicas — Recebidos vs Agendados */}
+          <StrategicOriginsWidget />
+
           {/* ROI Inteligente */}
           <ROIAnalyticsWidget />
 

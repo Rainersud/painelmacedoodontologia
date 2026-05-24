@@ -10,6 +10,7 @@ import { EditableRate } from '@/components/clinic-goals/EditableRate';
 import { FunnelStageCard } from '@/components/clinic-goals/FunnelStageCard';
 import { ExecutiveGoalsBoard } from '@/components/clinic-goals/ExecutiveGoalsBoard';
 import { MainGoalCard } from '@/components/clinic-goals/MainGoalCard';
+import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { 
   Target, 
   TrendingUp,

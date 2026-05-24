@@ -28,7 +28,7 @@ export function LeadOriginsWidget() {
             <PieIcon className="h-5 w-5 text-primary" />
             Origem dos Leads
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} />
+          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
       </CardHeader>
       <CardContent>
@@ -70,17 +70,21 @@ export function LeadOriginsWidget() {
 }
 
 export function LossReasonsWidget() {
-  const { data, isLoading } = useStrategicInsights();
+  const { period, setPeriod, range } = useLocalPeriod('mes');
+  const { data, isLoading } = useStrategicInsights(range);
   const losses = (data?.losses || []).filter(l => l.count > 0);
   const top = losses[0];
 
   return (
     <Card className="monday-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-destructive" />
-          Perdas por Motivo
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            Perdas por Motivo
+          </CardTitle>
+          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
+        </div>
         <p className="text-xs text-muted-foreground">Categorias inteligentes · quantidade · % · valor estimado perdido</p>
       </CardHeader>
       <CardContent>

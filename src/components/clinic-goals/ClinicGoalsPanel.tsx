@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVMetrics } from '@/hooks/useLTVMetrics';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { MainGoalCard } from './MainGoalCard';
 import {

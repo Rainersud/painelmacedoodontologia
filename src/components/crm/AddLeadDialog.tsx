@@ -39,6 +39,18 @@ const SOURCE_OPTIONS = [
   { value: 'outro', label: 'Outros' },
 ];
 
+// "Como Lead Chegou?" — origem estratégica obrigatória
+export const ARRIVAL_SOURCE_OPTIONS = [
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'google', label: 'Google' },
+  { value: 'passou_na_frente', label: 'Passou na Frente' },
+  { value: 'indicacao_pac', label: 'Indicação Pac' },
+  { value: 'prospeccao_ativa', label: 'Prospecção Ativa' },
+  { value: 'indicacao_parceria', label: 'Indicação de Parceria' },
+  { value: 'social_selling', label: 'Social Selling' },
+] as const;
+
 const TREATMENT_OPTIONS = [
   { value: 'implante', label: 'Implante' },
   { value: 'protese_flexivel', label: 'Prótese Flexível' },
@@ -54,6 +66,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
+    lead_arrival_source: undefined as string | undefined,
     interest_product: undefined as string | undefined,
     notes: '',
   });

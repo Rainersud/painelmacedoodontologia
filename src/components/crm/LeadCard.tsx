@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ReferralPopover } from './ReferralPopover';
+import { IndicacaoBadge } from './IndicacaoBadge';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';
@@ -103,6 +104,7 @@ export function LeadCard({
             </span>
           </div>
           <p className="font-semibold truncate text-xs flex-1 min-w-0">{lead.name}</p>
+          <IndicacaoBadge source={lead.source} size="xs" />
           {hasReferralData && refTags && (
             <ReferralPopover lead={lead} refTags={refTags} />
           )}

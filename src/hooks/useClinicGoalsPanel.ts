@@ -433,7 +433,7 @@ export function useClinicGoalsPanel(period: Period) {
             ? `${monthly.roi}x · meta atingida`
             : `${monthly.roi}x · falta ${(monthly.roi - roi).toFixed(1)}x`,
           status: statusOf(roi, monthly.roi),
-          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
+          delta: delta(roi, prevRoi), trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
         },
         {

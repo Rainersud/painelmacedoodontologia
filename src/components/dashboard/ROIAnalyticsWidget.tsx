@@ -6,18 +6,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/currency';
 import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 
 export function ROIAnalyticsWidget() {
-  const { data, isLoading } = useROIAnalytics();
+  const { period, setPeriod, range } = useLocalPeriod('mes');
+  const { data, isLoading } = useROIAnalytics(range);
 
   return (
     <Card className="monday-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Target className="h-5 w-5 text-primary" />
-          ROI Inteligente
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">Retorno sobre investimento com análise multidimensional</p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              ROI Inteligente
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Retorno sobre investimento com análise multidimensional · {range.label}</p>
+          </div>
+          <WidgetPeriodTabs value={period} onChange={setPeriod} />
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="evolution">

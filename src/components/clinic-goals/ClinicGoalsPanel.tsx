@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVMetrics } from '@/hooks/useLTVMetrics';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { MainGoalCard } from './MainGoalCard';
 import {
   Target, TrendingUp, TrendingDown, Minus, Lightbulb, Activity, Clock, Heart,

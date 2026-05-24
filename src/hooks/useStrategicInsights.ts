@@ -37,8 +37,9 @@ export interface StrategicInsights {
 
 const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-export function useStrategicInsights() {
-  const { range } = usePeriodFilter();
+export function useStrategicInsights(rangeOverride?: PeriodRange) {
+  const ctx = usePeriodFilter();
+  const range = rangeOverride ?? ctx.range;
   const { data: kpis } = useDashboardKPIs();
 
   return useQuery({

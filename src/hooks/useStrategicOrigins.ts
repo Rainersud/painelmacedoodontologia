@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 
 export const ARRIVAL_LABELS: Record<string, string> = {
   facebook: 'Facebook',
@@ -34,8 +34,9 @@ export interface OriginRow {
   ticketMedio: number;
 }
 
-export function useStrategicOrigins() {
-  const { range } = usePeriodFilter();
+export function useStrategicOrigins(rangeOverride?: PeriodRange) {
+  const ctx = usePeriodFilter();
+  const range = rangeOverride ?? ctx.range;
 
   return useQuery({
     queryKey: ['strategic-origins', range.start.toISOString(), range.end.toISOString()],

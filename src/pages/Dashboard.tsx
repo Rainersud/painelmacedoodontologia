@@ -8,6 +8,7 @@ import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsW
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
+import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 
 const Dashboard = () => {
   useStagnationAlerts();
@@ -31,6 +32,9 @@ const Dashboard = () => {
 
           {/* Pending tasks banner */}
           <PendingTasksBanner />
+
+          {/* Metas da Clínica — painel premium sincronizado com Gestão */}
+          <ClinicGoalsPanel />
 
           {/* Origens Estratégicas — Recebidos vs Agendados */}
           <StrategicOriginsWidget />

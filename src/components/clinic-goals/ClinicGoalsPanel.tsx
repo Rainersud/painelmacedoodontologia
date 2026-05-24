@@ -57,6 +57,7 @@ const STATUS_STYLES = {
 } as const;
 
 const PERIOD_LABEL: Record<Period, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês' };
+const PREV_LABEL: Record<Period, string> = { hoje: 'ontem', semana: 'semana anterior', mes: 'mês anterior' };
 
 function formatBRLShort(v: number) {
   if (v >= 1000) return `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;

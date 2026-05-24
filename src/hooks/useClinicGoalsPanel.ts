@@ -150,10 +150,33 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
   return useQuery({
     queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
-      const range = buildRange(period, customRange);
+      // Calendário de dias úteis (configurável: workdays + feriados da clínica)
+      const [{ data: bizSettings }, { data: hols }, { data: settings }] = await Promise.all([
+        supabase.from('meta_settings').select('setting_value').eq('setting_key', 'working_days_bitmask'),
+        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
+        supabase.from('meta_settings').select('setting_key, setting_value'),
+      ]);
+      const mask = Number(bizSettings?.[0]?.setting_value ?? 62);
+      const holidays = new Set<string>();
+      const recurring = new Set<string>();
+      (hols ?? []).forEach((h: any) => {
+        if (h.is_recurring) recurring.add(String(h.holiday_date).slice(5));
+        else holidays.add(String(h.holiday_date));
+      });
+      const isBusinessDay = (d: Date) => {
+        if ((mask & (1 << getDay(d))) === 0) return false;
+        if (holidays.has(format(d, 'yyyy-MM-dd'))) return false;
+        if (recurring.has(format(d, 'MM-dd'))) return false;
+        return true;
+      };
+      // Dias úteis padrão de um mês de referência (mês atual)
+      const refStart = startOfMonth(new Date());
+      const refEnd = endOfMonth(new Date());
+      const monthlyBusinessDays = Math.max(1, countBiz(refStart, refEnd, { isBusinessDay, monthlyBusinessDays: 20 }));
+      const cal: CalendarCfg = { isBusinessDay, monthlyBusinessDays };
 
-      // Settings (oficiais)
-      const { data: settings } = await supabase.from('meta_settings').select('setting_key, setting_value');
+      const range = buildRange(period, customRange, cal);
+
       const s: Record<string, number> = {};
       (settings || []).forEach(r => { s[r.setting_key] = Number(r.setting_value); });
 
@@ -177,9 +200,10 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         roas: get('meta_roas_bruto', 20),
       };
 
-      // Proporciona meta mensal pelo período (usa total do período, não os dias decorridos)
-      const proportion = range.totalBusinessDays / 20;
+      // Proporciona meta mensal pelo período (usa dias úteis do período / dias úteis do mês de referência)
+      const proportion = range.totalBusinessDays / monthlyBusinessDays;
       const prop = (m: number) => Math.max(1, Math.round(m * proportion));
+
 
       // Buscas paralelas
       const [

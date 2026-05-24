@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import UserManagementPanel from '@/components/admin/UserManagementPanel';
-import { Settings, Users, Bell, Palette, Shield } from 'lucide-react';
+import { BusinessCalendarPanel } from '@/components/admin/BusinessCalendarPanel';
+import { Settings, Users, Bell, Palette, Shield, CalendarDays } from 'lucide-react';
 
 export default function Configuracoes() {
   const { isAdmin } = useAuth();

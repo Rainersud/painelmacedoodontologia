@@ -126,6 +126,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           : '',
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
         loss_reason: (lead as any).loss_reason || '',
+        lead_arrival_source: (lead as any).lead_arrival_source || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');

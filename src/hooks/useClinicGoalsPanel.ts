@@ -146,7 +146,9 @@ export function useClinicGoalsPanel(period: Period) {
         leadsRes,
         appsScheduledRes, appsAttendedRes,
         salesRes, paymentsRes,
-        prevLeadsRes, prevSalesRes, prevPaymentsRes,
+        prevLeadsListRes,
+        prevAppsScheduledRes, prevAppsAttendedRes,
+        prevSalesRes, prevPaymentsRes,
       ] = await Promise.all([
         supabase.from('leads').select('id, created_at, first_response_at')
           .gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString()),
@@ -158,11 +160,15 @@ export function useClinicGoalsPanel(period: Period) {
           .gte('closed_at', range.start.toISOString()).lte('closed_at', range.end.toISOString()),
         supabase.from('payments').select('net_value, gross_value, paid_at').eq('status', 'pago')
           .gte('paid_at', range.start.toISOString()).lte('paid_at', range.end.toISOString()),
-        supabase.from('leads').select('id', { count: 'exact', head: true })
+        supabase.from('leads').select('id, created_at, first_response_at')
           .gte('created_at', range.prevStart.toISOString()).lte('created_at', range.prevEnd.toISOString()),
-        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'fechado')
+        supabase.from('appointments').select('id', { count: 'exact', head: true })
+          .gte('scheduled_at', range.prevStart.toISOString()).lte('scheduled_at', range.prevEnd.toISOString()),
+        supabase.from('appointments').select('id', { count: 'exact', head: true }).not('attended_at', 'is', null)
+          .gte('attended_at', range.prevStart.toISOString()).lte('attended_at', range.prevEnd.toISOString()),
+        supabase.from('leads').select('id, treatment_value').eq('status', 'fechado')
           .gte('closed_at', range.prevStart.toISOString()).lte('closed_at', range.prevEnd.toISOString()),
-        supabase.from('payments').select('net_value').eq('status', 'pago')
+        supabase.from('payments').select('net_value, gross_value').eq('status', 'pago')
           .gte('paid_at', range.prevStart.toISOString()).lte('paid_at', range.prevEnd.toISOString()),
       ]);
 
@@ -192,9 +198,27 @@ export function useClinicGoalsPanel(period: Period) {
       const roas = investmentProp ? grossRevenue / investmentProp : 0;
 
       // Período anterior
-      const prevLeads = prevLeadsRes.count || 0;
-      const prevSales = prevSalesRes.count || 0;
-      const prevRevenue = (prevPaymentsRes.data || []).reduce((sum, p) => sum + Number(p.net_value || 0), 0);
+      const prevLeadsList = prevLeadsListRes.data || [];
+      const prevLeads = prevLeadsList.length;
+      const prevAgend = prevAppsScheduledRes.count || 0;
+      const prevComp = prevAppsAttendedRes.count || 0;
+      const prevSalesList = prevSalesRes.data || [];
+      const prevSales = prevSalesList.length;
+      const prevPayments = prevPaymentsRes.data || [];
+      const prevRevenue = prevPayments.reduce((sum, p) => sum + Number(p.net_value || 0), 0);
+      const prevGrossRevenue = prevPayments.reduce((sum, p) => sum + Number(p.gross_value || p.net_value || 0), 0);
+      const prevTicket = prevSales > 0 ? prevRevenue / prevSales : 0;
+      const prevCpl = prevLeads > 0 ? investmentProp / prevLeads : 0;
+      const prevCac = prevSales > 0 ? investmentProp / prevSales : 0;
+      const prevRoi = investmentProp ? prevRevenue / investmentProp : 0;
+      const prevRoas = investmentProp ? prevGrossRevenue / investmentProp : 0;
+      const prevResponded = prevLeadsList.filter((l: any) => l.first_response_at);
+      const prevResponseTimes = prevResponded.map((l: any) =>
+        (new Date(l.first_response_at).getTime() - new Date(l.created_at).getTime()) / 60000
+      ).filter((v: number) => v >= 0 && Number.isFinite(v));
+      const prevAvgResponseMin = prevResponseTimes.length
+        ? prevResponseTimes.reduce((a: number, b: number) => a + b, 0) / prevResponseTimes.length
+        : 0;
 
       const delta = (cur: number, prev: number) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : 0;
 
@@ -290,7 +314,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: String(agendCount), targetDisplay: String(tgtAgend),
           healthyGoal: goalCount(monthly.taxaAgendamento, tgtAgend, agendCount, 'agendamentos'),
           status: statusOf(agendCount, tgtAgend),
-          delta: 0, trend: trendAgend, unit: 'count',
+          delta: delta(agendCount, prevAgend),
+          trend: trendAgend, unit: 'count',
           rate: {
             label: 'Taxa de Agendamento',
             display: `${taxaAgendamento.toFixed(1)}%`,
@@ -305,7 +330,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: String(compCount), targetDisplay: String(tgtComp),
           healthyGoal: goalCount(monthly.taxaComparecimento, tgtComp, compCount, 'comparecimentos'),
           status: statusOf(compCount, tgtComp),
-          delta: 0, trend: trendComp, unit: 'count',
+          delta: delta(compCount, prevComp),
+          trend: trendComp, unit: 'count',
           rate: {
             label: 'Taxa de Comparecimento',
             display: `${taxaComparecimento.toFixed(1)}%`,
@@ -336,7 +362,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(ticketMedio), targetDisplay: fmtBRL(monthly.ticket),
           healthyGoal: goalBRL(null, monthly.ticket, Math.round(ticketMedio)),
           status: statusOf(ticketMedio, monthly.ticket),
-          delta: 0, trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
+          delta: delta(ticketMedio, prevTicket),
+          trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
         },
         {
           key: 'faturamento', label: 'Faturamento',
@@ -358,7 +385,8 @@ export function useClinicGoalsPanel(period: Period) {
             ? `até 5 min · excedeu ${fmtDuration(avgResponseMin - 5)}`
             : 'até 5 min · dentro da meta',
           status: avgResponseMin === 0 ? 'warning' : statusOf(avgResponseMin, 5, true),
-          delta: 0, trend: trendResponse,
+          delta: delta(avgResponseMin, prevAvgResponseMin),
+          trend: trendResponse,
           lowerIsBetter: true, unit: 'duration',
         },
         {
@@ -368,7 +396,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(cpl), targetDisplay: fmtBRL(monthly.cpl),
           healthyGoal: goalBRL(null, monthly.cpl, Math.round(cpl), true),
           status: statusOf(cpl, monthly.cpl, true),
-          delta: 0, trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
+          delta: delta(cpl, prevCpl),
+          trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
         },
         {
@@ -378,7 +407,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(cac), targetDisplay: fmtBRL(monthly.cac),
           healthyGoal: goalBRL(null, monthly.cac, Math.round(cac), true),
           status: statusOf(cac, monthly.cac, true),
-          delta: 0, trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
+          delta: delta(cac, prevCac),
+          trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
         },
         {
@@ -390,7 +420,8 @@ export function useClinicGoalsPanel(period: Period) {
             ? `${monthly.roas}x · meta atingida`
             : `${monthly.roas}x · falta ${(monthly.roas - roas).toFixed(1)}x`,
           status: statusOf(roas, monthly.roas),
-          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
+          delta: delta(roas, prevRoas),
+          trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
         },
         {
@@ -402,7 +433,7 @@ export function useClinicGoalsPanel(period: Period) {
             ? `${monthly.roi}x · meta atingida`
             : `${monthly.roi}x · falta ${(monthly.roi - roi).toFixed(1)}x`,
           status: statusOf(roi, monthly.roi),
-          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
+          delta: delta(roi, prevRoi), trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
         },
         {

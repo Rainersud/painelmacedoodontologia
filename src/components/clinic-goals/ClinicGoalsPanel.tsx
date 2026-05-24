@@ -57,6 +57,7 @@ const STATUS_STYLES = {
 } as const;
 
 const PERIOD_LABEL: Record<Period, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês' };
+const PREV_LABEL: Record<Period, string> = { hoje: 'ontem', semana: 'semana anterior', mes: 'mês anterior' };
 
 function formatBRLShort(v: number) {
   if (v >= 1000) return `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;
@@ -175,19 +176,27 @@ export function ClinicGoalsPanel() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className={cn('font-semibold', st.text)}>{m.percentage}% da meta</span>
-                  {m.delta !== 0 ? (
-                    <span className={cn(
-                      'inline-flex items-center gap-0.5',
-                      (m.lowerIsBetter ? m.delta < 0 : m.delta > 0) ? 'text-blue-600' : 'text-red-500',
-                    )}>
-                      {m.delta > 0 ? <TrendingUp className="h-3 w-3" /> : m.delta < 0 ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                      {Math.abs(m.delta)}%
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">{PERIOD_LABEL[period]}</span>
-                  )}
+                {/* Comparação com período anterior */}
+                {(() => {
+                  const isPositive = m.lowerIsBetter ? m.delta < 0 : m.delta > 0;
+                  const isNegative = m.lowerIsBetter ? m.delta > 0 : m.delta < 0;
+                  const deltaColor = m.delta === 0
+                    ? 'bg-muted text-muted-foreground'
+                    : isPositive
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                      : 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30';
+                  return (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className={cn('font-semibold', st.text)}>{m.percentage}% da meta</span>
+                      <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-bold tabular-nums', deltaColor)}>
+                        {m.delta > 0 ? <TrendingUp className="h-3 w-3" /> : m.delta < 0 ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                        {m.delta === 0 ? '—' : `${m.delta > 0 ? '+' : ''}${m.delta}%`}
+                      </span>
+                    </div>
+                  );
+                })()}
+                <div className="text-[10px] text-muted-foreground -mt-1">
+                  vs {PREV_LABEL[period]}
                 </div>
 
                 {/* Meta saudável */}

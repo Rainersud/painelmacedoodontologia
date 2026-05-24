@@ -55,11 +55,16 @@ interface PeriodRange {
   buckets: { start: Date; end: Date }[];
 }
 
-function countBusinessDays(start: Date, end: Date) {
-  return eachDayOfInterval({ start, end }).filter(d => !isWeekend(d)).length;
+interface CalendarCfg {
+  isBusinessDay: (d: Date) => boolean;
+  monthlyBusinessDays: number;
 }
 
-function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange {
+function countBiz(start: Date, end: Date, cal: CalendarCfg) {
+  return eachDayOfInterval({ start, end }).filter(cal.isBusinessDay).length;
+}
+
+function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg): PeriodRange {
   const now = new Date();
   if (period === 'hoje') {
     const start = startOfDay(now);
@@ -70,10 +75,11 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
       const next = i + 1 < hours.length ? hours[i + 1] : end;
       return { start: h, end: next };
     });
+    const isBiz = cal.isBusinessDay(now) ? 1 : 0;
     return {
       start, end,
       prevStart: startOfDay(prev), prevEnd: endOfDay(prev),
-      businessDays: 1, totalBusinessDays: 1,
+      businessDays: isBiz, totalBusinessDays: isBiz || 1,
       buckets,
     };
   }
@@ -82,11 +88,14 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
     const end = endOfWeek(now, { weekStartsOn: 1 });
     const prev = subWeeks(now, 1);
     const days = eachDayOfInterval({ start, end });
+    const totalBusinessDays = countBiz(start, end, cal);
+    const businessDays = countBiz(start, now > end ? end : now, cal);
     return {
       start, end,
       prevStart: startOfWeek(prev, { weekStartsOn: 1 }),
       prevEnd: endOfWeek(prev, { weekStartsOn: 1 }),
-      businessDays: 5, totalBusinessDays: 5,
+      businessDays: Math.max(1, businessDays),
+      totalBusinessDays: Math.max(1, totalBusinessDays),
       buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
     };
   }
@@ -109,8 +118,8 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
       const mEnd = i + 1 < months.length ? endOfMonth(m) : end;
       return { start: mStart, end: mEnd };
     });
-    const totalBusinessDays = countBusinessDays(start, end);
-    const businessDays = countBusinessDays(start, now > end ? end : now);
+    const totalBusinessDays = countBiz(start, end, cal);
+    const businessDays = countBiz(start, now > end ? end : now, cal);
     return {
       start, end,
       prevStart, prevEnd,
@@ -125,11 +134,12 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
   return {
     start, end,
     prevStart: startOfMonth(prev), prevEnd: endOfMonth(prev),
-    businessDays: countBusinessDays(start, now),
-    totalBusinessDays: countBusinessDays(start, end),
+    businessDays: countBiz(start, now, cal),
+    totalBusinessDays: countBiz(start, end, cal),
     buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
   };
 }
+
 
 const fmtBRL = (v: number) =>
   v >= 1000 ? `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `R$ ${v.toLocaleString('pt-BR')}`;

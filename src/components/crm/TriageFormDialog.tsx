@@ -708,6 +708,8 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                 onConvertToLead={handleConvertToLead}
                 onBulkLink={handleBulkLink}
                 isBulkLinking={bulkLink.isPending}
+                leadId={lead.id}
+                leadName={lead.name}
               />
 
               {/* Filled info */}

@@ -515,6 +515,12 @@ const Funil = () => { // v2
     <AppLayout title="Comercial 1 – Aquisição">
       {/* The entire funnel page */}
       <div className="flex flex-col min-h-0">
+        {/* Operational command center — above search, below page title */}
+        <div className="shrink-0 space-y-4 mb-4">
+          <TodayTasksWidget />
+          <SmartAlertsWidget />
+        </div>
+
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
           <div className="flex items-center justify-between">
@@ -680,12 +686,6 @@ const Funil = () => { // v2
               );
             })}
           </div>
-        </div>
-
-        {/* Operational command center — above the funnel */}
-        <div className="shrink-0 space-y-4 mb-4">
-          <TodayTasksWidget />
-          <SmartAlertsWidget />
         </div>
 
         {/* Kanban board with synced top scrollbar */}

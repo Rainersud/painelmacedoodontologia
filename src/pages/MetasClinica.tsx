@@ -9,7 +9,7 @@ import { useClinicGoals, HEALTHY_RATES } from '@/hooks/useClinicGoals';
 import { EditableRate } from '@/components/clinic-goals/EditableRate';
 import { FunnelStageCard } from '@/components/clinic-goals/FunnelStageCard';
 import { ExecutiveGoalsBoard } from '@/components/clinic-goals/ExecutiveGoalsBoard';
-import { MainGoalCard } from '@/components/clinic-goals/MainGoalCard';
+import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { 
   Target, 
   TrendingUp,
@@ -141,8 +141,9 @@ export default function MetasClinica() {
             </div>
           </div>
         </div>
-        {/* Premium Main Goal */}
-        <MainGoalCard />
+        {/* Painel premium sincronizado com a Dashboard */}
+        <ClinicGoalsPanel />
+
 
 
         {/* Healthy Rates Reference - Monday Style */}

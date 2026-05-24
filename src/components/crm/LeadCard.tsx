@@ -103,6 +103,7 @@ export function LeadCard({
             </span>
           </div>
           <p className="font-semibold truncate text-xs flex-1 min-w-0">{lead.name}</p>
+          <IndicacaoBadge source={lead.source} size="xs" />
           {hasReferralData && refTags && (
             <ReferralPopover lead={lead} refTags={refTags} />
           )}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 import { useDashboardKPIs } from './useDashboardKPIs';
 
 export interface SellerRanking {

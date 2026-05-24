@@ -7,7 +7,6 @@ import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/Lea
 import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
-import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 
 const Dashboard = () => {
@@ -32,9 +31,6 @@ const Dashboard = () => {
 
           {/* Pending tasks banner */}
           <PendingTasksBanner />
-
-          {/* Metas da Clínica — painel premium sincronizado com Gestão (substitui Principais Métricas) */}
-          <ClinicGoalsPanel />
 
           {/* Origens Estratégicas — Recebidos vs Agendados */}
           <StrategicOriginsWidget />

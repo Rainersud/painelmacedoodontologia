@@ -251,24 +251,45 @@ export function useClinicGoalsPanel(period: Period) {
 
       const rateStatus = (cur: number, target: number): PanelMetric['status'] => statusOf(cur, target);
 
+      // Helpers para healthyGoal padronizado
+      const periodSuffix = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
+      const gap = (cur: number, tgt: number) => Math.max(0, Math.round(tgt - cur));
+      const goalCount = (pct: number | null, target: number, current: number, noun: string) => {
+        const remaining = gap(current, target);
+        const head = pct !== null ? `${pct}% = ${target} ${noun}` : `${target} ${noun}${periodSuffix}`;
+        return remaining > 0 ? `${head} · falta ${remaining}` : `${head} · meta atingida`;
+      };
+      const goalBRL = (pct: number | null, target: number, current: number, lowerIsBetter = false) => {
+        if (lowerIsBetter) return `máx ${fmtBRL(target)}`;
+        const remaining = Math.max(0, target - current);
+        const head = pct !== null ? `${pct}% = ${fmtBRL(target)}` : `${fmtBRL(target)}${periodSuffix}`;
+        return remaining > 0 ? `${head} · falta ${fmtBRL(remaining)}` : `${head} · meta atingida`;
+      };
+
+      const tgtLeads = prop(monthly.leads);
+      const tgtAgend = prop(monthly.agendamentos);
+      const tgtComp = prop(monthly.comparecimentos);
+      const tgtVendas = prop(monthly.vendas);
+      const tgtFat = Math.round(monthly.faturamento * proportion);
+
       const metrics: PanelMetric[] = [
         {
           key: 'leads', label: 'Novos Leads',
-          current: leadsCount, target: prop(monthly.leads),
-          percentage: Math.min(100, Math.round((leadsCount / prop(monthly.leads)) * 100)),
-          display: String(leadsCount), targetDisplay: String(prop(monthly.leads)),
-          healthyGoal: `${monthly.leads}/mês`,
-          status: statusOf(leadsCount, prop(monthly.leads)),
+          current: leadsCount, target: tgtLeads,
+          percentage: Math.min(100, Math.round((leadsCount / tgtLeads) * 100)),
+          display: String(leadsCount), targetDisplay: String(tgtLeads),
+          healthyGoal: goalCount(null, tgtLeads, leadsCount, 'leads'),
+          status: statusOf(leadsCount, tgtLeads),
           delta: delta(leadsCount, prevLeads),
           trend: trendLeads, unit: 'count',
         },
         {
           key: 'agendamentos', label: 'Agendamentos',
-          current: agendCount, target: prop(monthly.agendamentos),
-          percentage: Math.min(100, Math.round((agendCount / prop(monthly.agendamentos)) * 100)),
-          display: `${agendCount} agendamentos`, targetDisplay: String(prop(monthly.agendamentos)),
-          healthyGoal: `${monthly.taxaAgendamento}%`,
-          status: statusOf(agendCount, prop(monthly.agendamentos)),
+          current: agendCount, target: tgtAgend,
+          percentage: Math.min(100, Math.round((agendCount / tgtAgend) * 100)),
+          display: String(agendCount), targetDisplay: String(tgtAgend),
+          healthyGoal: goalCount(monthly.taxaAgendamento, tgtAgend, agendCount, 'agendamentos'),
+          status: statusOf(agendCount, tgtAgend),
           delta: 0, trend: trendAgend, unit: 'count',
           rate: {
             label: 'Taxa de Agendamento',
@@ -279,11 +300,11 @@ export function useClinicGoalsPanel(period: Period) {
         },
         {
           key: 'comparecimentos', label: 'Comparecimentos',
-          current: compCount, target: prop(monthly.comparecimentos),
-          percentage: Math.min(100, Math.round((compCount / prop(monthly.comparecimentos)) * 100)),
-          display: `${compCount} pacientes`, targetDisplay: String(prop(monthly.comparecimentos)),
-          healthyGoal: `${monthly.taxaComparecimento}%`,
-          status: statusOf(compCount, prop(monthly.comparecimentos)),
+          current: compCount, target: tgtComp,
+          percentage: Math.min(100, Math.round((compCount / tgtComp) * 100)),
+          display: String(compCount), targetDisplay: String(tgtComp),
+          healthyGoal: goalCount(monthly.taxaComparecimento, tgtComp, compCount, 'comparecimentos'),
+          status: statusOf(compCount, tgtComp),
           delta: 0, trend: trendComp, unit: 'count',
           rate: {
             label: 'Taxa de Comparecimento',
@@ -294,11 +315,11 @@ export function useClinicGoalsPanel(period: Period) {
         },
         {
           key: 'vendas', label: 'Vendas Realizadas',
-          current: salesCount, target: prop(monthly.vendas),
-          percentage: Math.min(100, Math.round((salesCount / prop(monthly.vendas)) * 100)),
-          display: `${salesCount} vendas`, targetDisplay: String(prop(monthly.vendas)),
-          healthyGoal: `${monthly.taxaFechamento}%`,
-          status: statusOf(salesCount, prop(monthly.vendas)),
+          current: salesCount, target: tgtVendas,
+          percentage: Math.min(100, Math.round((salesCount / tgtVendas) * 100)),
+          display: String(salesCount), targetDisplay: String(tgtVendas),
+          healthyGoal: goalCount(monthly.taxaFechamento, tgtVendas, salesCount, 'vendas'),
+          status: statusOf(salesCount, tgtVendas),
           delta: delta(salesCount, prevSales),
           trend: trendSales, unit: 'count',
           rate: {
@@ -313,17 +334,17 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(ticketMedio), target: monthly.ticket,
           percentage: Math.min(100, Math.round((ticketMedio / monthly.ticket) * 100)),
           display: fmtBRL(ticketMedio), targetDisplay: fmtBRL(monthly.ticket),
-          healthyGoal: fmtBRL(monthly.ticket),
+          healthyGoal: goalBRL(null, monthly.ticket, Math.round(ticketMedio)),
           status: statusOf(ticketMedio, monthly.ticket),
           delta: 0, trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
         },
         {
           key: 'faturamento', label: 'Faturamento',
-          current: Math.round(revenue), target: Math.round(monthly.faturamento * proportion),
-          percentage: Math.min(100, Math.round((revenue / (monthly.faturamento * proportion)) * 100)),
-          display: fmtBRL(revenue), targetDisplay: fmtBRL(monthly.faturamento * proportion),
-          healthyGoal: fmtBRL(monthly.faturamento * proportion) + (period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês'),
-          status: statusOf(revenue, monthly.faturamento * proportion),
+          current: Math.round(revenue), target: tgtFat,
+          percentage: Math.min(100, Math.round((revenue / tgtFat) * 100)),
+          display: fmtBRL(revenue), targetDisplay: fmtBRL(tgtFat),
+          healthyGoal: goalBRL(null, tgtFat, Math.round(revenue)),
+          status: statusOf(revenue, tgtFat),
           delta: delta(revenue, prevRevenue),
           trend: trendRevenue, unit: 'currency',
         },
@@ -333,7 +354,9 @@ export function useClinicGoalsPanel(period: Period) {
           percentage: avgResponseMin ? Math.min(100, Math.round((5 / avgResponseMin) * 100)) : 100,
           display: avgResponseMin > 0 ? fmtDuration(avgResponseMin) : '—',
           targetDisplay: 'até 5 min',
-          healthyGoal: 'até 5 minutos',
+          healthyGoal: avgResponseMin > 5
+            ? `até 5 min · excedeu ${fmtDuration(avgResponseMin - 5)}`
+            : 'até 5 min · dentro da meta',
           status: avgResponseMin === 0 ? 'warning' : statusOf(avgResponseMin, 5, true),
           delta: 0, trend: trendResponse,
           lowerIsBetter: true, unit: 'duration',
@@ -343,7 +366,7 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(cpl), target: monthly.cpl,
           percentage: cpl ? Math.min(100, Math.round((monthly.cpl / cpl) * 100)) : 0,
           display: fmtBRL(cpl), targetDisplay: fmtBRL(monthly.cpl),
-          healthyGoal: fmtBRL(monthly.cpl),
+          healthyGoal: goalBRL(null, monthly.cpl, Math.round(cpl), true),
           status: statusOf(cpl, monthly.cpl, true),
           delta: 0, trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
@@ -353,7 +376,7 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(cac), target: monthly.cac,
           percentage: cac ? Math.min(100, Math.round((monthly.cac / cac) * 100)) : 0,
           display: fmtBRL(cac), targetDisplay: fmtBRL(monthly.cac),
-          healthyGoal: fmtBRL(monthly.cac),
+          healthyGoal: goalBRL(null, monthly.cac, Math.round(cac), true),
           status: statusOf(cac, monthly.cac, true),
           delta: 0, trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
@@ -363,7 +386,9 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(roas * 10) / 10, target: monthly.roas,
           percentage: Math.min(100, Math.round((roas / monthly.roas) * 100)),
           display: `${roas.toFixed(1)}x`, targetDisplay: `${monthly.roas}x`,
-          healthyGoal: `${monthly.roas}x`,
+          healthyGoal: roas >= monthly.roas
+            ? `${monthly.roas}x · meta atingida`
+            : `${monthly.roas}x · falta ${(monthly.roas - roas).toFixed(1)}x`,
           status: statusOf(roas, monthly.roas),
           delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
@@ -373,7 +398,9 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(roi * 10) / 10, target: monthly.roi,
           percentage: Math.min(100, Math.round((roi / monthly.roi) * 100)),
           display: `${roi.toFixed(1)}x`, targetDisplay: `${monthly.roi}x`,
-          healthyGoal: `${monthly.roi}x`,
+          healthyGoal: roi >= monthly.roi
+            ? `${monthly.roi}x · meta atingida`
+            : `${monthly.roi}x · falta ${(monthly.roi - roi).toFixed(1)}x`,
           status: statusOf(roi, monthly.roi),
           delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
@@ -383,7 +410,7 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(investmentProp), target: Math.round(monthly.investimento * proportion),
           percentage: 100,
           display: fmtBRL(investmentProp), targetDisplay: fmtBRL(monthly.investimento * proportion),
-          healthyGoal: fmtBRL(monthly.investimento) + '/mês',
+          healthyGoal: `${fmtBRL(monthly.investimento * proportion)}${periodSuffix}`,
           status: 'healthy',
           delta: 0,
           trend: range.buckets.map(() => investmentProp / range.buckets.length), unit: 'currency',

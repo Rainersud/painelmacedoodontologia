@@ -85,8 +85,8 @@ function buildLTVMetric(overallLTV: number): PanelMetric {
 }
 
 export function ClinicGoalsPanel() {
-  const [period, setPeriod] = useState<Period>('mes');
-  const { data, isLoading } = useClinicGoalsPanel(period);
+  const { period, setPeriod, customRange, setCustomRange } = usePeriodFilter();
+  const { data, isLoading } = useClinicGoalsPanel(period, customRange);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const { data: ltv } = useLTVMetrics('todos', 'todos');
 
@@ -114,13 +114,13 @@ export function ClinicGoalsPanel() {
               </div>
             </div>
 
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-                <TabsTrigger value="hoje" className="text-xs">Hoje</TabsTrigger>
-                <TabsTrigger value="semana" className="text-xs">Semana</TabsTrigger>
-                <TabsTrigger value="mes" className="text-xs">Mês</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <WidgetPeriodTabs
+              value={period}
+              onChange={(p) => setPeriod(p as Period)}
+              size="sm"
+              customRange={customRange}
+              onCustomRangeChange={setCustomRange}
+            />
           </div>
 
           <MainGoalCard />

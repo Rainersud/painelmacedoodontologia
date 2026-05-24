@@ -322,7 +322,7 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(revenue), target: Math.round(monthly.faturamento * proportion),
           percentage: Math.min(100, Math.round((revenue / (monthly.faturamento * proportion)) * 100)),
           display: fmtBRL(revenue), targetDisplay: fmtBRL(monthly.faturamento * proportion),
-          healthyGoal: fmtBRL(monthly.faturamento) + '/mês',
+          healthyGoal: fmtBRL(monthly.faturamento * proportion) + (period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês'),
           status: statusOf(revenue, monthly.faturamento * proportion),
           delta: delta(revenue, prevRevenue),
           trend: trendRevenue, unit: 'currency',

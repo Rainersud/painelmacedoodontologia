@@ -2,7 +2,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
 import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { BusinessMetricsWidget } from '@/components/dashboard/BusinessMetricsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
 import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
@@ -34,8 +33,8 @@ const Dashboard = () => {
           {/* Pending tasks banner */}
           <PendingTasksBanner />
 
-          {/* Principais Métricas do Negócio (com benchmarks) */}
-          <BusinessMetricsWidget />
+          {/* Metas da Clínica — painel premium sincronizado com Gestão (substitui Principais Métricas) */}
+          <ClinicGoalsPanel />
 
           {/* Origens Estratégicas — Recebidos vs Agendados */}
           <StrategicOriginsWidget />
@@ -48,9 +47,6 @@ const Dashboard = () => {
             <LeadOriginsWidget />
             <LossReasonsWidget />
           </div>
-
-          {/* Metas da Clínica — painel premium sincronizado com Gestão */}
-          <ClinicGoalsPanel />
 
 
           {/* Rankings, previsão e insights */}

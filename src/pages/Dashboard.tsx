@@ -43,32 +43,32 @@ const Dashboard = () => {
           {/* 4. Tarefas do Dia */}
           <TodayTasksWidget />
 
-          {/* 5. Funil de conversão (única visualização) */}
-          <FunnelConversionWidget />
-
-          {/* 6. Principais Métricas do Negócio */}
+          {/* 5. Principais Métricas do Negócio */}
           <BusinessMetricsWidget />
 
-          {/* 7. ROI Inteligente */}
+          {/* 6. ROI Inteligente */}
           <ROIAnalyticsWidget />
 
-          {/* 8. Origem dos Leads + Perdas por Motivo */}
+          {/* 7. Origem dos Leads + Perdas por Motivo */}
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />
             <LossReasonsWidget />
           </div>
 
-          {/* 9. Alertas Inteligentes */}
+          {/* 8. Alertas Inteligentes */}
           <SmartAlertsWidget />
 
-          {/* 10. Metas da clínica */}
+          {/* 9. Metas da clínica */}
           <ClinicGoalsWidget />
 
-          {/* 11. Extras estratégicos: rankings, horários, insights */}
+          {/* 10. Extras estratégicos: rankings, horários, insights */}
           <StrategicInsightsWidget />
 
-          {/* 12. Leads recentes */}
+          {/* 11. Leads recentes */}
           <RecentLeadsWidget />
+
+          {/* 12. Funil de conversão (último) */}
+          <FunnelConversionWidget />
         </div>
       </PeriodFilterProvider>
     </AppLayout>

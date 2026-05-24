@@ -17,6 +17,12 @@ export interface ROIByDimension {
   investimento: number;
   roi: number;
   vendas: number;
+  leads?: number;
+  agendamentos?: number;
+  comparecimentos?: number;
+  ticketMedio?: number;
+  taxaFechamento?: number;
+  roas?: number;
 }
 
 export interface ROIAnalytics {

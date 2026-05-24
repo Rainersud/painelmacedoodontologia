@@ -408,15 +408,17 @@ export function useClinicGoalsPanel(period: Period) {
       if (vendas.current < vendas.target) {
         insights.push(`🎯 Faltam ${vendas.target - vendas.current} vendas para atingir a meta do período.`);
       }
-      const tComp = m('taxa_comparecimento');
-      if (tComp.status !== 'healthy' && tComp.current > 0) {
-        insights.push(`👥 Taxa de comparecimento (${tComp.display}) abaixo da meta saudável (${tComp.targetDisplay}).`);
+      const compM = m('comparecimentos');
+      if (compM.rate && compM.rate.status !== 'healthy' && compM.current > 0) {
+        insights.push(`👥 Taxa de comparecimento (${compM.rate.display}) abaixo da meta saudável (${compM.rate.targetDisplay}).`);
       }
-      const tFec = m('taxa_fechamento');
-      if (tFec.status === 'healthy' && tFec.current > 0) {
-        insights.push(`✅ Taxa de fechamento (${tFec.display}) está saudável.`);
-      } else if (tFec.current > 0) {
-        insights.push(`🔻 Taxa de fechamento (${tFec.display}) abaixo do ideal (${tFec.targetDisplay}).`);
+      const vendasM = m('vendas');
+      if (vendasM.rate) {
+        if (vendasM.rate.status === 'healthy' && vendasM.current > 0) {
+          insights.push(`✅ Taxa de fechamento (${vendasM.rate.display}) está saudável.`);
+        } else if (vendasM.current > 0) {
+          insights.push(`🔻 Taxa de fechamento (${vendasM.rate.display}) abaixo do ideal (${vendasM.rate.targetDisplay}).`);
+        }
       }
       const cacM = m('cac');
       if (cacM.status === 'critical') {
@@ -426,16 +428,20 @@ export function useClinicGoalsPanel(period: Period) {
       if (cplM.status === 'critical') {
         insights.push(`📢 CPL (${cplM.display}) acima da meta (${cplM.targetDisplay}) — revise criativos.`);
       }
-      // Gargalo
-      const stages = [
-        { name: 'Agendamento', metric: m('taxa_agendamento') },
-        { name: 'Comparecimento', metric: m('taxa_comparecimento') },
-        { name: 'Fechamento', metric: m('taxa_fechamento') },
+      const trespM = m('tempo_resposta');
+      if (trespM.current > 5) {
+        insights.push(`⏱️ Tempo de resposta (${trespM.display}) acima do ideal (${trespM.targetDisplay}).`);
+      }
+      // Gargalo (usa as taxas embutidas)
+      const stageMetrics = [
+        { name: 'Agendamento', m: m('agendamentos') },
+        { name: 'Comparecimento', m: m('comparecimentos') },
+        { name: 'Fechamento', m: m('vendas') },
       ];
-      const gargalo = stages.reduce((worst, s) =>
-        s.metric.percentage < worst.metric.percentage ? s : worst, stages[0]);
-      if (gargalo.metric.current > 0) {
-        insights.push(`🔍 Principal gargalo: etapa de ${gargalo.name} (${gargalo.metric.percentage}% da meta).`);
+      const gargalo = stageMetrics.reduce((worst, s) =>
+        s.m.percentage < worst.m.percentage ? s : worst, stageMetrics[0]);
+      if (gargalo.m.current > 0) {
+        insights.push(`🔍 Principal gargalo: etapa de ${gargalo.name} (${gargalo.m.percentage}% da meta).`);
       }
 
       return {

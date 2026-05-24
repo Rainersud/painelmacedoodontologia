@@ -9,6 +9,7 @@ import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsW
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
 import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
+import { MainGoalCard } from '@/components/clinic-goals/MainGoalCard';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 
 const Dashboard = () => {

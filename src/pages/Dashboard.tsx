@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
 import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
 import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
@@ -29,6 +30,10 @@ const Dashboard = () => {
 
           {/* Header + filtros */}
           <DashboardHeader />
+
+          {/* Calendário mestre — controla todos os widgets abaixo */}
+          <MasterPeriodFilter />
+
 
           {/* Pending tasks banner */}
           <PendingTasksBanner />

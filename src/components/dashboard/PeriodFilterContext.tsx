@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears } from 'date-fns';
 
 export type DashboardPeriod = 'hoje' | 'semana' | 'mes' | 'ano';
@@ -88,14 +88,24 @@ interface Ctx {
   period: DashboardPeriod;
   setPeriod: (p: DashboardPeriod) => void;
   range: PeriodRange;
+  customRange?: CustomYearRange;
+  setCustomRange: (r: CustomYearRange | undefined) => void;
 }
 
 const PeriodCtx = createContext<Ctx | null>(null);
 
 export function PeriodFilterProvider({ children }: { children: ReactNode }) {
   const [period, setPeriod] = useState<DashboardPeriod>('mes');
-  const range = useMemo<PeriodRange>(() => buildRange(period), [period]);
-  return <PeriodCtx.Provider value={{ period, setPeriod, range }}>{children}</PeriodCtx.Provider>;
+  const [customRange, setCustomRange] = useState<CustomYearRange | undefined>(undefined);
+  const range = useMemo<PeriodRange>(
+    () => buildRange(period, customRange),
+    [period, customRange],
+  );
+  return (
+    <PeriodCtx.Provider value={{ period, setPeriod, range, customRange, setCustomRange }}>
+      {children}
+    </PeriodCtx.Provider>
+  );
 }
 
 export function usePeriodFilter() {
@@ -104,10 +114,23 @@ export function usePeriodFilter() {
   return ctx;
 }
 
-/** Filtro de período local — independente do contexto global. */
+/**
+ * Filtro de período do widget — sincroniza automaticamente com o filtro mestre
+ * (PeriodFilterProvider) quando o usuário altera o calendário do topo, mas permite
+ * sobrescrita local depois.
+ */
 export function useLocalPeriod(initial: DashboardPeriod = 'mes') {
-  const [period, setPeriod] = useState<DashboardPeriod>(initial);
-  const [customRange, setCustomRange] = useState<CustomYearRange | undefined>(undefined);
+  const ctx = useContext(PeriodCtx);
+  const [period, setPeriod] = useState<DashboardPeriod>(ctx?.period ?? initial);
+  const [customRange, setCustomRange] = useState<CustomYearRange | undefined>(ctx?.customRange);
+
+  // Sincroniza com o calendário mestre quando ele muda
+  useEffect(() => {
+    if (!ctx) return;
+    setPeriod(ctx.period);
+    setCustomRange(ctx.customRange);
+  }, [ctx?.period, ctx?.customRange]);
+
   const range = useMemo<PeriodRange>(
     () => buildRange(period, customRange),
     [period, customRange],

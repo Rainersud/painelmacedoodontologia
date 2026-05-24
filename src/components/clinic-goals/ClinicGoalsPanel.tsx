@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVMetrics } from '@/hooks/useLTVMetrics';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { MainGoalCard } from './MainGoalCard';
 import {
   Target, TrendingUp, TrendingDown, Minus, Lightbulb, Activity, Clock, Heart,
@@ -56,8 +56,8 @@ const STATUS_STYLES = {
   },
 } as const;
 
-const PERIOD_LABEL: Record<Period, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês' };
-const PREV_LABEL: Record<Period, string> = { hoje: 'ontem', semana: 'semana anterior', mes: 'mês anterior' };
+const PERIOD_LABEL: Record<Period, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', ano: 'Ano' };
+const PREV_LABEL: Record<Period, string> = { hoje: 'ontem', semana: 'semana anterior', mes: 'mês anterior', ano: 'ano anterior' };
 
 function formatBRLShort(v: number) {
   if (v >= 1000) return `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;
@@ -85,8 +85,8 @@ function buildLTVMetric(overallLTV: number): PanelMetric {
 }
 
 export function ClinicGoalsPanel() {
-  const [period, setPeriod] = useState<Period>('mes');
-  const { data, isLoading } = useClinicGoalsPanel(period);
+  const { period, setPeriod, customRange, setCustomRange } = usePeriodFilter();
+  const { data, isLoading } = useClinicGoalsPanel(period, customRange);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const { data: ltv } = useLTVMetrics('todos', 'todos');
 
@@ -114,13 +114,13 @@ export function ClinicGoalsPanel() {
               </div>
             </div>
 
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-                <TabsTrigger value="hoje" className="text-xs">Hoje</TabsTrigger>
-                <TabsTrigger value="semana" className="text-xs">Semana</TabsTrigger>
-                <TabsTrigger value="mes" className="text-xs">Mês</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <WidgetPeriodTabs
+              value={period}
+              onChange={(p) => setPeriod(p as Period)}
+              size="sm"
+              customRange={customRange}
+              onCustomRangeChange={setCustomRange}
+            />
           </div>
 
           <MainGoalCard />

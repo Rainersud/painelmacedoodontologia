@@ -4,10 +4,12 @@ import {
   startOfDay, endOfDay, subDays,
   startOfWeek, endOfWeek, subWeeks,
   startOfMonth, endOfMonth, subMonths,
-  eachDayOfInterval, eachHourOfInterval, isWeekend,
+  startOfYear, endOfYear, subYears,
+  eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, isWeekend,
 } from 'date-fns';
+import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
 
-export type Period = 'hoje' | 'semana' | 'mes';
+export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
 
 export interface PanelMetric {
   key: string;
@@ -56,13 +58,12 @@ function countBusinessDays(start: Date, end: Date) {
   return eachDayOfInterval({ start, end }).filter(d => !isWeekend(d)).length;
 }
 
-function buildRange(period: Period): PeriodRange {
+function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange {
   const now = new Date();
   if (period === 'hoje') {
     const start = startOfDay(now);
     const end = endOfDay(now);
     const prev = subDays(now, 1);
-    // 8 buckets de 3h
     const hours = eachHourOfInterval({ start, end }).filter((_, i) => i % 3 === 0);
     const buckets = hours.map((h, i) => {
       const next = i + 1 < hours.length ? hours[i + 1] : end;
@@ -88,6 +89,34 @@ function buildRange(period: Period): PeriodRange {
       buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
     };
   }
+  if (period === 'ano') {
+    let start: Date;
+    let end: Date;
+    if (customRange?.from && customRange?.to) {
+      start = startOfDay(customRange.from);
+      end = endOfDay(customRange.to);
+    } else {
+      start = startOfYear(now);
+      end = endOfYear(now);
+    }
+    const span = end.getTime() - start.getTime();
+    const prevStart = new Date(start.getTime() - span - 86400000);
+    const prevEnd = new Date(end.getTime() - span - 86400000);
+    const months = eachMonthOfInterval({ start, end });
+    const buckets = months.map((m, i) => {
+      const mStart = startOfMonth(m);
+      const mEnd = i + 1 < months.length ? endOfMonth(m) : end;
+      return { start: mStart, end: mEnd };
+    });
+    const totalBusinessDays = countBusinessDays(start, end);
+    const businessDays = countBusinessDays(start, now > end ? end : now);
+    return {
+      start, end,
+      prevStart, prevEnd,
+      businessDays, totalBusinessDays,
+      buckets,
+    };
+  }
   const start = startOfMonth(now);
   const end = endOfMonth(now);
   const prev = subMonths(now, 1);
@@ -106,11 +135,11 @@ const fmtBRL = (v: number) =>
 
 const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
-export function useClinicGoalsPanel(period: Period) {
+export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange) {
   return useQuery({
-    queryKey: ['clinic-goals-panel', period],
+    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
-      const range = buildRange(period);
+      const range = buildRange(period, customRange);
 
       // Settings (oficiais)
       const { data: settings } = await supabase.from('meta_settings').select('setting_key, setting_value');

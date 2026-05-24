@@ -10,6 +10,7 @@ import { EditableRate } from '@/components/clinic-goals/EditableRate';
 import { FunnelStageCard } from '@/components/clinic-goals/FunnelStageCard';
 import { ExecutiveGoalsBoard } from '@/components/clinic-goals/ExecutiveGoalsBoard';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
+import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { 
   Target, 
   TrendingUp,
@@ -142,7 +143,9 @@ export default function MetasClinica() {
           </div>
         </div>
         {/* Painel premium sincronizado com a Dashboard */}
-        <ClinicGoalsPanel />
+        <PeriodFilterProvider>
+          <ClinicGoalsPanel />
+        </PeriodFilterProvider>
 
 
 

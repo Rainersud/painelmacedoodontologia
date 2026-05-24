@@ -14,21 +14,23 @@ export interface PanelMetric {
   label: string;
   current: number;
   target: number;
-  /** porcentagem 0-100 */
   percentage: number;
-  /** texto formatado do valor atual */
   display: string;
-  /** texto formatado da meta */
   targetDisplay: string;
+  /** texto curto da meta saudável (ex: "300/mês", "R$ 6.000", "até 5 min") */
+  healthyGoal: string;
   status: 'healthy' | 'warning' | 'critical';
-  /** comparação com período anterior em % (positivo = subiu) */
   delta: number;
-  /** série temporal para sparkline */
   trend: number[];
-  /** menor é melhor (CPL/CAC) */
   lowerIsBetter?: boolean;
-  /** unidade para tooltip */
-  unit?: 'currency' | 'count' | 'percent' | 'multiplier';
+  unit?: 'currency' | 'count' | 'percent' | 'multiplier' | 'duration';
+  /** taxa associada (ex.: Agendamentos -> taxa de agendamento) embutida no mesmo card */
+  rate?: {
+    label: string;
+    display: string;
+    targetDisplay: string;
+    status: 'healthy' | 'warning' | 'critical';
+  };
 }
 
 export interface ClinicGoalsPanelData {
@@ -37,7 +39,6 @@ export interface ClinicGoalsPanelData {
   totalBusinessDays: number;
   metrics: PanelMetric[];
   insights: string[];
-  /** projeção mensal de faturamento baseada no ritmo atual */
   projectedRevenue: number;
 }
 
@@ -147,7 +148,7 @@ export function useClinicGoalsPanel(period: Period) {
         salesRes, paymentsRes,
         prevLeadsRes, prevSalesRes, prevPaymentsRes,
       ] = await Promise.all([
-        supabase.from('leads').select('id, created_at')
+        supabase.from('leads').select('id, created_at, first_response_at')
           .gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString()),
         supabase.from('appointments').select('id, scheduled_at')
           .gte('scheduled_at', range.start.toISOString()).lte('scheduled_at', range.end.toISOString()),
@@ -226,12 +227,37 @@ export function useClinicGoalsPanel(period: Period) {
         return 'critical';
       };
 
+      // Tempo de resposta (minutos) — média entre created_at e first_response_at
+      const responded = (leads as any[]).filter(l => l.first_response_at);
+      const responseTimes = responded.map(l =>
+        (new Date(l.first_response_at).getTime() - new Date(l.created_at).getTime()) / 60000
+      ).filter(v => v >= 0 && Number.isFinite(v));
+      const avgResponseMin = responseTimes.length
+        ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+        : 0;
+      const trendResponse = range.buckets.map(b => {
+        const inB = responded.filter((l: any) => inBucket(l.first_response_at, b));
+        if (!inB.length) return 0;
+        const sum = inB.reduce((acc: number, l: any) =>
+          acc + (new Date(l.first_response_at).getTime() - new Date(l.created_at).getTime()) / 60000, 0);
+        return Math.round(sum / inB.length);
+      });
+      const fmtDuration = (m: number) => {
+        if (m < 1) return `${Math.round(m * 60)}s`;
+        if (m < 60) return `${m.toFixed(1)} min`;
+        const h = Math.floor(m / 60);
+        return `${h}h ${Math.round(m - h * 60)}m`;
+      };
+
+      const rateStatus = (cur: number, target: number): PanelMetric['status'] => statusOf(cur, target);
+
       const metrics: PanelMetric[] = [
         {
           key: 'leads', label: 'Novos Leads',
           current: leadsCount, target: prop(monthly.leads),
           percentage: Math.min(100, Math.round((leadsCount / prop(monthly.leads)) * 100)),
           display: String(leadsCount), targetDisplay: String(prop(monthly.leads)),
+          healthyGoal: `${monthly.leads}/mês`,
           status: statusOf(leadsCount, prop(monthly.leads)),
           delta: delta(leadsCount, prevLeads),
           trend: trendLeads, unit: 'count',
@@ -240,56 +266,54 @@ export function useClinicGoalsPanel(period: Period) {
           key: 'agendamentos', label: 'Agendamentos',
           current: agendCount, target: prop(monthly.agendamentos),
           percentage: Math.min(100, Math.round((agendCount / prop(monthly.agendamentos)) * 100)),
-          display: String(agendCount), targetDisplay: String(prop(monthly.agendamentos)),
+          display: `${agendCount} agendamentos`, targetDisplay: String(prop(monthly.agendamentos)),
+          healthyGoal: `${monthly.taxaAgendamento}%`,
           status: statusOf(agendCount, prop(monthly.agendamentos)),
           delta: 0, trend: trendAgend, unit: 'count',
-        },
-        {
-          key: 'taxa_agendamento', label: 'Taxa de Agendamento',
-          current: Math.round(taxaAgendamento), target: monthly.taxaAgendamento,
-          percentage: Math.min(100, Math.round((taxaAgendamento / monthly.taxaAgendamento) * 100)),
-          display: `${taxaAgendamento.toFixed(1)}%`, targetDisplay: `${monthly.taxaAgendamento}%`,
-          status: statusOf(taxaAgendamento, monthly.taxaAgendamento),
-          delta: 0, trend: trendRate(trendAgend, trendLeads), unit: 'percent',
+          rate: {
+            label: 'Taxa de Agendamento',
+            display: `${taxaAgendamento.toFixed(1)}%`,
+            targetDisplay: `${monthly.taxaAgendamento}%`,
+            status: rateStatus(taxaAgendamento, monthly.taxaAgendamento),
+          },
         },
         {
           key: 'comparecimentos', label: 'Comparecimentos',
           current: compCount, target: prop(monthly.comparecimentos),
           percentage: Math.min(100, Math.round((compCount / prop(monthly.comparecimentos)) * 100)),
-          display: String(compCount), targetDisplay: String(prop(monthly.comparecimentos)),
+          display: `${compCount} pacientes`, targetDisplay: String(prop(monthly.comparecimentos)),
+          healthyGoal: `${monthly.taxaComparecimento}%`,
           status: statusOf(compCount, prop(monthly.comparecimentos)),
           delta: 0, trend: trendComp, unit: 'count',
-        },
-        {
-          key: 'taxa_comparecimento', label: 'Taxa de Comparecimento',
-          current: Math.round(taxaComparecimento), target: monthly.taxaComparecimento,
-          percentage: Math.min(100, Math.round((taxaComparecimento / monthly.taxaComparecimento) * 100)),
-          display: `${taxaComparecimento.toFixed(1)}%`, targetDisplay: `${monthly.taxaComparecimento}%`,
-          status: statusOf(taxaComparecimento, monthly.taxaComparecimento),
-          delta: 0, trend: trendRate(trendComp, trendAgend), unit: 'percent',
+          rate: {
+            label: 'Taxa de Comparecimento',
+            display: `${taxaComparecimento.toFixed(1)}%`,
+            targetDisplay: `${monthly.taxaComparecimento}%`,
+            status: rateStatus(taxaComparecimento, monthly.taxaComparecimento),
+          },
         },
         {
           key: 'vendas', label: 'Vendas Realizadas',
           current: salesCount, target: prop(monthly.vendas),
           percentage: Math.min(100, Math.round((salesCount / prop(monthly.vendas)) * 100)),
-          display: String(salesCount), targetDisplay: String(prop(monthly.vendas)),
+          display: `${salesCount} vendas`, targetDisplay: String(prop(monthly.vendas)),
+          healthyGoal: `${monthly.taxaFechamento}%`,
           status: statusOf(salesCount, prop(monthly.vendas)),
           delta: delta(salesCount, prevSales),
           trend: trendSales, unit: 'count',
-        },
-        {
-          key: 'taxa_fechamento', label: 'Taxa de Fechamento',
-          current: Math.round(taxaFechamento), target: monthly.taxaFechamento,
-          percentage: Math.min(100, Math.round((taxaFechamento / monthly.taxaFechamento) * 100)),
-          display: `${taxaFechamento.toFixed(1)}%`, targetDisplay: `${monthly.taxaFechamento}%`,
-          status: statusOf(taxaFechamento, monthly.taxaFechamento),
-          delta: 0, trend: trendRate(trendSales, trendComp), unit: 'percent',
+          rate: {
+            label: 'Taxa de Fechamento',
+            display: `${taxaFechamento.toFixed(1)}%`,
+            targetDisplay: `${monthly.taxaFechamento}%`,
+            status: rateStatus(taxaFechamento, monthly.taxaFechamento),
+          },
         },
         {
           key: 'ticket_medio', label: 'Ticket Médio',
           current: Math.round(ticketMedio), target: monthly.ticket,
           percentage: Math.min(100, Math.round((ticketMedio / monthly.ticket) * 100)),
           display: fmtBRL(ticketMedio), targetDisplay: fmtBRL(monthly.ticket),
+          healthyGoal: fmtBRL(monthly.ticket),
           status: statusOf(ticketMedio, monthly.ticket),
           delta: 0, trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
         },
@@ -298,24 +322,28 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(revenue), target: Math.round(monthly.faturamento * proportion),
           percentage: Math.min(100, Math.round((revenue / (monthly.faturamento * proportion)) * 100)),
           display: fmtBRL(revenue), targetDisplay: fmtBRL(monthly.faturamento * proportion),
+          healthyGoal: fmtBRL(monthly.faturamento) + '/mês',
           status: statusOf(revenue, monthly.faturamento * proportion),
           delta: delta(revenue, prevRevenue),
           trend: trendRevenue, unit: 'currency',
         },
         {
-          key: 'investimento', label: 'Investimento Tráfego',
-          current: Math.round(investmentProp), target: Math.round(monthly.investimento * proportion),
-          percentage: 100,
-          display: fmtBRL(investmentProp), targetDisplay: fmtBRL(monthly.investimento * proportion),
-          status: 'healthy',
-          delta: 0,
-          trend: range.buckets.map(() => investmentProp / range.buckets.length), unit: 'currency',
+          key: 'tempo_resposta', label: 'Tempo de Resposta',
+          current: Math.round(avgResponseMin * 10) / 10, target: 5,
+          percentage: avgResponseMin ? Math.min(100, Math.round((5 / avgResponseMin) * 100)) : 100,
+          display: avgResponseMin > 0 ? fmtDuration(avgResponseMin) : '—',
+          targetDisplay: 'até 5 min',
+          healthyGoal: 'até 5 minutos',
+          status: avgResponseMin === 0 ? 'warning' : statusOf(avgResponseMin, 5, true),
+          delta: 0, trend: trendResponse,
+          lowerIsBetter: true, unit: 'duration',
         },
         {
           key: 'cpl', label: 'CPL Médio',
           current: Math.round(cpl), target: monthly.cpl,
           percentage: cpl ? Math.min(100, Math.round((monthly.cpl / cpl) * 100)) : 0,
           display: fmtBRL(cpl), targetDisplay: fmtBRL(monthly.cpl),
+          healthyGoal: fmtBRL(monthly.cpl),
           status: statusOf(cpl, monthly.cpl, true),
           delta: 0, trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
@@ -325,27 +353,40 @@ export function useClinicGoalsPanel(period: Period) {
           current: Math.round(cac), target: monthly.cac,
           percentage: cac ? Math.min(100, Math.round((monthly.cac / cac) * 100)) : 0,
           display: fmtBRL(cac), targetDisplay: fmtBRL(monthly.cac),
+          healthyGoal: fmtBRL(monthly.cac),
           status: statusOf(cac, monthly.cac, true),
           delta: 0, trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
-        },
-        {
-          key: 'roi', label: 'ROI Líquido',
-          current: Math.round(roi * 10) / 10, target: monthly.roi,
-          percentage: Math.min(100, Math.round((roi / monthly.roi) * 100)),
-          display: `${roi.toFixed(1)}x`, targetDisplay: `${monthly.roi}x`,
-          status: statusOf(roi, monthly.roi),
-          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
-          unit: 'multiplier',
         },
         {
           key: 'roas', label: 'ROAS Bruto',
           current: Math.round(roas * 10) / 10, target: monthly.roas,
           percentage: Math.min(100, Math.round((roas / monthly.roas) * 100)),
           display: `${roas.toFixed(1)}x`, targetDisplay: `${monthly.roas}x`,
+          healthyGoal: `${monthly.roas}x`,
           status: statusOf(roas, monthly.roas),
           delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
+        },
+        {
+          key: 'roi', label: 'ROI Líquido',
+          current: Math.round(roi * 10) / 10, target: monthly.roi,
+          percentage: Math.min(100, Math.round((roi / monthly.roi) * 100)),
+          display: `${roi.toFixed(1)}x`, targetDisplay: `${monthly.roi}x`,
+          healthyGoal: `${monthly.roi}x`,
+          status: statusOf(roi, monthly.roi),
+          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
+          unit: 'multiplier',
+        },
+        {
+          key: 'investimento', label: 'Investimento Tráfego',
+          current: Math.round(investmentProp), target: Math.round(monthly.investimento * proportion),
+          percentage: 100,
+          display: fmtBRL(investmentProp), targetDisplay: fmtBRL(monthly.investimento * proportion),
+          healthyGoal: fmtBRL(monthly.investimento) + '/mês',
+          status: 'healthy',
+          delta: 0,
+          trend: range.buckets.map(() => investmentProp / range.buckets.length), unit: 'currency',
         },
       ];
 
@@ -367,15 +408,17 @@ export function useClinicGoalsPanel(period: Period) {
       if (vendas.current < vendas.target) {
         insights.push(`🎯 Faltam ${vendas.target - vendas.current} vendas para atingir a meta do período.`);
       }
-      const tComp = m('taxa_comparecimento');
-      if (tComp.status !== 'healthy' && tComp.current > 0) {
-        insights.push(`👥 Taxa de comparecimento (${tComp.display}) abaixo da meta saudável (${tComp.targetDisplay}).`);
+      const compM = m('comparecimentos');
+      if (compM.rate && compM.rate.status !== 'healthy' && compM.current > 0) {
+        insights.push(`👥 Taxa de comparecimento (${compM.rate.display}) abaixo da meta saudável (${compM.rate.targetDisplay}).`);
       }
-      const tFec = m('taxa_fechamento');
-      if (tFec.status === 'healthy' && tFec.current > 0) {
-        insights.push(`✅ Taxa de fechamento (${tFec.display}) está saudável.`);
-      } else if (tFec.current > 0) {
-        insights.push(`🔻 Taxa de fechamento (${tFec.display}) abaixo do ideal (${tFec.targetDisplay}).`);
+      const vendasM = m('vendas');
+      if (vendasM.rate) {
+        if (vendasM.rate.status === 'healthy' && vendasM.current > 0) {
+          insights.push(`✅ Taxa de fechamento (${vendasM.rate.display}) está saudável.`);
+        } else if (vendasM.current > 0) {
+          insights.push(`🔻 Taxa de fechamento (${vendasM.rate.display}) abaixo do ideal (${vendasM.rate.targetDisplay}).`);
+        }
       }
       const cacM = m('cac');
       if (cacM.status === 'critical') {
@@ -385,16 +428,20 @@ export function useClinicGoalsPanel(period: Period) {
       if (cplM.status === 'critical') {
         insights.push(`📢 CPL (${cplM.display}) acima da meta (${cplM.targetDisplay}) — revise criativos.`);
       }
-      // Gargalo
-      const stages = [
-        { name: 'Agendamento', metric: m('taxa_agendamento') },
-        { name: 'Comparecimento', metric: m('taxa_comparecimento') },
-        { name: 'Fechamento', metric: m('taxa_fechamento') },
+      const trespM = m('tempo_resposta');
+      if (trespM.current > 5) {
+        insights.push(`⏱️ Tempo de resposta (${trespM.display}) acima do ideal (${trespM.targetDisplay}).`);
+      }
+      // Gargalo (usa as taxas embutidas)
+      const stageMetrics = [
+        { name: 'Agendamento', m: m('agendamentos') },
+        { name: 'Comparecimento', m: m('comparecimentos') },
+        { name: 'Fechamento', m: m('vendas') },
       ];
-      const gargalo = stages.reduce((worst, s) =>
-        s.metric.percentage < worst.metric.percentage ? s : worst, stages[0]);
-      if (gargalo.metric.current > 0) {
-        insights.push(`🔍 Principal gargalo: etapa de ${gargalo.name} (${gargalo.metric.percentage}% da meta).`);
+      const gargalo = stageMetrics.reduce((worst, s) =>
+        s.m.percentage < worst.m.percentage ? s : worst, stageMetrics[0]);
+      if (gargalo.m.current > 0) {
+        insights.push(`🔍 Principal gargalo: etapa de ${gargalo.name} (${gargalo.m.percentage}% da meta).`);
       }
 
       return {

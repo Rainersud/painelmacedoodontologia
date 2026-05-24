@@ -4,21 +4,19 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
-import { useClinicGoalsPanel, type Period } from '@/hooks/useClinicGoalsPanel';
+import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
+import { useLTVMetrics } from '@/hooks/useLTVMetrics';
 import { MainGoalCard } from './MainGoalCard';
 import {
-  Target, TrendingUp, TrendingDown, Minus, Lightbulb, Activity,
+  Target, TrendingUp, TrendingDown, Minus, Lightbulb, Activity, Clock, Heart,
   Users, Calendar, UserCheck, DollarSign, BarChart3, Wallet, MousePointerClick, Zap,
 } from 'lucide-react';
 
 const ICONS: Record<string, any> = {
   leads: Users,
   agendamentos: Calendar,
-  taxa_agendamento: Activity,
   comparecimentos: UserCheck,
-  taxa_comparecimento: Activity,
   vendas: DollarSign,
-  taxa_fechamento: Activity,
   ticket_medio: Wallet,
   faturamento: TrendingUp,
   investimento: BarChart3,
@@ -26,9 +24,11 @@ const ICONS: Record<string, any> = {
   cac: Target,
   roi: Zap,
   roas: Zap,
+  tempo_resposta: Clock,
+  ltv: Heart,
 };
 
-// 🔵 saudável | 🟢 atenção | 🔴 crítico (conforme spec do cliente)
+// 🔵 saudável | 🟢 atenção | 🔴 crítico
 const STATUS_STYLES = {
   healthy: {
     text: 'text-blue-600 dark:text-blue-400',
@@ -58,9 +58,41 @@ const STATUS_STYLES = {
 
 const PERIOD_LABEL: Record<Period, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês' };
 
+function formatBRLShort(v: number) {
+  if (v >= 1000) return `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;
+  return `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
+}
+
+function buildLTVMetric(overallLTV: number): PanelMetric {
+  const target = 15000;
+  const status: PanelMetric['status'] =
+    overallLTV >= target * 0.85 ? 'healthy' : overallLTV >= target * 0.55 ? 'warning' : 'critical';
+  return {
+    key: 'ltv',
+    label: 'LTV (Comercial 2)',
+    current: Math.round(overallLTV),
+    target,
+    percentage: Math.min(100, Math.round((overallLTV / target) * 100)),
+    display: formatBRLShort(overallLTV),
+    targetDisplay: formatBRLShort(target),
+    healthyGoal: 'R$ 15.000',
+    status,
+    delta: 0,
+    trend: [],
+    unit: 'currency',
+  };
+}
+
 export function ClinicGoalsPanel() {
   const [period, setPeriod] = useState<Period>('mes');
   const { data, isLoading } = useClinicGoalsPanel(period);
+  // LTV oficial vem do Comercial 2 — apenas replicamos o valor
+  const { data: ltv } = useLTVMetrics('todos', 'todos');
+
+  const allMetrics: PanelMetric[] = [
+    ...(data?.metrics ?? []),
+    ...(ltv ? [buildLTVMetric(ltv.overallLTV)] : []),
+  ];
 
   return (
     <div className="space-y-4">
@@ -90,23 +122,23 @@ export function ClinicGoalsPanel() {
             </Tabs>
           </div>
 
-          {/* Objetivo principal */}
           <MainGoalCard />
         </CardContent>
       </Card>
 
-      {/* Grid de métricas */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading && Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="h-36 rounded-xl bg-muted/40 animate-pulse" />
+          <div key={i} className="h-44 rounded-xl bg-muted/40 animate-pulse" />
         ))}
-        {data?.metrics.map(m => {
+        {allMetrics.map(m => {
           const Icon = ICONS[m.key] || Activity;
           const st = STATUS_STYLES[m.status];
+          const rateSt = m.rate ? STATUS_STYLES[m.rate.status] : null;
           return (
             <Card key={m.key} className={cn('monday-card overflow-hidden border', st.border)}>
               <div className={cn('h-1 w-full', st.bar)} />
-              <CardContent className="p-4 space-y-2">
+              <CardContent className="p-4 space-y-2.5">
+                {/* Topo: nome + status */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className={cn('h-8 w-8 rounded-lg flex items-center justify-center', st.bg)}>
@@ -120,13 +152,22 @@ export function ClinicGoalsPanel() {
                   </span>
                 </div>
 
+                {/* Valor principal */}
                 <div className="flex items-baseline justify-between">
                   <span className={cn('text-2xl font-bold tabular-nums', st.text)}>{m.display}</span>
-                  <span className="text-[11px] text-muted-foreground">/ {m.targetDisplay}</span>
+                  {m.rate ? (
+                    <span className={cn('text-sm font-bold tabular-nums', rateSt!.text)}>{m.rate.display}</span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground">/ {m.targetDisplay}</span>
+                  )}
                 </div>
 
-                <Sparkline data={m.trend} height={28} strokeClassName={st.text} fillClassName={st.text} />
+                {/* Sparkline */}
+                {m.trend.length > 0 && (
+                  <Sparkline data={m.trend} height={28} strokeClassName={st.text} fillClassName={st.text} />
+                )}
 
+                {/* Barra de progresso */}
                 <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
                     className={cn('absolute inset-y-0 left-0 rounded-full transition-all duration-500', st.bar)}
@@ -135,7 +176,7 @@ export function ClinicGoalsPanel() {
                 </div>
 
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className={cn('font-semibold', st.text)}>{m.percentage}%</span>
+                  <span className={cn('font-semibold', st.text)}>{m.percentage}% da meta</span>
                   {m.delta !== 0 ? (
                     <span className={cn(
                       'inline-flex items-center gap-0.5',
@@ -148,13 +189,18 @@ export function ClinicGoalsPanel() {
                     <span className="text-muted-foreground">{PERIOD_LABEL[period]}</span>
                   )}
                 </div>
+
+                {/* Meta saudável */}
+                <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground uppercase tracking-wide font-semibold">Meta saudável</span>
+                  <span className="font-bold text-foreground">{m.healthyGoal}</span>
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Insights */}
       {data && data.insights.length > 0 && (
         <Card className="monday-card overflow-hidden border-blue-500/30 bg-blue-500/5">
           <div className="h-1 w-full bg-blue-500" />

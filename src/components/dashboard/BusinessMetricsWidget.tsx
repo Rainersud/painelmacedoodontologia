@@ -111,6 +111,7 @@ export function BusinessMetricsWidget() {
                         {styles.label}
                       </span>
                     </div>
+                    <Sparkline data={m.trend} height={26} strokeClassName={styles.text} fillClassName={styles.text} />
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                       <div className={cn('h-full transition-all', styles.bar)} style={{ width: `${progress}%` }} />
                     </div>

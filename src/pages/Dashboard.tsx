@@ -50,8 +50,10 @@ const Dashboard = () => {
             <LossReasonsWidget />
           </div>
 
-          {/* Metas da clínica */}
+          {/* Objetivo do mês + Metas da clínica */}
+          <MainGoalCard />
           <ClinicGoalsWidget />
+
 
           {/* Rankings, previsão e insights */}
           <StrategicInsightsWidget />

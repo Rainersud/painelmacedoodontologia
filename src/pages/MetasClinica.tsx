@@ -141,6 +141,9 @@ export default function MetasClinica() {
             </div>
           </div>
         </div>
+        {/* Premium Main Goal */}
+        <MainGoalCard />
+
 
         {/* Healthy Rates Reference - Monday Style */}
         <Card className="monday-card overflow-hidden">

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
-import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears } from 'date-fns';
 
-export type DashboardPeriod = 'hoje' | 'semana' | 'mes';
+export type DashboardPeriod = 'hoje' | 'semana' | 'mes' | 'ano';
 
 export interface PeriodRange {
   start: Date;
@@ -36,6 +36,17 @@ export function buildRange(period: DashboardPeriod): PeriodRange {
         prevEnd: endOfWeek(prev, { weekStartsOn: 1 }),
         label: 'Esta semana',
         businessDays: 5,
+      };
+    }
+    case 'ano': {
+      const prev = subYears(now, 1);
+      return {
+        start: startOfYear(now),
+        end: endOfYear(now),
+        prevStart: startOfYear(prev),
+        prevEnd: endOfYear(prev),
+        label: 'Este ano',
+        businessDays: 240,
       };
     }
     case 'mes':

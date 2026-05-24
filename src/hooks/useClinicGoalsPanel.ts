@@ -14,21 +14,23 @@ export interface PanelMetric {
   label: string;
   current: number;
   target: number;
-  /** porcentagem 0-100 */
   percentage: number;
-  /** texto formatado do valor atual */
   display: string;
-  /** texto formatado da meta */
   targetDisplay: string;
+  /** texto curto da meta saudável (ex: "300/mês", "R$ 6.000", "até 5 min") */
+  healthyGoal: string;
   status: 'healthy' | 'warning' | 'critical';
-  /** comparação com período anterior em % (positivo = subiu) */
   delta: number;
-  /** série temporal para sparkline */
   trend: number[];
-  /** menor é melhor (CPL/CAC) */
   lowerIsBetter?: boolean;
-  /** unidade para tooltip */
-  unit?: 'currency' | 'count' | 'percent' | 'multiplier';
+  unit?: 'currency' | 'count' | 'percent' | 'multiplier' | 'duration';
+  /** taxa associada (ex.: Agendamentos -> taxa de agendamento) embutida no mesmo card */
+  rate?: {
+    label: string;
+    display: string;
+    targetDisplay: string;
+    status: 'healthy' | 'warning' | 'critical';
+  };
 }
 
 export interface ClinicGoalsPanelData {
@@ -37,7 +39,6 @@ export interface ClinicGoalsPanelData {
   totalBusinessDays: number;
   metrics: PanelMetric[];
   insights: string[];
-  /** projeção mensal de faturamento baseada no ritmo atual */
   projectedRevenue: number;
 }
 

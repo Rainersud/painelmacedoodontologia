@@ -381,6 +381,7 @@ export default function Agendamentos() {
                               <span className="flex items-center gap-1">
                                 <User className="h-4 w-4" />
                                 {app.leads?.name || 'Paciente'}
+                                <IndicacaoBadge source={app.leads?.source} size="xs" className="ml-1" />
                               </span>
                               <span className="flex items-center gap-1">
                                 <Phone className="h-4 w-4" />

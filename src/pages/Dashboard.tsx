@@ -3,12 +3,10 @@ import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
 import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { MainKPIsWidget } from '@/components/dashboard/MainKPIsWidget';
-import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
 import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 import { BusinessMetricsWidget } from '@/components/dashboard/BusinessMetricsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
-import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
 import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
@@ -40,9 +38,6 @@ const Dashboard = () => {
           {/* 3. KPIs principais (6 cards) */}
           <MainKPIsWidget />
 
-          {/* 4. Tarefas do Dia */}
-          <TodayTasksWidget />
-
           {/* 5. Principais Métricas do Negócio */}
           <BusinessMetricsWidget />
 
@@ -55,8 +50,6 @@ const Dashboard = () => {
             <LossReasonsWidget />
           </div>
 
-          {/* 8. Alertas Inteligentes */}
-          <SmartAlertsWidget />
 
           {/* 9. Metas da clínica */}
           <ClinicGoalsWidget />

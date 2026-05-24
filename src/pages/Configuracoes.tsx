@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import UserManagementPanel from '@/components/admin/UserManagementPanel';
-import { Settings, Users, Bell, Palette, Shield } from 'lucide-react';
+import { BusinessCalendarPanel } from '@/components/admin/BusinessCalendarPanel';
+import { Settings, Users, Bell, Palette, Shield, CalendarDays } from 'lucide-react';
 
 export default function Configuracoes() {
   const { isAdmin } = useAuth();
@@ -43,6 +44,9 @@ export default function Configuracoes() {
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" /> Usuários
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarDays className="h-4 w-4" /> Calendário
+            </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" /> Notificações
             </TabsTrigger>
@@ -54,6 +58,11 @@ export default function Configuracoes() {
           <TabsContent value="users">
             <UserManagementPanel />
           </TabsContent>
+
+          <TabsContent value="calendar">
+            <BusinessCalendarPanel />
+          </TabsContent>
+
 
           <TabsContent value="notifications" className="space-y-4">
             <Card className="border-0 shadow-sm">

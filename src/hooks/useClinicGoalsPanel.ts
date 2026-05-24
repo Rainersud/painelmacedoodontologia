@@ -5,11 +5,12 @@ import {
   startOfWeek, endOfWeek, subWeeks,
   startOfMonth, endOfMonth, subMonths,
   startOfYear, endOfYear, subYears,
-  eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, isWeekend,
+  eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
 
 export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
+
 
 export interface PanelMetric {
   key: string;
@@ -54,11 +55,16 @@ interface PeriodRange {
   buckets: { start: Date; end: Date }[];
 }
 
-function countBusinessDays(start: Date, end: Date) {
-  return eachDayOfInterval({ start, end }).filter(d => !isWeekend(d)).length;
+interface CalendarCfg {
+  isBusinessDay: (d: Date) => boolean;
+  monthlyBusinessDays: number;
 }
 
-function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange {
+function countBiz(start: Date, end: Date, cal: CalendarCfg) {
+  return eachDayOfInterval({ start, end }).filter(cal.isBusinessDay).length;
+}
+
+function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg): PeriodRange {
   const now = new Date();
   if (period === 'hoje') {
     const start = startOfDay(now);
@@ -69,10 +75,11 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
       const next = i + 1 < hours.length ? hours[i + 1] : end;
       return { start: h, end: next };
     });
+    const isBiz = cal.isBusinessDay(now) ? 1 : 0;
     return {
       start, end,
       prevStart: startOfDay(prev), prevEnd: endOfDay(prev),
-      businessDays: 1, totalBusinessDays: 1,
+      businessDays: isBiz, totalBusinessDays: isBiz || 1,
       buckets,
     };
   }
@@ -81,11 +88,14 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
     const end = endOfWeek(now, { weekStartsOn: 1 });
     const prev = subWeeks(now, 1);
     const days = eachDayOfInterval({ start, end });
+    const totalBusinessDays = countBiz(start, end, cal);
+    const businessDays = countBiz(start, now > end ? end : now, cal);
     return {
       start, end,
       prevStart: startOfWeek(prev, { weekStartsOn: 1 }),
       prevEnd: endOfWeek(prev, { weekStartsOn: 1 }),
-      businessDays: 5, totalBusinessDays: 5,
+      businessDays: Math.max(1, businessDays),
+      totalBusinessDays: Math.max(1, totalBusinessDays),
       buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
     };
   }
@@ -108,8 +118,8 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
       const mEnd = i + 1 < months.length ? endOfMonth(m) : end;
       return { start: mStart, end: mEnd };
     });
-    const totalBusinessDays = countBusinessDays(start, end);
-    const businessDays = countBusinessDays(start, now > end ? end : now);
+    const totalBusinessDays = countBiz(start, end, cal);
+    const businessDays = countBiz(start, now > end ? end : now, cal);
     return {
       start, end,
       prevStart, prevEnd,
@@ -124,11 +134,12 @@ function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange 
   return {
     start, end,
     prevStart: startOfMonth(prev), prevEnd: endOfMonth(prev),
-    businessDays: countBusinessDays(start, now),
-    totalBusinessDays: countBusinessDays(start, end),
+    businessDays: countBiz(start, now, cal),
+    totalBusinessDays: countBiz(start, end, cal),
     buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
   };
 }
+
 
 const fmtBRL = (v: number) =>
   v >= 1000 ? `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `R$ ${v.toLocaleString('pt-BR')}`;
@@ -139,10 +150,33 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
   return useQuery({
     queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
-      const range = buildRange(period, customRange);
+      // Calendário de dias úteis (configurável: workdays + feriados da clínica)
+      const [{ data: bizSettings }, { data: hols }, { data: settings }] = await Promise.all([
+        supabase.from('meta_settings').select('setting_value').eq('setting_key', 'working_days_bitmask'),
+        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
+        supabase.from('meta_settings').select('setting_key, setting_value'),
+      ]);
+      const mask = Number(bizSettings?.[0]?.setting_value ?? 62);
+      const holidays = new Set<string>();
+      const recurring = new Set<string>();
+      (hols ?? []).forEach((h: any) => {
+        if (h.is_recurring) recurring.add(String(h.holiday_date).slice(5));
+        else holidays.add(String(h.holiday_date));
+      });
+      const isBusinessDay = (d: Date) => {
+        if ((mask & (1 << getDay(d))) === 0) return false;
+        if (holidays.has(format(d, 'yyyy-MM-dd'))) return false;
+        if (recurring.has(format(d, 'MM-dd'))) return false;
+        return true;
+      };
+      // Dias úteis padrão de um mês de referência (mês atual)
+      const refStart = startOfMonth(new Date());
+      const refEnd = endOfMonth(new Date());
+      const monthlyBusinessDays = Math.max(1, countBiz(refStart, refEnd, { isBusinessDay, monthlyBusinessDays: 20 }));
+      const cal: CalendarCfg = { isBusinessDay, monthlyBusinessDays };
 
-      // Settings (oficiais)
-      const { data: settings } = await supabase.from('meta_settings').select('setting_key, setting_value');
+      const range = buildRange(period, customRange, cal);
+
       const s: Record<string, number> = {};
       (settings || []).forEach(r => { s[r.setting_key] = Number(r.setting_value); });
 
@@ -166,9 +200,10 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         roas: get('meta_roas_bruto', 20),
       };
 
-      // Proporciona meta mensal pelo período (usa total do período, não os dias decorridos)
-      const proportion = range.totalBusinessDays / 20;
+      // Proporciona meta mensal pelo período (usa dias úteis do período / dias úteis do mês de referência)
+      const proportion = range.totalBusinessDays / monthlyBusinessDays;
       const prop = (m: number) => Math.max(1, Math.round(m * proportion));
+
 
       // Buscas paralelas
       const [

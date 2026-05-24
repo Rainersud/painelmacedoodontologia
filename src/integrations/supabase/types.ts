@@ -346,6 +346,36 @@ export type Database = {
           },
         ]
       }
+      clinic_holidays: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          holiday_date: string
+          id: string
+          is_recurring: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          holiday_date: string
+          id?: string
+          is_recurring?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          holiday_date?: string
+          id?: string
+          is_recurring?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       copy_attachments: {
         Row: {
           created_at: string

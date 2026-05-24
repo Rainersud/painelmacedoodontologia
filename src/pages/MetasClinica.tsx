@@ -143,7 +143,9 @@ export default function MetasClinica() {
           </div>
         </div>
         {/* Painel premium sincronizado com a Dashboard */}
-        <ClinicGoalsPanel />
+        <PeriodFilterProvider>
+          <ClinicGoalsPanel />
+        </PeriodFilterProvider>
 
 
 

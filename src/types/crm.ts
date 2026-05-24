@@ -153,6 +153,7 @@ export interface FunnelStage {
 }
 
 export const FUNNEL_STAGES: FunnelStage[] = [
+  { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'novo_lead', label: 'Novos Leads', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'em_contato', label: 'Em Contato', color: 'bg-chart-1', bgColor: 'bg-chart-1/10' },
   { key: 'nao_respondeu', label: 'Não Respondeu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
@@ -170,7 +171,6 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_12', label: 'D6 Tarde (T12)', color: 'bg-warning', bgColor: 'bg-warning/10' },
   { key: 'followup_13', label: 'D7 Manhã (T13)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'followup_14', label: 'D7 Tarde (T14)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
-  { key: 'indicacoes', label: 'Indicação', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
   { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },

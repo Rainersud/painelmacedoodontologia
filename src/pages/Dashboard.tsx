@@ -49,9 +49,8 @@ const Dashboard = () => {
             <LossReasonsWidget />
           </div>
 
-          {/* Objetivo do mês + Metas da clínica */}
-          <MainGoalCard />
-          <ClinicGoalsWidget />
+          {/* Metas da Clínica — painel premium sincronizado com Gestão */}
+          <ClinicGoalsPanel />
 
 
           {/* Rankings, previsão e insights */}

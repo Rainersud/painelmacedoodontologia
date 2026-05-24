@@ -85,7 +85,7 @@ function buildLTVMetric(overallLTV: number): PanelMetric {
 }
 
 export function ClinicGoalsPanel() {
-  const { period, setPeriod, customRange, setCustomRange } = usePeriodFilter();
+  const { period, setPeriod, customRange, setCustomRange } = useLocalPeriod('mes');
   const { data, isLoading } = useClinicGoalsPanel(period, customRange);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const { data: ltv } = useLTVMetrics('todos', 'todos');

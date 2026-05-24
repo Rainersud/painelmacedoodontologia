@@ -8,8 +8,7 @@ import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/Lea
 import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
-import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
-import { MainGoalCard } from '@/components/clinic-goals/MainGoalCard';
+import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { PendingTasksBanner } from '@/components/dashboard/PendingTasksBanner';
 
 const Dashboard = () => {

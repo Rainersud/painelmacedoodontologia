@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVMetrics } from '@/hooks/useLTVMetrics';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { MainGoalCard } from './MainGoalCard';
 import {
@@ -85,7 +85,7 @@ function buildLTVMetric(overallLTV: number): PanelMetric {
 }
 
 export function ClinicGoalsPanel() {
-  const { period, setPeriod, customRange, setCustomRange } = usePeriodFilter();
+  const { period, setPeriod, customRange, setCustomRange } = useLocalPeriod('mes');
   const { data, isLoading } = useClinicGoalsPanel(period, customRange);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const { data: ltv } = useLTVMetrics('todos', 'todos');

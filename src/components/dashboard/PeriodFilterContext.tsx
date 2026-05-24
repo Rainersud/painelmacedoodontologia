@@ -13,7 +13,12 @@ export interface PeriodRange {
   businessDays: number;
 }
 
-export function buildRange(period: DashboardPeriod): PeriodRange {
+export interface CustomYearRange {
+  from?: Date;
+  to?: Date;
+}
+
+export function buildRange(period: DashboardPeriod, customRange?: CustomYearRange): PeriodRange {
   const now = new Date();
   switch (period) {
     case 'hoje':
@@ -39,6 +44,21 @@ export function buildRange(period: DashboardPeriod): PeriodRange {
       };
     }
     case 'ano': {
+      if (customRange?.from && customRange?.to) {
+        const start = startOfDay(customRange.from);
+        const end = endOfDay(customRange.to);
+        const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+        const businessDays = Math.max(1, Math.round((days * 5) / 7));
+        const span = end.getTime() - start.getTime();
+        return {
+          start,
+          end,
+          prevStart: new Date(start.getTime() - span - 86400000),
+          prevEnd: new Date(end.getTime() - span - 86400000),
+          label: 'Período personalizado',
+          businessDays,
+        };
+      }
       const prev = subYears(now, 1);
       return {
         start: startOfYear(now),

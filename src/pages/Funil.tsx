@@ -15,6 +15,8 @@ import { Loader2, Plus, Search, X, CalendarIcon } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
+import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { LossAnalysisPanel } from '@/components/crm/LossAnalysisPanel';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';

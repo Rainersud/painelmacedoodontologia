@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ReferralPopover } from './ReferralPopover';
+import { IndicacaoBadge } from './IndicacaoBadge';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
 import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';

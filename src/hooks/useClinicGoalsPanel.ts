@@ -5,11 +5,12 @@ import {
   startOfWeek, endOfWeek, subWeeks,
   startOfMonth, endOfMonth, subMonths,
   startOfYear, endOfYear, subYears,
-  eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, isWeekend,
+  eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
 
 export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
+
 
 export interface PanelMetric {
   key: string;

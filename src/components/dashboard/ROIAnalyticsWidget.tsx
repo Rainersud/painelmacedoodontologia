@@ -59,6 +59,7 @@ export function ROIAnalyticsWidget() {
 
           {(['origin', 'campaign', 'agent'] as const).map(tab => {
             const list = tab === 'origin' ? data?.byOrigin : tab === 'campaign' ? data?.byCampaign : data?.byAgent;
+            const isOrigin = tab === 'origin';
             return (
               <TabsContent key={tab} value={tab} className="mt-4">
                 {isLoading ? <Skeleton className="h-[280px] w-full" /> : !list || list.length === 0 ? (
@@ -68,17 +69,31 @@ export function ROIAnalyticsWidget() {
                     {list.slice(0, 8).map((item, i) => {
                       const positive = item.roi >= 0;
                       return (
-                        <div key={`${item.name}-${i}`} className={cn('flex items-center justify-between p-3 rounded-lg border', positive ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20')}>
-                          <div className="flex-1 min-w-0">
+                        <div key={`${item.name}-${i}`} className={cn('p-3 rounded-lg border', positive ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20')}>
+                          <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-semibold truncate">{item.name}</p>
+                            <div className={cn('flex items-center gap-1 font-bold text-sm', positive ? 'text-success' : 'text-destructive')}>
+                              {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                              ROI {item.roi}%
+                            </div>
+                          </div>
+                          {isOrigin ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                              <Metric label="Leads" value={item.leads} />
+                              <Metric label="Agendados" value={item.agendamentos} />
+                              <Metric label="Compareceram" value={item.comparecimentos} />
+                              <Metric label="Vendas" value={item.vendas} />
+                              <Metric label="Faturamento" value={formatCurrency(item.receita)} />
+                              <Metric label="Investimento" value={formatCurrency(item.investimento)} />
+                              <Metric label="Ticket Médio" value={formatCurrency(item.ticketMedio)} />
+                              <Metric label="Taxa Fech." value={`${item.taxaFechamento}%`} />
+                              <Metric label="ROAS" value={`${item.roas}x`} />
+                            </div>
+                          ) : (
                             <p className="text-xs text-muted-foreground">
                               {item.vendas} venda{item.vendas !== 1 ? 's' : ''} · Receita {formatCurrency(item.receita)} · Inv. {formatCurrency(item.investimento)}
                             </p>
-                          </div>
-                          <div className={cn('flex items-center gap-1 font-bold text-sm', positive ? 'text-success' : 'text-destructive')}>
-                            {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                            {item.roi}%
-                          </div>
+                          )}
                         </div>
                       );
                     })}
@@ -90,5 +105,14 @@ export function ROIAnalyticsWidget() {
         </Tabs>
       </CardContent>
     </Card>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-background/60 rounded px-2 py-1.5 border border-border/40">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs font-semibold">{value}</p>
+    </div>
   );
 }

@@ -90,6 +90,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     scheduled_appointment_at: '',
     sale_type: '' as '' | '1_etapa' | '2_etapas',
     loss_reason: '',
+    lead_arrival_source: '' as string,
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -125,6 +126,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           : '',
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
         loss_reason: (lead as any).loss_reason || '',
+        lead_arrival_source: (lead as any).lead_arrival_source || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -182,6 +184,9 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
       sale_type: formData.sale_type || null,
     };
+    if (formData.lead_arrival_source) {
+      (updates as any).lead_arrival_source = formData.lead_arrival_source;
+    }
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
@@ -472,7 +477,33 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     placeholder="(11) 99999-9999"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lead_arrival_source">Como Lead Chegou? *</Label>
+                  <Select
+                    value={formData.lead_arrival_source || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, lead_arrival_source: v }))}
+                    key={formData.lead_arrival_source || 'empty-arrival'}
+                  >
+                    <SelectTrigger id="lead_arrival_source">
+                      <SelectValue placeholder="Selecione a origem estratégica" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="passou_na_frente">Passou na Frente</SelectItem>
+                      <SelectItem value="indicacao_pac">Indicação Pac</SelectItem>
+                      <SelectItem value="prospeccao_ativa">Prospecção Ativa</SelectItem>
+                      <SelectItem value="indicacao_parceria">Indicação de Parceria</SelectItem>
+                      <SelectItem value="social_selling">Social Selling</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    Alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+                  </p>
+                </div>
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>

@@ -38,9 +38,6 @@ const Dashboard = () => {
           {/* 3. KPIs principais (6 cards) */}
           <MainKPIsWidget />
 
-          {/* 4. Tarefas do Dia */}
-          <TodayTasksWidget />
-
           {/* 5. Principais Métricas do Negócio */}
           <BusinessMetricsWidget />
 
@@ -53,8 +50,6 @@ const Dashboard = () => {
             <LossReasonsWidget />
           </div>
 
-          {/* 8. Alertas Inteligentes */}
-          <SmartAlertsWidget />
 
           {/* 9. Metas da clínica */}
           <ClinicGoalsWidget />

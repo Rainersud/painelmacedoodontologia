@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 
-export type DashboardPeriod = 'hoje' | '7d' | '30d' | 'mes';
+export type DashboardPeriod = 'hoje' | 'semana' | 'mes';
 
 interface PeriodRange {
   start: Date;
@@ -9,7 +9,8 @@ interface PeriodRange {
   prevStart: Date;
   prevEnd: Date;
   label: string;
-  days: number;
+  /** dias úteis proporcionais ao período (base 20du/mês) */
+  businessDays: number;
 }
 
 interface Ctx {
@@ -33,26 +34,21 @@ export function PeriodFilterProvider({ children }: { children: ReactNode }) {
           prevStart: startOfDay(subDays(now, 1)),
           prevEnd: endOfDay(subDays(now, 1)),
           label: 'Hoje',
-          days: 1,
+          businessDays: 1,
         };
-      case '7d':
+      case 'semana': {
+        const wStart = startOfWeek(now, { weekStartsOn: 1 });
+        const wEnd = endOfWeek(now, { weekStartsOn: 1 });
+        const prev = subWeeks(now, 1);
         return {
-          start: startOfDay(subDays(now, 6)),
-          end: endOfDay(now),
-          prevStart: startOfDay(subDays(now, 13)),
-          prevEnd: endOfDay(subDays(now, 7)),
-          label: 'Últimos 7 dias',
-          days: 7,
+          start: wStart,
+          end: wEnd,
+          prevStart: startOfWeek(prev, { weekStartsOn: 1 }),
+          prevEnd: endOfWeek(prev, { weekStartsOn: 1 }),
+          label: 'Esta semana',
+          businessDays: 5,
         };
-      case '30d':
-        return {
-          start: startOfDay(subDays(now, 29)),
-          end: endOfDay(now),
-          prevStart: startOfDay(subDays(now, 59)),
-          prevEnd: endOfDay(subDays(now, 30)),
-          label: 'Últimos 30 dias',
-          days: 30,
-        };
+      }
       case 'mes':
       default: {
         const prev = subMonths(now, 1);
@@ -62,7 +58,7 @@ export function PeriodFilterProvider({ children }: { children: ReactNode }) {
           prevStart: startOfMonth(prev),
           prevEnd: endOfMonth(prev),
           label: 'Este mês',
-          days: 30,
+          businessDays: 20,
         };
       }
     }
@@ -75,4 +71,9 @@ export function usePeriodFilter() {
   const ctx = useContext(PeriodCtx);
   if (!ctx) throw new Error('usePeriodFilter must be used inside PeriodFilterProvider');
   return ctx;
+}
+
+/** Proporcionaliza uma meta mensal em função do período atual (base 20 du/mês). */
+export function proportionalTarget(monthlyTarget: number, businessDays: number) {
+  return Math.round((monthlyTarget * businessDays) / 20);
 }

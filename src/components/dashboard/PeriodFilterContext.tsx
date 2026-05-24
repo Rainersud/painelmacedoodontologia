@@ -107,8 +107,12 @@ export function usePeriodFilter() {
 /** Filtro de período local — independente do contexto global. */
 export function useLocalPeriod(initial: DashboardPeriod = 'mes') {
   const [period, setPeriod] = useState<DashboardPeriod>(initial);
-  const range = useMemo<PeriodRange>(() => buildRange(period), [period]);
-  return { period, setPeriod, range };
+  const [customRange, setCustomRange] = useState<CustomYearRange | undefined>(undefined);
+  const range = useMemo<PeriodRange>(
+    () => buildRange(period, customRange),
+    [period, customRange],
+  );
+  return { period, setPeriod, range, customRange, setCustomRange };
 }
 
 /** Proporcionaliza uma meta mensal em função do período atual (base 20 du/mês). */

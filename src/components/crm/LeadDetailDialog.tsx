@@ -305,6 +305,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-semibold text-base sm:text-lg truncate">{lead.name}</p>
+                <IndicacaoBadge source={lead.source} size="sm" />
                 <StarRating
                   rating={lead.interest_rating || 0}
                   onChange={(rating) => updateRating.mutate({ leadId: lead.id, rating })}

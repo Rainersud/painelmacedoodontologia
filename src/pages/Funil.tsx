@@ -682,6 +682,12 @@ const Funil = () => { // v2
           </div>
         </div>
 
+        {/* Operational command center — above the funnel */}
+        <div className="shrink-0 space-y-4 mb-4">
+          <TodayTasksWidget />
+          <SmartAlertsWidget />
+        </div>
+
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
           stages={(() => {

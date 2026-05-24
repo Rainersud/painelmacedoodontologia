@@ -10,6 +10,7 @@ import {
   ArrowUpRight, ArrowDownRight, Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Sparkline } from './Sparkline';
 
 type Direction = 'higher' | 'lower';
 type Status = 'healthy' | 'attention' | 'critical';

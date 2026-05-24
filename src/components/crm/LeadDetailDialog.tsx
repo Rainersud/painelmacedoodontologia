@@ -90,6 +90,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     scheduled_appointment_at: '',
     sale_type: '' as '' | '1_etapa' | '2_etapas',
     loss_reason: '',
+    lead_arrival_source: '' as string,
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');

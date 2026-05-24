@@ -31,6 +31,10 @@ const Dashboard = () => {
           {/* Header + filtros */}
           <DashboardHeader />
 
+          {/* Calendário mestre — controla todos os widgets abaixo */}
+          <MasterPeriodFilter />
+
+
           {/* Pending tasks banner */}
           <PendingTasksBanner />
 

@@ -41,50 +41,20 @@ export function StrategicInsightsWidget() {
         </CardContent>
       </Card>
 
-      {/* Best hours / days */}
+      {/* Previsão de faturamento */}
       <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            Horários e Dias com Maior Conversão
+            <TrendingUp className="h-5 w-5 text-success" />
+            Previsão de Faturamento
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoading ? <Skeleton className="h-[180px] w-full" /> : (
-            <>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2">⏰ Top horários</p>
-                <div className="flex flex-wrap gap-2">
-                  {(data?.bestHours || []).map(h => (
-                    <Badge key={h.hour} variant="outline" className="text-xs bg-primary/10 border-primary/30">
-                      {String(h.hour).padStart(2, '0')}h · {h.sales} venda{h.sales !== 1 ? 's' : ''}
-                    </Badge>
-                  ))}
-                  {(!data?.bestHours.length) && <span className="text-xs text-muted-foreground">Sem dados</span>}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Dias top</p>
-                <div className="space-y-1.5">
-                  {(data?.bestDays || []).slice(0, 4).map((d, i) => {
-                    const max = data?.bestDays[0].sales || 1;
-                    return (
-                      <div key={d.day} className="flex items-center gap-2 text-xs">
-                        <span className="w-20 font-medium">{d.day}</span>
-                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${(d.sales / max) * 100}%` }} />
-                        </div>
-                        <span className="font-semibold w-10 text-right">{d.sales}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="pt-3 border-t border-border">
-                <p className="text-xs text-muted-foreground">Previsão de faturamento do mês</p>
-                <p className="text-2xl font-bold text-success">{formatCurrency(data?.forecast || 0)}</p>
-              </div>
-            </>
+        <CardContent>
+          {isLoading ? <Skeleton className="h-[120px] w-full" /> : (
+            <div className="flex flex-col justify-center h-full py-4">
+              <p className="text-xs text-muted-foreground">Projeção do mês com base no ritmo atual</p>
+              <p className="text-3xl font-bold text-success mt-2">{formatCurrency(data?.forecast || 0)}</p>
+            </div>
           )}
         </CardContent>
       </Card>

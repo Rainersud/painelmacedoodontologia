@@ -1,125 +1,107 @@
 
-# Reformulação Completa da Dashboard
+# Reformulação Integrada: Dashboard ↔ Comercial 1 ↔ Metas da Clínica
 
-Vou reformular a dashboard inteira (`src/pages/Dashboard.tsx` + widgets) para ficar estratégica, integrada ao funil real e orientada a decisão comercial.
+Esta é uma mudança grande e cruzada (UI + schema + lógica). Proposta dividida em 5 fases entregáveis. Confirme antes de eu começar.
 
-## Estrutura nova da Dashboard (ordem vertical)
+## Fase 1 — Schema: nova origem obrigatória do lead
 
-```
-┌─────────────────────────────────────────────────────────┐
-│ 1. HEADER ESTRATÉGICO                                   │
-│    Saudação + filtros de período (Hoje/7d/30d/Mês/Custom)│
-│    + botão "Atualizar agora" (já é realtime)            │
-├─────────────────────────────────────────────────────────┤
-│ 2. KPIs PRINCIPAIS (6 cards grandes, integrados)        │
-│    Leads Recebidos | Leads Atendidos | Consultas        │
-│    Taxa Comparec.  | Taxa Conversão  | ROI              │
-│    (cada card mostra valor + variação % vs período ant.)│
-├─────────────────────────────────────────────────────────┤
-│ 3. TAREFAS DO DIA (premium)                             │
-│    Cards categorizados: Retornos / Confirmações /       │
-│    Aniversariantes / Faltosos / Sem resposta / Pós-venda│
-├─────────────────────────────────────────────────────────┤
-│ 4. CONVERSÃO DO FUNIL (única, sem duplicar)             │
-│    Funil visual com perdas entre etapas e gargalos      │
-├─────────────────────────────────────────────────────────┤
-│ 5. PRINCIPAIS MÉTRICAS DO NEGÓCIO (substitui            │
-│    "Métricas-Chave"). Grid 4 colunas:                   │
-│    Leads Gerados | CPL | T.Resposta | T.Agendamento     │
-│    T.Comparec.   | T.Fechamento | Ticket Médio | CAC    │
-│    ROAS | T.Médio Conversão | T.Recuperação | LTV       │
-├─────────────────────────────────────────────────────────┤
-│ 6. ROI INTELIGENTE                                      │
-│    Gráfico evolutivo (dia/semana/mês) + ROI por origem  │
-│    + ROI por campanha + ROI por vendedor                │
-├─────────────────────────────────────────────────────────┤
-│ 7. ORIGEM DOS LEADS + PERDAS POR MOTIVO (lado a lado)   │
-│    Pie/bar com qtd, conversão, faturamento, ROI         │
-├─────────────────────────────────────────────────────────┤
-│ 8. ALERTAS INTELIGENTES (mantém atual já refeito)       │
-├─────────────────────────────────────────────────────────┤
-│ 9. EXTRAS ESTRATÉGICOS                                  │
-│    Ranking de vendedores | Ranking de campanhas         │
-│    Horários/dias com maior conversão                    │
-│    Previsão de faturamento | Progresso da meta          │
-│    Insights automáticos                                 │
-├─────────────────────────────────────────────────────────┤
-│ 10. LEADS RECENTES (filtros Hoje / 7d / 30d)            │
-│     Pega do "Novos Leads" do Comercial 1                │
-└─────────────────────────────────────────────────────────┘
-```
+Adicionar coluna `lead_arrival_source` em `leads` (enum):
+- `facebook`, `instagram`, `google`, `passou_na_frente`, `indicacao_pac`, `prospeccao_ativa`, `indicacao_parceria`, `social_selling`
 
-REMOVIDO: "Pacientes com mais faltas".
+Migrações:
+- Criar enum `lead_arrival_source`.
+- Adicionar coluna (nullable inicialmente p/ não quebrar leads existentes; default `passou_na_frente`).
+- Atualizar `AddLeadDialog` e `LeadDetailDialog` (aba Dados) com Select obrigatório "Como Lead Chegou?".
 
-## Arquivos / mudanças
+## Fase 2 — Filtros e proporcionalidade (dias úteis, base 20 du/mês)
 
-**Hooks (lógica integrada ao funil real):**
-- `src/hooks/useDashboardKPIs.ts` (novo) — calcula os 6 KPIs principais com variação % vs período anterior, usando leads, appointments, payments, acquisition_costs.
-- `src/hooks/useBusinessMetrics.ts` (novo) — Leads Gerados, CPL, T.Resposta, T.Agendamento, T.Comparecimento, T.Fechamento, Ticket Médio, CAC, ROAS, Tempo Médio Conversão, T.Recuperação, LTV.
-- `src/hooks/useROIAnalytics.ts` (novo) — ROI evolutivo, por origem, por campanha (ad_creatives), por vendedor.
-- `src/hooks/useLeadOrigins.ts` (novo) — quantidade, conversão, faturamento e ROI por `lead.source`.
-- `src/hooks/useLossAnalysis.ts` (novo) — agrupa `loss_reason` com qtd, %, valor perdido.
-- `src/hooks/useStrategicInsights.ts` (novo) — ranking vendedores, ranking campanhas, horários/dias top, previsão faturamento, insights textuais (IA comercial baseada em regras: comparações de períodos, deltas notáveis).
-- `src/hooks/useTodayTasksGrouped.ts` (novo) — agrupa tarefas em categorias (retornos, confirmações, aniversariantes, faltosos, sem resposta, pós-venda).
+- Padronizar filtros **Hoje / Semana / Mês** em:
+  - `BusinessMetricsWidget`
+  - `MetasClinica` (novo filtro)
+  - novos cards de origem
+- Helper `useBusinessDays()` com:
+  - diário = meta_mensal / 20
+  - semanal = meta_mensal / 4 (≈5 du/semana)
+  - mensal = meta_mensal
+- Cálculos sempre baseados em **dias úteis decorridos** no período.
 
-**Widgets novos:**
-- `src/components/dashboard/DashboardHeader.tsx` — saudação + filtro de período global (context).
-- `src/components/dashboard/MainKPIsWidget.tsx` — 6 KPIs grandes com sparkline e delta %.
-- `src/components/dashboard/TodayTasksPremiumWidget.tsx` — substitui `TodayTasksWidget` com categorias e visual premium.
-- `src/components/dashboard/BusinessMetricsWidget.tsx` — substitui `KeyMetricsWidget` (que será deletado).
-- `src/components/dashboard/ROIAnalyticsWidget.tsx` — gráficos evolutivos e por dimensão.
-- `src/components/dashboard/LeadOriginsWidget.tsx`
-- `src/components/dashboard/LossReasonsWidget.tsx`
-- `src/components/dashboard/StrategicInsightsWidget.tsx` — rankings, melhores horários/dias, previsão, insights.
-- `src/components/dashboard/RecentLeadsWidget.tsx` — leads recentes com filtros Hoje / 7d / 30d.
-- `src/components/dashboard/PeriodFilterContext.tsx` — contexto de período compartilhado por todos os widgets.
+## Fase 3 — Dashboard: integração total com Comercial 1
 
-**Widgets mantidos / ajustados:**
-- `FunnelConversionWidget.tsx` — mantido como única visualização do funil; melhorar visual (barras com perda entre etapas, destaque de gargalo).
-- `SmartAlertsWidget.tsx` — mantido como está (já foi refeito).
-- `ClinicGoalsWidget.tsx` — mantido (progresso da meta).
-- `VisualFunnelWidget.tsx` — REMOVIDO da dashboard (duplicava o funil).
-- `KeyMetricsWidget.tsx` — DELETADO.
-- `TodayTasksWidget.tsx` — DELETADO (substituído pelo premium).
-- Pacientes com mais faltas — REMOVIDO (qualquer ref na Dashboard).
+Substituir métricas independentes pelas etapas reais do funil (mesma fonte do Funil.tsx):
+1. **Novos Leads** (stage `novo_lead`)
+2. **Agendado** (`agendado`)
+3. **Compareceu** (`compareceu`)
+4. **Venda Realizada** (`fechado`)
 
-**Página:**
-- `src/pages/Dashboard.tsx` — recomposta na ordem acima, envolvida em `PeriodFilterProvider`.
+Mesma nomenclatura, mesma contagem, sem cálculo paralelo.
 
-## Detalhes técnicos por integração
+### Cores semânticas atualizadas
+- 🔴 Vermelho = Crítico
+- 🟢 Verde = Atenção
+- 🔵 Azul = Saudável
 
-- **Leads Recebidos**: `count(leads)` no período (todos os criados via Comercial 1 ou manual).
-- **Leads Atendidos**: leads que saíram de `novo_lead` (tem `first_response_at` não-nulo OU stage_history mostra movimento) no período.
-- **Consultas Agendadas**: `count(appointments)` agendados no período + leads em status `agendado`.
-- **Taxa de Comparecimento**: `appointments.attended_at IS NOT NULL` ÷ `appointments` agendados × 100.
-- **Taxa de Conversão**: leads com `status='fechado'` E `payments.status='pago'` ÷ leads que compareceram × 100.
-- **ROI**: `(SUM(payments.net_value WHERE pago) - SUM(acquisition_costs.amount)) ÷ SUM(acquisition_costs.amount) × 100`.
-- **CPL**: `SUM(acquisition_costs) ÷ count(leads)` no período.
-- **CAC**: `SUM(acquisition_costs) ÷ count(leads fechados pagos)`.
-- **ROAS**: `SUM(payments pago) ÷ SUM(acquisition_costs)`.
-- **Ticket Médio**: `SUM(payments pago) ÷ count(vendas)`.
-- **Tempo Médio de Conversão**: avg(`closed_at - created_at`) em dias.
-- **Taxa de Recuperação**: leads com `rescued_at NOT NULL` ÷ leads perdidos (status `perdido`/`nao_fechou`) × 100.
-- **LTV**: avg total `payments.net_value` por `lead_id` (agregando upsells via `upsell_opportunities`).
-- **Origem dos Leads**: agrupa por `leads.source`.
-- **Perdas por Motivo**: agrupa por `leads.loss_reason`.
-- **Ranking vendedores**: agrupa por `assigned_agent_id`, mostra fechamentos + receita.
-- **Ranking campanhas**: usa `ad_creatives` com revenue/investment para ROAS.
-- **Horários/dias top**: agrupa `closed_at` por hora/dow.
-- **Previsão faturamento**: projeção linear do ritmo do mês + receivables pendentes (já existe `useRevenueProjection`).
-- **Insights**: comparar período atual vs anterior, gerar frases dinâmicas quando delta > 10%.
+Aplicado em: Taxa de Resposta, Tempo Médio de Conversão, Taxa de Recuperação, LTV.
 
-## Visual
+### LTV → replica do Comercial 2
+LTV no Dashboard apenas lê `useLTVMetrics` (nada de recálculo).
 
-- Cards `monday-card` com gradient sutil em KPIs principais.
-- Sparklines (mini-charts via `recharts`) nos KPIs.
-- Cores semânticas: `success`/`warning`/`destructive` para deltas.
-- Chips de filtro de período sticky no topo.
-- Animações suaves via classes Tailwind (`transition-all`, `animate-fade-in`).
-- Realtime já garantido por `useRealtimeSync`.
+## Fase 4 — Novos widgets do Dashboard
 
-## Escopo fora deste plano
+### a) Card "Origens Estratégicas" (comparativo lead vs agendado)
+Para cada origem mostra `Recebidos × Agendados × Taxa%`:
+- Indicação Pac
+- Prospecção Ativa
+- Indicação de Parceria
+- Social Selling
 
-- Não vou criar UI de input para custos por campanha além do que já existe em `acquisition_costs` / `ad_creatives`.
-- Não vou alterar schema do banco — todas as métricas calculadas a partir de tabelas existentes.
-- "IA comercial" para insights = regras determinísticas em TS (sem chamada a LLM) para manter custo zero e tempo real.
+### b) ROI Inteligente — aba "Por Origem" reformulada
+Para cada origem: leads, agendamentos, comparecimentos, vendas, faturamento, ROI, ROAS, taxa fechamento, ticket médio. Visualizações: pizza (distribuição leads), barras (faturamento), evolutivo (linha mensal por origem).
+
+### c) Perdas por Motivo — gráfico inteligente
+Categorias fixas: Preço, Medo, Não tem cartão, Desistiu, Sumiu, Fechou no concorrente. Mostrar quantidade, %, valor perdido estimado. Banner destaque: "Maior perda atual: X (Y%)".
+
+### d) Insights automáticos
+Ex.: "Taxa de comparecimento abaixo da meta saudável", "Parceria com maior ticket médio", "Social Selling com melhor ROI", "Gargalo Agendamento → Comparecimento", "Preço é maior motivo de perda".
+
+## Fase 5 — Gestão → Metas da Clínica (motor das metas)
+
+Antes de replicar no Dashboard, **corrigir o módulo original**.
+
+### Filtros: Hoje / Semana / Mês (dias úteis)
+
+### Card premium do objetivo principal
+"Faturar R$ 120.000 em 20 dias trabalhados com ticket médio de R$ 6.000" — barra de progresso e % atingido.
+
+### Estrutura oficial (todas editáveis em `meta_settings`)
+| Métrica | Meta | Tipo |
+|---|---|---|
+| Novos Leads | 300/mês | volume |
+| Agendamentos | 135 | volume |
+| Taxa Agendamento | 45% | % saudável |
+| Comparecimentos | 95 | volume |
+| Taxa Comparecimento | 70% | % saudável |
+| Vendas Realizadas | 20 | volume |
+| Taxa Fechamento | 21% | % saudável |
+| Ticket Médio | R$ 6.000 | valor |
+| Faturamento | R$ 120.000 | valor |
+| Investimento Tráfego | R$ 6.000 | valor |
+| CPL | R$ 20 | meta inversa |
+| CAC | R$ 300 | meta inversa |
+| ROI Líquido | 8x | múltiplo |
+| ROAS Bruto | 20x | múltiplo |
+
+Visual segue o padrão da última coluna atual (cards premium + barras + animações).
+
+### Replicar no Dashboard
+Componente compartilhado `<ClinicGoalsBoard variant="dashboard" />` consumindo o **mesmo hook** (`useClinicGoals`) — sincronia em tempo real, zero divergência.
+
+## Notas técnicas
+
+- Hooks afetados: `useBusinessMetrics`, `useDashboardKPIs`, `useROIAnalytics`, `useStrategicInsights`, `useClinicGoals`, `useLTVMetrics`.
+- Componentes novos: `StrategicOriginsWidget`, `LossReasonsAdvancedWidget`, `MainGoalCard`, `useBusinessDays` helper.
+- Migrações: 1 (enum + coluna `lead_arrival_source`) + seeds em `meta_settings` para as novas chaves de meta.
+- Sem mudança em RLS.
+
+## Pergunta antes de começar
+
+Posso seguir nessa ordem (Fase 1 → 5 numa sequência só) ou prefere que eu entregue **uma fase por vez** para revisar e aprovar entre cada uma? A Fase 1 envolve migração de banco e novo campo obrigatório no cadastro de lead — confirma?

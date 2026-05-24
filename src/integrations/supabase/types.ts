@@ -542,6 +542,7 @@ export type Database = {
           interest_product: string | null
           interest_rating: number | null
           last_interaction_at: string | null
+          lead_arrival_source: Database["public"]["Enums"]["lead_arrival_source"]
           lead_score: number
           loss_reason: string | null
           name: string
@@ -581,6 +582,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           last_interaction_at?: string | null
+          lead_arrival_source?: Database["public"]["Enums"]["lead_arrival_source"]
           lead_score?: number
           loss_reason?: string | null
           name: string
@@ -620,6 +622,7 @@ export type Database = {
           interest_product?: string | null
           interest_rating?: number | null
           last_interaction_at?: string | null
+          lead_arrival_source?: Database["public"]["Enums"]["lead_arrival_source"]
           lead_score?: number
           loss_reason?: string | null
           name?: string
@@ -1716,6 +1719,15 @@ export type Database = {
         | "agendamento"
         | "confirmacao"
         | "lembrete"
+      lead_arrival_source:
+        | "facebook"
+        | "instagram"
+        | "google"
+        | "passou_na_frente"
+        | "indicacao_pac"
+        | "prospeccao_ativa"
+        | "indicacao_parceria"
+        | "social_selling"
       lead_source:
         | "whatsapp"
         | "telefone"
@@ -1923,6 +1935,16 @@ export const Constants = {
         "agendamento",
         "confirmacao",
         "lembrete",
+      ],
+      lead_arrival_source: [
+        "facebook",
+        "instagram",
+        "google",
+        "passou_na_frente",
+        "indicacao_pac",
+        "prospeccao_ativa",
+        "indicacao_parceria",
+        "social_selling",
       ],
       lead_source: [
         "whatsapp",

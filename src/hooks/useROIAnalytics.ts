@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 import { startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -43,8 +43,9 @@ const ARRIVAL_LABELS: Record<string, string> = {
   social_selling: 'Social Selling',
 };
 
-export function useROIAnalytics() {
-  const { range } = usePeriodFilter();
+export function useROIAnalytics(rangeOverride?: PeriodRange) {
+  const ctx = usePeriodFilter();
+  const range = rangeOverride ?? ctx.range;
 
   return useQuery({
     queryKey: ['roi-analytics', range.start.toISOString(), range.end.toISOString()],

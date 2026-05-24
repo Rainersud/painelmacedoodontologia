@@ -5,11 +5,14 @@ import { formatCurrency } from '@/lib/currency';
 import { PieChart as PieIcon, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { SOURCE_CONFIG } from '@/types/crm';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 
 const COLORS = ['hsl(213 94% 58%)', 'hsl(156 72% 45%)', 'hsl(270 75% 60%)', 'hsl(32 95% 55%)', 'hsl(340 82% 60%)', 'hsl(180 70% 50%)', 'hsl(45 93% 58%)', 'hsl(0 84% 60%)'];
 
 export function LeadOriginsWidget() {
-  const { data, isLoading } = useStrategicInsights();
+  const { period, setPeriod, range } = useLocalPeriod('mes');
+  const { data, isLoading } = useStrategicInsights(range);
 
   const chartData = (data?.origins || []).map((o, i) => ({
     name: SOURCE_CONFIG[o.source as keyof typeof SOURCE_CONFIG]?.label || o.source,
@@ -20,10 +23,13 @@ export function LeadOriginsWidget() {
   return (
     <Card className="monday-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <PieIcon className="h-5 w-5 text-primary" />
-          Origem dos Leads
-        </CardTitle>
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <PieIcon className="h-5 w-5 text-primary" />
+            Origem dos Leads
+          </CardTitle>
+          <WidgetPeriodTabs value={period} onChange={setPeriod} />
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (

@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
@@ -10,24 +9,27 @@ import { SOURCE_CONFIG, FUNNEL_STAGES } from '@/types/crm';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { subDays, startOfDay } from 'date-fns';
-
-type Filter = 'hoje' | '7d' | '30d';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 
 export function RecentLeadsWidget() {
-  const [filter, setFilter] = useState<Filter>('hoje');
+  const { period, setPeriod, range } = useLocalPeriod('hoje');
   const { data: leads, isLoading } = useCRMLeads();
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
     if (!leads) return [];
-    const now = new Date();
-    const cutoff = filter === 'hoje' ? startOfDay(now) : filter === '7d' ? subDays(now, 7) : subDays(now, 30);
+    const startTs = range.start.getTime();
+    const endTs = range.end.getTime();
     return leads
-      .filter(l => l.status === 'novo_lead' && new Date(l.created_at) >= cutoff)
+      .filter(l => {
+        if (l.status !== 'novo_lead') return false;
+        const t = new Date(l.created_at).getTime();
+        return t >= startTs && t <= endTs;
+      })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 12);
-  }, [leads, filter]);
+  }, [leads, range.start, range.end]);
 
   return (
     <Card className="monday-card">
@@ -37,13 +39,7 @@ export function RecentLeadsWidget() {
             <Users className="h-5 w-5 text-primary" />
             Leads Recentes (Novos Leads · Comercial 1)
           </CardTitle>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="hoje" className="text-xs h-6">Hoje</TabsTrigger>
-              <TabsTrigger value="7d" className="text-xs h-6">7 dias</TabsTrigger>
-              <TabsTrigger value="30d" className="text-xs h-6">30 dias</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <WidgetPeriodTabs value={period} onChange={setPeriod} />
         </div>
       </CardHeader>
       <CardContent>

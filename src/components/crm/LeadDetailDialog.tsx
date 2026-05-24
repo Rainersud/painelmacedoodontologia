@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 
 import { StarRating } from './StarRating';
+import { IndicacaoBadge } from './IndicacaoBadge';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
 import { LeadAlertsBanner } from './LeadAlertsBanner';

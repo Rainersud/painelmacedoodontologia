@@ -115,13 +115,25 @@ export function useStrategicInsights() {
         };
       }).sort((a, b) => b.count - a.count);
 
-      // Losses
+      // Losses (categorias fixas + "Outros")
+      const LOSS_CATEGORIES = ['Preço', 'Medo', 'Não tem cartão', 'Desistiu', 'Sumiu', 'Fechou no concorrente'];
+      const normalize = (raw: string): string => {
+        const t = raw.toLowerCase();
+        if (t.includes('preç') || t.includes('caro') || t.includes('valor')) return 'Preço';
+        if (t.includes('medo') || t.includes('insegur')) return 'Medo';
+        if (t.includes('cart')) return 'Não tem cartão';
+        if (t.includes('desist')) return 'Desistiu';
+        if (t.includes('sumi') || t.includes('não respond') || t.includes('sem resposta')) return 'Sumiu';
+        if (t.includes('concorr') || t.includes('outra clíni')) return 'Fechou no concorrente';
+        return 'Outros';
+      };
       const lossAgg: Record<string, { count: number; valor: number }> = {};
+      LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0 }; });
       leads.filter(l => l.loss_reason && l.created_at >= startISO && l.created_at <= endISO).forEach(l => {
-        const r = l.loss_reason!;
-        if (!lossAgg[r]) lossAgg[r] = { count: 0, valor: 0 };
-        lossAgg[r].count += 1;
-        lossAgg[r].valor += Number(l.treatment_value || 0);
+        const cat = normalize(l.loss_reason!);
+        if (!lossAgg[cat]) lossAgg[cat] = { count: 0, valor: 0 };
+        lossAgg[cat].count += 1;
+        lossAgg[cat].valor += Number(l.treatment_value || 0);
       });
       const totalLoss = Object.values(lossAgg).reduce((s, v) => s + v.count, 0) || 1;
       const losses: LossReason[] = Object.entries(lossAgg)

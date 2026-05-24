@@ -72,8 +72,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   });
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim()) {
-      toast.error('Preencha nome, telefone e interesse de tratamento');
+    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim() || !form.lead_arrival_source) {
+      toast.error('Preencha nome, telefone, "Como Lead Chegou?" e interesse de tratamento');
       return;
     }
 
@@ -86,6 +86,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         phone: cleanPhone,
         whatsapp: cleanPhone,
         source: form.source as any,
+        lead_arrival_source: form.lead_arrival_source as any,
         status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
@@ -109,7 +110,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       toast.success('Lead adicionado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      setForm({ name: '', phone: '', source: 'outro', interest_product: undefined, notes: '' });
+      queryClient.invalidateQueries({ queryKey: ['strategic-origins'] });
+      setForm({ name: '', phone: '', source: 'outro', lead_arrival_source: undefined, interest_product: undefined, notes: '' });
       onOpenChange(false);
     } catch (err) {
       toast.error('Erro ao adicionar lead');

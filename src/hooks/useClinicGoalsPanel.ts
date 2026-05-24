@@ -148,7 +148,7 @@ export function useClinicGoalsPanel(period: Period) {
         salesRes, paymentsRes,
         prevLeadsRes, prevSalesRes, prevPaymentsRes,
       ] = await Promise.all([
-        supabase.from('leads').select('id, created_at')
+        supabase.from('leads').select('id, created_at, first_response_at')
           .gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString()),
         supabase.from('appointments').select('id, scheduled_at')
           .gte('scheduled_at', range.start.toISOString()).lte('scheduled_at', range.end.toISOString()),

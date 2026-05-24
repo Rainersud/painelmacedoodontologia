@@ -142,8 +142,9 @@ export default function MetasClinica() {
             </div>
           </div>
         </div>
-        {/* Premium Main Goal */}
-        <MainGoalCard />
+        {/* Painel premium sincronizado com a Dashboard */}
+        <ClinicGoalsPanel />
+
 
 
         {/* Healthy Rates Reference - Monday Style */}

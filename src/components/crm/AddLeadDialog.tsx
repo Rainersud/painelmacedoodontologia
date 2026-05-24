@@ -173,6 +173,28 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           </div>
 
           <div className="space-y-2">
+            <Label>Como Lead Chegou? *</Label>
+            <Select
+              value={form.lead_arrival_source}
+              onValueChange={(value) => setForm(prev => ({ ...prev, lead_arrival_source: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione como o lead chegou" />
+              </SelectTrigger>
+              <SelectContent>
+                {ARRIVAL_SOURCE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Esta origem alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label>Interesse de Tratamento *</Label>
             <Select
               value={form.interest_product ?? undefined}

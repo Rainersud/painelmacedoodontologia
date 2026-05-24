@@ -135,11 +135,11 @@ const fmtBRL = (v: number) =>
 
 const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
-export function useClinicGoalsPanel(period: Period) {
+export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange) {
   return useQuery({
-    queryKey: ['clinic-goals-panel', period],
+    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
-      const range = buildRange(period);
+      const range = buildRange(period, customRange);
 
       // Settings (oficiais)
       const { data: settings } = await supabase.from('meta_settings').select('setting_key, setting_value');

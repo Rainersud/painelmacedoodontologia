@@ -54,21 +54,23 @@ export function BusinessMetricsWidget() {
     target: number;
     direction: Direction;
     format: (v: number) => string;
+    trend: number[];
   };
 
+  const t = data?.trends;
   const metrics: Metric[] = [
-    { label: 'Novos Leads',            icon: Users,         value: data?.leadsGerados ?? 0,        target: leadsTarget, direction: 'higher', format: v => v.toString() },
-    { label: 'CPL',                    icon: DollarSign,    value: data?.cpl ?? 0,                 target: 20,         direction: 'lower',  format: v => formatCurrency(v) },
-    { label: 'Taxa de Resposta',       icon: MessageSquare, value: data?.taxaResposta ?? 0,        target: 80,         direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Agendamento',    icon: Calendar,      value: data?.taxaAgendamento ?? 0,     target: 45,         direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Comparecimento', icon: UserCheck,     value: data?.taxaComparecimento ?? 0,  target: 70,         direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Fechamento',     icon: TrendingUp,    value: data?.taxaFechamento ?? 0,      target: 21,         direction: 'higher', format: v => `${v}%` },
-    { label: 'Ticket Médio',           icon: Wallet,        value: data?.ticketMedio ?? 0,         target: 6000,       direction: 'higher', format: v => formatCurrency(v) },
-    { label: 'CAC',                    icon: Target,        value: data?.cac ?? 0,                 target: 300,        direction: 'lower',  format: v => formatCurrency(v) },
-    { label: 'ROAS',                   icon: BarChart3,     value: data?.roas ?? 0,                target: 20,         direction: 'higher', format: v => `${v.toFixed(2)}x` },
-    { label: 'Tempo Médio Conversão',  icon: Clock,         value: data?.tempoMedioConversao ?? 0, target: 30,         direction: 'lower',  format: v => `${v} dias` },
-    { label: 'Taxa de Recuperação',    icon: RotateCcw,     value: data?.taxaRecuperacao ?? 0,     target: 30,         direction: 'higher', format: v => `${v}%` },
-    { label: 'LTV (Comercial 2)',      icon: Heart,         value: ltv,                            target: 15000,      direction: 'higher', format: v => formatCurrency(v) },
+    { label: 'Novos Leads',            icon: Users,         value: data?.leadsGerados ?? 0,        target: leadsTarget, direction: 'higher', format: v => v.toString(),         trend: t?.leadsGerados ?? [] },
+    { label: 'CPL',                    icon: DollarSign,    value: data?.cpl ?? 0,                 target: 20,         direction: 'lower',  format: v => formatCurrency(v),     trend: t?.cpl ?? [] },
+    { label: 'Taxa de Resposta',       icon: MessageSquare, value: data?.taxaResposta ?? 0,        target: 80,         direction: 'higher', format: v => `${v}%`,               trend: t?.taxaResposta ?? [] },
+    { label: 'Taxa de Agendamento',    icon: Calendar,      value: data?.taxaAgendamento ?? 0,     target: 45,         direction: 'higher', format: v => `${v}%`,               trend: t?.taxaAgendamento ?? [] },
+    { label: 'Taxa de Comparecimento', icon: UserCheck,     value: data?.taxaComparecimento ?? 0,  target: 70,         direction: 'higher', format: v => `${v}%`,               trend: t?.taxaComparecimento ?? [] },
+    { label: 'Taxa de Fechamento',     icon: TrendingUp,    value: data?.taxaFechamento ?? 0,      target: 21,         direction: 'higher', format: v => `${v}%`,               trend: t?.taxaFechamento ?? [] },
+    { label: 'Ticket Médio',           icon: Wallet,        value: data?.ticketMedio ?? 0,         target: 6000,       direction: 'higher', format: v => formatCurrency(v),     trend: t?.ticketMedio ?? [] },
+    { label: 'CAC',                    icon: Target,        value: data?.cac ?? 0,                 target: 300,        direction: 'lower',  format: v => formatCurrency(v),     trend: t?.cac ?? [] },
+    { label: 'ROAS',                   icon: BarChart3,     value: data?.roas ?? 0,                target: 20,         direction: 'higher', format: v => `${v.toFixed(2)}x`,    trend: t?.roas ?? [] },
+    { label: 'Tempo Médio Conversão',  icon: Clock,         value: data?.tempoMedioConversao ?? 0, target: 30,         direction: 'lower',  format: v => `${v} dias`,           trend: t?.tempoMedioConversao ?? [] },
+    { label: 'Taxa de Recuperação',    icon: RotateCcw,     value: data?.taxaRecuperacao ?? 0,     target: 30,         direction: 'higher', format: v => `${v}%`,               trend: t?.taxaRecuperacao ?? [] },
+    { label: 'LTV (Comercial 2)',      icon: Heart,         value: ltv,                            target: 15000,      direction: 'higher', format: v => formatCurrency(v),     trend: t?.ltv ?? [] },
   ];
 
   return (

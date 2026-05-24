@@ -44,6 +44,9 @@ export default function Configuracoes() {
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" /> Usuários
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarDays className="h-4 w-4" /> Calendário
+            </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" /> Notificações
             </TabsTrigger>
@@ -55,6 +58,11 @@ export default function Configuracoes() {
           <TabsContent value="users">
             <UserManagementPanel />
           </TabsContent>
+
+          <TabsContent value="calendar">
+            <BusinessCalendarPanel />
+          </TabsContent>
+
 
           <TabsContent value="notifications" className="space-y-4">
             <Card className="border-0 shadow-sm">

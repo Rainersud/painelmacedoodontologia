@@ -1,0 +1,94 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useROIAnalytics } from '@/hooks/useROIAnalytics';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Cell } from 'recharts';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/currency';
+import { Target, TrendingUp, TrendingDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export function ROIAnalyticsWidget() {
+  const { data, isLoading } = useROIAnalytics();
+
+  return (
+    <Card className="monday-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Target className="h-5 w-5 text-primary" />
+          ROI Inteligente
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">Retorno sobre investimento com análise multidimensional</p>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="evolution">
+          <TabsList>
+            <TabsTrigger value="evolution">Evolução</TabsTrigger>
+            <TabsTrigger value="origin">Por Origem</TabsTrigger>
+            <TabsTrigger value="campaign">Por Campanha</TabsTrigger>
+            <TabsTrigger value="agent">Por Vendedor</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="evolution" className="mt-4">
+            {isLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (
+              <div className="h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data?.evolution || []}>
+                    <defs>
+                      <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(156 72% 45%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(156 72% 45%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="inv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))' }} formatter={(v: number) => formatCurrency(v)} />
+                    <Area type="monotone" dataKey="receita" stroke="hsl(156 72% 45%)" strokeWidth={2} fill="url(#rev)" name="Receita" />
+                    <Area type="monotone" dataKey="investimento" stroke="hsl(0 84% 60%)" strokeWidth={2} fill="url(#inv)" name="Investimento" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </TabsContent>
+
+          {(['origin', 'campaign', 'agent'] as const).map(tab => {
+            const list = tab === 'origin' ? data?.byOrigin : tab === 'campaign' ? data?.byCampaign : data?.byAgent;
+            return (
+              <TabsContent key={tab} value={tab} className="mt-4">
+                {isLoading ? <Skeleton className="h-[280px] w-full" /> : !list || list.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Sem dados para o período</p>
+                ) : (
+                  <div className="space-y-2">
+                    {list.slice(0, 8).map((item, i) => {
+                      const positive = item.roi >= 0;
+                      return (
+                        <div key={`${item.name}-${i}`} className={cn('flex items-center justify-between p-3 rounded-lg border', positive ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20')}>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.vendas} venda{item.vendas !== 1 ? 's' : ''} · Receita {formatCurrency(item.receita)} · Inv. {formatCurrency(item.investimento)}
+                            </p>
+                          </div>
+                          <div className={cn('flex items-center gap-1 font-bold text-sm', positive ? 'text-success' : 'text-destructive')}>
+                            {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                            {item.roi}%
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}

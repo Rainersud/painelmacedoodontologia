@@ -58,13 +58,12 @@ function countBusinessDays(start: Date, end: Date) {
   return eachDayOfInterval({ start, end }).filter(d => !isWeekend(d)).length;
 }
 
-function buildRange(period: Period): PeriodRange {
+function buildRange(period: Period, customRange?: CustomYearRange): PeriodRange {
   const now = new Date();
   if (period === 'hoje') {
     const start = startOfDay(now);
     const end = endOfDay(now);
     const prev = subDays(now, 1);
-    // 8 buckets de 3h
     const hours = eachHourOfInterval({ start, end }).filter((_, i) => i % 3 === 0);
     const buckets = hours.map((h, i) => {
       const next = i + 1 < hours.length ? hours[i + 1] : end;
@@ -88,6 +87,34 @@ function buildRange(period: Period): PeriodRange {
       prevEnd: endOfWeek(prev, { weekStartsOn: 1 }),
       businessDays: 5, totalBusinessDays: 5,
       buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
+    };
+  }
+  if (period === 'ano') {
+    let start: Date;
+    let end: Date;
+    if (customRange?.from && customRange?.to) {
+      start = startOfDay(customRange.from);
+      end = endOfDay(customRange.to);
+    } else {
+      start = startOfYear(now);
+      end = endOfYear(now);
+    }
+    const span = end.getTime() - start.getTime();
+    const prevStart = new Date(start.getTime() - span - 86400000);
+    const prevEnd = new Date(end.getTime() - span - 86400000);
+    const months = eachMonthOfInterval({ start, end });
+    const buckets = months.map((m, i) => {
+      const mStart = startOfMonth(m);
+      const mEnd = i + 1 < months.length ? endOfMonth(m) : end;
+      return { start: mStart, end: mEnd };
+    });
+    const totalBusinessDays = countBusinessDays(start, end);
+    const businessDays = countBusinessDays(start, now > end ? end : now);
+    return {
+      start, end,
+      prevStart, prevEnd,
+      businessDays, totalBusinessDays,
+      buckets,
     };
   }
   const start = startOfMonth(now);

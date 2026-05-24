@@ -1,7 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, eachDayOfInterval, eachHourOfInterval, startOfDay, endOfDay, startOfHour, endOfHour, isSameDay } from 'date-fns';
+
+export interface BusinessTrends {
+  leadsGerados: number[];
+  cpl: number[];
+  taxaResposta: number[];
+  taxaAgendamento: number[];
+  taxaComparecimento: number[];
+  taxaFechamento: number[];
+  ticketMedio: number[];
+  cac: number[];
+  roas: number[];
+  tempoMedioConversao: number[];
+  taxaRecuperacao: number[];
+  ltv: number[];
+}
 
 export interface BusinessMetrics {
   leadsGerados: number;
@@ -13,12 +28,13 @@ export interface BusinessMetrics {
   ticketMedio: number;
   cac: number;
   roas: number;
-  tempoMedioConversao: number; // dias
+  tempoMedioConversao: number;
   taxaRecuperacao: number;
   ltv: number;
   totalReceita: number;
   totalInvestimento: number;
   vendasFechadas: number;
+  trends: BusinessTrends;
 }
 
 export function useBusinessMetrics() {
@@ -66,17 +82,14 @@ export function useBusinessMetrics() {
       const cac = vendasFechadas > 0 ? totalInvestimento / vendasFechadas : 0;
       const roas = totalInvestimento > 0 ? totalReceita / totalInvestimento : 0;
 
-      // Tempo médio de conversão
       const fechadosNoPeriodo = leadsAll.filter(l => l.status === 'fechado' && l.closed_at && l.closed_at >= startISO && l.closed_at <= endISO);
       const temposConv = fechadosNoPeriodo.map(l => differenceInDays(new Date(l.closed_at!), new Date(l.created_at)));
       const tempoMedioConversao = temposConv.length > 0 ? Math.round(temposConv.reduce((a, b) => a + b, 0) / temposConv.length) : 0;
 
-      // Taxa de recuperação: leads recuperados / leads perdidos (no período)
       const recuperados = leadsAll.filter(l => l.rescued_at && l.rescued_at >= startISO && l.rescued_at <= endISO).length;
       const perdidos = leadsAll.filter(l => l.loss_reason && l.created_at >= startISO && l.created_at <= endISO).length;
       const taxaRecuperacao = perdidos > 0 ? Math.round((recuperados / perdidos) * 100) : 0;
 
-      // LTV: receita total agrupada por paciente (incluindo upsells)
       const revenueByLead: Record<string, number> = {};
       payments.forEach(p => {
         if (p.lead_id) revenueByLead[p.lead_id] = (revenueByLead[p.lead_id] || 0) + (p.net_value || 0);
@@ -86,6 +99,60 @@ export function useBusinessMetrics() {
       });
       const ltvValues = Object.values(revenueByLead);
       const ltv = ltvValues.length > 0 ? ltvValues.reduce((a, b) => a + b, 0) / ltvValues.length : 0;
+
+      // ============ TRENDS ============
+      // Hoje → bucket por hora; Semana/Mês → bucket por dia
+      const isToday = isSameDay(range.start, range.end);
+      const buckets = isToday
+        ? eachHourOfInterval({ start: range.start, end: range.end }).map(d => ({ start: startOfHour(d), end: endOfHour(d) }))
+        : eachDayOfInterval({ start: range.start, end: range.end }).map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
+
+      const investPerBucket = buckets.length > 0 ? totalInvestimento / buckets.length : 0;
+
+      const trends: BusinessTrends = {
+        leadsGerados: [],
+        cpl: [],
+        taxaResposta: [],
+        taxaAgendamento: [],
+        taxaComparecimento: [],
+        taxaFechamento: [],
+        ticketMedio: [],
+        cac: [],
+        roas: [],
+        tempoMedioConversao: [],
+        taxaRecuperacao: [],
+        ltv: [],
+      };
+
+      buckets.forEach(b => {
+        const sISO = b.start.toISOString();
+        const eISO = b.end.toISOString();
+        const bLeads = leadsPeriod.filter(l => l.created_at >= sISO && l.created_at <= eISO);
+        const bAppts = appts.filter(a => a.scheduled_at >= sISO && a.scheduled_at <= eISO);
+        const bAtt = bAppts.filter(a => a.attended_at);
+        const bPays = payments.filter(p => p.paid_at && p.paid_at >= sISO && p.paid_at <= eISO);
+        const bRevenue = bPays.reduce((s, p) => s + (p.net_value || 0), 0);
+        const bSales = new Set(bPays.map(p => p.lead_id)).size;
+        const bResp = bLeads.filter(l => l.first_response_at).length;
+        const bAtendidos = bLeads.filter(l => l.first_response_at || l.status !== 'novo_lead').length;
+        const bRescued = leadsAll.filter(l => l.rescued_at && l.rescued_at >= sISO && l.rescued_at <= eISO).length;
+        const bLost = leadsAll.filter(l => l.loss_reason && l.created_at >= sISO && l.created_at <= eISO).length;
+        const bClosed = leadsAll.filter(l => l.status === 'fechado' && l.closed_at && l.closed_at >= sISO && l.closed_at <= eISO);
+        const bConvDays = bClosed.map(l => differenceInDays(new Date(l.closed_at!), new Date(l.created_at)));
+
+        trends.leadsGerados.push(bLeads.length);
+        trends.cpl.push(bLeads.length > 0 ? Math.round(investPerBucket / bLeads.length) : 0);
+        trends.taxaResposta.push(bLeads.length > 0 ? Math.round((bResp / bLeads.length) * 100) : 0);
+        trends.taxaAgendamento.push(bAtendidos > 0 ? Math.round((bAppts.length / bAtendidos) * 100) : 0);
+        trends.taxaComparecimento.push(bAppts.length > 0 ? Math.round((bAtt.length / bAppts.length) * 100) : 0);
+        trends.taxaFechamento.push(bAtt.length > 0 ? Math.round((bSales / bAtt.length) * 100) : 0);
+        trends.ticketMedio.push(bSales > 0 ? Math.round(bRevenue / bSales) : 0);
+        trends.cac.push(bSales > 0 ? Math.round(investPerBucket / bSales) : 0);
+        trends.roas.push(investPerBucket > 0 ? Math.round((bRevenue / investPerBucket) * 100) / 100 : 0);
+        trends.tempoMedioConversao.push(bConvDays.length > 0 ? Math.round(bConvDays.reduce((a, b2) => a + b2, 0) / bConvDays.length) : 0);
+        trends.taxaRecuperacao.push(bLost > 0 ? Math.round((bRescued / bLost) * 100) : 0);
+        trends.ltv.push(bSales > 0 ? Math.round(bRevenue / bSales) : 0);
+      });
 
       return {
         leadsGerados,
@@ -103,6 +170,7 @@ export function useBusinessMetrics() {
         totalReceita,
         totalInvestimento,
         vendasFechadas,
+        trends,
       };
     },
     refetchInterval: 60000,

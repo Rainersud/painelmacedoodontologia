@@ -314,7 +314,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: String(agendCount), targetDisplay: String(tgtAgend),
           healthyGoal: goalCount(monthly.taxaAgendamento, tgtAgend, agendCount, 'agendamentos'),
           status: statusOf(agendCount, tgtAgend),
-          delta: 0, trend: trendAgend, unit: 'count',
+          delta: delta(agendCount, prevAgend),
+          trend: trendAgend, unit: 'count',
           rate: {
             label: 'Taxa de Agendamento',
             display: `${taxaAgendamento.toFixed(1)}%`,
@@ -329,7 +330,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: String(compCount), targetDisplay: String(tgtComp),
           healthyGoal: goalCount(monthly.taxaComparecimento, tgtComp, compCount, 'comparecimentos'),
           status: statusOf(compCount, tgtComp),
-          delta: 0, trend: trendComp, unit: 'count',
+          delta: delta(compCount, prevComp),
+          trend: trendComp, unit: 'count',
           rate: {
             label: 'Taxa de Comparecimento',
             display: `${taxaComparecimento.toFixed(1)}%`,
@@ -360,7 +362,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(ticketMedio), targetDisplay: fmtBRL(monthly.ticket),
           healthyGoal: goalBRL(null, monthly.ticket, Math.round(ticketMedio)),
           status: statusOf(ticketMedio, monthly.ticket),
-          delta: 0, trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
+          delta: delta(ticketMedio, prevTicket),
+          trend: trendSales.map((c, i) => c ? Math.round(trendRevenue[i] / c) : 0), unit: 'currency',
         },
         {
           key: 'faturamento', label: 'Faturamento',
@@ -382,7 +385,8 @@ export function useClinicGoalsPanel(period: Period) {
             ? `até 5 min · excedeu ${fmtDuration(avgResponseMin - 5)}`
             : 'até 5 min · dentro da meta',
           status: avgResponseMin === 0 ? 'warning' : statusOf(avgResponseMin, 5, true),
-          delta: 0, trend: trendResponse,
+          delta: delta(avgResponseMin, prevAvgResponseMin),
+          trend: trendResponse,
           lowerIsBetter: true, unit: 'duration',
         },
         {
@@ -392,7 +396,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(cpl), targetDisplay: fmtBRL(monthly.cpl),
           healthyGoal: goalBRL(null, monthly.cpl, Math.round(cpl), true),
           status: statusOf(cpl, monthly.cpl, true),
-          delta: 0, trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
+          delta: delta(cpl, prevCpl),
+          trend: trendLeads.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
         },
         {
@@ -402,7 +407,8 @@ export function useClinicGoalsPanel(period: Period) {
           display: fmtBRL(cac), targetDisplay: fmtBRL(monthly.cac),
           healthyGoal: goalBRL(null, monthly.cac, Math.round(cac), true),
           status: statusOf(cac, monthly.cac, true),
-          delta: 0, trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
+          delta: delta(cac, prevCac),
+          trend: trendSales.map(c => c ? Math.round((investmentProp / range.buckets.length) / c) : 0),
           lowerIsBetter: true, unit: 'currency',
         },
         {
@@ -414,7 +420,8 @@ export function useClinicGoalsPanel(period: Period) {
             ? `${monthly.roas}x · meta atingida`
             : `${monthly.roas}x · falta ${(monthly.roas - roas).toFixed(1)}x`,
           status: statusOf(roas, monthly.roas),
-          delta: 0, trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
+          delta: delta(roas, prevRoas),
+          trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
         },
         {

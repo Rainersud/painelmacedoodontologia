@@ -166,8 +166,8 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         roas: get('meta_roas_bruto', 20),
       };
 
-      // Proporciona meta mensal pelo período
-      const proportion = range.businessDays / 20;
+      // Proporciona meta mensal pelo período (usa total do período, não os dias decorridos)
+      const proportion = range.totalBusinessDays / 20;
       const prop = (m: number) => Math.max(1, Math.round(m * proportion));
 
       // Buscas paralelas

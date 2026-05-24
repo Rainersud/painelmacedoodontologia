@@ -4,7 +4,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Compass, Calendar, Users, CheckCircle2, DollarSign, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
+import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 
 const DAILY_GOALS: Record<string, number> = {
   indicacao_pac: 10,
@@ -14,8 +15,8 @@ const DAILY_GOALS: Record<string, number> = {
 };
 
 export function StrategicOriginsWidget() {
-  const { data, isLoading } = useStrategicOrigins();
-  const { range, period } = usePeriodFilter();
+  const { period, setPeriod, range } = useLocalPeriod('mes');
+  const { data, isLoading } = useStrategicOrigins(range);
 
   const rows = (data || []).filter(r => (STRATEGIC_ORIGINS as readonly string[]).includes(r.key));
   const periodLabel = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
@@ -23,13 +24,18 @@ export function StrategicOriginsWidget() {
   return (
     <Card className="monday-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Compass className="h-5 w-5 text-primary" />
-          Origens Estratégicas — Recebidos · Agendados · Compareceu · Faturamento
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Acompanhamento individual das origens de indicação integrado ao Comercial 1. Metas considerando dias úteis ({range.businessDays}du).
-        </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Compass className="h-5 w-5 text-primary" />
+              Origens Estratégicas — Recebidos · Agendados · Compareceu · Faturamento
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Acompanhamento individual das origens de indicação integrado ao Comercial 1. Metas considerando dias úteis ({range.businessDays}du).
+            </p>
+          </div>
+          <WidgetPeriodTabs value={period} onChange={setPeriod} />
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (

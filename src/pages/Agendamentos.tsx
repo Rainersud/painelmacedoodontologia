@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { appointmentSchema, revenueSchema, validateForm } from '@/lib/validations';
+import { IndicacaoBadge } from '@/components/crm/IndicacaoBadge';
 
 type AppointmentStatus = 'agendado' | 'confirmado' | 'compareceu' | 'nao_compareceu' | 'cancelado';
 

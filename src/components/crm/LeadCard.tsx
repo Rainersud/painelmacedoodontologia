@@ -1,4 +1,4 @@
-import { Phone, MessageSquare, Calendar, DollarSign, StickyNote, CheckSquare, Zap } from 'lucide-react';
+import { Phone, MessageSquare, DollarSign, StickyNote, CheckSquare, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

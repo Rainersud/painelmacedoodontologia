@@ -477,7 +477,33 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     placeholder="(11) 99999-9999"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lead_arrival_source">Como Lead Chegou? *</Label>
+                  <Select
+                    value={formData.lead_arrival_source || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, lead_arrival_source: v }))}
+                    key={formData.lead_arrival_source || 'empty-arrival'}
+                  >
+                    <SelectTrigger id="lead_arrival_source">
+                      <SelectValue placeholder="Selecione a origem estratégica" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="passou_na_frente">Passou na Frente</SelectItem>
+                      <SelectItem value="indicacao_pac">Indicação Pac</SelectItem>
+                      <SelectItem value="prospeccao_ativa">Prospecção Ativa</SelectItem>
+                      <SelectItem value="indicacao_parceria">Indicação de Parceria</SelectItem>
+                      <SelectItem value="social_selling">Social Selling</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    Alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+                  </p>
+                </div>
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>

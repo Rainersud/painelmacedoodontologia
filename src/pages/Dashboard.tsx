@@ -5,6 +5,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { BusinessMetricsWidget } from '@/components/dashboard/BusinessMetricsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
+import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
 import { StrategicInsightsWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { RecentLeadsWidget } from '@/components/dashboard/RecentLeadsWidget';
 import { ClinicGoalsWidget } from '@/components/dashboard/ClinicGoalsWidget';
@@ -35,6 +36,9 @@ const Dashboard = () => {
 
           {/* Principais Métricas do Negócio (com benchmarks) */}
           <BusinessMetricsWidget />
+
+          {/* Origens Estratégicas — Recebidos vs Agendados */}
+          <StrategicOriginsWidget />
 
           {/* ROI Inteligente */}
           <ROIAnalyticsWidget />

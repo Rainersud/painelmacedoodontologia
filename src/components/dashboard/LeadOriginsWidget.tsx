@@ -65,7 +65,8 @@ export function LeadOriginsWidget() {
 
 export function LossReasonsWidget() {
   const { data, isLoading } = useStrategicInsights();
-  const losses = data?.losses || [];
+  const losses = (data?.losses || []).filter(l => l.count > 0);
+  const top = losses[0];
 
   return (
     <Card className="monday-card">
@@ -74,6 +75,7 @@ export function LossReasonsWidget() {
           <AlertTriangle className="h-5 w-5 text-destructive" />
           Perdas por Motivo
         </CardTitle>
+        <p className="text-xs text-muted-foreground">Categorias inteligentes · quantidade · % · valor estimado perdido</p>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -81,25 +83,38 @@ export function LossReasonsWidget() {
         ) : losses.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">Nenhuma perda registrada no período 🎉</p>
         ) : (
-          <div className="space-y-2">
-            {losses.map((l, idx) => (
-              <div key={l.reason} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold">
-                    {idx === 0 && '🔥 '}
-                    {l.reason}
-                  </span>
-                  <span className="text-xs font-bold text-destructive">{l.pct}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{l.count} leads perdidos</span>
-                  <span>Estimado: {formatCurrency(l.valorPerdido)}</span>
-                </div>
-                <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
-                  <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${l.pct}%` }} />
-                </div>
+          <div className="space-y-3">
+            {top && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                <p className="text-xs uppercase tracking-wide text-destructive font-bold">Maior perda atual</p>
+                <p className="text-base font-semibold mt-0.5">
+                  {top.reason} <span className="text-destructive">({top.pct}%)</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {top.count} lead{top.count !== 1 ? 's' : ''} perdido{top.count !== 1 ? 's' : ''} · {formatCurrency(top.valorPerdido)} estimados
+                </p>
               </div>
-            ))}
+            )}
+            <div className="space-y-2">
+              {losses.map((l, idx) => (
+                <div key={l.reason} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold">
+                      {idx === 0 && '🔥 '}
+                      {l.reason}
+                    </span>
+                    <span className="text-xs font-bold text-destructive">{l.pct}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{l.count} lead{l.count !== 1 ? 's' : ''} perdido{l.count !== 1 ? 's' : ''}</span>
+                    <span>Estimado: {formatCurrency(l.valorPerdido)}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${l.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

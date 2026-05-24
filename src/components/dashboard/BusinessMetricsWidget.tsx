@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBusinessMetrics } from '@/hooks/useBusinessMetrics';
+import { useLTVMetrics } from '@/hooks/useLTVMetrics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/currency';
-import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { usePeriodFilter, proportionalTarget } from '@/components/dashboard/PeriodFilterContext';
 import {
   Users, DollarSign, MessageSquare, Calendar, UserCheck, TrendingUp,
   Wallet, Target, BarChart3, Clock, RotateCcw, Heart, Briefcase,
@@ -27,18 +28,23 @@ function getStatus(current: number, target: number, dir: Direction): Status {
   }
 }
 
+// Paleta solicitada: 🔵 Azul=Saudável, 🟢 Verde=Atenção, 🔴 Vermelho=Crítico
 const statusStyles: Record<Status, { bar: string; text: string; chip: string; label: string }> = {
-  healthy: { bar: 'bg-success', text: 'text-success', chip: 'bg-success/15 text-success', label: 'Saudável' },
-  attention: { bar: 'bg-warning', text: 'text-warning', chip: 'bg-warning/15 text-warning', label: 'Atenção' },
-  critical: { bar: 'bg-destructive', text: 'text-destructive', chip: 'bg-destructive/15 text-destructive', label: 'Crítico' },
+  healthy:   { bar: 'bg-primary',     text: 'text-primary',     chip: 'bg-primary/15 text-primary',     label: 'Saudável' },
+  attention: { bar: 'bg-success',     text: 'text-success',     chip: 'bg-success/15 text-success',     label: 'Atenção' },
+  critical:  { bar: 'bg-destructive', text: 'text-destructive', chip: 'bg-destructive/15 text-destructive', label: 'Crítico' },
 };
 
 export function BusinessMetricsWidget() {
   const { data, isLoading } = useBusinessMetrics();
-  const { period } = usePeriodFilter();
+  const { range } = usePeriodFilter();
+  // LTV é REPLICADO do Comercial 2 — Dashboard apenas apresenta, não recalcula
+  const { data: ltvData } = useLTVMetrics('todos', 'todos');
+  const ltv = Math.round(ltvData?.overallLTV || 0);
 
-  // Meta proporcional de Novos Leads (300/mês baseado em 20 dias úteis ⇒ 15/dia útil)
-  const leadsTarget = period === 'hoje' ? 15 : period === '7d' ? 75 : 300;
+  // Metas oficiais mensais (fonte: Gestão → Metas da Clínica)
+  // 300 leads, ticket R$ 6.000, etc. Proporcionais por dias úteis.
+  const leadsTarget = proportionalTarget(300, range.businessDays);
 
   type Metric = {
     label: string;
@@ -47,22 +53,21 @@ export function BusinessMetricsWidget() {
     target: number;
     direction: Direction;
     format: (v: number) => string;
-    suffix?: string;
   };
 
   const metrics: Metric[] = [
-    { label: 'Novos Leads', icon: Users, value: data?.leadsGerados ?? 0, target: leadsTarget, direction: 'higher', format: v => v.toString() },
-    { label: 'CPL', icon: DollarSign, value: data?.cpl ?? 0, target: 20, direction: 'lower', format: v => formatCurrency(v) },
-    { label: 'Taxa de Resposta', icon: MessageSquare, value: data?.taxaResposta ?? 0, target: 80, direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Agendamento', icon: Calendar, value: data?.taxaAgendamento ?? 0, target: 40, direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Comparecimento', icon: UserCheck, value: data?.taxaComparecimento ?? 0, target: 60, direction: 'higher', format: v => `${v}%` },
-    { label: 'Taxa de Fechamento', icon: TrendingUp, value: data?.taxaFechamento ?? 0, target: 45, direction: 'higher', format: v => `${v}%` },
-    { label: 'Ticket Médio', icon: Wallet, value: data?.ticketMedio ?? 0, target: 6000, direction: 'higher', format: v => formatCurrency(v) },
-    { label: 'CAC', icon: Target, value: data?.cac ?? 0, target: 800, direction: 'lower', format: v => formatCurrency(v) },
-    { label: 'ROAS', icon: BarChart3, value: data?.roas ?? 0, target: 8, direction: 'higher', format: v => `${v.toFixed(2)}x` },
-    { label: 'Tempo Médio Conversão', icon: Clock, value: data?.tempoMedioConversao ?? 0, target: 30, direction: 'lower', format: v => `${v} dias` },
-    { label: 'Taxa de Recuperação', icon: RotateCcw, value: data?.taxaRecuperacao ?? 0, target: 30, direction: 'higher', format: v => `${v}%` },
-    { label: 'LTV', icon: Heart, value: data?.ltv ?? 0, target: 15000, direction: 'higher', format: v => formatCurrency(v) },
+    { label: 'Novos Leads',            icon: Users,         value: data?.leadsGerados ?? 0,        target: leadsTarget, direction: 'higher', format: v => v.toString() },
+    { label: 'CPL',                    icon: DollarSign,    value: data?.cpl ?? 0,                 target: 20,         direction: 'lower',  format: v => formatCurrency(v) },
+    { label: 'Taxa de Resposta',       icon: MessageSquare, value: data?.taxaResposta ?? 0,        target: 80,         direction: 'higher', format: v => `${v}%` },
+    { label: 'Taxa de Agendamento',    icon: Calendar,      value: data?.taxaAgendamento ?? 0,     target: 45,         direction: 'higher', format: v => `${v}%` },
+    { label: 'Taxa de Comparecimento', icon: UserCheck,     value: data?.taxaComparecimento ?? 0,  target: 70,         direction: 'higher', format: v => `${v}%` },
+    { label: 'Taxa de Fechamento',     icon: TrendingUp,    value: data?.taxaFechamento ?? 0,      target: 21,         direction: 'higher', format: v => `${v}%` },
+    { label: 'Ticket Médio',           icon: Wallet,        value: data?.ticketMedio ?? 0,         target: 6000,       direction: 'higher', format: v => formatCurrency(v) },
+    { label: 'CAC',                    icon: Target,        value: data?.cac ?? 0,                 target: 300,        direction: 'lower',  format: v => formatCurrency(v) },
+    { label: 'ROAS',                   icon: BarChart3,     value: data?.roas ?? 0,                target: 20,         direction: 'higher', format: v => `${v.toFixed(2)}x` },
+    { label: 'Tempo Médio Conversão',  icon: Clock,         value: data?.tempoMedioConversao ?? 0, target: 30,         direction: 'lower',  format: v => `${v} dias` },
+    { label: 'Taxa de Recuperação',    icon: RotateCcw,     value: data?.taxaRecuperacao ?? 0,     target: 30,         direction: 'higher', format: v => `${v}%` },
+    { label: 'LTV (Comercial 2)',      icon: Heart,         value: ltv,                            target: 15000,      direction: 'higher', format: v => formatCurrency(v) },
   ];
 
   return (
@@ -73,7 +78,7 @@ export function BusinessMetricsWidget() {
           Principais Métricas do Negócio
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Cada métrica é comparada com sua meta saudável (benchmark) — verde, amarelo ou vermelho.
+          Etapas vindas direto do Comercial 1 · Metas proporcionais a {range.businessDays} dia{range.businessDays !== 1 ? 's' : ''} útil{range.businessDays !== 1 ? 'eis' : ''} (base 20 du/mês) · 🔵 Saudável · 🟢 Atenção · 🔴 Crítico
         </p>
       </CardHeader>
       <CardContent>
@@ -108,7 +113,7 @@ export function BusinessMetricsWidget() {
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                       <span>Meta: {m.format(m.target)}</span>
-                      <span className={cn('inline-flex items-center gap-0.5 font-semibold', aboveTarget ? 'text-success' : 'text-destructive')}>
+                      <span className={cn('inline-flex items-center gap-0.5 font-semibold', aboveTarget ? 'text-primary' : 'text-destructive')}>
                         {diffPct === 0 ? <Minus className="h-2.5 w-2.5" /> : diffPct > 0 ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
                         {diffPct > 0 ? '+' : ''}{diffPct}%
                       </span>

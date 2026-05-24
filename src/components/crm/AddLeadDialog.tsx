@@ -39,6 +39,18 @@ const SOURCE_OPTIONS = [
   { value: 'outro', label: 'Outros' },
 ];
 
+// "Como Lead Chegou?" — origem estratégica obrigatória
+export const ARRIVAL_SOURCE_OPTIONS = [
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'google', label: 'Google' },
+  { value: 'passou_na_frente', label: 'Passou na Frente' },
+  { value: 'indicacao_pac', label: 'Indicação Pac' },
+  { value: 'prospeccao_ativa', label: 'Prospecção Ativa' },
+  { value: 'indicacao_parceria', label: 'Indicação de Parceria' },
+  { value: 'social_selling', label: 'Social Selling' },
+] as const;
+
 const TREATMENT_OPTIONS = [
   { value: 'implante', label: 'Implante' },
   { value: 'protese_flexivel', label: 'Prótese Flexível' },
@@ -54,13 +66,14 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     name: '',
     phone: '',
     source: 'outro' as string,
+    lead_arrival_source: undefined as string | undefined,
     interest_product: undefined as string | undefined,
     notes: '',
   });
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim()) {
-      toast.error('Preencha nome, telefone e interesse de tratamento');
+    if (!form.name.trim() || !form.phone.trim() || !form.interest_product?.trim() || !form.lead_arrival_source) {
+      toast.error('Preencha nome, telefone, "Como Lead Chegou?" e interesse de tratamento');
       return;
     }
 
@@ -73,6 +86,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         phone: cleanPhone,
         whatsapp: cleanPhone,
         source: form.source as any,
+        lead_arrival_source: form.lead_arrival_source as any,
         status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
@@ -96,7 +110,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       toast.success('Lead adicionado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      setForm({ name: '', phone: '', source: 'outro', interest_product: undefined, notes: '' });
+      queryClient.invalidateQueries({ queryKey: ['strategic-origins'] });
+      setForm({ name: '', phone: '', source: 'outro', lead_arrival_source: undefined, interest_product: undefined, notes: '' });
       onOpenChange(false);
     } catch (err) {
       toast.error('Erro ao adicionar lead');
@@ -155,6 +170,28 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Como Lead Chegou? *</Label>
+            <Select
+              value={form.lead_arrival_source}
+              onValueChange={(value) => setForm(prev => ({ ...prev, lead_arrival_source: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione como o lead chegou" />
+              </SelectTrigger>
+              <SelectContent>
+                {ARRIVAL_SOURCE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Esta origem alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+            </p>
           </div>
 
           <div className="space-y-2">

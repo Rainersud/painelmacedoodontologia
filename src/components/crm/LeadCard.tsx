@@ -1,4 +1,4 @@
-import { Phone, MessageSquare, Calendar, DollarSign, StickyNote, CheckSquare, Zap } from 'lucide-react';
+import { Phone, MessageSquare, DollarSign, StickyNote, CheckSquare, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,6 +104,7 @@ export function LeadCard({
             </span>
           </div>
           <p className="font-semibold truncate text-xs flex-1 min-w-0">{lead.name}</p>
+          {/* Indicacao badge */}
           <IndicacaoBadge source={lead.source} size="xs" />
           {hasReferralData && refTags && (
             <ReferralPopover lead={lead} refTags={refTags} />

@@ -2,8 +2,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
 import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { MainKPIsWidget } from '@/components/dashboard/MainKPIsWidget';
-import { FunnelConversionWidget } from '@/components/dashboard/FunnelConversionWidget';
 import { BusinessMetricsWidget } from '@/components/dashboard/BusinessMetricsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
@@ -29,39 +27,32 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* 1. Header + filtros */}
+          {/* Header + filtros */}
           <DashboardHeader />
 
-          {/* 2. Pending tasks banner (urgência) */}
+          {/* Pending tasks banner */}
           <PendingTasksBanner />
 
-          {/* 3. KPIs principais (6 cards) */}
-          <MainKPIsWidget />
-
-          {/* 5. Principais Métricas do Negócio */}
+          {/* Principais Métricas do Negócio (com benchmarks) */}
           <BusinessMetricsWidget />
 
-          {/* 6. ROI Inteligente */}
+          {/* ROI Inteligente */}
           <ROIAnalyticsWidget />
 
-          {/* 7. Origem dos Leads + Perdas por Motivo */}
+          {/* Origem dos Leads + Perdas por Motivo */}
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />
             <LossReasonsWidget />
           </div>
 
-
-          {/* 9. Metas da clínica */}
+          {/* Metas da clínica */}
           <ClinicGoalsWidget />
 
-          {/* 10. Extras estratégicos: rankings, horários, insights */}
+          {/* Rankings, previsão e insights */}
           <StrategicInsightsWidget />
 
-          {/* 11. Leads recentes */}
+          {/* Leads recentes */}
           <RecentLeadsWidget />
-
-          {/* 12. Funil de conversão (último) */}
-          <FunnelConversionWidget />
         </div>
       </PeriodFilterProvider>
     </AppLayout>

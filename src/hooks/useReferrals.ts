@@ -265,3 +265,59 @@ export function useReferralRanking(periodDays?: number) {
     },
   });
 }
+
+export interface PendingBonus {
+  referralId: string;
+  referrerId: string;
+  referrerName: string;
+  referrerPhone: string;
+  referredName: string;
+  rewardValue: number;
+  rewardPercentage: number;
+  createdAt: string;
+}
+
+export function usePendingBonuses() {
+  return useQuery({
+    queryKey: ['pending-bonuses'],
+    queryFn: async (): Promise<PendingBonus[]> => {
+      const { data: refs, error } = await supabase
+        .from('referrals')
+        .select('*')
+        .neq('bonus_status', 'pago');
+      if (error) throw error;
+      if (!refs?.length) return [];
+
+      const ids = Array.from(new Set([
+        ...refs.map(r => r.referrer_lead_id),
+        ...refs.map(r => r.referred_lead_id),
+      ]));
+      const { data: leads } = await supabase
+        .from('leads').select('id, name, phone, status, treatment_value').in('id', ids);
+      const leadMap = Object.fromEntries((leads || []).map(l => [l.id, l]));
+
+      const CONVERTED = ['fechado', 'tratamento_andamento', 'concluido'];
+      const result: PendingBonus[] = [];
+      for (const r of refs) {
+        const referred = leadMap[r.referred_lead_id];
+        if (!referred || !CONVERTED.includes(referred.status)) continue;
+        const referrer = leadMap[r.referrer_lead_id];
+        const pct = Number((r as any).reward_percentage || 0);
+        const tv = Number(referred.treatment_value || 0);
+        const computed = pct > 0 ? (tv * pct) / 100 : Number(r.reward_value || 0);
+        if (computed <= 0) continue;
+        result.push({
+          referralId: r.id,
+          referrerId: r.referrer_lead_id,
+          referrerName: referrer?.name || 'Desconhecido',
+          referrerPhone: referrer?.phone || '',
+          referredName: referred.name || '—',
+          rewardValue: computed,
+          rewardPercentage: pct,
+          createdAt: r.created_at,
+        });
+      }
+      return result.sort((a, b) => b.rewardValue - a.rewardValue);
+    },
+  });
+}

@@ -179,6 +179,19 @@ export default function DashboardCallCenter() {
 
   const topAgentId = rankings.byRevenue[0]?.agentId;
 
+  const ticketRanking = useMemo(() => {
+    const list = (metrics ?? []).filter(m => m.isActive);
+    return [...list]
+      .map(m => ({
+        agentId: m.agentId,
+        agentName: m.agentName,
+        value: m.closed > 0 ? Math.round(m.revenue / m.closed) : 0,
+        metric: 'ticket',
+      }))
+      .sort((a, b) => b.value - a.value)
+      .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }, [metrics]);
+
   return (
     <AppLayout title="Call Center">
       <div className="space-y-6">

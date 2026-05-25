@@ -708,26 +708,41 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {/* (Data da Consulta now rendered right after the status select) */}
 
               {/* Loss reason field when moving to nao_cliente */}
-              {newStatus === 'nao_cliente' && (
-                <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
-                  <h4 className="font-medium text-chart-5 flex items-center gap-2">
-                    ❓ Não fechou porque:
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Campo obrigatório — descreva o motivo pelo qual o paciente não fechou o tratamento.
-                  </p>
-                  <Textarea
-                    value={formData.loss_reason}
-                    onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
-                    placeholder="Ex: Achou caro, quer pensar mais, medo do procedimento..."
-                    rows={3}
-                    className="border-chart-5/30"
-                  />
-                  {!formData.loss_reason.trim() && (
-                    <p className="text-[10px] text-destructive">* Campo obrigatório</p>
-                  )}
-                </div>
-              )}
+              {newStatus === 'nao_cliente' && (() => {
+                const LOSS_OPTIONS = ['Preço', 'Medo', 'Não tem cartão', 'Desistiu', 'Sumiu', 'Fechou no concorrente'];
+                return (
+                  <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
+                    <h4 className="font-medium text-chart-5 flex items-center gap-2">
+                      ❓ Não fechou porque:
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione o motivo — alimenta o painel "Perdas por Motivo" no Dashboard.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {LOSS_OPTIONS.map(opt => {
+                        const selected = formData.loss_reason === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, loss_reason: opt }))}
+                            className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                              selected
+                                ? 'bg-chart-5 text-white border-chart-5 shadow-sm'
+                                : 'bg-background border-chart-5/30 hover:bg-chart-5/10'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {!formData.loss_reason.trim() && (
+                      <p className="text-[10px] text-destructive">* Selecione um motivo</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Show existing loss_reason for leads already in nao_cliente */}
               {statusForView === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (

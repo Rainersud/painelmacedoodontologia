@@ -241,6 +241,7 @@ export function ReferrerDetailDialog({
                             <td className="py-2.5 px-3">
                               <RewardEditor
                                 value={ref.reward_value}
+                                treatmentValue={ref.referred?.treatment_value || 0}
                                 onSave={(v) => handleUpdateBonusValue(ref.id, v)}
                                 editable={isConverted || ref.bonus_status !== 'pago'}
                               />

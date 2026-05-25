@@ -283,54 +283,40 @@ const Funil = () => { // v2
 
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('none');
-  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  // Filtro de período padronizado com a Dashboard: all | hoje | semana | mes
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [smartCategory, setSmartCategory] = useState<string>('all');
 
-  // Stages affected by date filter
+  // Stages affected by date filter (agendamento e comparecimento)
   const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
 
-  const getFilterDate = useCallback((): Date | null => {
-    if (dateFilter === 'none') return null;
-    if (dateFilter === 'today') return new Date();
-    if (dateFilter === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return d; }
-    if (dateFilter === 'yesterday') { const d = new Date(); d.setDate(d.getDate() - 1); return d; }
-    if (dateFilter === 'custom' && customDate) return customDate;
+  const getFilterRange = useCallback((): { start: Date; end: Date } | null => {
+    if (dateFilter === 'all') return null;
+    const now = new Date();
+    if (dateFilter === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
+    if (dateFilter === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    if (dateFilter === 'mes') return { start: startOfMonth(now), end: endOfMonth(now) };
     return null;
-  }, [dateFilter, customDate]);
+  }, [dateFilter]);
 
-  // Smart visual categorization helpers
+  // Smart visual categorization helpers (apenas hoje/ontem/semana — sem alertas)
   const matchesSmartCategory = useCallback((lead: Lead, cat: string): boolean => {
     if (cat === 'all') return true;
     const now = Date.now();
     const created = new Date(lead.created_at).getTime();
-    const updated = new Date(lead.updated_at || lead.created_at).getTime();
-    const stageEntered = lead.stage_entered_at ? new Date(lead.stage_entered_at).getTime() : updated;
     const createdDays = Math.floor((now - created) / 86400000);
-    const updatedDays = Math.floor((now - updated) / 86400000);
-    const stageDays = Math.floor((now - stageEntered) / 86400000);
-    const isFollowUp = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
     switch (cat) {
       case 'hoje': return createdDays === 0;
       case 'ontem': return createdDays === 1;
       case 'semana': return createdDays >= 0 && createdDays <= 7;
-      case 'parados': return stageDays >= 5 && !['fechado','nao_cliente','descartados'].includes(lead.status);
-      case 'sem_movimento': return updatedDays >= 7 && !['fechado','nao_cliente'].includes(lead.status);
-      case 'atrasados': {
-        if (!lead.scheduled_appointment_at) return false;
-        const apt = new Date(lead.scheduled_appointment_at).getTime();
-        return apt < now && (lead.status === 'agendou' || lead.status === 'consulta_agendada');
-      }
-      case 'reagendados': return lead.status === 'faltou' || ((lead.no_show_count || 0) > 0 && !!lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() > now);
-      case 'sem_retorno': return isFollowUp || ((lead.contact_attempts ?? 0) >= 3 && stageDays >= 3);
       default: return true;
     }
   }, []);
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
-    const filterDate = getFilterDate();
-    
+    const range = getFilterRange();
+
     return leads.filter(lead => {
       const query = searchQuery.trim();
       const digitsQ = query.replace(/\D/g, '');
@@ -339,23 +325,24 @@ const Funil = () => { // v2
         (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
         (lead.interest_product && fuzzyMatch(lead.interest_product, query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
-      
-      // Date filter: only applies to agendou/consulta_agendada/compareceu
+
+      // Date filter (range): only applies to agendou/consulta_agendada/compareceu
       let matchesDate = true;
-      if (filterDate && dateFilteredStages.includes(lead.status)) {
-        const refDate = lead.status === 'compareceu' 
+      if (range && dateFilteredStages.includes(lead.status)) {
+        const refDate = lead.status === 'compareceu'
           ? (lead.stage_entered_at || lead.updated_at)
           : (lead.scheduled_appointment_at || lead.stage_entered_at || lead.updated_at);
         if (refDate) {
-          matchesDate = isSameDay(new Date(refDate), filterDate);
+          const t = new Date(refDate).getTime();
+          matchesDate = t >= range.start.getTime() && t <= range.end.getTime();
         } else {
           matchesDate = false;
         }
       }
-      
+
       return matchesSearch && matchesTreatment && matchesDate && matchesSmartCategory(lead, smartCategory);
     });
-  }, [leads, searchQuery, treatmentFilter, getFilterDate, smartCategory, matchesSmartCategory]);
+  }, [leads, searchQuery, treatmentFilter, getFilterRange, smartCategory, matchesSmartCategory]);
 
   // Counts per smart category (against base + search/treatment but ignoring smart filter)
   const smartCounts = useMemo(() => {
@@ -369,11 +356,12 @@ const Funil = () => { // v2
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
       return matchesSearch && matchesTreatment;
     });
-    const cats = ['hoje','ontem','semana','parados','sem_movimento','atrasados','reagendados','sem_retorno'];
+    const cats = ['hoje','ontem','semana'];
     const out: Record<string, number> = { all: base.length };
     cats.forEach(c => { out[c] = base.filter(l => matchesSmartCategory(l, c)).length; });
     return out;
   }, [leads, searchQuery, treatmentFilter, matchesSmartCategory]);
+
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);

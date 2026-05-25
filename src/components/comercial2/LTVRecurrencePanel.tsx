@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { LTVStageLeadsDialog, type LeadEntry } from './LTVStageLeadsDialog';
+import { LTVExecutivePanel } from './LTVExecutivePanel';
 
 const HEALTH_STYLES = {
   success: 'bg-success/10 text-success border-success/30',
@@ -164,6 +165,9 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           </Select>
         </div>
       </div>
+
+      {/* Executive Financial Panel (LTV Inteligente · $ Financeiro) */}
+      <LTVExecutivePanel />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

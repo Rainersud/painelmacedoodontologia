@@ -303,8 +303,9 @@ export function usePendingBonuses() {
         if (!referred || !CONVERTED.includes(referred.status)) continue;
         const referrer = leadMap[r.referrer_lead_id];
         const pct = Number((r as any).reward_percentage || 0);
+        if (pct <= 0) continue;
         const tv = Number(referred.treatment_value || 0);
-        const computed = pct > 0 ? (tv * pct) / 100 : Number(r.reward_value || 0);
+        const computed = (tv * pct) / 100;
         if (computed <= 0) continue;
         result.push({
           referralId: r.id,

@@ -113,10 +113,6 @@ export function LeadCard({
 
         {/* Row 2: Compact badges row */}
         <div className="flex flex-wrap items-center gap-1 mb-1">
-          {/* Score indicator */}
-          <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", scoreColors.bg, scoreColors.text)}>
-            {scoreColors.dot} {lead.lead_score ?? 50}
-          </Badge>
           {topAlert && (
             <Badge variant="outline" className={cn(
               "text-[9px] border-0 font-medium px-1 py-0 h-4",
@@ -126,14 +122,6 @@ export function LeadCard({
             )}>
               <Zap className="h-2 w-2 mr-0.5" />
               {topAlert.shortLabel}
-            </Badge>
-          )}
-          <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", alertColors[alertLevel])}>
-            ⏳ {days}d
-          </Badge>
-          {timeCategory && (
-            <Badge variant="outline" className={cn("text-[9px] border-0 font-medium px-1 py-0 h-4", timeCategory.cls)}>
-              {timeCategory.label}
             </Badge>
           )}
           {lead.interest_product && (
@@ -156,11 +144,6 @@ export function LeadCard({
           {isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && (
             <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning border-0 px-1 py-0 h-4">
               📞 {lead.contact_attempts}/9
-            </Badge>
-          )}
-          {isFollowUpStage && totalFollowUpDays > 0 && (
-            <Badge variant="outline" className="text-[9px] bg-chart-5/10 text-chart-5 border-0 px-1 py-0 h-4">
-              🔄 {totalFollowUpDays}d total
             </Badge>
           )}
         </div>

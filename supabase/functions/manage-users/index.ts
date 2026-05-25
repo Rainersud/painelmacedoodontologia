@@ -178,6 +178,23 @@ Deno.serve(async (req) => {
         })
       }
 
+      case 'delete_user': {
+        const { user_id } = params
+
+        // Delete from related tables first
+        await adminClient.from('user_permissions').delete().eq('user_id', user_id)
+        await adminClient.from('user_roles').delete().eq('user_id', user_id)
+        await adminClient.from('profiles').delete().eq('user_id', user_id)
+
+        // Delete auth user
+        const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id)
+        if (deleteError) throw deleteError
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
       default:
         return new Response(JSON.stringify({ error: 'Ação inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

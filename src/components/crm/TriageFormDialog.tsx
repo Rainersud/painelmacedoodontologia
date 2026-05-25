@@ -595,6 +595,19 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
               <Separator />
 
+              {/* Referral Section */}
+              <TriageReferralSection
+                referrals={referralEntries}
+                onChange={setReferralEntries}
+                onConvertToLead={handleConvertToLead}
+                onBulkLink={handleBulkLink}
+                isBulkLinking={bulkLink.isPending}
+                leadId={lead.id}
+                leadName={lead.name}
+              />
+
+              <Separator />
+
               {/* Credit Status */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary">Status de Crédito</h3>
@@ -699,18 +712,6 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Referral Section */}
-              <TriageReferralSection
-                referrals={referralEntries}
-                onChange={setReferralEntries}
-                onConvertToLead={handleConvertToLead}
-                onBulkLink={handleBulkLink}
-                isBulkLinking={bulkLink.isPending}
-                leadId={lead.id}
-                leadName={lead.name}
-              />
 
               {/* Filled info */}
               {existingTriage?.filled_at && (

@@ -167,7 +167,18 @@ export function ReferrerDetailDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Indicações de {referrerName}
+            <span
+              className="cursor-pointer hover:text-primary hover:underline transition-colors"
+              onClick={() => {
+                if (referrerId && onViewLead) {
+                  onViewLead(referrerId);
+                  onOpenChange(false);
+                }
+              }}
+              title="Ver card do indicador"
+            >
+              Indicações de {referrerName}
+            </span>
           </DialogTitle>
         </DialogHeader>
 

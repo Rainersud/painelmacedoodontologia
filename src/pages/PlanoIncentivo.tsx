@@ -19,18 +19,19 @@ import {
   Users,
   UserCheck,
   DollarSign,
-  Zap
+  Zap,
+  Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { incentivePlanSchema, validateForm } from '@/lib/validations';
 
-type TargetType = 'agendamentos' | 'comparecimentos' | 'resgatados' | 'fechados';
+type TargetType = 'agendamentos' | 'comparecimentos' | 'indicacoes' | 'fechados';
 type Period = 'diario' | 'semanal' | 'mensal';
 
 const targetTypeConfig: Record<TargetType, { label: string; icon: React.ElementType }> = {
   agendamentos: { label: 'Agendamentos', icon: Calendar },
   comparecimentos: { label: 'Comparecimentos', icon: UserCheck },
-  resgatados: { label: 'Resgatados', icon: Users },
+  indicacoes: { label: 'Indicações', icon: Share2 },
   fechados: { label: 'Fechados', icon: DollarSign },
 };
 
@@ -220,10 +221,10 @@ export default function PlanoIncentivo() {
                             Comparecimentos
                           </div>
                         </SelectItem>
-                        <SelectItem value="resgatados">
+                        <SelectItem value="indicacoes">
                           <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            Resgatados
+                            <Share2 className="h-4 w-4" />
+                            Indicações
                           </div>
                         </SelectItem>
                         <SelectItem value="fechados">

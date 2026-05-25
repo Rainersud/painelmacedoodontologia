@@ -6,13 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 import { TrendingUp, DollarSign, AlertTriangle, Calendar, Wallet, BarChart3 } from 'lucide-react';
-import { useRevenueProjection, useCACMonthly, useLTVMonthly } from '@/hooks/useRevenueProjection';
+import { useRevenueProjection, useCACMonthly, useLTVMonthly, useTotalReceivedRevenue } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
 
 export function FinancialDashboard() {
   const { data: projection, isLoading: projLoading } = useRevenueProjection();
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();
   const { data: ltvData, isLoading: ltvLoading } = useLTVMonthly();
+  const { data: totalReceived } = useTotalReceivedRevenue();
   const [periodFilter, setPeriodFilter] = useState('all');
 
   const getFilteredTotal = () => {
@@ -78,10 +79,10 @@ export function FinancialDashboard() {
               <span className="text-xs font-medium text-muted-foreground">Comercial 1 (CAC)</span>
             </div>
             <p className="text-2xl font-bold text-primary">
-              {formatCurrency(cacData?.reduce((sum, m) => sum + m.total, 0) || 0)}
+              {formatCurrency(totalReceived || 0)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Total recebido (1ª compra)
+              Faturamento total recebido (= Dashboard)
             </p>
           </CardContent>
         </Card>

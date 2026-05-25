@@ -169,6 +169,21 @@ export function useCACMonthly() {
   });
 }
 
+// Total received revenue (all paid payments) — same source as Dashboard "Receita"
+export function useTotalReceivedRevenue() {
+  return useQuery({
+    queryKey: ['total-received-revenue'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('net_value')
+        .eq('status', 'pago');
+      if (error) throw error;
+      return (data || []).reduce((sum, p) => sum + Number(p.net_value || 0), 0);
+    },
+  });
+}
+
 // LTV data: upsell payments (with upsell_opportunity_id)
 export function useLTVMonthly() {
   return useQuery({

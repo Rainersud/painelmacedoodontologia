@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1027,6 +1027,9 @@ const Comercial2 = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+  const [boardScrollWidth, setBoardScrollWidth] = useState(0);
   const [selectedOpp, setSelectedOpp] = useState<UpsellOpportunity | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -1044,6 +1047,40 @@ const Comercial2 = () => {
       }
     }
   }, [opportunities, selectedOpp]);
+
+  // Sync top scrollbar with kanban board
+  useEffect(() => {
+    const top = topScrollRef.current;
+    const board = boardScrollRef.current;
+    if (!top || !board) return;
+
+    const updateWidth = () => setBoardScrollWidth(board.scrollWidth);
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(board);
+    Array.from(board.children).forEach((c) => ro.observe(c as Element));
+
+    let syncing = false;
+    const onTop = () => {
+      if (syncing) return;
+      syncing = true;
+      board.scrollLeft = top.scrollLeft;
+      syncing = false;
+    };
+    const onBoard = () => {
+      if (syncing) return;
+      syncing = true;
+      top.scrollLeft = board.scrollLeft;
+      syncing = false;
+    };
+    top.addEventListener('scroll', onTop);
+    board.addEventListener('scroll', onBoard);
+    return () => {
+      top.removeEventListener('scroll', onTop);
+      board.removeEventListener('scroll', onBoard);
+      ro.disconnect();
+    };
+  }, [opportunities, searchQuery]);
 
   const filteredOpps = useMemo(() => {
     if (!opportunities) return [];
@@ -1105,7 +1142,13 @@ const Comercial2 = () => {
       // Free movement allowed between non-locked stages
       void fromIdx;
 
-      updateStatus.mutate({ id, status: newStatus });
+      // Sync purchase_count to the new stage so LTV table / metrics match the pipeline
+      const newPurchaseCount = toIdx + 1;
+      updateStatus.mutate({
+        id,
+        status: newStatus,
+        additionalData: { purchase_count: newPurchaseCount },
+      });
     }
     setDraggedId(null);
     setDropTarget(null);
@@ -1311,8 +1354,20 @@ const Comercial2 = () => {
               </div>
             </div>
 
+            {/* Top scrollbar (synced with kanban below) */}
+            <div
+              ref={topScrollRef}
+              className="shrink-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick mb-1"
+              aria-hidden="true"
+            >
+              <div style={{ width: boardScrollWidth, height: 1 }} />
+            </div>
+
             {/* Kanban Board */}
-            <div className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick">
+            <div
+              ref={boardScrollRef}
+              className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick"
+            >
               <div className="flex gap-3 min-w-max md:h-full pb-3 px-1">
                 {(searchQuery.trim() ? UPSELL_STAGES.filter(s => getOppsByStatus(s.key).length > 0) : UPSELL_STAGES).map((stage) => {
                   const stageOpps = getOppsByStatus(stage.key);

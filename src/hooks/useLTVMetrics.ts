@@ -136,8 +136,10 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
       (opps || []).forEach(o => {
         if (leadIdsBySaleType && !leadIdsBySaleType.has(o.lead_id)) return;
         
-        // Use purchase_count from DB as source of truth (synced with pipeline)
-        const totalCount = Math.max(o.purchase_count || 1, 1);
+        // Pipeline stage (status 'comprou_N') is the source of truth, matching the CRM kanban
+        const statusMatch = /^comprou_(\d+)$/.exec(((o as { status?: string }).status) || '');
+        const stageCount = statusMatch ? parseInt(statusMatch[1], 10) : (o.purchase_count || 1);
+        const totalCount = Math.max(stageCount, 1);
         
         // Parse purchase_values only for LTV value calculation
         let ltvFromField = 0;

@@ -80,8 +80,10 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     };
 
     opportunities.forEach((opp) => {
-      // Use purchase_count from DB as source of truth for stage grouping
-      const totalCount = Math.max(opp.purchase_count || 1, 1);
+      // Pipeline stage (status 'comprou_N') is the source of truth for grouping
+      const statusMatch = /^comprou_(\d+)$/.exec(opp.status || '');
+      const stageCount = statusMatch ? parseInt(statusMatch[1], 10) : (opp.purchase_count || 1);
+      const totalCount = Math.max(stageCount, 1);
       
       // Parse purchase_values only for LTV calculation
       let ltv = 0;

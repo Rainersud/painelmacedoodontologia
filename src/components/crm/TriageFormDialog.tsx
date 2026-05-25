@@ -336,11 +336,6 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                     <Label className="text-xs">Telefone / WhatsApp</Label>
                     <Input value={form.phone || ''} onChange={e => updateField('phone', e.target.value)} placeholder="(00) 00000-0000" />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Como gosta de ser chamado(a)?</Label>
-                    <Input value={form.nickname || ''} onChange={e => updateField('nickname', e.target.value)} placeholder="Apelido" />
-                  </div>
-                  <div className="space-y-1">
                     <Label className="text-xs">Email</Label>
                     <Input type="email" value={form.email || ''} onChange={e => updateField('email', e.target.value)} placeholder="email@exemplo.com" />
                   </div>

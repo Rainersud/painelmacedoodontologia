@@ -140,7 +140,13 @@ export function ReferrerDetailDialog({
   const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
   const handleUpdateBonusValue = (refId: string, value: number, percentage: number) => {
-    updateReferral.mutate({ id: refId, updates: { reward_value: value, reward_percentage: percentage } as any });
+    const updates: any = { reward_value: value, reward_percentage: percentage };
+    // Se a % foi definida (>0), reabre como pendente para reaparecer em "Bonificações Pendentes"
+    if (percentage > 0) {
+      updates.bonus_status = 'pendente';
+      updates.bonus_paid_at = null;
+    }
+    updateReferral.mutate({ id: refId, updates });
   };
 
   const handleMarkAsPaid = (refId: string) => {

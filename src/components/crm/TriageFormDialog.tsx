@@ -365,199 +365,62 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
               <Separator />
 
-              {/* Consultation reason */}
+              {/* SPIN Script */}
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-primary">Motivo da Consulta</h3>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">O que te motivou a procurar o consultório?</Label>
-                    <div className="space-y-2 mt-2">
-                      {MOTIVATION_OPTIONS.map(option => (
-                        <div key={option} className="flex items-center gap-2">
-                          <Checkbox
-                            checked={(form.motivation || []).includes(option)}
-                            onCheckedChange={() => toggleMotivation(option)}
+                <h3 className="text-sm font-semibold mb-1 text-primary">Roteiro SPIN — Primeiro Contato Odontológico</h3>
+                <p className="text-xs text-muted-foreground mb-4">Perguntas estruturadas para entender situação, problema, implicação e necessidade do paciente.</p>
+
+                {[
+                  {
+                    title: 'SITUAÇÃO',
+                    questions: [
+                      { key: 'spin_s1', label: 'O que te fez procurar tratamento agora?' },
+                      { key: 'spin_s2', label: 'Hoje, o que mais te incomoda no seu sorriso ou mastigação?' },
+                      { key: 'spin_s3', label: 'Você já chegou a fazer alguma avaliação anteriormente?' },
+                    ],
+                  },
+                  {
+                    title: 'PROBLEMA',
+                    questions: [
+                      { key: 'spin_p1', label: 'Isso tem afetado sua autoestima ou confiança?' },
+                      { key: 'spin_p2', label: 'Tem dificuldade para comer, sorrir ou falar?' },
+                      { key: 'spin_p3', label: 'Isso vem piorando com o tempo?' },
+                    ],
+                  },
+                  {
+                    title: 'IMPLICAÇÃO',
+                    questions: [
+                      { key: 'spin_i1', label: 'Se continuar assim, como você acha que estará daqui 1 ou 2 anos?' },
+                      { key: 'spin_i2', label: 'O que mais te preocupa em não resolver isso agora?' },
+                    ],
+                  },
+                  {
+                    title: 'NECESSIDADE / SOLUÇÃO',
+                    questions: [
+                      { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?' },
+                      { key: 'spin_n2', label: 'Se conseguirmos uma condição facilitada, você teria interesse em iniciar?' },
+                      { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?' },
+                    ],
+                  },
+                ].map(block => (
+                  <div key={block.title} className="mb-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 mb-2">{block.title}</h4>
+                    <div className="space-y-3 pl-1">
+                      {block.questions.map(q => (
+                        <div key={q.key} className="space-y-1">
+                          <Label className="text-xs">{q.label}</Label>
+                          <Textarea
+                            value={(form.spin_answers as Record<string, string> | undefined)?.[q.key] || ''}
+                            onChange={e => updateField('spin_answers', { ...(form.spin_answers as Record<string, string> || {}), [q.key]: e.target.value })}
+                            placeholder="Resposta do paciente..."
+                            rows={2}
+                            className="text-xs"
                           />
-                          <Label className="text-xs font-normal cursor-pointer">{option}</Label>
                         </div>
                       ))}
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={!!form.motivation_other}
-                          onCheckedChange={(checked) => {
-                            if (!checked) updateField('motivation_other', '');
-                          }}
-                        />
-                        <Label className="text-xs font-normal">Outro:</Label>
-                        <Input
-                          className="h-7 text-xs flex-1"
-                          value={form.motivation_other || ''}
-                          onChange={e => updateField('motivation_other', e.target.value)}
-                          placeholder="Descreva..."
-                        />
-                      </div>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Há quanto tempo está com este incômodo?</Label>
-                    <RadioGroup
-                      value={form.discomfort_duration || ''}
-                      onValueChange={v => updateField('discomfort_duration', v)}
-                      className="grid grid-cols-2 gap-2 mt-2"
-                    >
-                      {DISCOMFORT_OPTIONS.map(option => (
-                        <div key={option} className="flex items-center gap-2">
-                          <RadioGroupItem value={option} />
-                          <Label className="text-xs font-normal cursor-pointer">{option}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Oral condition */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 text-primary">Condição Oral Atual</h3>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Você usa prótese?</Label>
-                    <RadioGroup
-                      value={form.uses_prosthesis === true ? 'sim' : form.uses_prosthesis === false ? 'nao' : ''}
-                      onValueChange={v => updateField('uses_prosthesis', v === 'sim')}
-                      className="flex gap-4 mt-1"
-                    >
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="sim" />
-                        <Label className="text-xs font-normal">Sim</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="nao" />
-                        <Label className="text-xs font-normal">Não</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {form.uses_prosthesis && (
-                    <div className="space-y-1 ml-4">
-                      <Label className="text-xs">Se sim, há quanto tempo?</Label>
-                      <Input className="h-8 text-xs" value={form.prosthesis_duration || ''} onChange={e => updateField('prosthesis_duration', e.target.value)} placeholder="Ex: 5 anos" />
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Sente dificuldade para mastigar?</Label>
-                    <RadioGroup
-                      value={form.difficulty_chewing === true ? 'sim' : form.difficulty_chewing === false ? 'nao' : ''}
-                      onValueChange={v => updateField('difficulty_chewing', v === 'sim')}
-                      className="flex gap-4 mt-1"
-                    >
-                      <div className="flex items-center gap-2"><RadioGroupItem value="sim" /><Label className="text-xs font-normal">Sim</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="nao" /><Label className="text-xs font-normal">Não</Label></div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Tem vergonha de sorrir ou falar por causa dos dentes?</Label>
-                    <RadioGroup
-                      value={form.ashamed_to_smile === true ? 'sim' : form.ashamed_to_smile === false ? 'nao' : ''}
-                      onValueChange={v => updateField('ashamed_to_smile', v === 'sim')}
-                      className="flex gap-4 mt-1"
-                    >
-                      <div className="flex items-center gap-2"><RadioGroupItem value="sim" /><Label className="text-xs font-normal">Sim</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="nao" /><Label className="text-xs font-normal">Não</Label></div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Já fez implantes antes?</Label>
-                    <RadioGroup
-                      value={form.previous_implants === true ? 'sim' : form.previous_implants === false ? 'nao' : ''}
-                      onValueChange={v => updateField('previous_implants', v === 'sim')}
-                      className="flex gap-4 mt-1"
-                    >
-                      <div className="flex items-center gap-2"><RadioGroupItem value="sim" /><Label className="text-xs font-normal">Sim</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="nao" /><Label className="text-xs font-normal">Não</Label></div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Você tem algum medo ou trauma de dentista?</Label>
-                    <RadioGroup
-                      value={form.fear_of_dentist || ''}
-                      onValueChange={v => updateField('fear_of_dentist', v)}
-                      className="flex gap-4 mt-1"
-                    >
-                      {FEAR_OPTIONS.map(option => (
-                        <div key={option} className="flex items-center gap-2">
-                          <RadioGroupItem value={option} />
-                          <Label className="text-xs font-normal">{option}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Aesthetic expectations */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 text-primary">Expectativa Estética e Emocional</h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">De 0 a 10, quanto seu sorriso te incomoda hoje?</Label>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-muted-foreground w-4">0</span>
-                      <Slider
-                        value={[form.smile_discomfort_score ?? 5]}
-                        onValueChange={([v]) => updateField('smile_discomfort_score', v)}
-                        max={10}
-                        step={1}
-                        className="flex-1"
-                      />
-                      <span className="text-xs text-muted-foreground w-4">10</span>
-                      <Badge variant="outline" className="min-w-[2rem] justify-center">
-                        {form.smile_discomfort_score ?? 5}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">O que mais te incomoda ao se olhar no espelho?</Label>
-                    <Textarea
-                      value={form.mirror_concern || ''}
-                      onChange={e => updateField('mirror_concern', e.target.value)}
-                      placeholder="Descreva..."
-                      rows={2}
-                      className="text-xs"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">O que mudaria em seu sorriso se pudesse?</Label>
-                    <Textarea
-                      value={form.desired_smile_change || ''}
-                      onChange={e => updateField('desired_smile_change', e.target.value)}
-                      placeholder="Descreva..."
-                      rows={2}
-                      className="text-xs"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Em uma palavra, como gostaria de se sentir depois do tratamento?</Label>
-                    <Input
-                      value={form.desired_feeling || ''}
-                      onChange={e => updateField('desired_feeling', e.target.value)}
-                      placeholder="Ex: Confiante, Feliz, Livre..."
-                      className="text-xs"
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
 
               <Separator />

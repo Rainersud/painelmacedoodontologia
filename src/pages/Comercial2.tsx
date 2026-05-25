@@ -1142,7 +1142,13 @@ const Comercial2 = () => {
       // Free movement allowed between non-locked stages
       void fromIdx;
 
-      updateStatus.mutate({ id, status: newStatus });
+      // Sync purchase_count to the new stage so LTV table / metrics match the pipeline
+      const newPurchaseCount = toIdx + 1;
+      updateStatus.mutate({
+        id,
+        status: newStatus,
+        additionalData: { purchase_count: newPurchaseCount },
+      });
     }
     setDraggedId(null);
     setDropTarget(null);

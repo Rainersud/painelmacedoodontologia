@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAgentMetricsRange, useAgentRankingsRange, AgentMetrics } from '@/hooks/useAgentMetrics';
-import { useIncentiveGoals, GoalWithIncentive } from '@/hooks/useIncentiveGoals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessCalendar } from '@/hooks/useBusinessCalendar';
 import {

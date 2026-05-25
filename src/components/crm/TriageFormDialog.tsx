@@ -237,23 +237,35 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
           <div class="field"><label>Instagram:</label> <span>${form.instagram || '-'}</span></div>
           <div class="field"><label>Facebook:</label> <span>${form.facebook || '-'}</span></div>
         </div>
-        <h2>Motivo da Consulta</h2>
-        <div class="field"><label>Motivações:</label> <span>${(form.motivation || []).join(', ') || '-'}${form.motivation_other ? ', ' + form.motivation_other : ''}</span></div>
-        <div class="field"><label>Tempo com incômodo:</label> <span>${form.discomfort_duration || '-'}</span></div>
-        <h2>Condição Oral Atual</h2>
-        <div class="grid">
-          <div class="field"><label>Usa prótese:</label> <span>${form.uses_prosthesis === true ? 'Sim' : form.uses_prosthesis === false ? 'Não' : '-'}</span></div>
-          <div class="field"><label>Tempo de prótese:</label> <span>${form.prosthesis_duration || '-'}</span></div>
-          <div class="field"><label>Dificuldade para mastigar:</label> <span>${form.difficulty_chewing === true ? 'Sim' : form.difficulty_chewing === false ? 'Não' : '-'}</span></div>
-          <div class="field"><label>Vergonha de sorrir:</label> <span>${form.ashamed_to_smile === true ? 'Sim' : form.ashamed_to_smile === false ? 'Não' : '-'}</span></div>
-          <div class="field"><label>Implantes anteriores:</label> <span>${form.previous_implants === true ? 'Sim' : form.previous_implants === false ? 'Não' : '-'}</span></div>
-          <div class="field"><label>Medo de dentista:</label> <span>${form.fear_of_dentist || '-'}</span></div>
-        </div>
-        <h2>Expectativa Estética e Emocional</h2>
-        <div class="field"><label>Nota do incômodo (0-10):</label> <span>${form.smile_discomfort_score ?? '-'}</span></div>
-        <div class="field"><label>O que incomoda no espelho:</label> <span>${form.mirror_concern || '-'}</span></div>
-        <div class="field"><label>O que mudaria no sorriso:</label> <span>${form.desired_smile_change || '-'}</span></div>
-        <div class="field"><label>Como gostaria de se sentir:</label> <span>${form.desired_feeling || '-'}</span></div>
+        <h2>Roteiro SPIN</h2>
+        ${(() => {
+          const a = (form.spin_answers || {}) as Record<string, string>;
+          const blocks: Array<[string, Array<[string, string]>]> = [
+            ['SITUAÇÃO', [
+              ['O que te fez procurar tratamento agora?', a.spin_s1 || '-'],
+              ['Hoje, o que mais te incomoda no seu sorriso ou mastigação?', a.spin_s2 || '-'],
+              ['Você já chegou a fazer alguma avaliação anteriormente?', a.spin_s3 || '-'],
+            ]],
+            ['PROBLEMA', [
+              ['Isso tem afetado sua autoestima ou confiança?', a.spin_p1 || '-'],
+              ['Tem dificuldade para comer, sorrir ou falar?', a.spin_p2 || '-'],
+              ['Isso vem piorando com o tempo?', a.spin_p3 || '-'],
+            ]],
+            ['IMPLICAÇÃO', [
+              ['Se continuar assim, como você acha que estará daqui 1 ou 2 anos?', a.spin_i1 || '-'],
+              ['O que mais te preocupa em não resolver isso agora?', a.spin_i2 || '-'],
+            ]],
+            ['NECESSIDADE / SOLUÇÃO', [
+              ['Como você gostaria que fosse seu sorriso ideal?', a.spin_n1 || '-'],
+              ['Se conseguirmos uma condição facilitada, você teria interesse em iniciar?', a.spin_n2 || '-'],
+              ['O que seria importante para você conseguir começar o tratamento?', a.spin_n3 || '-'],
+            ]],
+          ];
+          return blocks.map(([title, qs]) => `
+            <h3 style="font-size:14px;margin-top:12px;">${title}</h3>
+            ${qs.map(([q, ans]) => `<div class="field"><label>${q}</label> <span>${ans}</span></div>`).join('')}
+          `).join('');
+        })()}
       </body>
       </html>
     `;

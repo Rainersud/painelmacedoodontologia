@@ -61,6 +61,7 @@ export default function UserManagementPanel() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPermOpen, setIsPermOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [editPerms, setEditPerms] = useState<Array<{ module: string; can_view: boolean; can_edit: boolean }>>([]);
 
@@ -153,6 +154,22 @@ export default function UserManagementPanel() {
       setResetPassword('');
     },
     onError: () => toast.error('Erro ao resetar senha'),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async () => {
+      if (!selectedUser) return;
+      await invokeManageUsers('delete_user', {
+        user_id: selectedUser.user_id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managed-users'] });
+      toast.success('Usuário deletado com sucesso!');
+      setIsDeleteOpen(false);
+      setSelectedUser(null);
+    },
+    onError: () => toast.error('Erro ao deletar usuário'),
   });
 
   const openPermissions = (user: UserWithDetails) => {
@@ -327,6 +344,14 @@ export default function UserManagementPanel() {
                         >
                           <Power className={`h-4 w-4 ${user.banned || user.is_active === false ? 'text-destructive' : 'text-green-600'}`} />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setSelectedUser(user); setIsDeleteOpen(true); }}
+                          title="Deletar usuário"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -406,6 +431,31 @@ export default function UserManagementPanel() {
             >
               {doResetPassword.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Alterar Senha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Deletar Usuário</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja deletar o usuário <strong>{selectedUser?.full_name}</strong>? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteUser.mutate()}
+              disabled={deleteUser.isPending}
+            >
+              {deleteUser.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Deletar
             </Button>
           </DialogFooter>
         </DialogContent>

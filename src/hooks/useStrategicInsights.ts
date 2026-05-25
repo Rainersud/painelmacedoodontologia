@@ -133,18 +133,20 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
         return raw.trim();
       };
 
-      const lossAgg: Record<string, { count: number; valor: number }> = {};
-      LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0 }; });
+      const lossAgg: Record<string, { count: number; valor: number; leads: { id: string; name: string }[] }> = {};
+      LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0, leads: [] }; });
       leads.filter(l => l.loss_reason && l.created_at >= startISO && l.created_at <= endISO).forEach(l => {
         const cat = normalize(l.loss_reason!);
-        if (!lossAgg[cat]) lossAgg[cat] = { count: 0, valor: 0 };
+        if (!lossAgg[cat]) lossAgg[cat] = { count: 0, valor: 0, leads: [] };
         lossAgg[cat].count += 1;
         lossAgg[cat].valor += Number(l.treatment_value || 0);
+        lossAgg[cat].leads.push({ id: l.id, name: (l as any).name || 'Sem nome' });
       });
       const totalLoss = Object.values(lossAgg).reduce((s, v) => s + v.count, 0) || 1;
       const losses: LossReason[] = Object.entries(lossAgg)
-        .map(([reason, v]) => ({ reason, count: v.count, pct: Math.round((v.count / totalLoss) * 100), valorPerdido: v.valor }))
+        .map(([reason, v]) => ({ reason, count: v.count, pct: Math.round((v.count / totalLoss) * 100), valorPerdido: v.valor, leads: v.leads }))
         .sort((a, b) => b.count - a.count);
+
 
       // Forecast (linear projection of current month revenue)
       const totalReceita = payments.reduce((s, p) => s + (p.net_value || 0), 0);

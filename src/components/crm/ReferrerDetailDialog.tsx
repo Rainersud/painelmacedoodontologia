@@ -24,47 +24,74 @@ interface ReferrerDetailDialogProps {
   onViewLead?: (leadId: string) => void;
 }
 
-function RewardEditor({ value, onSave, editable }: { value: number; onSave: (v: number) => void; editable: boolean }) {
+function RewardEditor({ value, treatmentValue, onSave, editable }: { value: number; treatmentValue: number; onSave: (v: number) => void; editable: boolean }) {
   const [editing, setEditing] = useState(false);
-  const [customValue, setCustomValue] = useState(String(value || ''));
+  const [customPct, setCustomPct] = useState('');
   const fmtCur = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
-  if (!editable) return <span className="text-xs text-muted-foreground">{value > 0 ? fmtCur(value) : '—'}</span>;
+  const currentPct = treatmentValue > 0 && value > 0 ? (value / treatmentValue) * 100 : 0;
+  const pctLabel = currentPct > 0 ? `${currentPct % 1 === 0 ? currentPct.toFixed(0) : currentPct.toFixed(1)}%` : '';
+
+  if (!editable) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {value > 0 ? `${pctLabel} · ${fmtCur(value)}` : '—'}
+      </span>
+    );
+  }
+
+  const applyPct = (pct: number) => {
+    const amt = treatmentValue > 0 ? Math.round((treatmentValue * pct) / 100 * 100) / 100 : 0;
+    onSave(amt);
+  };
 
   if (editing) {
     return (
       <div className="flex gap-1 items-center">
         <Input
-          className="h-7 text-xs w-20"
+          className="h-7 text-xs w-16"
           type="number"
           min="0"
-          value={customValue}
-          onChange={(e) => setCustomValue(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { onSave(Number(customValue) || 0); setEditing(false); } }}
+          step="0.1"
+          value={customPct}
+          onChange={(e) => setCustomPct(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { applyPct(Number(customPct) || 0); setEditing(false); } }}
           autoFocus
         />
-        <Button size="sm" variant="ghost" className="h-7 text-xs px-1" onClick={() => { onSave(Number(customValue) || 0); setEditing(false); }}>OK</Button>
+        <span className="text-xs">%</span>
+        <Button size="sm" variant="ghost" className="h-7 text-xs px-1" onClick={() => { applyPct(Number(customPct) || 0); setEditing(false); }}>OK</Button>
       </div>
     );
   }
 
+  const presetMatch = ['2', '4', '5'].includes(String(currentPct));
+  const selectVal = presetMatch ? String(currentPct) : (currentPct > 0 ? 'custom-set' : '');
+
   return (
-    <Select
-      value={String(value || 0)}
-      onValueChange={(v) => {
-        if (v === 'custom') { setCustomValue(String(value || '')); setEditing(true); }
-        else onSave(Number(v));
-      }}
-    >
-      <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="100">R$ 100</SelectItem>
-        <SelectItem value="200">R$ 200</SelectItem>
-        <SelectItem value="300">R$ 300</SelectItem>
-        <SelectItem value="500">R$ 500</SelectItem>
-        <SelectItem value="custom">Outro valor...</SelectItem>
-      </SelectContent>
-    </Select>
+    <div className="flex flex-col gap-0.5">
+      <Select
+        value={selectVal}
+        onValueChange={(v) => {
+          if (v === 'custom') { setCustomPct(currentPct > 0 ? String(currentPct) : ''); setEditing(true); }
+          else if (v !== 'custom-set') applyPct(Number(v));
+        }}
+      >
+        <SelectTrigger className="h-7 text-xs w-24"><SelectValue placeholder="Definir %" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="2">2%</SelectItem>
+          <SelectItem value="4">4%</SelectItem>
+          <SelectItem value="5">5%</SelectItem>
+          <SelectItem value="custom">Outro %...</SelectItem>
+          {selectVal === 'custom-set' && <SelectItem value="custom-set">{pctLabel}</SelectItem>}
+        </SelectContent>
+      </Select>
+      {value > 0 && (
+        <span className="text-[10px] text-muted-foreground">{fmtCur(value)}</span>
+      )}
+      {treatmentValue <= 0 && (
+        <span className="text-[9px] text-warning">Defina o valor do tratamento</span>
+      )}
+    </div>
   );
 }
 

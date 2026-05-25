@@ -265,44 +265,49 @@ export default function DashboardCallCenter() {
           </>
         )}
 
-        {/* Plano de incentivo + ranking */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <SmartIncentiveWidget agentId={selectedAgent || user?.id} />
+        {/* Ranking */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-warning" /> Ranking de Desempenho
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="revenue">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
+                <TabsTrigger value="revenue">Faturamento</TabsTrigger>
+                <TabsTrigger value="closed">Venda Realizada</TabsTrigger>
+                <TabsTrigger value="ticket">Ticket Médio</TabsTrigger>
+                <TabsTrigger value="attended">Comparec.</TabsTrigger>
+                <TabsTrigger value="appointments">Agendam.</TabsTrigger>
+                <TabsTrigger value="conversion">Conversão</TabsTrigger>
+                <TabsTrigger value="referrals">Indicações</TabsTrigger>
+              </TabsList>
+              <TabsContent value="revenue" className="mt-4">
+                <RankingTable rankings={rankings.byRevenue} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+              </TabsContent>
+              <TabsContent value="closed" className="mt-4">
+                <RankingTable rankings={rankings.byClosed} formatter={v => `${v} vendas`} />
+              </TabsContent>
+              <TabsContent value="ticket" className="mt-4">
+                <RankingTable rankings={ticketRanking} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+              </TabsContent>
+              <TabsContent value="attended" className="mt-4">
+                <RankingTable rankings={rankings.byAttended} formatter={v => `${v}`} />
+              </TabsContent>
+              <TabsContent value="appointments" className="mt-4">
+                <RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} />
+              </TabsContent>
+              <TabsContent value="conversion" className="mt-4">
+                <RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} />
+              </TabsContent>
+              <TabsContent value="referrals" className="mt-4">
+                <RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-          <Card className="lg:col-span-2 border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-warning" /> Ranking de Desempenho
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="revenue">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="revenue">Faturamento</TabsTrigger>
-                  <TabsTrigger value="closed">Vendas</TabsTrigger>
-                  <TabsTrigger value="appointments">Agend.</TabsTrigger>
-                  <TabsTrigger value="conversion">Conversão</TabsTrigger>
-                  <TabsTrigger value="referrals">Indicações</TabsTrigger>
-                </TabsList>
-                <TabsContent value="revenue" className="mt-4">
-                  <RankingTable rankings={rankings.byRevenue} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                </TabsContent>
-                <TabsContent value="closed" className="mt-4">
-                  <RankingTable rankings={rankings.byClosed} formatter={v => `${v} vendas`} />
-                </TabsContent>
-                <TabsContent value="appointments" className="mt-4">
-                  <RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} />
-                </TabsContent>
-                <TabsContent value="conversion" className="mt-4">
-                  <RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} />
-                </TabsContent>
-                <TabsContent value="referrals" className="mt-4">
-                  <RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Cards individuais (visão de equipe) */}
         {showTeam && (

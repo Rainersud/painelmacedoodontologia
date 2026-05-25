@@ -77,8 +77,15 @@ export function LeadOriginsWidget() {
 export function LossReasonsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
   const { data, isLoading } = useStrategicInsights(range);
+  const { data: allLeads } = useCRMLeads();
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const losses = (data?.losses || []).filter(l => l.count > 0);
   const top = losses[0];
+
+  const openLead = (id: string) => {
+    const lead = allLeads?.find(l => l.id === id);
+    if (lead) setSelectedLead(lead);
+  };
 
   return (
     <Card className="monday-card">
@@ -127,12 +134,32 @@ export function LossReasonsWidget() {
                   <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${l.pct}%` }} />
                   </div>
+                  {l.leads.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {l.leads.map(ld => (
+                        <button
+                          key={ld.id}
+                          onClick={() => openLead(ld.id)}
+                          className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-destructive/30 hover:bg-destructive/10 hover:border-destructive transition-colors text-foreground"
+                          title="Abrir card do lead"
+                        >
+                          {ld.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
       </CardContent>
+      <LeadDetailDialog
+        lead={selectedLead}
+        open={!!selectedLead}
+        onOpenChange={(open) => !open && setSelectedLead(null)}
+      />
     </Card>
   );
 }
+

@@ -16,7 +16,7 @@ import {
 } from 'date-fns';
 import {
   Users, Phone, Calendar, TrendingUp, DollarSign, UserCheck, Trophy,
-  Share2, Target, Flame, Crown, Medal, Settings, ArrowRight, Receipt,
+  Share2, Target, Flame, Crown, Medal, Settings, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';

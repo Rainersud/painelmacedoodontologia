@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ReferralDashboard } from '@/components/crm/ReferralDashboard';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
+import { PendingBonusesWidget } from '@/components/crm/PendingBonusesWidget';
 import { ReferrerDetailDialog } from '@/components/crm/ReferrerDetailDialog';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { useCRMLeads } from '@/hooks/useCRMLeads';

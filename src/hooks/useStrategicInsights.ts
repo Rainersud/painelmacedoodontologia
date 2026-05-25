@@ -23,7 +23,9 @@ export interface LossReason {
   count: number;
   pct: number;
   valorPerdido: number;
+  leads: { id: string; name: string }[];
 }
+
 
 export interface StrategicInsights {
   sellerRanking: SellerRanking[];

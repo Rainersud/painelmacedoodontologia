@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAgentMetricsRange, useAgentRankingsRange, AgentMetrics } from '@/hooks/useAgentMetrics';
-import { useIncentiveGoals, GoalWithIncentive } from '@/hooks/useIncentiveGoals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessCalendar } from '@/hooks/useBusinessCalendar';
 import {
@@ -17,7 +16,7 @@ import {
 } from 'date-fns';
 import {
   Users, Phone, Calendar, TrendingUp, DollarSign, UserCheck, Trophy,
-  Award, Zap, Share2, Target, Flame, Crown, Medal, Settings, ArrowRight,
+  Share2, Target, Flame, Crown, Medal, Settings, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -35,30 +34,12 @@ function getRange(period: Period) {
   }
 }
 
-const targetLabels: Record<string, string> = {
-  agendamentos: 'Agendamentos',
-  comparecimentos: 'Comparecimentos',
-  indicacoes: 'Indicações',
-  fechados: 'Vendas Fechadas',
-  resgatados: 'Resgatados',
-};
-
-const periodLabelsGoal: Record<string, string> = { diario: 'Diária', semanal: 'Semanal', mensal: 'Mensal' };
-
-/** Cores: vermelho=crítico, verde=atenção, azul=saudável */
-const statusStyles: Record<GoalWithIncentive['status'], { bg: string; text: string; border: string; barFill: string; label: string }> = {
-  azul: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/30', barFill: '[&>div]:bg-primary', label: 'No ritmo' },
-  verde: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/30', barFill: '[&>div]:bg-success', label: 'Atenção' },
-  vermelho: { bg: 'bg-destructive/10', text: 'text-destructive', border: 'border-destructive/30', barFill: '[&>div]:bg-destructive', label: 'Crítico' },
-};
-
 const kpiCards = [
   { key: 'leadsReceived', label: 'Novos Leads', icon: Users, color: 'primary' },
   { key: 'appointmentsScheduled', label: 'Agendamentos', icon: Calendar, color: 'chart-2' },
   { key: 'attendedAppointments', label: 'Comparecimentos', icon: UserCheck, color: 'success' },
-  { key: 'closed', label: 'Vendas', icon: DollarSign, color: 'chart-5' },
+  { key: 'closed', label: 'Venda Realizada', icon: DollarSign, color: 'chart-5' },
   { key: 'referrals', label: 'Indicações', icon: Share2, color: 'warning' },
-  { key: 'callsMade', label: 'Ligações', icon: Phone, color: 'muted-foreground' },
 ] as const;
 
 function MedalIcon({ rank }: { rank: number }) {
@@ -96,9 +77,10 @@ function AgentCard({ agent, isLeader }: { agent: AgentMetrics; isLeader?: boolea
           <div className="flex justify-between"><span className="text-muted-foreground">Leads</span><b>{agent.leadsReceived}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Agend.</span><b>{agent.appointmentsScheduled}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Compar.</span><b>{agent.attendedAppointments}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Vendas</span><b>{agent.closed}</b></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Venda Real.</span><b>{agent.closed}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Indic.</span><b>{agent.referrals}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Receita</span><b>R$ {(agent.revenue / 1000).toFixed(1)}k</b></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Faturam.</span><b>R$ {(agent.revenue / 1000).toFixed(1)}k</b></div>
+          <div className="flex justify-between col-span-2 pt-1 border-t"><span className="text-muted-foreground">Ticket Médio</span><b className="text-primary">R$ {agent.closed > 0 ? Math.round(agent.revenue / agent.closed).toLocaleString('pt-BR') : '0'}</b></div>
         </div>
       </CardContent>
     </Card>
@@ -135,84 +117,6 @@ function RankingTable({ rankings, formatter }: { rankings: any[]; formatter: (v:
   );
 }
 
-function SmartIncentiveWidget({ agentId }: { agentId?: string }) {
-  const { data } = useIncentiveGoals(agentId);
-  if (!data || data.goals.length === 0) {
-    return (
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Zap className="h-5 w-5 text-warning" /> Plano de Incentivo
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-8 text-center">
-          <Award className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-          <p className="text-muted-foreground text-sm">Nenhum plano de incentivo ativo</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Zap className="h-5 w-5 text-warning" /> Plano de Incentivo Inteligente
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {data.goals.map(goal => {
-          const styles = statusStyles[goal.status];
-          const label = targetLabels[goal.type] ?? goal.type;
-          return (
-            <div key={goal.id} className={cn('p-4 rounded-xl border', styles.bg, styles.border)}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{label}</span>
-                  <Badge variant="outline" className="text-[10px]">{periodLabelsGoal[goal.period]}</Badge>
-                </div>
-                <Badge className={cn('font-bold', styles.text)} variant="outline">
-                  R$ {goal.bonusValue.toFixed(2)}
-                </Badge>
-              </div>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-2xl font-bold">{goal.current}</span>
-                <span className="text-muted-foreground text-sm">/ {goal.target}</span>
-                <span className={cn('ml-auto text-sm font-bold', styles.text)}>{goal.percentage}%</span>
-              </div>
-              <Progress value={Math.min(100, goal.percentage)} className={cn('h-2', styles.barFill)} />
-              <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-muted-foreground">
-                  {goal.bonusEarned ? '✓ Bônus garantido!' : `Faltam ${goal.remaining} para o bônus`}
-                </span>
-                {!goal.bonusEarned && goal.projectedFinal > 0 && (
-                  <span className={cn('font-medium', styles.text)}>
-                    Projeção: {goal.projectedFinal}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <div className="pt-3 border-t flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Bônus conquistado</p>
-            <p className="text-xl font-bold text-success">R$ {data.summary.earnedBonus.toFixed(2)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Potencial total</p>
-            <p className="text-sm font-semibold">R$ {data.summary.potentialBonus.toFixed(2)}</p>
-          </div>
-        </div>
-        {data.summary.allGoalsMet && (
-          <div className="text-sm text-success flex items-center gap-2 bg-success/10 p-2 rounded-lg">
-            <Trophy className="h-4 w-4" /> Parabéns! Todas as metas batidas!
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function HighlightsBar({ rankings }: { rankings: ReturnType<typeof useAgentRankingsRange> }) {
   const items = [
@@ -275,6 +179,19 @@ export default function DashboardCallCenter() {
   }, [activeMetrics, currentAgent, showTeam]);
 
   const topAgentId = rankings.byRevenue[0]?.agentId;
+
+  const ticketRanking = useMemo(() => {
+    const list = (metrics ?? []).filter(m => m.isActive);
+    return [...list]
+      .map(m => ({
+        agentId: m.agentId,
+        agentName: m.agentName,
+        value: m.closed > 0 ? Math.round(m.revenue / m.closed) : 0,
+        metric: 'ticket',
+      }))
+      .sort((a, b) => b.value - a.value)
+      .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }, [metrics]);
 
   return (
     <AppLayout title="Call Center">
@@ -362,44 +279,49 @@ export default function DashboardCallCenter() {
           </>
         )}
 
-        {/* Plano de incentivo + ranking */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <SmartIncentiveWidget agentId={selectedAgent || user?.id} />
+        {/* Ranking */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-warning" /> Ranking de Desempenho
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="revenue">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
+                <TabsTrigger value="revenue">Faturamento</TabsTrigger>
+                <TabsTrigger value="closed">Venda Realizada</TabsTrigger>
+                <TabsTrigger value="ticket">Ticket Médio</TabsTrigger>
+                <TabsTrigger value="attended">Comparec.</TabsTrigger>
+                <TabsTrigger value="appointments">Agendam.</TabsTrigger>
+                <TabsTrigger value="conversion">Conversão</TabsTrigger>
+                <TabsTrigger value="referrals">Indicações</TabsTrigger>
+              </TabsList>
+              <TabsContent value="revenue" className="mt-4">
+                <RankingTable rankings={rankings.byRevenue} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+              </TabsContent>
+              <TabsContent value="closed" className="mt-4">
+                <RankingTable rankings={rankings.byClosed} formatter={v => `${v} vendas`} />
+              </TabsContent>
+              <TabsContent value="ticket" className="mt-4">
+                <RankingTable rankings={ticketRanking} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
+              </TabsContent>
+              <TabsContent value="attended" className="mt-4">
+                <RankingTable rankings={rankings.byAttended} formatter={v => `${v}`} />
+              </TabsContent>
+              <TabsContent value="appointments" className="mt-4">
+                <RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} />
+              </TabsContent>
+              <TabsContent value="conversion" className="mt-4">
+                <RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} />
+              </TabsContent>
+              <TabsContent value="referrals" className="mt-4">
+                <RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-          <Card className="lg:col-span-2 border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-warning" /> Ranking de Desempenho
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="revenue">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="revenue">Faturamento</TabsTrigger>
-                  <TabsTrigger value="closed">Vendas</TabsTrigger>
-                  <TabsTrigger value="appointments">Agend.</TabsTrigger>
-                  <TabsTrigger value="conversion">Conversão</TabsTrigger>
-                  <TabsTrigger value="referrals">Indicações</TabsTrigger>
-                </TabsList>
-                <TabsContent value="revenue" className="mt-4">
-                  <RankingTable rankings={rankings.byRevenue} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-                </TabsContent>
-                <TabsContent value="closed" className="mt-4">
-                  <RankingTable rankings={rankings.byClosed} formatter={v => `${v} vendas`} />
-                </TabsContent>
-                <TabsContent value="appointments" className="mt-4">
-                  <RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} />
-                </TabsContent>
-                <TabsContent value="conversion" className="mt-4">
-                  <RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} />
-                </TabsContent>
-                <TabsContent value="referrals" className="mt-4">
-                  <RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Cards individuais (visão de equipe) */}
         {showTeam && (

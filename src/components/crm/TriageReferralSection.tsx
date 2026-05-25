@@ -195,6 +195,9 @@ export function TriageReferralSection({
                 <p className="text-[11px] text-muted-foreground">
                   {totalReferrals} indicação{totalReferrals === 1 ? '' : 'ões'} cadastrada{totalReferrals === 1 ? '' : 's'}
                 </p>
+                <p className="text-[11px] text-primary font-medium mt-0.5">
+                  Cada indicação ganha 1 limpeza + 10% de cortesia em qualquer tratamento
+                </p>
               </div>
             </div>
             {currentTier && (

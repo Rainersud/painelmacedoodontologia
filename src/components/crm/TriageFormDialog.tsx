@@ -353,7 +353,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Data de Nascimento</Label>
-                    <Input type="date" value={form.birth_date || ''} onChange={e => updateField('birth_date', e.target.value)} />
+                    <Input type="text" value={form.birth_date || ''} onChange={e => updateField('birth_date', e.target.value)} placeholder="DD/MM/AAAA" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Profissão</Label>

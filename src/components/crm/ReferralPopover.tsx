@@ -55,7 +55,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
 
   // Determine which icons to show
   const icons: { emoji: string; title: string; className: string }[] = [];
-  if (refTags.isReferred) icons.push({ emoji: '🎁', title: 'Indicado', className: 'bg-chart-5/10' });
+  
   if (refTags.isReferrer) icons.push({ emoji: '👥', title: 'Indicador', className: 'bg-primary/10' });
   if (refTags.pendingBonuses.length > 0) icons.push({ emoji: '💰', title: 'Bonificação disponível', className: 'bg-warning/10' });
 

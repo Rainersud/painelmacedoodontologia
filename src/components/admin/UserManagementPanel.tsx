@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, Users, UserPlus, Key, Power, Settings2, Loader2 } from 'lucide-react';
+import { Shield, Users, UserPlus, Key, Power, Settings2, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserWithDetails {

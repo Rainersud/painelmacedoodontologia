@@ -1124,6 +1124,7 @@ export type Database = {
           id: string
           referred_lead_id: string
           referrer_lead_id: string
+          reward_percentage: number
           reward_type: string
           reward_value: number
           updated_at: string
@@ -1139,6 +1140,7 @@ export type Database = {
           id?: string
           referred_lead_id: string
           referrer_lead_id: string
+          reward_percentage?: number
           reward_type?: string
           reward_value?: number
           updated_at?: string
@@ -1154,6 +1156,7 @@ export type Database = {
           id?: string
           referred_lead_id?: string
           referrer_lead_id?: string
+          reward_percentage?: number
           reward_type?: string
           reward_value?: number
           updated_at?: string

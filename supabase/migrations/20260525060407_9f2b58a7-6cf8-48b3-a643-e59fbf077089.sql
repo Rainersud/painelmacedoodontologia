@@ -1,0 +1,2 @@
+ALTER TABLE public.referrals
+ADD COLUMN IF NOT EXISTS reward_percentage NUMERIC NOT NULL DEFAULT 0;

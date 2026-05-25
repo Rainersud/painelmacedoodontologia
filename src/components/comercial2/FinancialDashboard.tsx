@@ -79,10 +79,10 @@ export function FinancialDashboard() {
               <span className="text-xs font-medium text-muted-foreground">Comercial 1 (CAC)</span>
             </div>
             <p className="text-2xl font-bold text-primary">
-              {formatCurrency(cacData?.reduce((sum, m) => sum + m.total, 0) || 0)}
+              {formatCurrency(totalReceived || 0)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Total recebido (1ª compra)
+              Faturamento total recebido (= Dashboard)
             </p>
           </CardContent>
         </Card>

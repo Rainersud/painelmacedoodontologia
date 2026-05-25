@@ -92,9 +92,6 @@ function RewardEditor({ value, percentage, treatmentValue, onSave, editable }: {
             {selectVal === 'custom-set' && <SelectItem value="custom-set">{pctLabel}</SelectItem>}
           </SelectContent>
         </Select>
-        {currentPct > 0 && (
-          <span className="text-xs font-semibold text-success">{pctLabel}</span>
-        )}
       </div>
       {value > 0 && (
         <span className="text-[10px] text-muted-foreground">{fmtCur(value)}</span>

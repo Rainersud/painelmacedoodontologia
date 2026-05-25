@@ -40,7 +40,7 @@ const Indicacoes = () => {
         </div>
         <ReferralDashboard />
         <PendingBonusesWidget
-          onReferrerClick={(leadId, name) => handleReferrerClick(leadId, name)}
+          onReferrerClick={(leadId) => handleViewLead(leadId)}
         />
         <ReferralRankingWidget
           onLeadClick={(leadId) => handleReferrerClick(leadId)}

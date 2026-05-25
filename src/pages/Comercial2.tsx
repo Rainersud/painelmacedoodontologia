@@ -1102,13 +1102,8 @@ const Comercial2 = () => {
         return;
       }
 
-      // Block: can only advance 1 step
-      if (toIdx !== fromIdx + 1) {
-        toast.error('❌ Só é permitido avançar 1 etapa por vez');
-        setDraggedId(null);
-        setDropTarget(null);
-        return;
-      }
+      // Free movement allowed between non-locked stages
+      void fromIdx;
 
       updateStatus.mutate({ id, status: newStatus });
     }

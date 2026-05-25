@@ -70,11 +70,20 @@ export function LeadCard({
 
   // Get the highest priority alert for the card border
   const topAlert = leadAlerts[0];
-  const borderClass = topAlert?.level === 'critical' ? 'border-l-4 border-l-destructive' : 
+  const alertBorderClass = topAlert?.level === 'critical' ? 'border-l-4 border-l-destructive' : 
                       topAlert?.level === 'opportunity' ? 'border-l-4 border-l-success' :
                       topAlert?.level === 'attention' ? 'border-l-4 border-l-warning' : '';
 
   const isEven = index % 2 === 0;
+
+  // Cyclic border colors to improve visual separation between adjacent cards
+  const cyclicBorderColors = [
+    'border-primary/50',
+    'border-chart-2/50',
+    'border-chart-3/50',
+    'border-chart-4/50',
+  ];
+  const cyclicBorder = cyclicBorderColors[index % cyclicBorderColors.length];
 
   return (
     <Card 
@@ -82,10 +91,11 @@ export function LeadCard({
       onDragStart={(e) => onDragStart?.(e, lead)}
       onClick={() => onClick?.(lead)}
       className={cn(
-        "cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-sm group relative",
+        "cursor-pointer hover:shadow-lg transition-all duration-200 border-2 shadow-sm group relative",
+        cyclicBorder,
         isEven ? "bg-card" : "bg-accent/70",
         onDragStart && "active:cursor-grabbing",
-        borderClass
+        alertBorderClass
       )}
     >
       {/* Task indicator */}

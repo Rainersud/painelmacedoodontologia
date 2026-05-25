@@ -318,11 +318,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   size="sm"
                 />
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal flex-wrap">
                 <Badge className={`${currentStage?.color} text-white text-xs`}>
                   {currentStage?.label}
                 </Badge>
+                <span className="text-[11px] text-muted-foreground" title="Data de cadastro (não editável)">
+                  📅 Cadastrado em {new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
+
             </div>
             {/* Quick actions */}
             <div className="flex gap-1">

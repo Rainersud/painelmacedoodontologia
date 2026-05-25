@@ -142,8 +142,8 @@ export function ReferrerDetailDialog({
 
   const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
-  const handleUpdateBonusValue = (refId: string, value: number) => {
-    updateReferral.mutate({ id: refId, updates: { reward_value: value } as any });
+  const handleUpdateBonusValue = (refId: string, value: number, percentage: number) => {
+    updateReferral.mutate({ id: refId, updates: { reward_value: value, reward_percentage: percentage } as any });
   };
 
   const handleMarkAsPaid = (refId: string) => {
@@ -252,8 +252,9 @@ export function ReferrerDetailDialog({
                             <td className="py-2.5 px-3">
                               <RewardEditor
                                 value={ref.reward_value}
+                                percentage={ref.reward_percentage || 0}
                                 treatmentValue={ref.referred?.treatment_value || 0}
-                                onSave={(v) => handleUpdateBonusValue(ref.id, v)}
+                                onSave={(v, pct) => handleUpdateBonusValue(ref.id, v, pct)}
                                 editable={isConverted || ref.bonus_status !== 'pago'}
                               />
                             </td>

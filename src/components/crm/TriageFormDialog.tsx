@@ -227,7 +227,6 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
         <div class="grid">
           <div class="field"><label>Nome Completo:</label> <span>${form.full_name || '-'}</span></div>
           <div class="field"><label>Telefone:</label> <span>${form.phone || '-'}</span></div>
-          <div class="field"><label>Como gosta de ser chamado(a):</label> <span>${form.nickname || '-'}</span></div>
           <div class="field"><label>Email:</label> <span>${form.email || '-'}</span></div>
           <div class="field"><label>Endereço:</label> <span>${form.address || '-'}</span></div>
           <div class="field"><label>CEP:</label> <span>${form.cep || '-'}</span></div>

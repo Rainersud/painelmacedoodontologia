@@ -23,7 +23,9 @@ export interface LossReason {
   count: number;
   pct: number;
   valorPerdido: number;
+  leads: { id: string; name: string }[];
 }
+
 
 export interface StrategicInsights {
   sellerRanking: SellerRanking[];
@@ -50,7 +52,7 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
 
       const [paymentsRes, leadsRes, profilesRes, costsRes] = await Promise.all([
         supabase.from('payments').select('net_value, paid_at, lead_id, agent_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-        supabase.from('leads').select('id, source, status, loss_reason, treatment_value, created_at'),
+        supabase.from('leads').select('id, name, source, status, loss_reason, treatment_value, created_at'),
         supabase.from('profiles').select('user_id, full_name'),
         supabase.from('acquisition_costs').select('amount').gte('reference_month', range.start.toISOString().split('T')[0]).lte('reference_month', range.end.toISOString().split('T')[0]),
       ]);
@@ -131,18 +133,20 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
         return raw.trim();
       };
 
-      const lossAgg: Record<string, { count: number; valor: number }> = {};
-      LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0 }; });
+      const lossAgg: Record<string, { count: number; valor: number; leads: { id: string; name: string }[] }> = {};
+      LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0, leads: [] }; });
       leads.filter(l => l.loss_reason && l.created_at >= startISO && l.created_at <= endISO).forEach(l => {
         const cat = normalize(l.loss_reason!);
-        if (!lossAgg[cat]) lossAgg[cat] = { count: 0, valor: 0 };
+        if (!lossAgg[cat]) lossAgg[cat] = { count: 0, valor: 0, leads: [] };
         lossAgg[cat].count += 1;
         lossAgg[cat].valor += Number(l.treatment_value || 0);
+        lossAgg[cat].leads.push({ id: l.id, name: (l as any).name || 'Sem nome' });
       });
       const totalLoss = Object.values(lossAgg).reduce((s, v) => s + v.count, 0) || 1;
       const losses: LossReason[] = Object.entries(lossAgg)
-        .map(([reason, v]) => ({ reason, count: v.count, pct: Math.round((v.count / totalLoss) * 100), valorPerdido: v.valor }))
+        .map(([reason, v]) => ({ reason, count: v.count, pct: Math.round((v.count / totalLoss) * 100), valorPerdido: v.valor, leads: v.leads }))
         .sort((a, b) => b.count - a.count);
+
 
       // Forecast (linear projection of current month revenue)
       const totalReceita = payments.reduce((s, p) => s + (p.net_value || 0), 0);

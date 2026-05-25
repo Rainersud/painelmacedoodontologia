@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStrategicInsights } from '@/hooks/useStrategicInsights';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,8 +8,12 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { SOURCE_CONFIG } from '@/types/crm';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
+import { useCRMLeads } from '@/hooks/useCRMLeads';
+import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import type { Lead } from '@/types/crm';
 
 const COLORS = ['hsl(213 94% 58%)', 'hsl(156 72% 45%)', 'hsl(270 75% 60%)', 'hsl(32 95% 55%)', 'hsl(340 82% 60%)', 'hsl(180 70% 50%)', 'hsl(45 93% 58%)', 'hsl(0 84% 60%)'];
+
 
 export function LeadOriginsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
@@ -72,8 +77,15 @@ export function LeadOriginsWidget() {
 export function LossReasonsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
   const { data, isLoading } = useStrategicInsights(range);
+  const { data: allLeads } = useCRMLeads();
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const losses = (data?.losses || []).filter(l => l.count > 0);
   const top = losses[0];
+
+  const openLead = (id: string) => {
+    const lead = allLeads?.find(l => l.id === id);
+    if (lead) setSelectedLead(lead);
+  };
 
   return (
     <Card className="monday-card">
@@ -122,12 +134,32 @@ export function LossReasonsWidget() {
                   <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
                     <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${l.pct}%` }} />
                   </div>
+                  {l.leads.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {l.leads.map(ld => (
+                        <button
+                          key={ld.id}
+                          onClick={() => openLead(ld.id)}
+                          className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-destructive/30 hover:bg-destructive/10 hover:border-destructive transition-colors text-foreground"
+                          title="Abrir card do lead"
+                        >
+                          {ld.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
       </CardContent>
+      <LeadDetailDialog
+        lead={selectedLead}
+        open={!!selectedLead}
+        onOpenChange={(open) => !open && setSelectedLead(null)}
+      />
     </Card>
   );
 }
+

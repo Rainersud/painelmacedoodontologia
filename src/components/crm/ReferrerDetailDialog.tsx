@@ -69,22 +69,27 @@ function RewardEditor({ value, treatmentValue, onSave, editable }: { value: numb
 
   return (
     <div className="flex flex-col gap-0.5">
-      <Select
-        value={selectVal}
-        onValueChange={(v) => {
-          if (v === 'custom') { setCustomPct(currentPct > 0 ? String(currentPct) : ''); setEditing(true); }
-          else if (v !== 'custom-set') applyPct(Number(v));
-        }}
-      >
-        <SelectTrigger className="h-7 text-xs w-24"><SelectValue placeholder="Definir %" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="2">2%</SelectItem>
-          <SelectItem value="4">4%</SelectItem>
-          <SelectItem value="5">5%</SelectItem>
-          <SelectItem value="custom">Outro %...</SelectItem>
-          {selectVal === 'custom-set' && <SelectItem value="custom-set">{pctLabel}</SelectItem>}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center gap-1">
+        <Select
+          value={selectVal}
+          onValueChange={(v) => {
+            if (v === 'custom') { setCustomPct(currentPct > 0 ? String(currentPct) : ''); setEditing(true); }
+            else if (v !== 'custom-set') applyPct(Number(v));
+          }}
+        >
+          <SelectTrigger className="h-7 text-xs w-24"><SelectValue placeholder="Definir %" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="2">2%</SelectItem>
+            <SelectItem value="4">4%</SelectItem>
+            <SelectItem value="5">5%</SelectItem>
+            <SelectItem value="custom">Outro %...</SelectItem>
+            {selectVal === 'custom-set' && <SelectItem value="custom-set">{pctLabel}</SelectItem>}
+          </SelectContent>
+        </Select>
+        {currentPct > 0 && (
+          <span className="text-xs font-semibold text-success">{pctLabel}</span>
+        )}
+      </div>
       {value > 0 && (
         <span className="text-[10px] text-muted-foreground">{fmtCur(value)}</span>
       )}

@@ -890,6 +890,7 @@ export type Database = {
           profession: string | null
           prosthesis_duration: string | null
           smile_discomfort_score: number | null
+          spin_answers: Json
           triage_completed: boolean
           updated_at: string
           uses_prosthesis: boolean | null
@@ -932,6 +933,7 @@ export type Database = {
           profession?: string | null
           prosthesis_duration?: string | null
           smile_discomfort_score?: number | null
+          spin_answers?: Json
           triage_completed?: boolean
           updated_at?: string
           uses_prosthesis?: boolean | null
@@ -974,6 +976,7 @@ export type Database = {
           profession?: string | null
           prosthesis_duration?: string | null
           smile_discomfort_score?: number | null
+          spin_answers?: Json
           triage_completed?: boolean
           updated_at?: string
           uses_prosthesis?: boolean | null

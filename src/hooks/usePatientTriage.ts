@@ -41,6 +41,7 @@ export interface PatientTriageData {
   credit_capim_value?: number | null;
   credit_maioral_value?: number | null;
   credit_drgestao_value?: number | null;
+  spin_answers?: Record<string, string> | null;
 }
 
 export function usePatientTriage(leadId: string | undefined) {

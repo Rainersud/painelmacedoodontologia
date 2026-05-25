@@ -2,16 +2,15 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, isToday, isTomorrow, isYesterday, isSameDay, startOfDay, endOfDay } from 'date-fns';
+import { format, isSameDay, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Plus, Search, X, CalendarIcon } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Plus, Search, X } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -156,33 +155,18 @@ function KanbanBoard({
                     <div className="h-full overflow-y-auto scroll-container-y space-y-1 pr-0.5">
                       {(() => {
                         const groupsOrder: { key: string; label: string; cls: string }[] = [
-                          { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
-                          { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
-                          { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
-                          { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
                           { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
                           { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
                           { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
-                          { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
                           { key: 'antigo', label: '📦 Antigos', cls: 'bg-muted text-muted-foreground' },
                         ];
                         const now = Date.now();
                         const categorize = (lead: Lead): string => {
                           const created = new Date(lead.created_at).getTime();
-                          const updated = new Date(lead.updated_at || lead.created_at).getTime();
-                          const stageEntered = lead.stage_entered_at ? new Date(lead.stage_entered_at).getTime() : updated;
                           const createdDays = Math.floor((now - created) / 86400000);
-                          const updatedDays = Math.floor((now - updated) / 86400000);
-                          const stageDays = Math.floor((now - stageEntered) / 86400000);
-                          const isFollowUp = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
-                          if (lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() < now && (lead.status === 'agendou' || lead.status === 'consulta_agendada')) return 'atrasados';
-                          if (isFollowUp || ((lead.contact_attempts ?? 0) >= 3 && stageDays >= 3)) return 'sem_retorno';
-                          if (stageDays >= 5 && !['fechado','nao_cliente','descartados'].includes(lead.status)) return 'parados';
-                          if (lead.status === 'faltou' || ((lead.no_show_count || 0) > 0 && !!lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() > now)) return 'reagendados';
                           if (createdDays === 0) return 'hoje';
                           if (createdDays === 1) return 'ontem';
                           if (createdDays <= 7) return 'semana';
-                          if (updatedDays >= 7) return 'sem_movimento';
                           return 'antigo';
                         };
                         const buckets: Record<string, typeof stageLeads> = {};
@@ -299,54 +283,40 @@ const Funil = () => { // v2
 
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('none');
-  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  // Filtro de período padronizado com a Dashboard: all | hoje | semana | mes
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [smartCategory, setSmartCategory] = useState<string>('all');
 
-  // Stages affected by date filter
+  // Stages affected by date filter (agendamento e comparecimento)
   const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
 
-  const getFilterDate = useCallback((): Date | null => {
-    if (dateFilter === 'none') return null;
-    if (dateFilter === 'today') return new Date();
-    if (dateFilter === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return d; }
-    if (dateFilter === 'yesterday') { const d = new Date(); d.setDate(d.getDate() - 1); return d; }
-    if (dateFilter === 'custom' && customDate) return customDate;
+  const getFilterRange = useCallback((): { start: Date; end: Date } | null => {
+    if (dateFilter === 'all') return null;
+    const now = new Date();
+    if (dateFilter === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
+    if (dateFilter === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    if (dateFilter === 'mes') return { start: startOfMonth(now), end: endOfMonth(now) };
     return null;
-  }, [dateFilter, customDate]);
+  }, [dateFilter]);
 
-  // Smart visual categorization helpers
+  // Smart visual categorization helpers (apenas hoje/ontem/semana — sem alertas)
   const matchesSmartCategory = useCallback((lead: Lead, cat: string): boolean => {
     if (cat === 'all') return true;
     const now = Date.now();
     const created = new Date(lead.created_at).getTime();
-    const updated = new Date(lead.updated_at || lead.created_at).getTime();
-    const stageEntered = lead.stage_entered_at ? new Date(lead.stage_entered_at).getTime() : updated;
     const createdDays = Math.floor((now - created) / 86400000);
-    const updatedDays = Math.floor((now - updated) / 86400000);
-    const stageDays = Math.floor((now - stageEntered) / 86400000);
-    const isFollowUp = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
     switch (cat) {
       case 'hoje': return createdDays === 0;
       case 'ontem': return createdDays === 1;
       case 'semana': return createdDays >= 0 && createdDays <= 7;
-      case 'parados': return stageDays >= 5 && !['fechado','nao_cliente','descartados'].includes(lead.status);
-      case 'sem_movimento': return updatedDays >= 7 && !['fechado','nao_cliente'].includes(lead.status);
-      case 'atrasados': {
-        if (!lead.scheduled_appointment_at) return false;
-        const apt = new Date(lead.scheduled_appointment_at).getTime();
-        return apt < now && (lead.status === 'agendou' || lead.status === 'consulta_agendada');
-      }
-      case 'reagendados': return lead.status === 'faltou' || ((lead.no_show_count || 0) > 0 && !!lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() > now);
-      case 'sem_retorno': return isFollowUp || ((lead.contact_attempts ?? 0) >= 3 && stageDays >= 3);
       default: return true;
     }
   }, []);
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
-    const filterDate = getFilterDate();
-    
+    const range = getFilterRange();
+
     return leads.filter(lead => {
       const query = searchQuery.trim();
       const digitsQ = query.replace(/\D/g, '');
@@ -355,23 +325,24 @@ const Funil = () => { // v2
         (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
         (lead.interest_product && fuzzyMatch(lead.interest_product, query));
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
-      
-      // Date filter: only applies to agendou/consulta_agendada/compareceu
+
+      // Date filter (range): only applies to agendou/consulta_agendada/compareceu
       let matchesDate = true;
-      if (filterDate && dateFilteredStages.includes(lead.status)) {
-        const refDate = lead.status === 'compareceu' 
+      if (range && dateFilteredStages.includes(lead.status)) {
+        const refDate = lead.status === 'compareceu'
           ? (lead.stage_entered_at || lead.updated_at)
           : (lead.scheduled_appointment_at || lead.stage_entered_at || lead.updated_at);
         if (refDate) {
-          matchesDate = isSameDay(new Date(refDate), filterDate);
+          const t = new Date(refDate).getTime();
+          matchesDate = t >= range.start.getTime() && t <= range.end.getTime();
         } else {
           matchesDate = false;
         }
       }
-      
+
       return matchesSearch && matchesTreatment && matchesDate && matchesSmartCategory(lead, smartCategory);
     });
-  }, [leads, searchQuery, treatmentFilter, getFilterDate, smartCategory, matchesSmartCategory]);
+  }, [leads, searchQuery, treatmentFilter, getFilterRange, smartCategory, matchesSmartCategory]);
 
   // Counts per smart category (against base + search/treatment but ignoring smart filter)
   const smartCounts = useMemo(() => {
@@ -385,11 +356,12 @@ const Funil = () => { // v2
       const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
       return matchesSearch && matchesTreatment;
     });
-    const cats = ['hoje','ontem','semana','parados','sem_movimento','atrasados','reagendados','sem_retorno'];
+    const cats = ['hoje','ontem','semana'];
     const out: Record<string, number> = { all: base.length };
     cats.forEach(c => { out[c] = base.filter(l => matchesSmartCategory(l, c)).length; });
     return out;
   }, [leads, searchQuery, treatmentFilter, matchesSmartCategory]);
+
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -604,66 +576,24 @@ const Funil = () => { // v2
               </SelectContent>
             </Select>
 
-            {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={(v) => {
-              setDateFilter(v);
-              if (v !== 'custom') setCustomDate(undefined);
-            }}>
-              <SelectTrigger className="w-44 h-9 text-sm">
-                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Filtrar por data" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Todas as datas</SelectItem>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="tomorrow">Amanhã</SelectItem>
-                <SelectItem value="yesterday">Ontem</SelectItem>
-                <SelectItem value="custom">Selecionar data...</SelectItem>
-              </SelectContent>
-            </Select>
-            {dateFilter === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {customDate ? format(customDate, 'dd/MM/yyyy') : 'Escolher'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={customDate}
-                    onSelect={setCustomDate}
-                    className="p-3 pointer-events-auto"
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-            {dateFilter !== 'none' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-muted-foreground"
-                onClick={() => { setDateFilter('none'); setCustomDate(undefined); }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+            {/* Date Filter — padrão Dashboard: Hoje / Semana / Mês */}
+            <Tabs value={dateFilter} onValueChange={setDateFilter}>
+              <TabsList className="h-9">
+                <TabsTrigger value="all" className="h-7 text-xs px-3">Todos</TabsTrigger>
+                <TabsTrigger value="hoje" className="h-7 text-xs px-3">Hoje</TabsTrigger>
+                <TabsTrigger value="semana" className="h-7 text-xs px-3">Semana</TabsTrigger>
+                <TabsTrigger value="mes" className="h-7 text-xs px-3">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
-          {/* Smart visual category chips — automatic in-funnel filters */}
+          {/* Smart visual category chips — apenas Hoje / Ontem / Esta Semana */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
               { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
               { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
               { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
-              { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
-              { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
-              { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
-              { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
-              { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
             ].map(c => {
               const active = smartCategory === c.key;
               const count = smartCounts[c.key] ?? 0;
@@ -691,7 +621,7 @@ const Funil = () => { // v2
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
           stages={(() => {
-            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'none' || smartCategory !== 'all';
+            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'all' || smartCategory !== 'all';
             if (!anyFilterActive) return FUNNEL_STAGES;
             return FUNNEL_STAGES.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}

@@ -64,9 +64,6 @@ export function PendingBonusesWidget({ onReferrerClick }: PendingBonusesWidgetPr
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-warning">{formatCurrency(b.rewardValue)}</p>
-                  {b.rewardPercentage > 0 && (
-                    <p className="text-[10px] text-muted-foreground">{b.rewardPercentage}% do tratamento</p>
-                  )}
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               </button>

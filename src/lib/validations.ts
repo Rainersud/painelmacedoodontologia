@@ -102,7 +102,7 @@ export const incentivePlanSchema = z.object({
   name: z.string()
     .min(3, { message: 'Nome deve ter pelo menos 3 caracteres' })
     .max(100, { message: 'Nome deve ter no máximo 100 caracteres' }),
-  target_type: z.enum(['agendamentos', 'comparecimentos', 'resgatados', 'fechados'], { 
+  target_type: z.enum(['agendamentos', 'comparecimentos', 'indicacoes', 'fechados'], { 
     message: 'Tipo de meta inválido' 
   }),
   period: z.enum(['diario', 'semanal', 'mensal'], { message: 'Período inválido' }),

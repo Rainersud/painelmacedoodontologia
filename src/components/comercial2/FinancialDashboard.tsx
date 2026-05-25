@@ -13,6 +13,7 @@ export function FinancialDashboard() {
   const { data: projection, isLoading: projLoading } = useRevenueProjection();
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();
   const { data: ltvData, isLoading: ltvLoading } = useLTVMonthly();
+  const { data: totalReceived } = useTotalReceivedRevenue();
   const [periodFilter, setPeriodFilter] = useState('all');
 
   const getFilteredTotal = () => {

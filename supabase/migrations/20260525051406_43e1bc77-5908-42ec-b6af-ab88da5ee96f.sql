@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_triage ADD COLUMN IF NOT EXISTS spin_answers jsonb NOT NULL DEFAULT '{}'::jsonb;

@@ -382,54 +382,69 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                 <h3 className="text-sm font-semibold mb-1 text-primary">Roteiro SPIN — Primeiro Contato Odontológico</h3>
                 <p className="text-xs text-muted-foreground mb-4">Perguntas estruturadas para entender situação, problema, implicação e necessidade do paciente.</p>
 
-                {[
+                {([
                   {
                     title: 'SITUAÇÃO',
                     questions: [
-                      { key: 'spin_s1', label: 'O que te fez procurar tratamento agora?' },
-                      { key: 'spin_s2', label: 'Hoje, o que mais te incomoda no seu sorriso ou mastigação?' },
-                      { key: 'spin_s3', label: 'Você já chegou a fazer alguma avaliação anteriormente?' },
+                      { key: 'spin_s1', label: 'O que te fez procurar tratamento agora?', type: 'open' },
+                      { key: 'spin_s2', label: 'Hoje, o que mais te incomoda no seu sorriso ou mastigação?', type: 'open' },
+                      { key: 'spin_s3', label: 'Você já chegou a fazer alguma avaliação anteriormente?', type: 'yesno' },
                     ],
                   },
                   {
                     title: 'PROBLEMA',
                     questions: [
-                      { key: 'spin_p1', label: 'Isso tem afetado sua autoestima ou confiança?' },
-                      { key: 'spin_p2', label: 'Tem dificuldade para comer, sorrir ou falar?' },
-                      { key: 'spin_p3', label: 'Isso vem piorando com o tempo?' },
+                      { key: 'spin_p1', label: 'Isso tem afetado sua autoestima ou confiança?', type: 'yesno' },
+                      { key: 'spin_p2', label: 'Tem dificuldade para comer, sorrir ou falar?', type: 'yesno' },
+                      { key: 'spin_p3', label: 'Isso vem piorando com o tempo?', type: 'yesno' },
                     ],
                   },
                   {
                     title: 'IMPLICAÇÃO',
                     questions: [
-                      { key: 'spin_i1', label: 'Se continuar assim, como você acha que estará daqui 1 ou 2 anos?' },
-                      { key: 'spin_i2', label: 'O que mais te preocupa em não resolver isso agora?' },
+                      { key: 'spin_i1', label: 'Se continuar assim, como você acha que estará daqui 1 ou 2 anos?', type: 'open' },
+                      { key: 'spin_i2', label: 'O que mais te preocupa em não resolver isso agora?', type: 'open' },
                     ],
                   },
                   {
                     title: 'NECESSIDADE / SOLUÇÃO',
                     questions: [
-                      { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?' },
-                      { key: 'spin_n2', label: 'Se conseguirmos uma condição facilitada, você teria interesse em iniciar?' },
-                      { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?' },
+                      { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?', type: 'open' },
+                      { key: 'spin_n2', label: 'Se conseguirmos uma condição facilitada, você teria interesse em iniciar?', type: 'yesno' },
+                      { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?', type: 'open' },
                     ],
                   },
-                ].map(block => (
+                ] as const).map(block => (
                   <div key={block.title} className="mb-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 mb-2">{block.title}</h4>
                     <div className="space-y-3 pl-1">
-                      {block.questions.map(q => (
-                        <div key={q.key} className="space-y-1">
-                          <Label className="text-xs">{q.label}</Label>
-                          <Textarea
-                            value={(form.spin_answers as Record<string, string> | undefined)?.[q.key] || ''}
-                            onChange={e => updateField('spin_answers', { ...(form.spin_answers as Record<string, string> || {}), [q.key]: e.target.value })}
-                            placeholder="Resposta do paciente..."
-                            rows={2}
-                            className="text-xs"
-                          />
-                        </div>
-                      ))}
+                      {block.questions.map(q => {
+                        const answers = (form.spin_answers as Record<string, string> | undefined) || {};
+                        const value = answers[q.key] || '';
+                        return (
+                          <div key={q.key} className="space-y-1">
+                            <Label className="text-xs">{q.label}</Label>
+                            {q.type === 'yesno' ? (
+                              <RadioGroup
+                                value={value}
+                                onValueChange={v => updateField('spin_answers', { ...answers, [q.key]: v })}
+                                className="flex gap-4 mt-1"
+                              >
+                                <div className="flex items-center gap-2"><RadioGroupItem value="Sim" /><Label className="text-xs font-normal">Sim</Label></div>
+                                <div className="flex items-center gap-2"><RadioGroupItem value="Não" /><Label className="text-xs font-normal">Não</Label></div>
+                              </RadioGroup>
+                            ) : (
+                              <Textarea
+                                value={value}
+                                onChange={e => updateField('spin_answers', { ...answers, [q.key]: e.target.value })}
+                                placeholder="Resposta do paciente..."
+                                rows={2}
+                                className="text-xs"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStrategicInsights } from '@/hooks/useStrategicInsights';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,8 +8,12 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { SOURCE_CONFIG } from '@/types/crm';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
+import { useCRMLeads } from '@/hooks/useCRMLeads';
+import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import type { Lead } from '@/types/crm';
 
 const COLORS = ['hsl(213 94% 58%)', 'hsl(156 72% 45%)', 'hsl(270 75% 60%)', 'hsl(32 95% 55%)', 'hsl(340 82% 60%)', 'hsl(180 70% 50%)', 'hsl(45 93% 58%)', 'hsl(0 84% 60%)'];
+
 
 export function LeadOriginsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');

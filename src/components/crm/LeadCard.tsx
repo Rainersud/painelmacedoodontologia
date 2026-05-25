@@ -169,27 +169,13 @@ export function LeadCard({
           </div>
         )}
 
-        {/* Row 3: Value + quick actions */}
+        {/* Row 3: Value */}
         <div className="flex items-center justify-between pt-1 border-t border-border/50">
           <div className="flex items-center gap-0.5">
             <DollarSign className="h-3 w-3 text-success" />
             <span className="font-bold text-[11px]">
               {formatCurrency(lead.treatment_value || 0)}
             </span>
-          </div>
-          <div className="flex gap-0">
-            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-5/10 hover:text-chart-5"
-              onClick={(e) => { e.stopPropagation(); onAddNote?.(lead); }}>
-              <StickyNote className="h-2.5 w-2.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chart-2/10 hover:text-chart-2"
-              onClick={(e) => { e.stopPropagation(); onCall?.(lead); window.open(`tel:${lead.phone}`, '_blank'); }}>
-              <Phone className="h-2.5 w-2.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-success/10 hover:text-success"
-              onClick={(e) => { e.stopPropagation(); const phone = lead.whatsapp || lead.phone; window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank'); }}>
-              <MessageSquare className="h-2.5 w-2.5" />
-            </Button>
           </div>
         </div>
       </CardContent>

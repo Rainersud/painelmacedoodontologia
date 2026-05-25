@@ -710,6 +710,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {/* Loss reason field when moving to nao_cliente */}
               {newStatus === 'nao_cliente' && (() => {
                 const LOSS_OPTIONS = ['Preço', 'Medo', 'Não tem cartão', 'Desistiu', 'Sumiu', 'Fechou no concorrente'];
+                const isOther = formData.loss_reason !== '' && !LOSS_OPTIONS.includes(formData.loss_reason);
                 return (
                   <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
                     <h4 className="font-medium text-chart-5 flex items-center gap-2">
@@ -736,13 +737,34 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           </button>
                         );
                       })}
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, loss_reason: isOther ? prev.loss_reason : ' ' }))}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                          isOther
+                            ? 'bg-chart-5 text-white border-chart-5 shadow-sm'
+                            : 'bg-background border-chart-5/30 hover:bg-chart-5/10'
+                        }`}
+                      >
+                        Outro
+                      </button>
                     </div>
+                    {isOther && (
+                      <Input
+                        autoFocus
+                        placeholder="Descreva o motivo..."
+                        value={formData.loss_reason.trim() === '' ? '' : formData.loss_reason}
+                        onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
+                        className="border-chart-5/30 focus-visible:ring-chart-5"
+                      />
+                    )}
                     {!formData.loss_reason.trim() && (
                       <p className="text-[10px] text-destructive">* Selecione um motivo</p>
                     )}
                   </div>
                 );
               })()}
+
 
               {/* Show existing loss_reason for leads already in nao_cliente */}
               {statusForView === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (

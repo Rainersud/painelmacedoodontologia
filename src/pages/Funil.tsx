@@ -576,66 +576,24 @@ const Funil = () => { // v2
               </SelectContent>
             </Select>
 
-            {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={(v) => {
-              setDateFilter(v);
-              if (v !== 'custom') setCustomDate(undefined);
-            }}>
-              <SelectTrigger className="w-44 h-9 text-sm">
-                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Filtrar por data" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Todas as datas</SelectItem>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="tomorrow">Amanhã</SelectItem>
-                <SelectItem value="yesterday">Ontem</SelectItem>
-                <SelectItem value="custom">Selecionar data...</SelectItem>
-              </SelectContent>
-            </Select>
-            {dateFilter === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {customDate ? format(customDate, 'dd/MM/yyyy') : 'Escolher'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={customDate}
-                    onSelect={setCustomDate}
-                    className="p-3 pointer-events-auto"
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-            {dateFilter !== 'none' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-muted-foreground"
-                onClick={() => { setDateFilter('none'); setCustomDate(undefined); }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+            {/* Date Filter — padrão Dashboard: Hoje / Semana / Mês */}
+            <Tabs value={dateFilter} onValueChange={setDateFilter}>
+              <TabsList className="h-9">
+                <TabsTrigger value="all" className="h-7 text-xs px-3">Todos</TabsTrigger>
+                <TabsTrigger value="hoje" className="h-7 text-xs px-3">Hoje</TabsTrigger>
+                <TabsTrigger value="semana" className="h-7 text-xs px-3">Semana</TabsTrigger>
+                <TabsTrigger value="mes" className="h-7 text-xs px-3">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
-          {/* Smart visual category chips — automatic in-funnel filters */}
+          {/* Smart visual category chips — apenas Hoje / Ontem / Esta Semana */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
               { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
               { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
               { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
-              { key: 'parados', label: '🟠 Parados 5d+', cls: 'bg-warning/10 text-warning' },
-              { key: 'sem_movimento', label: '📦 Sem Movimentação', cls: 'bg-muted text-muted-foreground' },
-              { key: 'atrasados', label: '⏰ Atrasados', cls: 'bg-destructive/10 text-destructive' },
-              { key: 'reagendados', label: '🔁 Reagendados', cls: 'bg-chart-5/10 text-chart-5' },
-              { key: 'sem_retorno', label: '⚠️ Sem Retorno', cls: 'bg-destructive/10 text-destructive' },
             ].map(c => {
               const active = smartCategory === c.key;
               const count = smartCounts[c.key] ?? 0;
@@ -663,7 +621,7 @@ const Funil = () => { // v2
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
           stages={(() => {
-            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'none' || smartCategory !== 'all';
+            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'all' || smartCategory !== 'all';
             if (!anyFilterActive) return FUNNEL_STAGES;
             return FUNNEL_STAGES.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}

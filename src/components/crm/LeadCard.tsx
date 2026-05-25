@@ -156,20 +156,6 @@ export function LeadCard({
               📞 {lead.contact_attempts}/9
             </Badge>
           )}
-          {(() => {
-            const arrival = (lead as any).lead_arrival_source as string | undefined;
-            const rewardArrivals = ['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling'];
-            const eligible = refTags?.isReferred || (arrival && rewardArrivals.includes(arrival));
-            return eligible ? (
-              <Badge
-                variant="outline"
-                className="text-[9px] bg-success/10 text-success border-0 px-1 py-0 h-4"
-                title="Ganhou Limpeza + 10% de desconto em qualquer tratamento"
-              >
-                🎁 Limpeza + 10% off
-              </Badge>
-            ) : null;
-          })()}
         </div>
 
         {/* Excess attempts warning */}

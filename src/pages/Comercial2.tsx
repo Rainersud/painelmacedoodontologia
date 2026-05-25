@@ -1048,6 +1048,40 @@ const Comercial2 = () => {
     }
   }, [opportunities, selectedOpp]);
 
+  // Sync top scrollbar with kanban board
+  useEffect(() => {
+    const top = topScrollRef.current;
+    const board = boardScrollRef.current;
+    if (!top || !board) return;
+
+    const updateWidth = () => setBoardScrollWidth(board.scrollWidth);
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(board);
+    Array.from(board.children).forEach((c) => ro.observe(c as Element));
+
+    let syncing = false;
+    const onTop = () => {
+      if (syncing) return;
+      syncing = true;
+      board.scrollLeft = top.scrollLeft;
+      syncing = false;
+    };
+    const onBoard = () => {
+      if (syncing) return;
+      syncing = true;
+      top.scrollLeft = board.scrollLeft;
+      syncing = false;
+    };
+    top.addEventListener('scroll', onTop);
+    board.addEventListener('scroll', onBoard);
+    return () => {
+      top.removeEventListener('scroll', onTop);
+      board.removeEventListener('scroll', onBoard);
+      ro.disconnect();
+    };
+  }, [opportunities, searchQuery]);
+
   const filteredOpps = useMemo(() => {
     if (!opportunities) return [];
     const q = searchQuery.toLowerCase().trim();

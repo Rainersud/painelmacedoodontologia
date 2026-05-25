@@ -4,38 +4,47 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { TrendingUp, DollarSign, Wallet, BarChart3 } from 'lucide-react';
 import { useCACMonthly, useLTVMonthly, useGlobalCAC } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
+import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
+import { format } from 'date-fns';
 
-export function FinancialDashboard() {
+function FinancialDashboardInner() {
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();
   const { data: ltvData, isLoading: ltvLoading } = useLTVMonthly();
   const { data: globalCAC } = useGlobalCAC();
+  const { range } = usePeriodFilter();
 
-  // Faturamento Comercial 1 = soma de pagamentos pagos sem upsell_opportunity_id (vendas realizadas no Comercial 1)
+  const startKey = format(range.start, 'yyyy-MM');
+  const endKey = format(range.end, 'yyyy-MM');
+
+  const inRange = (monthKey: string) => monthKey >= startKey && monthKey <= endKey;
+
+  const cacFiltered = useMemo(() => (cacData || []).filter(m => inRange(m.month)), [cacData, startKey, endKey]);
+  const ltvFiltered = useMemo(() => (ltvData || []).filter(m => inRange(m.month)), [ltvData, startKey, endKey]);
+
   const faturamentoCom1 = useMemo(
-    () => (cacData || []).reduce((sum, m) => sum + m.total, 0),
-    [cacData]
+    () => cacFiltered.reduce((sum, m) => sum + m.total, 0),
+    [cacFiltered]
   );
   const ltvTotal = useMemo(
-    () => (ltvData || []).reduce((sum, m) => sum + m.total, 0),
-    [ltvData]
+    () => ltvFiltered.reduce((sum, m) => sum + m.total, 0),
+    [ltvFiltered]
   );
 
-  // Merge data for comparative chart by month
   const comparativeData = useMemo(() => {
     const map: Record<string, { label: string; month: string; com1: number; com2: number }> = {};
-    (cacData || []).forEach(m => {
+    cacFiltered.forEach(m => {
       map[m.month] = { label: m.label, month: m.month, com1: m.total, com2: 0 };
     });
-    (ltvData || []).forEach(m => {
+    ltvFiltered.forEach(m => {
       if (!map[m.month]) map[m.month] = { label: m.label, month: m.month, com1: 0, com2: 0 };
       map[m.month].com2 = m.total;
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
-  }, [cacData, ltvData]);
+  }, [cacFiltered, ltvFiltered]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-lg font-bold flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-primary" />
@@ -46,15 +55,16 @@ export function FinancialDashboard() {
         </p>
       </div>
 
-      {/* KPI Cards: Faturamento, CAC, LTV */}
+      <MasterPeriodFilter />
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-success/30 bg-success/5">
+        <Card className="border-chart-5/30 bg-chart-5/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Wallet className="h-4 w-4 text-success" />
+              <Wallet className="h-4 w-4 text-chart-5" />
               <span className="text-xs font-medium text-muted-foreground">Faturamento (Comercial 1)</span>
             </div>
-            <p className="text-2xl font-bold text-success">{formatCurrency(faturamentoCom1)}</p>
+            <p className="text-2xl font-bold text-chart-5">{formatCurrency(faturamentoCom1)}</p>
             <p className="text-xs text-muted-foreground mt-1">Vendas realizadas (pagas)</p>
           </CardContent>
         </Card>
@@ -72,19 +82,18 @@ export function FinancialDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-chart-5/30 bg-chart-5/5">
+        <Card className="border-success/30 bg-success/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-chart-5" />
+              <TrendingUp className="h-4 w-4 text-success" />
               <span className="text-xs font-medium text-muted-foreground">LTV (Comercial 2)</span>
             </div>
-            <p className="text-2xl font-bold text-chart-5">{formatCurrency(ltvTotal)}</p>
+            <p className="text-2xl font-bold text-success">{formatCurrency(ltvTotal)}</p>
             <p className="text-xs text-muted-foreground mt-1">Recorrência pós-venda</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Comparative Chart */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
@@ -103,17 +112,25 @@ export function FinancialDashboard() {
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="com1" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 1" />
-                <Bar dataKey="com2" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />
+                <Bar dataKey="com1" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 1" />
+                <Bar dataKey="com2" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
-              Sem dados de faturamento ainda.
+              Sem dados de faturamento no período selecionado.
             </div>
           )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export function FinancialDashboard() {
+  return (
+    <PeriodFilterProvider>
+      <FinancialDashboardInner />
+    </PeriodFilterProvider>
   );
 }

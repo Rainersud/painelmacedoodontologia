@@ -39,6 +39,9 @@ const Indicacoes = () => {
           <p className="text-sm text-muted-foreground">Métricas do programa de indicações e benefícios</p>
         </div>
         <ReferralDashboard />
+        <PendingBonusesWidget
+          onReferrerClick={(leadId, name) => handleReferrerClick(leadId, name)}
+        />
         <ReferralRankingWidget
           onLeadClick={(leadId) => handleReferrerClick(leadId)}
         />

@@ -77,9 +77,10 @@ function AgentCard({ agent, isLeader }: { agent: AgentMetrics; isLeader?: boolea
           <div className="flex justify-between"><span className="text-muted-foreground">Leads</span><b>{agent.leadsReceived}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Agend.</span><b>{agent.appointmentsScheduled}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Compar.</span><b>{agent.attendedAppointments}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Vendas</span><b>{agent.closed}</b></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Venda Real.</span><b>{agent.closed}</b></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Indic.</span><b>{agent.referrals}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Receita</span><b>R$ {(agent.revenue / 1000).toFixed(1)}k</b></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Faturam.</span><b>R$ {(agent.revenue / 1000).toFixed(1)}k</b></div>
+          <div className="flex justify-between col-span-2 pt-1 border-t"><span className="text-muted-foreground">Ticket Médio</span><b className="text-primary">R$ {agent.closed > 0 ? Math.round(agent.revenue / agent.closed).toLocaleString('pt-BR') : '0'}</b></div>
         </div>
       </CardContent>
     </Card>

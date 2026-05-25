@@ -240,15 +240,15 @@ function ComparisonView({ com1, com2, perAgent }: { com1: AgentPerformance; com2
               const v2 = (com2 as any)[m.key] as number;
               const winner = m.higher ? (v1 >= v2 ? 1 : 2) : (v1 <= v2 ? 1 : 2);
               return (
-                <>
-                  <div key={`${m.key}-l`} className="py-2 border-t">{m.label}</div>
+                <Fragment key={m.key}>
+                  <div className="py-2 border-t">{m.label}</div>
                   <div className={cn('py-2 border-t text-center font-mono', winner === 1 && 'text-success font-bold')}>
                     {m.fmt(v1)} {winner === 1 && '🏆'}
                   </div>
                   <div className={cn('py-2 border-t text-center font-mono', winner === 2 && 'text-success font-bold')}>
                     {m.fmt(v2)} {winner === 2 && '🏆'}
                   </div>
-                </>
+                </Fragment>
               );
             })}
           </div>

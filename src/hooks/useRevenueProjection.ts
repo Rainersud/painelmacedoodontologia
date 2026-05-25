@@ -184,6 +184,26 @@ export function useTotalReceivedRevenue() {
   });
 }
 
+// Global CAC — total acquisition costs divided by count of Comercial 1 closings (fechado leads)
+export function useGlobalCAC() {
+  return useQuery({
+    queryKey: ['global-cac'],
+    queryFn: async () => {
+      const [{ data: costs }, { count: closedCount }] = await Promise.all([
+        supabase.from('acquisition_costs').select('amount'),
+        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'fechado'),
+      ]);
+      const totalCosts = (costs || []).reduce((sum, c: any) => sum + Number(c.amount || 0), 0);
+      const sales = closedCount || 0;
+      return {
+        cac: sales > 0 ? totalCosts / sales : 0,
+        totalCosts,
+        salesCount: sales,
+      };
+    },
+  });
+}
+
 // LTV data: upsell payments (with upsell_opportunity_id)
 export function useLTVMonthly() {
   return useQuery({

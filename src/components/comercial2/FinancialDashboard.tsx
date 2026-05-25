@@ -6,14 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 import { TrendingUp, DollarSign, AlertTriangle, Calendar, Wallet, BarChart3 } from 'lucide-react';
-import { useRevenueProjection, useCACMonthly, useLTVMonthly, useTotalReceivedRevenue } from '@/hooks/useRevenueProjection';
+import { useRevenueProjection, useCACMonthly, useLTVMonthly, useGlobalCAC } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
 
 export function FinancialDashboard() {
   const { data: projection, isLoading: projLoading } = useRevenueProjection();
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();
   const { data: ltvData, isLoading: ltvLoading } = useLTVMonthly();
-  const { data: totalReceived } = useTotalReceivedRevenue();
+  const { data: globalCAC } = useGlobalCAC();
   const [periodFilter, setPeriodFilter] = useState('all');
 
   const getFilteredTotal = () => {

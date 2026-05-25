@@ -119,15 +119,18 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
       // Losses (categorias fixas + "Outros")
       const LOSS_CATEGORIES = ['Preço', 'Medo', 'Não tem cartão', 'Desistiu', 'Sumiu', 'Fechou no concorrente'];
       const normalize = (raw: string): string => {
-        const t = raw.toLowerCase();
-        if (t.includes('preç') || t.includes('caro') || t.includes('valor')) return 'Preço';
-        if (t.includes('medo') || t.includes('insegur')) return 'Medo';
-        if (t.includes('cart')) return 'Não tem cartão';
-        if (t.includes('desist')) return 'Desistiu';
-        if (t.includes('sumi') || t.includes('não respond') || t.includes('sem resposta')) return 'Sumiu';
+        const t = raw.toLowerCase().trim();
+        if (!t) return 'Outros';
+        if (t === 'preço' || t.includes('preç') || t.includes('caro') || t === 'valor' || t.includes(' valor')) return 'Preço';
+        if (t === 'medo' || t.includes('medo') || t.includes('insegur')) return 'Medo';
+        if (t.includes('não tem cart') || t.includes('nao tem cart') || t.includes('sem cart')) return 'Não tem cartão';
+        if (t === 'desistiu' || t.includes('desist')) return 'Desistiu';
+        if (t === 'sumiu' || t.includes('sumi') || t.includes('não respond') || t.includes('sem resposta')) return 'Sumiu';
         if (t.includes('concorr') || t.includes('outra clíni')) return 'Fechou no concorrente';
-        return 'Outros';
+        // Custom "Outro" text — preserve verbatim so it appears in the dashboard
+        return raw.trim();
       };
+
       const lossAgg: Record<string, { count: number; valor: number }> = {};
       LOSS_CATEGORIES.forEach(c => { lossAgg[c] = { count: 0, valor: 0 }; });
       leads.filter(l => l.loss_reason && l.created_at >= startISO && l.created_at <= endISO).forEach(l => {

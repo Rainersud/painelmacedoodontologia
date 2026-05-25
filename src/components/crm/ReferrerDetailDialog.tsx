@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,12 +24,17 @@ interface ReferrerDetailDialogProps {
   onViewLead?: (leadId: string) => void;
 }
 
-function RewardEditor({ value, treatmentValue, onSave, editable }: { value: number; treatmentValue: number; onSave: (v: number) => void; editable: boolean }) {
+function RewardEditor({ value, percentage, treatmentValue, onSave, editable }: { value: number; percentage: number; treatmentValue: number; onSave: (v: number, pct: number) => void; editable: boolean }) {
   const [editing, setEditing] = useState(false);
   const [customPct, setCustomPct] = useState('');
+  const [selectedPct, setSelectedPct] = useState(percentage || 0);
   const fmtCur = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
-  const currentPct = treatmentValue > 0 && value > 0 ? (value / treatmentValue) * 100 : 0;
+  useEffect(() => {
+    setSelectedPct(percentage || 0);
+  }, [percentage]);
+
+  const currentPct = selectedPct > 0 ? selectedPct : (treatmentValue > 0 && value > 0 ? (value / treatmentValue) * 100 : 0);
   const pctLabel = currentPct > 0 ? `${currentPct % 1 === 0 ? currentPct.toFixed(0) : currentPct.toFixed(1)}%` : '';
 
   if (!editable) {
@@ -42,7 +47,8 @@ function RewardEditor({ value, treatmentValue, onSave, editable }: { value: numb
 
   const applyPct = (pct: number) => {
     const amt = treatmentValue > 0 ? Math.round((treatmentValue * pct) / 100 * 100) / 100 : 0;
-    onSave(amt);
+    setSelectedPct(pct);
+    onSave(amt, pct);
   };
 
   if (editing) {
@@ -64,7 +70,7 @@ function RewardEditor({ value, treatmentValue, onSave, editable }: { value: numb
     );
   }
 
-  const presetMatch = ['2', '4', '5'].includes(String(currentPct));
+  const presetMatch = [2, 4, 5].includes(Number(currentPct));
   const selectVal = presetMatch ? String(currentPct) : (currentPct > 0 ? 'custom-set' : '');
 
   return (

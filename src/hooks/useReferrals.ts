@@ -8,6 +8,7 @@ export interface Referral {
   referred_lead_id: string;
   reward_type: 'dinheiro' | 'credito';
   reward_value: number;
+  reward_percentage: number;
   discount_type: 'percentual' | 'fixo';
   discount_value: number;
   attendance_discount_eligible: boolean;
@@ -52,6 +53,7 @@ export function useReferralsByLead(leadId: string | undefined) {
         asReferrer: (referrerData || []).map(r => ({
           ...r,
           reward_type: r.reward_type as 'dinheiro' | 'credito',
+          reward_percentage: Number((r as any).reward_percentage || 0),
           discount_type: r.discount_type as 'percentual' | 'fixo',
           bonus_status: (r as any).bonus_status as 'pendente' | 'pago' || 'pendente',
           bonus_paid_at: (r as any).bonus_paid_at || null,
@@ -60,6 +62,7 @@ export function useReferralsByLead(leadId: string | undefined) {
         asReferred: referredData ? {
           ...referredData,
           reward_type: referredData.reward_type as 'dinheiro' | 'credito',
+          reward_percentage: Number((referredData as any).reward_percentage || 0),
           discount_type: referredData.discount_type as 'percentual' | 'fixo',
           bonus_status: (referredData as any).bonus_status as 'pendente' | 'pago' || 'pendente',
           bonus_paid_at: (referredData as any).bonus_paid_at || null,

@@ -64,6 +64,10 @@ export function useRealtimeSync() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
         queryClient.invalidateQueries({ queryKey: ['payments'] });
         queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
+        queryClient.invalidateQueries({ queryKey: ['total-received-revenue'] });
+        queryClient.invalidateQueries({ queryKey: ['cac-monthly-chart'] });
+        queryClient.invalidateQueries({ queryKey: ['ltv-monthly-chart'] });
+        queryClient.invalidateQueries({ queryKey: ['revenue-projection'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
         queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
         queryClient.invalidateQueries({ queryKey: ['goals-progress'] });

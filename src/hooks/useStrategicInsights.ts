@@ -52,7 +52,7 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
 
       const [paymentsRes, leadsRes, profilesRes, costsRes] = await Promise.all([
         supabase.from('payments').select('net_value, paid_at, lead_id, agent_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-        supabase.from('leads').select('id, source, status, loss_reason, treatment_value, created_at'),
+        supabase.from('leads').select('id, name, source, status, loss_reason, treatment_value, created_at'),
         supabase.from('profiles').select('user_id, full_name'),
         supabase.from('acquisition_costs').select('amount').gte('reference_month', range.start.toISOString().split('T')[0]).lte('reference_month', range.end.toISOString().split('T')[0]),
       ]);

@@ -34,30 +34,12 @@ function getRange(period: Period) {
   }
 }
 
-const targetLabels: Record<string, string> = {
-  agendamentos: 'Agendamentos',
-  comparecimentos: 'Comparecimentos',
-  indicacoes: 'Indicações',
-  fechados: 'Vendas Fechadas',
-  resgatados: 'Resgatados',
-};
-
-const periodLabelsGoal: Record<string, string> = { diario: 'Diária', semanal: 'Semanal', mensal: 'Mensal' };
-
-/** Cores: vermelho=crítico, verde=atenção, azul=saudável */
-const statusStyles: Record<GoalWithIncentive['status'], { bg: string; text: string; border: string; barFill: string; label: string }> = {
-  azul: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/30', barFill: '[&>div]:bg-primary', label: 'No ritmo' },
-  verde: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/30', barFill: '[&>div]:bg-success', label: 'Atenção' },
-  vermelho: { bg: 'bg-destructive/10', text: 'text-destructive', border: 'border-destructive/30', barFill: '[&>div]:bg-destructive', label: 'Crítico' },
-};
-
 const kpiCards = [
   { key: 'leadsReceived', label: 'Novos Leads', icon: Users, color: 'primary' },
   { key: 'appointmentsScheduled', label: 'Agendamentos', icon: Calendar, color: 'chart-2' },
   { key: 'attendedAppointments', label: 'Comparecimentos', icon: UserCheck, color: 'success' },
-  { key: 'closed', label: 'Vendas', icon: DollarSign, color: 'chart-5' },
+  { key: 'closed', label: 'Venda Realizada', icon: DollarSign, color: 'chart-5' },
   { key: 'referrals', label: 'Indicações', icon: Share2, color: 'warning' },
-  { key: 'callsMade', label: 'Ligações', icon: Phone, color: 'muted-foreground' },
 ] as const;
 
 function MedalIcon({ rank }: { rank: number }) {

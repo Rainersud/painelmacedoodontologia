@@ -405,7 +405,6 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                     title: 'NECESSIDADE / SOLUÇÃO',
                     questions: [
                       { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?', type: 'open' },
-                      { key: 'spin_n2', label: 'Se conseguirmos uma condição facilitada, você teria interesse em iniciar?', type: 'yesno' },
                       { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?', type: 'open' },
                     ],
                   },

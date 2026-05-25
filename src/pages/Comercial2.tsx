@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
 import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
-import { PerformanceFinancialPanel } from '@/components/comercial2/PerformanceFinancialPanel';
+
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { usePayments, useConfirmBoletoPayment, useRevertPayment, useDeletePayment, useEditPayment } from '@/hooks/usePayments';
@@ -1191,11 +1191,7 @@ const Comercial2 = () => {
           <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
           <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
           <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
-          <TabsTrigger value="performance" className="gap-1.5"><TrendingUp className="h-3.5 w-3.5" /> Performance</TabsTrigger>
         </TabsList>
-        <TabsContent value="performance" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <PerformanceFinancialPanel />
-        </TabsContent>
         <TabsContent value="financeiro" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
           <FinancialDashboard />
         </TabsContent>

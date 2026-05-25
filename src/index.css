@@ -265,6 +265,33 @@
     background: hsl(var(--muted-foreground) / 0.4);
   }
 
+  /* Thick, always-visible horizontal scrollbar for kanban boards */
+  .scroll-container-x-thick {
+    @apply overflow-x-auto overflow-y-hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted));
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar {
+    height: 14px;
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 7px;
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 7px;
+    border: 2px solid hsl(var(--muted));
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+
   .scroll-container-y {
     @apply overflow-y-auto overflow-x-hidden;
     -webkit-overflow-scrolling: touch;

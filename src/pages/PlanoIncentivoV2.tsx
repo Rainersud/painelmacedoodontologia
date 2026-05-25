@@ -1,380 +1,365 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { useIncentiveTiers, useAllAgentsIncentives } from '@/hooks/useIncentiveTiers';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Zap, 
-  Settings, 
-  Trophy, 
-  ArrowRight, 
-  CheckCircle2,
-  Star,
-  Crown,
-  Gem,
-  Target
+import { Progress } from '@/components/ui/progress';
+import { Sparkline } from '@/components/dashboard/Sparkline';
+import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useMetaSettings } from '@/hooks/useMetaSettings';
+import {
+  startOfDay, endOfDay,
+  startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth,
+  eachDayOfInterval, format, getDay,
+} from 'date-fns';
+import {
+  Users, CalendarCheck, UserCheck, Trophy, Heart, Zap, TrendingUp, Target,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-// Monday.com style colors
-const mondayColors = {
-  blue: 'hsl(213 94% 58%)',
-  green: 'hsl(156 72% 45%)',
-  purple: 'hsl(270 75% 60%)',
-  orange: 'hsl(32 95% 55%)',
-  pink: 'hsl(340 82% 60%)',
-  teal: 'hsl(180 70% 50%)',
-  yellow: 'hsl(45 93% 58%)',
-  red: 'hsl(0 84% 60%)',
+type StatusColor = 'azul' | 'verde' | 'vermelho';
+
+const statusToColor = (s: PanelMetric['status']): StatusColor =>
+  s === 'healthy' ? 'azul' : s === 'warning' ? 'verde' : 'vermelho';
+
+const colorClasses: Record<StatusColor, { bar: string; text: string; bg: string; ring: string; label: string }> = {
+  azul:     { bar: 'bg-[hsl(213_94%_58%)]', text: 'text-[hsl(213_94%_58%)]', bg: 'bg-[hsl(213_94%_58%)]/10', ring: 'ring-[hsl(213_94%_58%)]/30', label: 'Saudável' },
+  verde:    { bar: 'bg-[hsl(156_72%_45%)]', text: 'text-[hsl(156_72%_45%)]', bg: 'bg-[hsl(156_72%_45%)]/10', ring: 'ring-[hsl(156_72%_45%)]/30', label: 'Atenção' },
+  vermelho: { bar: 'bg-[hsl(0_84%_60%)]',   text: 'text-[hsl(0_84%_60%)]',   bg: 'bg-[hsl(0_84%_60%)]/10',   ring: 'ring-[hsl(0_84%_60%)]/30',   label: 'Crítico' },
 };
 
-const tierConfig = [
-  { icon: Target, color: mondayColors.blue, gradient: 'from-[hsl(213_94%_58%)] to-[hsl(213_94%_45%)]' },
-  { icon: Star, color: mondayColors.green, gradient: 'from-[hsl(156_72%_45%)] to-[hsl(156_72%_35%)]' },
-  { icon: Gem, color: mondayColors.purple, gradient: 'from-[hsl(270_75%_60%)] to-[hsl(270_75%_45%)]' },
-  { icon: Crown, color: mondayColors.orange, gradient: 'from-[hsl(32_95%_55%)] to-[hsl(32_95%_40%)]' },
+interface DisplayGoal {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  current: number;
+  target: number;
+  remaining: number;
+  percentage: number;
+  status: StatusColor;
+  primaryDisplay: string;
+  metaSaudavel: string;
+  rateInfo?: string;
+  trend: number[];
+}
+
+function buildPeriodRange(period: Period) {
+  const now = new Date();
+  if (period === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
+  if (period === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+  return { start: startOfMonth(now), end: endOfMonth(now) };
+}
+
+function useReferralsCount(period: Period) {
+  const { start, end } = buildPeriodRange(period);
+  return useQuery({
+    queryKey: ['plano-incentivo-referrals', period],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('referrals')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+function useReferralsTrend(period: Period) {
+  const { start, end } = buildPeriodRange(period);
+  return useQuery({
+    queryKey: ['plano-incentivo-referrals-trend', period],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('referrals')
+        .select('created_at')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+      const days = eachDayOfInterval({ start, end });
+      return days.map(d => {
+        const dStart = startOfDay(d).getTime();
+        const dEnd = endOfDay(d).getTime();
+        return (data ?? []).filter((r: any) => {
+          const t = new Date(r.created_at).getTime();
+          return t >= dStart && t <= dEnd;
+        }).length;
+      });
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+function useBusinessDaysProportion(period: Period) {
+  return useQuery({
+    queryKey: ['plano-incentivo-bizdays', period],
+    queryFn: async () => {
+      const [{ data: bizSettings }, { data: hols }] = await Promise.all([
+        supabase.from('meta_settings').select('setting_value').eq('setting_key', 'working_days_bitmask'),
+        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
+      ]);
+      const mask = Number(bizSettings?.[0]?.setting_value ?? 62);
+      const holidays = new Set<string>();
+      const recurring = new Set<string>();
+      (hols ?? []).forEach((h: any) => {
+        if (h.is_recurring) recurring.add(String(h.holiday_date).slice(5));
+        else holidays.add(String(h.holiday_date));
+      });
+      const isBiz = (d: Date) => {
+        if ((mask & (1 << getDay(d))) === 0) return false;
+        if (holidays.has(format(d, 'yyyy-MM-dd'))) return false;
+        if (recurring.has(format(d, 'MM-dd'))) return false;
+        return true;
+      };
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      const monthlyBiz = Math.max(1, eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(isBiz).length);
+      const { start, end } = buildPeriodRange(period);
+      const periodBiz = Math.max(1, eachDayOfInterval({ start, end }).filter(isBiz).length);
+      return { monthlyBiz, periodBiz, proportion: periodBiz / monthlyBiz };
+    },
+  });
+}
+
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: 'hoje', label: 'Hoje' },
+  { value: 'semana', label: 'Semana' },
+  { value: 'mes', label: 'Mês' },
 ];
 
 export default function PlanoIncentivoV2() {
-  const { isAdmin } = useAuth();
-  const { data, isLoading, updateTierPercentage, updateTierTarget } = useIncentiveTiers();
-  const { data: allAgents } = useAllAgentsIncentives();
-  const [editingTier, setEditingTier] = useState<{ 
-    index: number; 
-    percentage: number; 
-    targetRevenue: number;
-  } | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [period, setPeriod] = useState<Period>('mes');
+  const { data: panel, isLoading } = useClinicGoalsPanel(period);
+  const { data: referralsCount = 0 } = useReferralsCount(period);
+  const { data: referralsTrend = [] } = useReferralsTrend(period);
+  const { data: bizDays } = useBusinessDaysProportion(period);
+  const { data: metaSettings } = useMetaSettings();
 
-  const handleSaveTier = async () => {
-    if (!editingTier) return;
-    try {
-      // Update both percentage and target
-      await updateTierPercentage.mutateAsync({ 
-        tierIndex: editingTier.index, 
-        percentage: editingTier.percentage 
-      });
-      await updateTierTarget.mutateAsync({ 
-        tierIndex: editingTier.index, 
-        targetRevenue: editingTier.targetRevenue 
-      });
-      toast.success('Meta atualizada!');
-      setEditingTier(null);
-      setIsDialogOpen(false);
-    } catch (error) {
-      toast.error('Erro ao atualizar');
-    }
-  };
+  const goals = useMemo<DisplayGoal[]>(() => {
+    if (!panel) return [];
+    const find = (k: string) => panel.metrics.find(m => m.key === k);
+    const leads = find('leads');
+    const agend = find('agendamentos');
+    const comp = find('comparecimentos');
+    const vendas = find('vendas');
+
+    const buildBase = (m: PanelMetric, icon: any, primaryDisplay?: string, rateInfo?: string): DisplayGoal => ({
+      key: m.key,
+      label: m.label,
+      icon,
+      current: m.current,
+      target: m.target,
+      remaining: Math.max(0, m.target - m.current),
+      percentage: m.percentage,
+      status: statusToColor(m.status),
+      primaryDisplay: primaryDisplay ?? m.display,
+      metaSaudavel: m.healthyGoal,
+      rateInfo,
+      trend: m.trend ?? [],
+    });
+
+    const out: DisplayGoal[] = [];
+    if (leads) out.push(buildBase(leads, Users));
+    if (agend) out.push(buildBase(agend, CalendarCheck,
+      `${agend.current} agendamentos`,
+      agend.rate ? `Taxa atual ${agend.rate.display} · meta ${agend.rate.targetDisplay}` : undefined));
+    if (comp) out.push(buildBase(comp, UserCheck,
+      `${comp.current} comparecimentos`,
+      comp.rate ? `Taxa atual ${comp.rate.display} · meta ${comp.rate.targetDisplay}` : undefined));
+    if (vendas) out.push(buildBase(vendas, Trophy,
+      `${vendas.current} vendas`,
+      vendas.rate ? `Taxa atual ${vendas.rate.display} · meta ${vendas.rate.targetDisplay}` : undefined));
+
+    // Indicação Pac
+    const monthlyIndic = Number(metaSettings?.meta_indicacoes ?? 200);
+    const proportion = bizDays?.proportion ?? 1;
+    const tgtIndic = Math.max(1, Math.round(monthlyIndic * proportion));
+    const remaining = Math.max(0, tgtIndic - referralsCount);
+    const ratio = referralsCount / tgtIndic;
+    const status: StatusColor = ratio >= 0.85 ? 'azul' : ratio >= 0.55 ? 'verde' : 'vermelho';
+    const periodSuffix = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
+    out.push({
+      key: 'indicacoes',
+      label: 'Indicação Pac',
+      icon: Heart,
+      current: referralsCount,
+      target: tgtIndic,
+      remaining,
+      percentage: Math.min(100, Math.round(ratio * 100)),
+      status,
+      primaryDisplay: `${referralsCount} indicações`,
+      metaSaudavel: remaining > 0
+        ? `${tgtIndic} indicações${periodSuffix} · faltam ${remaining}`
+        : `${tgtIndic} indicações${periodSuffix} · meta atingida`,
+      trend: referralsTrend,
+    });
+
+    return out;
+  }, [panel, referralsCount, referralsTrend, bizDays, metaSettings, period]);
+
+  const totalGoals = goals.length;
+  const goalsHealthy = goals.filter(g => g.status === 'azul').length;
+  const goalsHit = goals.filter(g => g.current >= g.target).length;
+  const overallProgress = totalGoals
+    ? Math.round(goals.reduce((s, g) => s + g.percentage, 0) / totalGoals)
+    : 0;
 
   return (
-    <AppLayout title="Plano de Incentivo">
+    <AppLayout title="Plano de Incentivo Inteligente">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Plano de Incentivo</h1>
-            <p className="text-muted-foreground">Metas progressivas por faturamento</p>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Zap className="h-6 w-6 text-primary" />
+              Plano de Incentivo Inteligente
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Metas oficiais da clínica · sincronizado com o Comercial 1 · proporcional aos dias úteis
+            </p>
           </div>
-          <div 
-            className="h-12 w-12 rounded-xl flex items-center justify-center text-white"
-            style={{ backgroundColor: mondayColors.green }}
-          >
-            <Trophy className="h-6 w-6" />
+          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
+            {PERIOD_OPTIONS.map(opt => (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={period === opt.value ? 'default' : 'ghost'}
+                onClick={() => setPeriod(opt.value)}
+                className="h-8"
+              >
+                {opt.label}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Current Revenue Summary */}
-        {data && (
-          <Card className="monday-card overflow-hidden">
-            <div className="h-1.5 w-full" style={{ backgroundColor: mondayColors.green }} />
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-medium">Faturamento Atual</p>
-                  <p className="text-4xl font-bold">R$ {data.currentRevenue.toLocaleString('pt-BR')}</p>
-                  {data.currentTier && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <CheckCircle2 className="h-5 w-5 text-success" />
-                      <span 
-                        className="text-sm font-semibold px-3 py-1 rounded-full text-white"
-                        style={{ backgroundColor: mondayColors.green }}
-                      >
-                        {data.currentTier.name} Atingida!
-                      </span>
-                    </div>
-                  )}
+        {/* Resumo */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-primary" />
                 </div>
-                <div 
-                  className="h-20 w-20 rounded-2xl flex items-center justify-center text-white"
-                  style={{ backgroundColor: mondayColors.green }}
-                >
-                  <Trophy className="h-10 w-10" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Progresso geral</p>
+                  <p className="text-2xl font-bold">{overallProgress}%</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Tier Progress Pipeline */}
-        <Card className="monday-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold">Progresso das Metas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {isLoading ? (
-                [1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-24 flex-1 min-w-[160px] bg-muted/50 rounded-xl animate-pulse" />
-                ))
-              ) : (
-                data?.tiers.map((tier, index, arr) => {
-                  const config = tierConfig[index] || tierConfig[0];
-                  const Icon = config.icon;
-
-                  return (
-                    <div key={tier.id} className="flex items-center flex-1 min-w-[160px]">
-                      <div 
-                        className={cn(
-                          "flex-1 rounded-xl p-4 transition-all hover:scale-105",
-                          tier.isAchieved 
-                            ? "text-white bg-gradient-to-br " + config.gradient
-                            : "bg-muted/50"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <Icon className={cn("h-6 w-6", !tier.isAchieved && "text-muted-foreground")} />
-                          {tier.isAchieved && <CheckCircle2 className="h-5 w-5" />}
-                        </div>
-                        <p className="font-bold">{tier.name}</p>
-                        <p className="text-2xl font-bold">{tier.percentage}%</p>
-                        <p className={cn("text-xs mt-1", tier.isAchieved ? "opacity-80" : "text-muted-foreground")}>
-                          R$ {tier.targetRevenue.toLocaleString('pt-BR')}
-                        </p>
-                      </div>
-                      {index < arr.length - 1 && (
-                        <ArrowRight className="h-5 w-5 text-muted-foreground mx-2 flex-shrink-0" />
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tier Cards Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {isLoading ? (
-            [1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-56 bg-muted/50 rounded-xl animate-pulse" />
-            ))
-          ) : (
-            data?.tiers.map((tier, index) => {
-              const config = tierConfig[index] || tierConfig[0];
-              const Icon = config.icon;
-
-              return (
-                <Card 
-                  key={tier.id} 
-                  className={cn(
-                    "monday-card overflow-hidden group",
-                    tier.isAchieved && "ring-2 ring-success"
-                  )}
-                >
-                  <div 
-                    className="h-1.5 w-full"
-                    style={{ backgroundColor: config.color }}
-                  />
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div 
-                        className={cn(
-                          "h-12 w-12 rounded-xl flex items-center justify-center text-white transition-transform group-hover:scale-110"
-                        )}
-                        style={{ backgroundColor: config.color }}
-                      >
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {tier.isAchieved && (
-                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-success/15 text-success">
-                            ✓ Atingida
-                          </span>
-                        )}
-                        {isAdmin && (
-                          <Dialog open={isDialogOpen && editingTier?.index === index + 1} onOpenChange={(open) => {
-                            setIsDialogOpen(open);
-                            if (!open) setEditingTier(null);
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => setEditingTier({ 
-                                  index: index + 1, 
-                                  percentage: tier.percentage,
-                                  targetRevenue: tier.targetRevenue
-                                })}
-                              >
-                                <Settings className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Editar {tier.name}</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4 mt-4">
-                                <div className="space-y-2">
-                                  <Label>Meta de Faturamento (R$)</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingTier?.targetRevenue || 0} 
-                                    onChange={(e) => setEditingTier(prev => prev ? { ...prev, targetRevenue: parseFloat(e.target.value) || 0 } : null)} 
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    Valor de faturamento necessário para atingir esta meta
-                                  </p>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Percentual de Bônus (%)</Label>
-                                  <Input 
-                                    type="number" 
-                                    step="0.1" 
-                                    min="0"
-                                    max="100"
-                                    value={editingTier?.percentage || 0} 
-                                    onChange={(e) => setEditingTier(prev => prev ? { ...prev, percentage: parseFloat(e.target.value) || 0 } : null)} 
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    Percentual do faturamento que será pago como bônus
-                                  </p>
-                                </div>
-                                <Button 
-                                  className="w-full" 
-                                  onClick={handleSaveTier}
-                                  disabled={updateTierPercentage.isPending || updateTierTarget.isPending}
-                                >
-                                  {(updateTierPercentage.isPending || updateTierTarget.isPending) ? 'Salvando...' : 'Salvar Meta'}
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-bold text-lg">{tier.name}</h3>
-                        <p className="text-3xl font-bold" style={{ color: config.color }}>
-                          {tier.percentage}%
-                        </p>
-                      </div>
-
-                      <div className="text-sm text-muted-foreground">
-                        Meta: R$ {tier.targetRevenue.toLocaleString('pt-BR')}
-                      </div>
-
-                      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                          style={{ 
-                            width: `${Math.min(tier.progress, 100)}%`,
-                            backgroundColor: config.color 
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex justify-between text-xs">
-                        <span style={{ color: config.color }} className="font-semibold">
-                          {tier.progress}%
-                        </span>
-                        {!tier.isAchieved && (
-                          <span className="text-muted-foreground">
-                            Falta: R$ {tier.remaining.toLocaleString('pt-BR')}
-                          </span>
-                        )}
-                      </div>
-
-                      {tier.isAchieved && (
-                        <div className="pt-3 border-t">
-                          <p className="text-xs text-muted-foreground">Bônus</p>
-                          <p className="text-xl font-bold text-success">
-                            R$ {tier.bonusAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[hsl(213_94%_58%)]/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-[hsl(213_94%_58%)]" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Metas saudáveis</p>
+                  <p className="text-2xl font-bold">{goalsHealthy}/{totalGoals}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[hsl(156_72%_45%)]/10 flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-[hsl(156_72%_45%)]" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Metas atingidas</p>
+                  <p className="text-2xl font-bold">{goalsHit}/{totalGoals}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                  <CalendarCheck className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Dias úteis ({PERIOD_OPTIONS.find(p=>p.value===period)?.label})</p>
+                  <p className="text-2xl font-bold">{bizDays?.periodBiz ?? '—'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* All Agents (Admin) */}
-        {isAdmin && allAgents && allAgents.length > 0 && (
-          <Card className="monday-card">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-semibold">Incentivos por Colaborador</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {allAgents.map((agent, index) => (
-                  <div 
-                    key={agent.agentId} 
-                    className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="h-12 w-12 border-2" style={{ borderColor: mondayColors.green }}>
-                          <AvatarFallback className="text-sm font-semibold">
-                            {agent.agentName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {agent.currentTier && (
-                          <span 
-                            className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-white"
-                            style={{ backgroundColor: tierConfig[Math.min(data?.tiers.findIndex(t => t.name === agent.currentTier?.name) ?? 0, 3)].color }}
-                          >
-                            <Trophy className="h-3 w-3" />
-                          </span>
+        {/* Cards de metas */}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {isLoading
+            ? [1, 2, 3, 4, 5].map(i => <div key={i} className="h-56 rounded-xl bg-muted/50 animate-pulse" />)
+            : goals.map(g => {
+                const cls = colorClasses[g.status];
+                const Icon = g.icon;
+                return (
+                  <Card key={g.key} className={cn('overflow-hidden ring-1', cls.ring)}>
+                    <div className={cn('h-1.5 w-full', cls.bar)} />
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={cn('h-11 w-11 rounded-xl flex items-center justify-center', cls.bg)}>
+                            <Icon className={cn('h-5 w-5', cls.text)} />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Meta saudável</p>
+                            <p className="font-semibold">{g.label}</p>
+                          </div>
+                        </div>
+                        <span className={cn('text-xs font-semibold px-2 py-1 rounded-full', cls.bg, cls.text)}>
+                          {cls.label}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-3xl font-bold">{g.primaryDisplay}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{g.metaSaudavel}</p>
+                        {g.rateInfo && (
+                          <p className="text-xs text-muted-foreground mt-1">{g.rateInfo}</p>
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold">{agent.agentName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          R$ {agent.currentRevenue.toLocaleString('pt-BR')} faturado
-                        </p>
+
+                      <div className="space-y-1.5">
+                        <Progress value={g.percentage} className="h-2" />
+                        <div className="flex justify-between text-xs">
+                          <span className={cn('font-semibold', cls.text)}>{g.percentage}% atingido</span>
+                          {g.remaining > 0 ? (
+                            <span className="text-muted-foreground">faltam {g.remaining}</span>
+                          ) : (
+                            <span className="text-[hsl(156_72%_45%)] font-semibold">meta atingida ✓</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      {agent.currentTier ? (
-                        <>
-                          <span 
-                            className="text-xs font-medium px-2 py-1 rounded-full text-white"
-                            style={{ backgroundColor: tierConfig[Math.min(data?.tiers.findIndex(t => t.name === agent.currentTier?.name) ?? 0, 3)].color }}
-                          >
-                            {agent.currentTier.name}
-                          </span>
-                          <p className="text-lg font-bold text-success mt-1">
-                            R$ {agent.totalEarned.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Sem meta atingida</span>
+
+                      {g.trend.length > 1 && (
+                        <div className="pt-2 border-t">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Evolução</p>
+                          <Sparkline data={g.trend} />
+                        </div>
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+        </div>
+
+        {/* Insights */}
+        {panel && panel.insights.length > 0 && (
+          <Card>
+            <CardContent className="p-5 space-y-2">
+              <p className="text-sm font-semibold">Insights inteligentes</p>
+              <ul className="space-y-1.5">
+                {panel.insights.map((it, idx) => (
+                  <li key={idx} className="text-sm text-muted-foreground">{it}</li>
                 ))}
-              </div>
+              </ul>
             </CardContent>
           </Card>
         )}

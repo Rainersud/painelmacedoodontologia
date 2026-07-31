@@ -20,6 +20,7 @@ import {
   Trash2, Edit2, Eye, Target, DollarSign, Activity, Layers
 } from 'lucide-react';
 import { format, startOfMonth } from 'date-fns';
+import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
 
 // ─── Shared helpers ──────────────────────────────────────────────
 type PerfStatus = 'healthy' | 'attention' | 'critical';
@@ -482,9 +483,9 @@ export default function CentralFunis() {
                             <span className="text-xs font-bold truncate">{c.name}</span>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            {c.link_url && (
+                            {safeUrl(c.link_url) && (
                               <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                                <a href={c.link_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
+                                <a href={safeUrl(c.link_url) ?? "#"} target="_blank" rel="noopener noreferrer nofollow"><ExternalLink className="h-3 w-3" /></a>
                               </Button>
                             )}
                             <CreativeFormDialog creative={c} onSave={d => d.id && updateCreative.mutate(d as any)}

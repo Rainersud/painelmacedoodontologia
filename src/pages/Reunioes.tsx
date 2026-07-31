@@ -23,6 +23,8 @@ import { useGoalsProgress } from '@/hooks/useGoalsProgress';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { useIncentiveGoals } from '@/hooks/useIncentiveGoals';
 import { formatCurrency } from '@/lib/currency';
+import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
+import { toast } from 'sonner';
 
 const METRIC_OPTIONS = [
   { value: 'indicacoes', label: 'Indicações' },
@@ -546,6 +548,7 @@ function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
 
   const handleAdd = () => {
     if (!title || !url) return;
+    if (!isValidHttpUrl(url)) { toast.error("Informe uma URL válida (http/https)"); return; }
     addLink.mutate({ title, url }, {
       onSuccess: () => { setTitle(''); setUrl(''); },
     });
@@ -576,7 +579,7 @@ function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
               <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-4 w-4 text-primary" />
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
+                  <a href={safeUrl(link.url) ?? "#"} target="_blank" rel="noopener noreferrer nofollow" className="text-sm font-medium text-primary hover:underline">
                     {link.title}
                   </a>
                 </div>

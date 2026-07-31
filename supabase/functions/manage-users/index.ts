@@ -5,9 +5,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+// ---------------------------------------------------------------------------
+// Rate limiting simples em memória (por admin autenticado e por IP).
+// Evita abuso de criação/exclusão de usuários em massa.
+// ---------------------------------------------------------------------------
+const RATE_LIMIT_MAX = 20            // requisições
+const RATE_LIMIT_WINDOW_MS = 60_000  // por minuto
+const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now()
+  const bucket = rateBuckets.get(key)
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return { allowed: true, retryAfter: 0 }
+  }
+  bucket.count++
+  if (bucket.count > RATE_LIMIT_MAX) {
+    return { allowed: false, retryAfter: Math.ceil((bucket.resetAt - now) / 1000) }
+  }
+  return { allowed: true, retryAfter: 0 }
+}
+
+// Limpeza periódica dos buckets expirados
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, v] of rateBuckets) if (now > v.resetAt) rateBuckets.delete(k)
+}, RATE_LIMIT_WINDOW_MS)
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
+  }
+
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ipLimit = checkRateLimit(`ip:${clientIp}`)
+  if (!ipLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Muitas requisições. Tente novamente em instantes.' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(ipLimit.retryAfter) }
+    })
   }
 
   try {
@@ -43,6 +80,14 @@ Deno.serve(async (req) => {
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: 'Sem permissão' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const userLimit = checkRateLimit(`user:${caller.id}`)
+    if (!userLimit.allowed) {
+      return new Response(JSON.stringify({ error: 'Muitas requisições. Tente novamente em instantes.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(userLimit.retryAfter) }
       })
     }
 

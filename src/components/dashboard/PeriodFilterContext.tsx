@@ -101,11 +101,16 @@ export function PeriodFilterProvider({ children }: { children: ReactNode }) {
     () => buildRange(period, customRange),
     [period, customRange],
   );
+  const value = useMemo<Ctx>(
+    () => ({ period, setPeriod, range, customRange, setCustomRange }),
+    [period, range, customRange],
+  );
   return (
-    <PeriodCtx.Provider value={{ period, setPeriod, range, customRange, setCustomRange }}>
+    <PeriodCtx.Provider value={value}>
       {children}
     </PeriodCtx.Provider>
   );
+
 }
 
 export function usePeriodFilter() {

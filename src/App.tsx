@@ -42,11 +42,17 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 30000,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 15 * 60 * 1000,
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+structuralSharing: true,
     },
+    mutations: { retry: 0 },
   },
 });
+
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">

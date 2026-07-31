@@ -44,6 +44,23 @@ export interface PatientTriageData {
   spin_answers?: Record<string, string> | null;
 }
 
+/** Accepts "DD/MM/AAAA" or ISO and returns "YYYY-MM-DD" (or null when invalid/empty). */
+export function normalizeBirthDate(value?: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return null;
+}
+
+/** Converts a stored "YYYY-MM-DD" into "DD/MM/AAAA" for display. */
+export function formatBirthDateBR(value?: string | null): string {
+  if (!value) return '';
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : value;
+}
+
 export function usePatientTriage(leadId: string | undefined) {
   return useQuery({
     queryKey: ['patient-triage', leadId],
@@ -67,8 +84,12 @@ export function useSavePatientTriage() {
 
   return useMutation({
     mutationFn: async (data: PatientTriageData) => {
+      const { id: _id, ...rest } = data as PatientTriageData & { created_at?: string };
+      delete (rest as Record<string, unknown>).created_at;
+
       const payload = {
-        ...data,
+        ...rest,
+        birth_date: normalizeBirthDate(data.birth_date),
         filled_by: user?.id || data.filled_by,
         filled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -82,17 +103,23 @@ export function useSavePatientTriage() {
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('patient_triage')
           .update(payload)
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .select()
+          .maybeSingle();
         if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('patient_triage')
-          .insert(payload);
-        if (error) throw error;
+        return updated;
       }
+
+      const { data: inserted, error } = await supabase
+        .from('patient_triage')
+        .insert(payload)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      return inserted;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['patient-triage', variables.lead_id] });

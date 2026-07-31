@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
-import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
+import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, formatBirthDateBR, type PatientTriageData } from '@/hooks/usePatientTriage';
 import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, useBulkLinkReferrals } from '@/hooks/useTriageReferrals';
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +51,14 @@ const DISCOMFORT_OPTIONS = [
 
 const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 
+/** Auto-format birth date input as DD/MM/AAAA while typing. */
+function maskBirthDate(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
 export function TriageFormDialog({ lead, open, onOpenChange, inline = false, readOnly = false }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);
@@ -74,7 +82,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
   useEffect(() => {
     if (existingTriage) {
-      setForm(existingTriage);
+      setForm({ ...existingTriage, birth_date: formatBirthDateBR(existingTriage.birth_date) });
     } else if (lead) {
       setForm({
         lead_id: lead.id,
@@ -190,7 +198,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             });
           }
         },
-        onError: () => toast.error('Erro ao salvar ficha de triagem'),
+        onError: (err: unknown) => toast.error(`Erro ao salvar ficha: ${(err as Error)?.message || 'tente novamente'}`),
       }
     );
   };
@@ -353,7 +361,14 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Data de Nascimento</Label>
-                    <Input type="text" value={form.birth_date || ''} onChange={e => updateField('birth_date', e.target.value)} placeholder="DD/MM/AAAA" />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={form.birth_date || ''}
+                      onChange={e => updateField('birth_date', maskBirthDate(e.target.value))}
+                      placeholder="DD/MM/AAAA"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Profissão</Label>

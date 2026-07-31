@@ -33,7 +33,7 @@ interface TriageReferralSectionProps {
 
 const REWARD_TIERS = [
   {
-    count: 10,
+    count: 5,
     percent: 2,
     perks: ['1 limpeza gratuita', '2% sobre cada tratamento fechado'],
     color: 'text-chart-2',
@@ -41,7 +41,7 @@ const REWARD_TIERS = [
     border: 'border-chart-2/30',
   },
   {
-    count: 20,
+    count: 15,
     percent: 4,
     perks: ['1 limpeza gratuita', '1 clareamento de plaquinha', '4% sobre cada tratamento fechado'],
     color: 'text-chart-5',
@@ -49,7 +49,7 @@ const REWARD_TIERS = [
     border: 'border-chart-5/30',
   },
   {
-    count: 50,
+    count: 40,
     percent: 5,
     perks: ['1 limpeza gratuita', '4 sessões de clareamento a laser', '5% sobre cada tratamento fechado'],
     color: 'text-warning',
@@ -267,7 +267,7 @@ export function TriageReferralSection({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-chart-5" />
-              <span className="text-sm font-semibold">Script de Remarketing</span>
+              <span className="text-sm font-semibold">Script para pac indicado</span>
               {scriptDirty && <Badge variant="outline" className="text-[9px] h-4">não salvo</Badge>}
             </div>
             <div className="flex gap-1">

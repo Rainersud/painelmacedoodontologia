@@ -8,7 +8,7 @@ import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps } from '@/lib/chartStyle';
 
 export function ROIAnalyticsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
@@ -56,8 +56,8 @@ export function ROIAnalyticsWidget() {
                     </defs>
                     <CartesianGrid {...chartGrid} />
                     <XAxis {...chartAxis} dataKey="date" />
-                    <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => formatCurrency(v)} />
+                    <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
                     <Area type="monotone" dataKey="receita" stroke="hsl(156 72% 45%)" strokeWidth={2} fill="url(#rev)" name="Receita" />
                     <Area type="monotone" dataKey="investimento" stroke="hsl(0 84% 60%)" strokeWidth={2} fill="url(#inv)" name="Investimento" />
                   </AreaChart>

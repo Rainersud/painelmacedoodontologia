@@ -277,7 +277,7 @@ const DashboardBI = () => {
                     <BarChart data={data?.monthlyData || []}>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="faturamentoReal" name="Faturamento Real" fill={biColors.green} radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -309,7 +309,7 @@ const DashboardBI = () => {
                       </defs>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="faturamentoFuturo" name="Faturamento Futuro" stroke={biColors.orange} strokeWidth={2} fill="url(#gradFuturo)" />
                     </AreaChart>
@@ -338,7 +338,7 @@ const DashboardBI = () => {
                     <BarChart data={data?.monthlyData || []}>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="cac" name="CAC (1ª Compra)" fill={biColors.blue} radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -370,7 +370,7 @@ const DashboardBI = () => {
                       </defs>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="ltv" name="LTV (Recompras)" stroke={biColors.purple} strokeWidth={2} fill="url(#gradLTV)" />
                     </AreaChart>
@@ -397,7 +397,7 @@ const DashboardBI = () => {
                   <LineChart data={data?.ltvEvolution || []}>
                     <CartesianGrid {...chartGrid} />
                     <XAxis {...chartAxis} dataKey="stage" />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={3} dot={{ r: 6, fill: biColors.purple, strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 8 }} />
                   </LineChart>

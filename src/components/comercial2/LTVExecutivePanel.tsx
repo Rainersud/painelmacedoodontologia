@@ -15,7 +15,7 @@ import { useCACMonthly } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const HEALTH_MAP = {
   success: { label: '🟢 Saudável', cls: 'bg-success/10 text-success border-success/30' },
@@ -142,8 +142,8 @@ export function LTVExecutivePanel() {
                 </defs>
                 <CartesianGrid {...chartGrid} />
                 <XAxis {...chartAxis} dataKey="label" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => formatCurrency(v)} />
+                <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
                 <Area type="monotone" dataKey="recebido" stroke="hsl(var(--success))" fill="url(#ltvGrad)" strokeWidth={2} name="Recebido" />
                 <Area type="monotone" dataKey="pendente" stroke="hsl(var(--warning))" fill="hsl(var(--warning))" fillOpacity={0.15} strokeWidth={2} name="Pendente" />
               </AreaChart>
@@ -164,9 +164,9 @@ export function LTVExecutivePanel() {
               <BarChart data={comparative}>
                 <CartesianGrid {...chartGrid} />
                 <XAxis {...chartAxis} dataKey="label" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => formatCurrency(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
+                <Legend {...chartLegend} />
                 <Bar dataKey="com1" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 1" />
                 <Bar dataKey="com2" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />
               </BarChart>

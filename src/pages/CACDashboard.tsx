@@ -216,7 +216,7 @@ export default function CACDashboard() {
                   <BarChart data={barData}>
                     <CartesianGrid {...chartGrid} />
                     <XAxis {...chartAxis} dataKey="name" />
-                    <YAxis tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
+                    <YAxis {...chartAxis} tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
                     <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatCurrency(v as number)} />} />
                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                       {barData.map((entry, i) => (

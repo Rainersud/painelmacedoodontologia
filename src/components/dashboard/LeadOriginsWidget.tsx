@@ -11,7 +11,7 @@ import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import type { Lead } from '@/types/crm';
-import { chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartTooltipProps } from '@/lib/chartStyle';
 
 const COLORS = ['hsl(213 94% 58%)', 'hsl(156 72% 45%)', 'hsl(270 75% 60%)', 'hsl(32 95% 55%)', 'hsl(340 82% 60%)', 'hsl(180 70% 50%)', 'hsl(45 93% 58%)', 'hsl(0 84% 60%)'];
 
@@ -50,7 +50,7 @@ export function LeadOriginsWidget() {
                   <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
                     {chartData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                   </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
+                  <Tooltip {...chartTooltipProps} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

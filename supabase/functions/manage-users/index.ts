@@ -109,13 +109,8 @@ Deno.serve(async (req) => {
         })
 
         // Set permissions
-        if (permissions && Array.isArray(permissions)) {
-          const permRows = permissions.map((p: any) => ({
-            user_id: userId,
-            module: p.module,
-            can_view: p.can_view ?? true,
-            can_edit: p.can_edit ?? false,
-          }))
+        const permRows = sanitizePermissions(permissions).map((p) => ({ user_id: userId, ...p }))
+        if (permRows.length > 0) {
           await adminClient.from('user_permissions').insert(permRows)
         }
 
@@ -126,6 +121,15 @@ Deno.serve(async (req) => {
 
       case 'update_user': {
         const { user_id, full_name, phone, is_active, role } = params
+
+        if (!isUuid(user_id)) return bad('Usuário inválido')
+        if (full_name !== undefined && !isName(full_name)) return bad('Nome inválido')
+        if (phone !== undefined && phone !== null && (typeof phone !== 'string' || phone.length > 30)) return bad('Telefone inválido')
+        if (is_active !== undefined && typeof is_active !== 'boolean') return bad('Status inválido')
+        if (role !== undefined && !isRole(role)) return bad('Perfil inválido')
+        if (user_id === caller.id && (is_active === false || role === 'agente')) {
+          return bad('Você não pode remover o próprio acesso de administrador')
+        }
 
         if (full_name !== undefined || phone !== undefined || is_active !== undefined) {
           const updates: any = {}
@@ -142,7 +146,7 @@ Deno.serve(async (req) => {
         }
 
         if (role) {
-          const { data: existing } = await adminClient.from('user_roles').select('id').eq('user_id', user_id).single()
+          const { data: existing } = await adminClient.from('user_roles').select('id').eq('user_id', user_id).maybeSingle()
           if (existing) {
             await adminClient.from('user_roles').update({ role }).eq('user_id', user_id)
           } else {
@@ -157,6 +161,9 @@ Deno.serve(async (req) => {
 
       case 'reset_password': {
         const { user_id, new_password } = params
+        if (!isUuid(user_id)) return bad('Usuário inválido')
+        if (!isPassword(new_password)) return bad('A senha deve ter no mínimo 8 caracteres')
+
         const { error } = await adminClient.auth.admin.updateUserById(user_id, { password: new_password })
         if (error) throw error
 
@@ -167,17 +174,13 @@ Deno.serve(async (req) => {
 
       case 'update_permissions': {
         const { user_id, permissions } = params
+        if (!isUuid(user_id)) return bad('Usuário inválido')
 
         // Delete existing and re-insert
         await adminClient.from('user_permissions').delete().eq('user_id', user_id)
 
-        if (permissions && permissions.length > 0) {
-          const permRows = permissions.map((p: any) => ({
-            user_id,
-            module: p.module,
-            can_view: p.can_view ?? true,
-            can_edit: p.can_edit ?? false,
-          }))
+        const permRows = sanitizePermissions(permissions).map((p) => ({ user_id, ...p }))
+        if (permRows.length > 0) {
           await adminClient.from('user_permissions').insert(permRows)
         }
 
@@ -185,6 +188,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
+
 
       case 'list_users': {
         const { data: profiles } = await adminClient.from('profiles').select('*').order('full_name')

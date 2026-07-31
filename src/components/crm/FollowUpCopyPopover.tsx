@@ -44,12 +44,19 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
         .eq('stage_key', stageKey)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []).map((a) => ({
+      const rows = data || [];
+      if (rows.length === 0) return [];
+      const { data: signed } = await supabase.storage
+        .from('copy-attachments')
+        .createSignedUrls(rows.map((a) => a.file_path), 3600);
+      return rows.map((a, i) => ({
         ...a,
-        url: supabase.storage.from('copy-attachments').getPublicUrl(a.file_path).data.publicUrl,
+        url: signed?.[i]?.signedUrl ?? '',
       }));
     },
+    staleTime: 30 * 60 * 1000,
   });
+
 
   const handleUpload = async (file: File) => {
     if (!file) return;

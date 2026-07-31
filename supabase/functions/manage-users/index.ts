@@ -240,7 +240,8 @@ Deno.serve(async (req) => {
         })
     }
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('manage-users error:', error)
+    return new Response(JSON.stringify({ error: 'Erro ao processar a solicitação' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }

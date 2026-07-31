@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, Phone, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3, Lock, Save, Pencil, Trash2, AlertTriangle, CreditCard, Banknote, CheckCircle2, Undo2, RotateCcw, Timer } from 'lucide-react';
+import { Loader2, Search, X, TrendingUp, DollarSign, Users, Target, ChevronRight, Gift, Calendar as CalendarIcon, Video, BarChart3, Lock, Save, Pencil, Trash2, AlertTriangle, CreditCard, Banknote, CheckCircle2, Undo2, RotateCcw, Timer } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,8 +25,6 @@ import {
   useUpdateUpsellStatus,
   useUpdateUpsellOpportunity,
   useCreateUpsellOpportunity,
-  useAddContactHistory,
-  useContactHistory,
   useUpsellMetrics,
   useTreatmentSuggestions,
   UPSELL_STAGES,
@@ -202,12 +200,10 @@ function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
 
 /* ============ EDITABLE DETAIL (Comprou 2+) ============ */
 function EditableDetailContent({
-  opp, updateOpp, setContactDialogOpen, contactHistory, allOpps,
+  opp, updateOpp, allOpps,
 }: {
   opp: UpsellOpportunity;
   updateOpp: ReturnType<typeof useUpdateUpsellOpportunity>;
-  setContactDialogOpen: (v: boolean) => void;
-  contactHistory: Array<{ id: string; contact_type: string; result: string | null; notes: string | null; created_at: string }>;
   allOpps: UpsellOpportunity[];
 }) {
   const { data: triage } = usePatientTriage(opp.lead_id);
@@ -982,30 +978,6 @@ function EditableDetailContent({
         <Textarea value={opp.notes || ''} onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })} placeholder="Adicione observações..." className="text-sm min-h-[60px]" />
       </div>
 
-      <Button onClick={() => setContactDialogOpen(true)} size="sm" className="w-full" variant="outline">
-        <Phone className="h-4 w-4 mr-1" /> Registrar Contato
-      </Button>
-
-      {contactHistory.length > 0 && (
-        <div>
-          <p className="text-xs font-bold text-chart-5 mb-2">Histórico de Contatos</p>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {contactHistory.map((c) => (
-              <div key={c.id} className="p-2 rounded-lg border bg-muted/30 text-xs">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-[9px]">
-                    {c.contact_type === 'ligacao' ? '📞 Ligação' : c.contact_type === 'whatsapp' ? '💬 WhatsApp' : '📝 Outro'}
-                  </Badge>
-                  <span className="text-muted-foreground">{format(new Date(c.created_at), 'dd/MM HH:mm', { locale: ptBR })}</span>
-                </div>
-                {c.result && <p className="mt-1 font-medium">{c.result}</p>}
-                {c.notes && <p className="mt-0.5 text-muted-foreground">{c.notes}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ===== SAVE EVOLUTION BUTTON (final do card) ===== */}
       <div className="pt-1 space-y-1">
         <Button onClick={handleSaveEvolution} className="w-full gap-2">
@@ -1029,7 +1001,6 @@ const Comercial2 = () => {
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
   const createUpsell = useCreateUpsellOpportunity();
-  const addContact = useAddContactHistory();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -1039,12 +1010,6 @@ const Comercial2 = () => {
   const [boardScrollWidth, setBoardScrollWidth] = useState(0);
   const [selectedOpp, setSelectedOpp] = useState<UpsellOpportunity | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [contactDialogOpen, setContactDialogOpen] = useState(false);
-  const [contactType, setContactType] = useState('ligacao');
-  const [contactResult, setContactResult] = useState('');
-  const [contactNotes, setContactNotes] = useState('');
-
-  const { data: contactHistory } = useContactHistory(selectedOpp?.id || null);
 
   useEffect(() => {
     if (selectedOpp && opportunities) {
@@ -1159,23 +1124,6 @@ const Comercial2 = () => {
     }
     setDraggedId(null);
     setDropTarget(null);
-  };
-
-  const handleSaveContact = () => {
-    if (!selectedOpp) return;
-    addContact.mutate({
-      opportunity_id: selectedOpp.id,
-      contact_type: contactType,
-      result: contactResult,
-      notes: contactNotes,
-    }, {
-      onSuccess: () => {
-        toast.success('Contato registrado!');
-        setContactDialogOpen(false);
-        setContactResult('');
-        setContactNotes('');
-      },
-    });
   };
 
   if (isLoading) {
@@ -1555,49 +1503,12 @@ const Comercial2 = () => {
                 : <EditableDetailContent
                     opp={selectedOpp}
                     updateOpp={updateOpp}
-                    setContactDialogOpen={setContactDialogOpen}
-                    contactHistory={contactHistory || []}
                     allOpps={opportunities || []}
                   />
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Register Contact Dialog */}
-        <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Registrar Contato</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-medium mb-1">Tipo de Contato</p>
-                <Select value={contactType} onValueChange={setContactType}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ligacao">📞 Ligação</SelectItem>
-                    <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
-                    <SelectItem value="outro">📝 Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="text-xs font-medium mb-1">Resultado</p>
-                <Input value={contactResult} onChange={(e) => setContactResult(e.target.value)} placeholder="Ex: Paciente interessado em clareamento" className="h-9 text-sm" />
-              </div>
-              <div>
-                <p className="text-xs font-medium mb-1">Observações</p>
-                <Textarea value={contactNotes} onChange={(e) => setContactNotes(e.target.value)} placeholder="Detalhes adicionais..." className="text-sm min-h-[60px]" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setContactDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSaveContact} disabled={addContact.isPending}>
-                {addContact.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar Contato'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </Tabs>
     </AppLayout>
   );

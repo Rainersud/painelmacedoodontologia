@@ -2,159 +2,134 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 
- * Dental CRM Design System
- * Style: Monday.com / Tuesday inspired
- * Modern, Colorful, Professional
+/*
+ * Dental CRM Design System — Midnight Indigo
+ * Dark-first. Sora (headings) + Manrope (body).
  * All colors MUST be HSL.
  */
 
 @layer base {
   :root {
-    /* Background & Foreground - Light & Clean */
-    --background: 220 14% 96%;
-    --foreground: 222 47% 11%;
+    --background: 252 45% 8%;
+    --foreground: 250 20% 96%;
 
-    /* Card - Bright White */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 252 40% 13%;
+    --card-foreground: 250 20% 96%;
 
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 252 40% 13%;
+    --popover-foreground: 250 20% 96%;
 
-    /* Primary - Monday Blue */
-    --primary: 213 94% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 265 75% 60%;
+    --primary-foreground: 250 25% 98%;
 
-    /* Secondary */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 20%;
+    --secondary: 252 30% 19%;
+    --secondary-foreground: 250 20% 96%;
 
-    /* Muted */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 252 30% 17%;
+    --muted-foreground: 250 12% 68%;
 
-    /* Accent - Light Blue */
-    --accent: 213 94% 95%;
-    --accent-foreground: 213 94% 45%;
+    --accent: 258 42% 25%;
+    --accent-foreground: 250 20% 96%;
 
-    /* Destructive - Vibrant Red */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 8 78% 58%;
+    --destructive-foreground: 250 25% 98%;
 
-    /* Success - Monday Green */
-    --success: 156 72% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 152 65% 48%;
+    --success-foreground: 252 45% 8%;
 
-    /* Warning - Monday Orange */
-    --warning: 32 95% 55%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 42 90% 62%;
+    --warning-foreground: 252 45% 8%;
 
-    /* Info - Monday Purple */
-    --info: 270 75% 60%;
-    --info-foreground: 0 0% 100%;
+    --info: 288 65% 68%;
+    --info-foreground: 252 45% 8%;
 
-    /* Borders & Input */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 213 94% 58%;
+    --border: 252 25% 26%;
+    --input: 252 25% 24%;
+    --ring: 265 75% 60%;
 
     --radius: 0.75rem;
 
-    /* Sidebar - Clean & Modern */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 20%;
-    --sidebar-primary: 213 94% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 213 94% 95%;
-    --sidebar-accent-foreground: 213 94% 45%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 213 94% 58%;
-    --sidebar-muted: 220 9% 46%;
+    --sidebar-background: 252 48% 6%;
+    --sidebar-foreground: 250 15% 85%;
+    --sidebar-primary: 265 75% 60%;
+    --sidebar-primary-foreground: 250 25% 98%;
+    --sidebar-accent: 252 38% 14%;
+    --sidebar-accent-foreground: 250 20% 96%;
+    --sidebar-border: 252 28% 20%;
+    --sidebar-ring: 265 75% 60%;
+    --sidebar-muted: 250 12% 60%;
 
-    /* Chart Colors - Monday Palette */
-    --chart-1: 213 94% 58%;
-    --chart-2: 156 72% 45%;
-    --chart-3: 270 75% 60%;
-    --chart-4: 32 95% 55%;
-    --chart-5: 340 82% 60%;
-    --chart-6: 180 70% 50%;
+    --chart-1: 265 75% 60%;
+    --chart-2: 152 65% 48%;
+    --chart-3: 288 65% 68%;
+    --chart-4: 42 90% 62%;
+    --chart-5: 25 85% 62%;
+    --chart-6: 195 75% 58%;
 
-    /* Monday.com specific colors */
-    --monday-blue: 213 94% 58%;
-    --monday-green: 156 72% 45%;
-    --monday-yellow: 45 93% 58%;
-    --monday-orange: 32 95% 55%;
-    --monday-red: 0 84% 60%;
-    --monday-purple: 270 75% 60%;
-    --monday-pink: 340 82% 60%;
-    --monday-teal: 180 70% 50%;
+    --monday-blue: 265 75% 60%;
+    --monday-green: 152 65% 48%;
+    --monday-yellow: 48 90% 62%;
+    --monday-orange: 25 85% 62%;
+    --monday-red: 8 78% 58%;
+    --monday-purple: 288 65% 68%;
+    --monday-pink: 330 72% 62%;
+    --monday-teal: 180 65% 52%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 252 45% 8%;
+    --foreground: 250 20% 96%;
 
-    --card: 222 47% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 252 40% 13%;
+    --card-foreground: 250 20% 96%;
 
-    --popover: 222 47% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 252 40% 13%;
+    --popover-foreground: 250 20% 96%;
 
-    --primary: 213 94% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 265 75% 60%;
+    --primary-foreground: 250 25% 98%;
 
-    --secondary: 222 47% 18%;
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 252 30% 19%;
+    --secondary-foreground: 250 20% 96%;
 
-    --muted: 222 47% 18%;
-    --muted-foreground: 220 9% 55%;
+    --muted: 252 30% 17%;
+    --muted-foreground: 250 12% 68%;
 
-    --accent: 213 70% 20%;
-    --accent-foreground: 213 94% 70%;
+    --accent: 258 42% 25%;
+    --accent-foreground: 250 20% 96%;
 
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 8 78% 58%;
+    --destructive-foreground: 250 25% 98%;
 
-    --success: 156 72% 40%;
-    --success-foreground: 0 0% 100%;
+    --success: 152 65% 48%;
+    --success-foreground: 252 45% 8%;
 
-    --warning: 32 95% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 42 90% 62%;
+    --warning-foreground: 252 45% 8%;
 
-    --info: 270 75% 55%;
-    --info-foreground: 0 0% 100%;
+    --info: 288 65% 68%;
+    --info-foreground: 252 45% 8%;
 
-    --border: 222 47% 20%;
-    --input: 222 47% 20%;
-    --ring: 213 94% 58%;
+    --border: 252 25% 26%;
+    --input: 252 25% 24%;
+    --ring: 265 75% 60%;
 
-    --sidebar-background: 222 47% 10%;
-    --sidebar-foreground: 210 40% 85%;
-    --sidebar-primary: 213 94% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 213 94% 58%;
-    --sidebar-muted: 220 9% 50%;
+    --sidebar-background: 252 48% 6%;
+    --sidebar-foreground: 250 15% 85%;
+    --sidebar-primary: 265 75% 60%;
+    --sidebar-primary-foreground: 250 25% 98%;
+    --sidebar-accent: 252 38% 14%;
+    --sidebar-accent-foreground: 250 20% 96%;
+    --sidebar-border: 252 28% 20%;
+    --sidebar-ring: 265 75% 60%;
+    --sidebar-muted: 250 12% 60%;
 
-    --chart-1: 213 94% 65%;
-    --chart-2: 156 72% 50%;
-    --chart-3: 270 75% 65%;
-    --chart-4: 32 95% 60%;
-    --chart-5: 340 82% 65%;
-    --chart-6: 180 70% 55%;
-
-    --monday-blue: 213 94% 60%;
-    --monday-green: 156 72% 48%;
-    --monday-yellow: 45 93% 60%;
-    --monday-orange: 32 95% 58%;
-    --monday-red: 0 84% 58%;
-    --monday-purple: 270 75% 62%;
-    --monday-pink: 340 82% 62%;
-    --monday-teal: 180 70% 55%;
+    --chart-1: 265 75% 60%;
+    --chart-2: 152 65% 48%;
+    --chart-3: 288 65% 68%;
+    --chart-4: 42 90% 62%;
+    --chart-5: 25 85% 62%;
+    --chart-6: 195 75% 58%;
   }
 }
 

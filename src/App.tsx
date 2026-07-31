@@ -47,7 +47,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
-providedstructuralSharing: true,
+structuralSharing: true,
     },
     mutations: { retry: 0 },
   },

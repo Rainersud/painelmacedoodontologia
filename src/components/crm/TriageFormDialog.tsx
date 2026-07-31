@@ -24,6 +24,7 @@ import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, u
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { esc, escapeHtml } from '@/lib/sanitize';
 import type { Lead } from '@/types/crm';
 
 interface TriageFormDialogProps {
@@ -208,7 +209,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
     const content = `
       <html>
       <head>
-        <title>Ficha de Triagem - ${form.full_name || lead.name}</title>
+        <title>Ficha de Triagem - ${esc(form.full_name || lead.name, '')}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
           h1 { font-size: 20px; text-align: center; margin-bottom: 4px; }
@@ -225,16 +226,16 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
         <p class="intro">Preenchida em ${form.filled_at ? new Date(form.filled_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
         <h2>Identificação</h2>
         <div class="grid">
-          <div class="field"><label>Nome Completo:</label> <span>${form.full_name || '-'}</span></div>
-          <div class="field"><label>Telefone:</label> <span>${form.phone || '-'}</span></div>
-          <div class="field"><label>Email:</label> <span>${form.email || '-'}</span></div>
-          <div class="field"><label>Endereço:</label> <span>${form.address || '-'}</span></div>
-          <div class="field"><label>CEP:</label> <span>${form.cep || '-'}</span></div>
-          <div class="field"><label>CPF:</label> <span>${form.cpf || '-'}</span></div>
-          <div class="field"><label>Data de Nascimento:</label> <span>${form.birth_date || '-'}</span></div>
-          <div class="field"><label>Profissão:</label> <span>${form.profession || '-'}</span></div>
-          <div class="field"><label>Instagram:</label> <span>${form.instagram || '-'}</span></div>
-          <div class="field"><label>Facebook:</label> <span>${form.facebook || '-'}</span></div>
+          <div class="field"><label>Nome Completo:</label> <span>${esc(form.full_name)}</span></div>
+          <div class="field"><label>Telefone:</label> <span>${esc(form.phone)}</span></div>
+          <div class="field"><label>Email:</label> <span>${esc(form.email)}</span></div>
+          <div class="field"><label>Endereço:</label> <span>${esc(form.address)}</span></div>
+          <div class="field"><label>CEP:</label> <span>${esc(form.cep)}</span></div>
+          <div class="field"><label>CPF:</label> <span>${esc(form.cpf)}</span></div>
+          <div class="field"><label>Data de Nascimento:</label> <span>${esc(form.birth_date)}</span></div>
+          <div class="field"><label>Profissão:</label> <span>${esc(form.profession)}</span></div>
+          <div class="field"><label>Instagram:</label> <span>${esc(form.instagram)}</span></div>
+          <div class="field"><label>Facebook:</label> <span>${esc(form.facebook)}</span></div>
         </div>
         <h2>Roteiro SPIN</h2>
         ${(() => {
@@ -261,7 +262,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
           ];
           return blocks.map(([title, qs]) => `
             <h3 style="font-size:14px;margin-top:12px;">${title}</h3>
-            ${qs.map(([q, ans]) => `<div class="field"><label>${q}</label> <span>${ans}</span></div>`).join('')}
+            ${qs.map(([q, ans]) => `<div class="field"><label>${q}</label> <span>${escapeHtml(ans)}</span></div>`).join('')}
           `).join('');
         })()}
       </body>

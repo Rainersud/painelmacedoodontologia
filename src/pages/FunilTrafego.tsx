@@ -19,6 +19,7 @@ import {
 import { format, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
+import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
 
 // ─── Funnel Stage Config ─────────────────────────────────────────
 const FUNNEL_STAGES = [
@@ -452,9 +453,9 @@ export default function FunilTrafego() {
                           <CardTitle className="text-sm truncate">{c.name}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          {c.link_url && (
+                          {safeUrl(c.link_url) && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                              <a href={c.link_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
+                              <a href={safeUrl(c.link_url) ?? "#"} target="_blank" rel="noopener noreferrer nofollow"><ExternalLink className="h-3 w-3" /></a>
                             </Button>
                           )}
                           <CreativeFormDialog

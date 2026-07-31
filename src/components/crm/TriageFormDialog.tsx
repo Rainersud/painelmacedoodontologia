@@ -198,7 +198,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             });
           }
         },
-        onError: () => toast.error('Erro ao salvar ficha de triagem'),
+        onError: (err: unknown) => toast.error(`Erro ao salvar ficha: ${(err as Error)?.message || 'tente novamente'}`),
       }
     );
   };

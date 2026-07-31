@@ -129,50 +129,44 @@ export function AppSidebar() {
 
       <SidebarContent className="px-4 py-6">
         {visibleMain.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Principal
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {visibleMain.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Principal"
+            open={openGroup === 'principal'}
+            onToggle={() => setOpenGroup(openGroup === 'principal' ? null : 'principal')}
+          >
+            {visibleMain.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
 
         {visibleMgmt.length > 0 && (
-          <SidebarGroup className="mt-6">
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Gestão
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {visibleMgmt.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Gestão"
+            className="mt-4"
+            open={openGroup === 'gestao'}
+            onToggle={() => setOpenGroup(openGroup === 'gestao' ? null : 'gestao')}
+          >
+            {visibleMgmt.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
 
         {isAdmin && (
-          <SidebarGroup className="mt-6">
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Administração
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {adminNavItems.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Administração"
+            className="mt-4"
+            open={openGroup === 'admin'}
+            onToggle={() => setOpenGroup(openGroup === 'admin' ? null : 'admin')}
+          >
+            {adminNavItems.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
       </SidebarContent>
+
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <DropdownMenu>

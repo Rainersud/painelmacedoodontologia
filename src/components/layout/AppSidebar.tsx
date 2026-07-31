@@ -113,6 +113,9 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { fullName, role, isAdmin, signOut } = useAuth();
   const { canView } = usePermissions();
+  const [openGroup, setOpenGroup] = useState<string | null>('principal');
+
+
 
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';

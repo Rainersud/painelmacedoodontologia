@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { DollarSign, CheckSquare, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -205,3 +206,6 @@ function LeadCardComponent({
     </Card>
   );
 }
+
+export const LeadCard = memo(LeadCardComponent);
+

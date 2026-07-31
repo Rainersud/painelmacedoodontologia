@@ -51,6 +51,14 @@ const DISCOMFORT_OPTIONS = [
 
 const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 
+/** Auto-format birth date input as DD/MM/AAAA while typing. */
+function maskBirthDate(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
 export function TriageFormDialog({ lead, open, onOpenChange, inline = false, readOnly = false }: TriageFormDialogProps) {
   const { user } = useAuth();
   const { data: existingTriage, isLoading } = usePatientTriage(lead?.id);

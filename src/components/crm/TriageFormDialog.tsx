@@ -300,7 +300,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
       )}
 
       {inline && readOnly && (
-        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-yellow-300">
           A ficha de triagem está em modo leitura. Edição liberada apenas quando o status do lead for "Compareceu".
         </div>
       )}

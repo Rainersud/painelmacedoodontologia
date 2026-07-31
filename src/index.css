@@ -316,3 +316,26 @@
     background: hsl(var(--muted-foreground) / 0.4);
   }
 }
+
+/* Ocultar badge "Made with Lovable" em todas as formas */
+.lovable-badge,
+[class*="lovable-badge"],
+[id*="lovable-badge"],
+a[href*="lovable.app"][target="_blank"],
+iframe[src*="lovable.app/badge"],
+iframe[src*="lovable"][src*="badge"],
+div[data-testid*="lovable-badge"],
+div[aria-label*="Made with Lovable"],
+a[aria-label*="Made with Lovable"],
+a[title*="Made with Lovable"],
+.lovable-project-badge,
+.lovable-made-with {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+}

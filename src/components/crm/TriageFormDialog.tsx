@@ -82,7 +82,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
   useEffect(() => {
     if (existingTriage) {
-      setForm(existingTriage);
+      setForm({ ...existingTriage, birth_date: formatBirthDateBR(existingTriage.birth_date) });
     } else if (lead) {
       setForm({
         lead_id: lead.id,

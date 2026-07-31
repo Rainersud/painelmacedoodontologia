@@ -44,12 +44,22 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
         .eq('stage_key', stageKey)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data || []).map((a) => ({
+      const rows = data || [];
+      if (rows.length === 0) return [];
+      const { data: signed } = await supabase.storage
+        .from('copy-attachments')
+        .createSignedUrls(rows.map((a) => a.file_path), 3600);
+      return rows.map((a, i) => ({
         ...a,
-        url: supabase.storage.from('copy-attachments').getPublicUrl(a.file_path).data.publicUrl,
+        url: signed?.[i]?.signedUrl ?? '',
       }));
     },
+    staleTime: 30 * 60 * 1000,
   });
+
+
+  const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
 
   const handleUpload = async (file: File) => {
     if (!file) return;
@@ -57,9 +67,13 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
       toast.error('Arquivo muito grande (máx 10MB)');
       return;
     }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!ALLOWED_MIME.includes(file.type) || !ALLOWED_EXT.includes(ext)) {
+      toast.error('Formato não permitido. Envie PNG, JPG, WEBP ou GIF.');
+      return;
+    }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
       const path = `${stageKey}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('copy-attachments')

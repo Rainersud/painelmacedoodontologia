@@ -15,6 +15,7 @@ import { useCACMonthly } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { chartGrid, chartAxis } from '@/lib/chartStyle';
 
 const HEALTH_MAP = {
   success: { label: '🟢 Saudável', cls: 'bg-success/10 text-success border-success/30' },
@@ -139,8 +140,8 @@ export function LTVExecutivePanel() {
                     <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <CartesianGrid {...chartGrid} />
+                <XAxis {...chartAxis} dataKey="label" />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 <Area type="monotone" dataKey="recebido" stroke="hsl(var(--success))" fill="url(#ltvGrad)" strokeWidth={2} name="Recebido" />
@@ -161,8 +162,8 @@ export function LTVExecutivePanel() {
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={comparative}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <CartesianGrid {...chartGrid} />
+                <XAxis {...chartAxis} dataKey="label" />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />

@@ -8,6 +8,7 @@ import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
+import { chartGrid, chartAxis } from '@/lib/chartStyle';
 
 export function ROIAnalyticsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
@@ -53,8 +54,8 @@ export function ROIAnalyticsWidget() {
                         <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis {...chartAxis} dataKey="date" />
                     <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))' }} formatter={(v: number) => formatCurrency(v)} />
                     <Area type="monotone" dataKey="receita" stroke="hsl(156 72% 45%)" strokeWidth={2} fill="url(#rev)" name="Receita" />

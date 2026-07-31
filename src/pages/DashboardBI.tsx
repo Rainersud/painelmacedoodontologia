@@ -32,6 +32,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { chartGrid, chartAxis } from '@/lib/chartStyle';
 
 const formatBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -274,8 +275,8 @@ const DashboardBI = () => {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data?.monthlyData || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                      <CartesianGrid {...chartGrid} />
+                      <XAxis {...chartAxis} dataKey="label" />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="faturamentoReal" name="Faturamento Real" fill={biColors.green} radius={[4, 4, 0, 0]} />
@@ -306,8 +307,8 @@ const DashboardBI = () => {
                           <stop offset="95%" stopColor={biColors.orange} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                      <CartesianGrid {...chartGrid} />
+                      <XAxis {...chartAxis} dataKey="label" />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="faturamentoFuturo" name="Faturamento Futuro" stroke={biColors.orange} strokeWidth={2} fill="url(#gradFuturo)" />
@@ -335,8 +336,8 @@ const DashboardBI = () => {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data?.monthlyData || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                      <CartesianGrid {...chartGrid} />
+                      <XAxis {...chartAxis} dataKey="label" />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="cac" name="CAC (1ª Compra)" fill={biColors.blue} radius={[4, 4, 0, 0]} />
@@ -367,8 +368,8 @@ const DashboardBI = () => {
                           <stop offset="95%" stopColor={biColors.purple} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                      <CartesianGrid {...chartGrid} />
+                      <XAxis {...chartAxis} dataKey="label" />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="ltv" name="LTV (Recompras)" stroke={biColors.purple} strokeWidth={2} fill="url(#gradLTV)" />
@@ -394,8 +395,8 @@ const DashboardBI = () => {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data?.ltvEvolution || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="stage" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis {...chartAxis} dataKey="stage" />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={3} dot={{ r: 6, fill: biColors.purple, strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 8 }} />

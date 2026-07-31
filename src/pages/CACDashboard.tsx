@@ -27,6 +27,7 @@ import {
 import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { chartGrid, chartAxis } from '@/lib/chartStyle';
 
 const categoryLabels: Record<string, string> = Object.fromEntries(
   COST_CATEGORIES.map(c => [c.value, c.label])
@@ -213,8 +214,8 @@ export default function CACDashboard() {
               {barData.length > 0 && (barData[0].value > 0 || barData[1].value > 0) ? (
                 <ChartContainer config={{ cac: { label: 'CAC' }, tm: { label: 'Ticket Médio' } }} className="h-[200px]">
                   <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
+                    <CartesianGrid {...chartGrid} />
+                    <XAxis {...chartAxis} dataKey="name" />
                     <YAxis tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
                     <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatCurrency(v as number)} />} />
                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>

@@ -32,6 +32,7 @@ import {
   DollarSign,
   BarChart3
 } from 'lucide-react';
+import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'hsl(142, 70%, 45%)',
@@ -329,7 +330,7 @@ export default function Relatorios() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -350,21 +351,12 @@ export default function Relatorios() {
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={statusChartData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={true} vertical={false} />
-                      <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                      <YAxis 
-                        dataKey="name" 
+                      <CartesianGrid {...chartGrid} />
+                      <XAxis {...chartAxis} type="number" />
+                      <YAxis {...chartAxis} dataKey="name" 
                         type="category" 
-                        width={120}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
+                        width={120} />
+                      <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
                       <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

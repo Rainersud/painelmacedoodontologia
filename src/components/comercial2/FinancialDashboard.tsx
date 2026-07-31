@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/currency';
 import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { format } from 'date-fns';
+import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
 
 function FinancialDashboardInner() {
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();
@@ -107,10 +108,10 @@ function FinancialDashboardInner() {
           ) : comparativeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={comparativeData}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <CartesianGrid {...chartGrid} />
+                <XAxis {...chartAxis} dataKey="label" />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(value: number) => formatCurrency(value)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="com1" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 1" />
                 <Bar dataKey="com2" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />

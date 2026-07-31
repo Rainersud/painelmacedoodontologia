@@ -8,7 +8,7 @@ import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
-import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps } from '@/lib/chartStyle';
 
 export function ROIAnalyticsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');

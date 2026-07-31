@@ -21,7 +21,7 @@ interface LeadCardProps {
   index?: number;
 }
 
-export function LeadCard({ 
+function LeadCardComponent({ 
   lead, 
   onDragStart,
   onClick,

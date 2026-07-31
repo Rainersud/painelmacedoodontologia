@@ -46,11 +46,42 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { action, ...params } = await req.json()
+    const body = await req.json().catch(() => null)
+    if (!body || typeof body !== 'object') {
+      return new Response(JSON.stringify({ error: 'Requisição inválida' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const { action, ...params } = body as Record<string, any>
+
+    const isEmail = (v: unknown) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length <= 255
+    const isUuid = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+    const isName = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && v.length <= 120
+    const isPassword = (v: unknown) => typeof v === 'string' && v.length >= 8 && v.length <= 72
+    const isRole = (v: unknown) => v === 'admin' || v === 'agente'
+    const bad = (msg: string) => new Response(JSON.stringify({ error: msg }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+    const sanitizePermissions = (perms: unknown) =>
+      Array.isArray(perms)
+        ? perms
+            .filter((p: any) => p && typeof p.module === 'string' && p.module.length <= 60)
+            .map((p: any) => ({
+              module: p.module,
+              can_view: p.can_view === true,
+              can_edit: p.can_edit === true,
+            }))
+        : []
 
     switch (action) {
       case 'create_user': {
         const { email, password, full_name, phone, role, permissions } = params
+
+        if (!isEmail(email)) return bad('E-mail inválido')
+        if (!isPassword(password)) return bad('A senha deve ter no mínimo 8 caracteres')
+        if (!isName(full_name)) return bad('Nome inválido')
+        if (role !== undefined && !isRole(role)) return bad('Perfil inválido')
+        if (phone !== undefined && phone !== null && (typeof phone !== 'string' || phone.length > 30)) return bad('Telefone inválido')
 
         // Create user in auth
         const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -60,6 +91,7 @@ Deno.serve(async (req) => {
           user_metadata: { full_name },
         })
         if (createError) throw createError
+
 
         const userId = newUser.user.id
 

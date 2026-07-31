@@ -24,6 +24,7 @@ import { useReferralDashboard } from '@/hooks/useReferrals';
 import { useIncentiveGoals } from '@/hooks/useIncentiveGoals';
 import { formatCurrency } from '@/lib/currency';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
+import { toast } from 'sonner';
 
 const METRIC_OPTIONS = [
   { value: 'indicacoes', label: 'Indicações' },

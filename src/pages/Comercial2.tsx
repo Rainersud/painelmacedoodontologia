@@ -761,14 +761,8 @@ function EditableDetailContent({
         upsellOpportunityId={opp.id}
       />
 
-      {/* ===== SAVE EVOLUTION BUTTON ===== */}
-      <Button onClick={handleSaveEvolution} className="w-full gap-2">
-        <Save className="h-4 w-4" />
-        {canAdvance ? 'Salvar Evolução e Avançar' : 'Salvar Evolução'}
-      </Button>
-      {!canAdvance && (
-        <p className="text-[10px] text-muted-foreground text-center">Última etapa do pipeline</p>
-      )}
+
+
 
       {/* Triage personalization */}
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (

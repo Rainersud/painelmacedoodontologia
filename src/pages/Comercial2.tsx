@@ -798,6 +798,10 @@ function EditableDetailContent({
             </div>
             <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}</Badge>
           </div>
+          <div className="rounded-md bg-background/60 border border-border/60 p-2">
+            <p className="text-[10px] text-muted-foreground">🍦 Sabor de sorvete preferido</p>
+            <p className="text-xs font-medium">{triage?.ice_cream_flavor || 'Não informado na triagem'}</p>
+          </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
             <Popover open={surgeryCalendarOpen} onOpenChange={setSurgeryCalendarOpen} modal={true}>
@@ -820,6 +824,10 @@ function EditableDetailContent({
               <span className="text-xs font-semibold">🎁 Brinde – Entrega da Prótese</span>
             </div>
             <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}</Badge>
+          </div>
+          <div className="rounded-md bg-background/60 border border-border/60 p-2">
+            <p className="text-[10px] text-muted-foreground">🍽️ O que deseja comer com os dentes novos</p>
+            <p className="text-xs font-medium">{triage?.post_treatment_food || 'Não informado na triagem'}</p>
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>

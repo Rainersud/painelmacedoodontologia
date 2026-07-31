@@ -468,6 +468,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                 </h3>
                 <div className="space-y-3">
                   <div className="space-y-1">
+                    <p className="text-[11px] font-semibold text-chart-5">Brinde 1 — Dia da Cirurgia</p>
                     <Label className="text-xs flex items-center gap-1">
                       🍦 Qual sabor de sorvete você mais prefere? <span className="text-destructive">*</span>
                     </Label>
@@ -479,6 +480,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                     />
                   </div>
                   <div className="space-y-1">
+                    <p className="text-[11px] font-semibold text-chart-5">Brinde 2 — Entrega da Prótese</p>
                     <Label className="text-xs flex items-center gap-1">
                       🍽️ O que você mais deseja comer assim que arrumar seus dentes novos? <span className="text-destructive">*</span>
                     </Label>

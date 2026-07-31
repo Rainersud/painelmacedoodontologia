@@ -45,8 +45,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
-  { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
   { title: 'Comercial 1', url: '/funil', icon: Filter, module: 'funil' },
   { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
@@ -56,6 +54,8 @@ const mainNavItems = [
 ];
 
 const managementNavItems = [
+  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
+  { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
   { title: 'Dashboard BI', url: '/bi', icon: LayoutDashboard, module: 'bi' },
   { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
   { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
@@ -68,6 +68,7 @@ const managementNavItems = [
   { title: 'Funil Tráfego Pago', url: '/funil-trafego', icon: Megaphone, module: 'funil_trafego' },
   { title: 'Central de Funis', url: '/central-funis', icon: Layers, module: 'central_funis' },
 ];
+
 
 const adminNavItems = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },

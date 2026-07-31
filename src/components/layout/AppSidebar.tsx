@@ -1,7 +1,6 @@
 import { 
   LayoutDashboard, 
   Users, 
-  Phone,
   Headset,
   Filter,
   Gift,

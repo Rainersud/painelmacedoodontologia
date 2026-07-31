@@ -216,6 +216,9 @@ Deno.serve(async (req) => {
 
       case 'delete_user': {
         const { user_id } = params
+        if (!isUuid(user_id)) return bad('Usuário inválido')
+        if (user_id === caller.id) return bad('Você não pode excluir a própria conta')
+
 
         // Delete from related tables first
         await adminClient.from('user_permissions').delete().eq('user_id', user_id)

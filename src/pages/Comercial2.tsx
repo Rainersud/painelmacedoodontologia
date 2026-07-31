@@ -1005,7 +1005,19 @@ function EditableDetailContent({
           </div>
         </div>
       )}
+
+      {/* ===== SAVE EVOLUTION BUTTON (final do card) ===== */}
+      <div className="pt-1 space-y-1">
+        <Button onClick={handleSaveEvolution} className="w-full gap-2">
+          <Save className="h-4 w-4" />
+          {canAdvance ? 'Salvar Evolução e Avançar' : 'Salvar Evolução'}
+        </Button>
+        {!canAdvance && (
+          <p className="text-[10px] text-muted-foreground text-center">Última etapa do pipeline</p>
+        )}
+      </div>
     </div>
+
   );
 }
 

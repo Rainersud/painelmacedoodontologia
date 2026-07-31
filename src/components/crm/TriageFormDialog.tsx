@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
-import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, type PatientTriageData } from '@/hooks/usePatientTriage';
+import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, formatBirthDateBR, type PatientTriageData } from '@/hooks/usePatientTriage';
 import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, useBulkLinkReferrals } from '@/hooks/useTriageReferrals';
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';

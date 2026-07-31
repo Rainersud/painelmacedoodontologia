@@ -267,7 +267,7 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
               <div className="grid grid-cols-3 gap-1.5">
                 {attachments.map((att) => (
                   <div key={att.id} className="relative group rounded border overflow-hidden bg-muted/30">
-                    <img src={att.url} alt={att.file_name} className="w-full h-20 object-cover" />
+                    <img src={att.url} alt={att.file_name} loading="lazy" decoding="async" className="w-full h-20 object-cover" />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                       <Button size="icon" variant="secondary" className="h-6 w-6" onClick={() => handleDownload(att)} title="Baixar">
                         <Download className="h-3 w-3" />

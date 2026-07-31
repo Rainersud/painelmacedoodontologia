@@ -142,8 +142,8 @@ export function LTVExecutivePanel() {
                 </defs>
                 <CartesianGrid {...chartGrid} />
                 <XAxis {...chartAxis} dataKey="label" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => formatCurrency(v)} />
+                <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
                 <Area type="monotone" dataKey="recebido" stroke="hsl(var(--success))" fill="url(#ltvGrad)" strokeWidth={2} name="Recebido" />
                 <Area type="monotone" dataKey="pendente" stroke="hsl(var(--warning))" fill="hsl(var(--warning))" fillOpacity={0.15} strokeWidth={2} name="Pendente" />
               </AreaChart>
@@ -164,9 +164,9 @@ export function LTVExecutivePanel() {
               <BarChart data={comparative}>
                 <CartesianGrid {...chartGrid} />
                 <XAxis {...chartAxis} dataKey="label" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(v: number) => formatCurrency(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
+                <Legend {...chartLegend} />
                 <Bar dataKey="com1" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 1" />
                 <Bar dataKey="com2" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />
               </BarChart>

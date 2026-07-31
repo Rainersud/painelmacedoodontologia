@@ -110,9 +110,9 @@ function FinancialDashboardInner() {
               <BarChart data={comparativeData}>
                 <CartesianGrid {...chartGrid} />
                 <XAxis {...chartAxis} dataKey="label" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(value: number) => formatCurrency(value)} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...chartTooltipProps} formatter={(value: number) => formatCurrency(value)} />
+                <Legend {...chartLegend} />
                 <Bar dataKey="com1" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} name="Comercial 1" />
                 <Bar dataKey="com2" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Comercial 2 (LTV)" />
               </BarChart>

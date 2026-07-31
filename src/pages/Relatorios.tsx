@@ -330,7 +330,7 @@ export default function Relatorios() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
+                      <Tooltip {...chartTooltipProps} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -356,7 +356,7 @@ export default function Relatorios() {
                       <YAxis {...chartAxis} dataKey="name" 
                         type="category" 
                         width={120} />
-                      <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
+                      <Tooltip {...chartTooltipProps} />
                       <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

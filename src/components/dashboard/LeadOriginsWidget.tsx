@@ -50,7 +50,7 @@ export function LeadOriginsWidget() {
                   <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
                     {chartData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                   </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
+                  <Tooltip {...chartTooltipProps} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

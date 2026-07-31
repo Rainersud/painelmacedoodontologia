@@ -145,7 +145,7 @@ const MetricasVendas = () => {
                     <CartesianGrid {...chartGrid} />
                     <XAxis {...chartAxis} dataKey="name" />
                     <YAxis {...chartAxis} />
-                    <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip {...chartTooltipProps} formatter={(value: number) => formatCurrency(value)} />
                     <Bar dataKey="1 Etapa" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="2 Etapas" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -168,8 +168,8 @@ const MetricasVendas = () => {
                         <Cell key={i} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} labelStyle={chartTooltipLabelStyle} />
-                    <Legend />
+                    <Tooltip {...chartTooltipProps} />
+                    <Legend {...chartLegend} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

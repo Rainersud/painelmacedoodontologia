@@ -67,8 +67,12 @@ export function useSavePatientTriage() {
 
   return useMutation({
     mutationFn: async (data: PatientTriageData) => {
+      const { id: _id, ...rest } = data as PatientTriageData & { created_at?: string };
+      delete (rest as Record<string, unknown>).created_at;
+
       const payload = {
-        ...data,
+        ...rest,
+        birth_date: normalizeBirthDate(data.birth_date),
         filled_by: user?.id || data.filled_by,
         filled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -82,17 +86,23 @@ export function useSavePatientTriage() {
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('patient_triage')
           .update(payload)
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .select()
+          .maybeSingle();
         if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('patient_triage')
-          .insert(payload);
-        if (error) throw error;
+        return updated;
       }
+
+      const { data: inserted, error } = await supabase
+        .from('patient_triage')
+        .insert(payload)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      return inserted;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['patient-triage', variables.lead_id] });

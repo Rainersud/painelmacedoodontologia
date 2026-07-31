@@ -32,7 +32,7 @@ import {
   DollarSign,
   BarChart3
 } from 'lucide-react';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const sourceColors: Record<string, string> = {
   whatsapp: 'hsl(142, 70%, 45%)',

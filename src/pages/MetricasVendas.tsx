@@ -9,7 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { useSalesMetrics, type SaleTypeMetrics } from '@/hooks/useSalesMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const MetricasVendas = () => {
   const [month, setMonth] = useState(new Date());

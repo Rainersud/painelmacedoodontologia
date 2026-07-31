@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/currency';
 import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { format } from 'date-fns';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 function FinancialDashboardInner() {
   const { data: cacData, isLoading: cacLoading } = useCACMonthly();

@@ -15,7 +15,7 @@ import { useCACMonthly } from '@/hooks/useRevenueProjection';
 import { formatCurrency } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { chartGrid, chartAxis, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const HEALTH_MAP = {
   success: { label: '🟢 Saudável', cls: 'bg-success/10 text-success border-success/30' },

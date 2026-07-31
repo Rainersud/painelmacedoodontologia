@@ -58,15 +58,22 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
   });
 
 
+  const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+
   const handleUpload = async (file: File) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Arquivo muito grande (máx 10MB)');
       return;
     }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!ALLOWED_MIME.includes(file.type) || !ALLOWED_EXT.includes(ext)) {
+      toast.error('Formato não permitido. Envie PNG, JPG, WEBP ou GIF.');
+      return;
+    }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
       const path = `${stageKey}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('copy-attachments')

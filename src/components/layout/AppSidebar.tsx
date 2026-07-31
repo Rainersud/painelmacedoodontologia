@@ -42,11 +42,43 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
+function CollapsibleGroup({
+  label,
+  open,
+  onToggle,
+  className,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Collapsible open={open} onOpenChange={onToggle}>
+      <SidebarGroup className={className}>
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+          <span>{label}</span>
+          <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          <SidebarGroupContent className="mt-1">
+            <SidebarMenu className="space-y-1">{children}</SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+
+
 const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
-  { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
   { title: 'Comercial 1', url: '/funil', icon: Filter, module: 'funil' },
   { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
@@ -56,6 +88,8 @@ const mainNavItems = [
 ];
 
 const managementNavItems = [
+  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
+  { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
   { title: 'Dashboard BI', url: '/bi', icon: LayoutDashboard, module: 'bi' },
   { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
   { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
@@ -69,6 +103,7 @@ const managementNavItems = [
   { title: 'Central de Funis', url: '/central-funis', icon: Layers, module: 'central_funis' },
 ];
 
+
 const adminNavItems = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
 ];
@@ -78,6 +113,9 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { fullName, role, isAdmin, signOut } = useAuth();
   const { canView } = usePermissions();
+  const [openGroup, setOpenGroup] = useState<string | null>('principal');
+
+
 
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
@@ -128,50 +166,44 @@ export function AppSidebar() {
 
       <SidebarContent className="px-4 py-6">
         {visibleMain.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Principal
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {visibleMain.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Principal"
+            open={openGroup === 'principal'}
+            onToggle={() => setOpenGroup(openGroup === 'principal' ? null : 'principal')}
+          >
+            {visibleMain.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
 
         {visibleMgmt.length > 0 && (
-          <SidebarGroup className="mt-6">
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Gestão
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {visibleMgmt.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Gestão"
+            className="mt-4"
+            open={openGroup === 'gestao'}
+            onToggle={() => setOpenGroup(openGroup === 'gestao' ? null : 'gestao')}
+          >
+            {visibleMgmt.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
 
         {isAdmin && (
-          <SidebarGroup className="mt-6">
-            <SidebarGroupLabel className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted mb-2">
-              Administração
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {adminNavItems.map((item) => (
-                  <NavItem key={item.title} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <CollapsibleGroup
+            label="Administração"
+            className="mt-4"
+            open={openGroup === 'admin'}
+            onToggle={() => setOpenGroup(openGroup === 'admin' ? null : 'admin')}
+          >
+            {adminNavItems.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
         )}
       </SidebarContent>
+
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <DropdownMenu>

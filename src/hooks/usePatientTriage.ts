@@ -44,6 +44,23 @@ export interface PatientTriageData {
   spin_answers?: Record<string, string> | null;
 }
 
+/** Accepts "DD/MM/AAAA" or ISO and returns "YYYY-MM-DD" (or null when invalid/empty). */
+export function normalizeBirthDate(value?: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return null;
+}
+
+/** Converts a stored "YYYY-MM-DD" into "DD/MM/AAAA" for display. */
+export function formatBirthDateBR(value?: string | null): string {
+  if (!value) return '';
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : value;
+}
+
 export function usePatientTriage(leadId: string | undefined) {
   return useQuery({
     queryKey: ['patient-triage', leadId],

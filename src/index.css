@@ -225,76 +225,112 @@
   .scroll-container-x {
     @apply overflow-x-auto overflow-y-hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.55) hsl(var(--muted));
   }
 
   .scroll-container-x::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .scroll-container-x::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scroll-container-x::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
-  }
-
-  .scroll-container-x::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
-  }
-
-  /* Thick, always-visible horizontal scrollbar for kanban boards */
-  .scroll-container-x-thick {
-    @apply overflow-x-auto overflow-y-hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: auto;
-    scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted));
-  }
-
-  .scroll-container-x-thick::-webkit-scrollbar {
     height: 14px;
   }
 
-  .scroll-container-x-thick::-webkit-scrollbar-track {
+  .scroll-container-x::-webkit-scrollbar-track {
     background: hsl(var(--muted));
     border-radius: 7px;
   }
 
-  .scroll-container-x-thick::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.5);
+  .scroll-container-x::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.55);
     border-radius: 7px;
     border: 2px solid hsl(var(--muted));
   }
 
-  .scroll-container-x-thick::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.8);
+  .scroll-container-x::-webkit-scrollbar-thumb:hover,
+  .scroll-container-x::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--primary) / 0.85);
+  }
+
+  /* Thick, always-visible horizontal scrollbar for kanban boards */
+  .scroll-container-x-thick {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted));
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar {
+    height: 20px;
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 10px;
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.6);
+    border-radius: 10px;
+    border: 3px solid hsl(var(--muted));
+  }
+
+  .scroll-container-x-thick::-webkit-scrollbar-thumb:hover,
+  .scroll-container-x-thick::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--primary) / 0.9);
+  }
+
+  /* Horizontal scrollbar positioned at the top of a container */
+  .scroll-container-x-top {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    direction: rtl;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted));
+  }
+
+  .scroll-container-x-top::-webkit-scrollbar {
+    height: 20px;
+  }
+
+  .scroll-container-x-top::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 10px;
+  }
+
+  .scroll-container-x-top::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.6);
+    border-radius: 10px;
+    border: 3px solid hsl(var(--muted));
+  }
+
+  .scroll-container-x-top::-webkit-scrollbar-thumb:hover,
+  .scroll-container-x-top::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--primary) / 0.9);
   }
 
   .scroll-container-y {
     @apply overflow-y-auto overflow-x-hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted));
   }
 
   .scroll-container-y::-webkit-scrollbar {
-    width: 6px;
+    width: 12px;
   }
 
   .scroll-container-y::-webkit-scrollbar-track {
-    background: transparent;
+    background: hsl(var(--muted));
+    border-radius: 6px;
   }
 
   .scroll-container-y::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 6px;
+    border: 2px solid hsl(var(--muted));
   }
 
-  .scroll-container-y::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
+  .scroll-container-y::-webkit-scrollbar-thumb:hover,
+  .scroll-container-y::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--primary) / 0.8);
   }
 }
 

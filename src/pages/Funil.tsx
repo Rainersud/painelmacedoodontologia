@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -54,36 +55,15 @@ function KanbanBoard({
   handleDragOver, handleDragLeave, handleDrop,
   handleDragStart, handleDragEnd, handleOpenDetail,
 }: KanbanBoardProps) {
-  const topScrollRef = useRef<HTMLDivElement>(null);
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [innerWidth, setInnerWidth] = useState(0);
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
-  const syncing = useRef(false);
 
   const toggleDense = useCallback(() => {
     setDense((prev) => {
       localStorage.setItem('funil-dense', prev ? '0' : '1');
       return !prev;
     });
-  }, []);
-
-  useEffect(() => {
-    if (!innerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setInnerWidth(entry.target.scrollWidth);
-    });
-    ro.observe(innerRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  const syncScroll = useCallback((source: 'top' | 'bottom') => {
-    if (syncing.current) return;
-    syncing.current = true;
-    const from = source === 'top' ? topScrollRef.current : bottomScrollRef.current;
-    const to = source === 'top' ? bottomScrollRef.current : topScrollRef.current;
-    if (from && to) to.scrollLeft = from.scrollLeft;
-    requestAnimationFrame(() => { syncing.current = false; });
   }, []);
 
   return (
@@ -101,21 +81,14 @@ function KanbanBoard({
         </Button>
       </div>
 
-      {/* Top scrollbar */}
-      <div
-        ref={topScrollRef}
-        className="shrink-0 overflow-x-auto overflow-y-hidden"
-        style={{ height: 12 }}
-        onScroll={() => syncScroll('top')}
-      >
-        <div style={{ width: innerWidth, height: 1 }} />
-      </div>
+      {/* Top custom scrollbar */}
+      <KanbanScrollbar targetRef={bottomScrollRef} className="mb-1" />
 
       {/* Kanban content */}
       <div
         ref={bottomScrollRef}
-        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x"
-        onScroll={() => syncScroll('bottom')}
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
+        style={{ willChange: 'scroll-position' }}
       >
         <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">
           {stages.map((stage, stageIdx) => {
@@ -507,7 +480,7 @@ const Funil = () => { // v2
   return (
     <AppLayout title="Comercial 1 – Aquisição">
       {/* The entire funnel page */}
-      <div className="flex flex-col min-h-0">
+      <div className="flex flex-col min-h-0 flex-1">
         {/* Operational command center — above search, below page title */}
         <div className="shrink-0 space-y-4 mb-4">
           <TodayTasksWidget />

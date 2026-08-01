@@ -89,6 +89,39 @@ function LeadCardComponent({
   ];
   const cyclicBorder = cyclicBorderColors[index % cyclicBorderColors.length];
 
+  if (dense) {
+    const dotClass =
+      topAlert?.level === 'critical' ? 'bg-destructive' :
+      topAlert?.level === 'opportunity' ? 'bg-success' :
+      topAlert?.level === 'attention' ? 'bg-warning' : 'bg-muted-foreground/30';
+
+    return (
+      <Card
+        draggable={!!onDragStart}
+        onDragStart={(e) => onDragStart?.(e, lead)}
+        onClick={() => onClick?.(lead)}
+        title={`${lead.name}${topAlert ? ` — ${topAlert.title}` : ''}`}
+        className={cn(
+          "cursor-pointer hover:shadow-md transition-all duration-150 border shadow-none relative",
+          isEven ? "bg-card" : "bg-accent/50",
+          onDragStart && "active:cursor-grabbing",
+          alertBorderClass
+        )}
+      >
+        <CardContent className="px-1.5 py-1 flex items-center gap-1.5">
+          <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotClass)} />
+          <p className="font-medium truncate text-[11px] flex-1 min-w-0">{lead.name}</p>
+          {hasTask && <CheckSquare className="h-2.5 w-2.5 text-warning shrink-0" />}
+          {(lead.treatment_value || 0) > 0 && (
+            <span className="font-semibold text-[10px] text-muted-foreground shrink-0">
+              {formatCurrency(lead.treatment_value || 0)}
+            </span>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card 
       draggable={!!onDragStart}

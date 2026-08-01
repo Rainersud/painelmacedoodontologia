@@ -96,7 +96,7 @@ function KanbanBoard({
           onClick={toggleDense}
           className="h-7 text-[11px] gap-1.5"
         >
-          {dense ? <Rows2 className="h-3.5 w-3.5" /> : <Rows3 className="h-3.5 w-3.5" />}
+          {dense ? <Rows2 className="h-3.5 w-3.5" /> : <LayoutList className="h-3.5 w-3.5" />}
           {dense ? 'Modo compacto ativo' : 'Modo compacto'}
         </Button>
       </div>

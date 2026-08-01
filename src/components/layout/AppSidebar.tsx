@@ -44,7 +44,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 function CollapsibleGroup({
@@ -113,7 +113,19 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { fullName, role, isAdmin, signOut } = useAuth();
   const { canView } = usePermissions();
-  const [openGroup, setOpenGroup] = useState<string | null>('principal');
+  const groupForPath = (path: string): string => {
+    if (adminNavItems.some((i) => i.url === path)) return 'admin';
+    if (managementNavItems.some((i) => i.url === path)) return 'gestao';
+    if (mainNavItems.some((i) => i.url === path)) return 'principal';
+    return 'principal';
+  };
+
+  const [openGroup, setOpenGroup] = useState<string | null>(() => groupForPath(location.pathname));
+
+  // Mantém aberta a sanfona da rota atual ao navegar/recarregar
+  useEffect(() => {
+    setOpenGroup(groupForPath(location.pathname));
+  }, [location.pathname]);
 
 
 

@@ -83,7 +83,7 @@ function KanbanBoard({
     const from = source === 'top' ? topScrollRef.current : bottomScrollRef.current;
     const to = source === 'top' ? bottomScrollRef.current : topScrollRef.current;
     if (from && to) to.scrollLeft = from.scrollLeft;
-    requestAnimationFrame(() => { syncing.current = false; });
+    syncing.current = false;
   }, []);
 
   return (
@@ -104,17 +104,18 @@ function KanbanBoard({
       {/* Top scrollbar */}
       <div
         ref={topScrollRef}
-        className="shrink-0 overflow-x-auto overflow-y-hidden"
-        style={{ height: 12 }}
+        className="shrink-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
+        style={{ height: 20 }}
         onScroll={() => syncScroll('top')}
       >
-        <div style={{ width: innerWidth, height: 1 }} />
+        <div style={{ width: innerWidth, height: 20 }} />
       </div>
 
       {/* Kanban content */}
       <div
         ref={bottomScrollRef}
-        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x"
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
+        style={{ willChange: 'scroll-position' }}
         onScroll={() => syncScroll('bottom')}
       >
         <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">

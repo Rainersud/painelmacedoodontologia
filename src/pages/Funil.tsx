@@ -58,7 +58,15 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [innerWidth, setInnerWidth] = useState(0);
+  const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
   const syncing = useRef(false);
+
+  const toggleDense = useCallback(() => {
+    setDense((prev) => {
+      localStorage.setItem('funil-dense', prev ? '0' : '1');
+      return !prev;
+    });
+  }, []);
 
   useEffect(() => {
     if (!innerRef.current) return;

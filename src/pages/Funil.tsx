@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Search, X } from 'lucide-react';
+import { Loader2, Plus, Search, X, Rows2, Rows3 } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -58,7 +58,15 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [innerWidth, setInnerWidth] = useState(0);
+  const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
   const syncing = useRef(false);
+
+  const toggleDense = useCallback(() => {
+    setDense((prev) => {
+      localStorage.setItem('funil-dense', prev ? '0' : '1');
+      return !prev;
+    });
+  }, []);
 
   useEffect(() => {
     if (!innerRef.current) return;
@@ -80,6 +88,19 @@ function KanbanBoard({
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
+      {/* Densidade da visualização */}
+      <div className="shrink-0 flex justify-end px-1 pb-1">
+        <Button
+          variant={dense ? 'default' : 'outline'}
+          size="sm"
+          onClick={toggleDense}
+          className="h-7 text-[11px] gap-1.5"
+        >
+          {dense ? <Rows2 className="h-3.5 w-3.5" /> : <Rows3 className="h-3.5 w-3.5" />}
+          {dense ? 'Modo compacto ativo' : 'Modo compacto'}
+        </Button>
+      </div>
+
       {/* Top scrollbar */}
       <div
         ref={topScrollRef}
@@ -197,7 +218,7 @@ function KanbanBoard({
                                   draggedLeadId === lead.id && 'opacity-40'
                                 )}
                               >
-                                <LeadCard lead={lead} onClick={handleOpenDetail} compact index={globalIndex++} />
+                                <LeadCard lead={lead} onClick={handleOpenDetail} compact dense={dense} index={globalIndex++} />
                               </div>
                             );
                           });

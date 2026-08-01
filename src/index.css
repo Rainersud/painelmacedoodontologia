@@ -251,7 +251,7 @@
 
   /* Thick, always-visible horizontal scrollbar for kanban boards */
   .scroll-container-x-thick {
-    @apply overflow-x-auto overflow-y-hidden;
+    @apply overflow-x-auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: auto;
     scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted));
@@ -279,7 +279,7 @@
 
   /* Horizontal scrollbar positioned at the top of a container */
   .scroll-container-x-top {
-    @apply overflow-x-auto overflow-y-hidden;
+    @apply overflow-x-auto;
     -webkit-overflow-scrolling: touch;
     direction: rtl;
     scrollbar-width: auto;

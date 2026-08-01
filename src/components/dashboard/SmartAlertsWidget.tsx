@@ -20,6 +20,7 @@ type Period = 'hoje' | 'semana' | 'mes';
 
 const columnConfig: Record<SmartAlertLevel, {
   title: string;
+  subtitle: string;
   icon: React.ElementType;
   headerBg: string;
   border: string;
@@ -28,6 +29,7 @@ const columnConfig: Record<SmartAlertLevel, {
 }> = {
   attention: {
     title: 'Atenção',
+    subtitle: 'Leads parados há 5 a 9 dias sem movimentação no funil',
     icon: Clock,
     headerBg: 'bg-gradient-to-br from-warning/15 to-warning/5',
     border: 'border-warning/30',
@@ -36,6 +38,7 @@ const columnConfig: Record<SmartAlertLevel, {
   },
   critical: {
     title: 'Crítico',
+    subtitle: 'Leads parados há 10 dias ou mais — risco alto de perda',
     icon: AlertTriangle,
     headerBg: 'bg-gradient-to-br from-destructive/15 to-destructive/5',
     border: 'border-destructive/30',
@@ -44,6 +47,7 @@ const columnConfig: Record<SmartAlertLevel, {
   },
   opportunity: {
     title: 'Oportunidades',
+    subtitle: 'Leads em "Quase Cliente" ou com crédito já aprovado',
     icon: Sparkles,
     headerBg: 'bg-gradient-to-br from-success/15 to-success/5',
     border: 'border-success/30',
@@ -51,6 +55,26 @@ const columnConfig: Record<SmartAlertLevel, {
     cardBorder: 'border-l-success',
   },
 };
+
+const reasonByType: Record<string, string> = {
+  lead_stagnant: 'Sem movimentação no funil',
+  ready_to_close: 'Pronto para fechamento',
+  credit_liberado: 'Crédito aprovado na triagem',
+  no_payment_after_attendance: 'Compareceu e não fechou',
+  no_show_not_rescued: 'Faltou e não foi resgatado',
+  followup_stalled: 'Follow-up sem retorno',
+  task_overdue: 'Tarefa atrasada',
+  no_response: 'Sem resposta do lead',
+  lost_interest: 'Demonstrou perda de interesse',
+  budget_stalled: 'Orçamento parado',
+};
+
+function alertReason(alert: SmartAlert): string {
+  const base = reasonByType[alert.type] || 'Requer acompanhamento';
+  const stage = alert.leadStatusLabel ? ` • Etapa: ${alert.leadStatusLabel}` : '';
+  const days = alert.daysInStage > 0 ? ` • ${alert.daysInStage} dia${alert.daysInStage > 1 ? 's' : ''} nesta etapa` : '';
+  return `${base}${stage}${days}`;
+}
 
 function AlertCard({ alert, onViewLead }: { alert: SmartAlert; onViewLead: (id: string) => void }) {
   const col = columnConfig[alert.level];
@@ -72,6 +96,8 @@ function AlertCard({ alert, onViewLead }: { alert: SmartAlert; onViewLead: (id: 
           </span>
         )}
       </div>
+
+      <p className="text-[11px] text-muted-foreground leading-snug mb-2">{alertReason(alert)}</p>
 
       <div className="flex items-center gap-1 pt-2 border-t border-border/50">
         <Button

@@ -55,36 +55,15 @@ function KanbanBoard({
   handleDragOver, handleDragLeave, handleDrop,
   handleDragStart, handleDragEnd, handleOpenDetail,
 }: KanbanBoardProps) {
-  const topScrollRef = useRef<HTMLDivElement>(null);
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [innerWidth, setInnerWidth] = useState(0);
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
-  const syncing = useRef(false);
 
   const toggleDense = useCallback(() => {
     setDense((prev) => {
       localStorage.setItem('funil-dense', prev ? '0' : '1');
       return !prev;
     });
-  }, []);
-
-  useEffect(() => {
-    if (!innerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setInnerWidth(entry.target.scrollWidth);
-    });
-    ro.observe(innerRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  const syncScroll = useCallback((source: 'top' | 'bottom') => {
-    if (syncing.current) return;
-    syncing.current = true;
-    const from = source === 'top' ? topScrollRef.current : bottomScrollRef.current;
-    const to = source === 'top' ? bottomScrollRef.current : topScrollRef.current;
-    if (from && to) to.scrollLeft = from.scrollLeft;
-    syncing.current = false;
   }, []);
 
   return (

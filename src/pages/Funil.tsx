@@ -508,7 +508,7 @@ const Funil = () => { // v2
   return (
     <AppLayout title="Comercial 1 – Aquisição">
       {/* The entire funnel page */}
-      <div className="flex flex-col min-h-0">
+      <div className="flex flex-col min-h-0 flex-1">
         {/* Operational command center — above search, below page title */}
         <div className="shrink-0 space-y-4 mb-4">
           <TodayTasksWidget />

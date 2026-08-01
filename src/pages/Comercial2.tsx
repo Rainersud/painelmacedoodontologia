@@ -1284,15 +1284,8 @@ const Comercial2 = () => {
               </div>
             </div>
 
-            {/* Top scrollbar (synced with kanban below) */}
-            <div
-              ref={topScrollRef}
-              className="shrink-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick mb-1"
-              style={{ height: 20 }}
-              aria-hidden="true"
-            >
-              <div style={{ width: boardScrollWidth, height: 20 }} />
-            </div>
+            {/* Top custom scrollbar */}
+            <KanbanScrollbar targetRef={boardScrollRef} className="mb-1" />
 
             {/* Kanban Board */}
             <div

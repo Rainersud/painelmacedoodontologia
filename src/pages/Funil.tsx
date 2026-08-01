@@ -218,7 +218,7 @@ function KanbanBoard({
                                   draggedLeadId === lead.id && 'opacity-40'
                                 )}
                               >
-                                <LeadCard lead={lead} onClick={handleOpenDetail} compact index={globalIndex++} />
+                                <LeadCard lead={lead} onClick={handleOpenDetail} compact dense={dense} index={globalIndex++} />
                               </div>
                             );
                           });

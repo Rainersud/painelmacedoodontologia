@@ -1014,9 +1014,7 @@ const Comercial2 = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
   const boardScrollRef = useRef<HTMLDivElement>(null);
-  const [boardScrollWidth, setBoardScrollWidth] = useState(0);
   const [selectedOpp, setSelectedOpp] = useState<UpsellOpportunity | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 

@@ -81,22 +81,14 @@ function KanbanBoard({
         </Button>
       </div>
 
-      {/* Top scrollbar */}
-      <div
-        ref={topScrollRef}
-        className="shrink-0 overflow-x-auto scroll-container-x-thick"
-        style={{ height: 28 }}
-        onScroll={() => syncScroll('top')}
-      >
-        <div style={{ width: innerWidth, height: 28 }} />
-      </div>
+      {/* Top custom scrollbar */}
+      <KanbanScrollbar targetRef={bottomScrollRef} className="mb-1" />
 
       {/* Kanban content */}
       <div
         ref={bottomScrollRef}
         className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
         style={{ willChange: 'scroll-position' }}
-        onScroll={() => syncScroll('bottom')}
       >
         <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">
           {stages.map((stage, stageIdx) => {

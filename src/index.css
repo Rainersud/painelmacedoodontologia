@@ -3,77 +3,77 @@
 @tailwind utilities;
 
 /*
- * Dental CRM Design System — Midnight Indigo
- * Dark-first. Sora (headings) + Manrope (body).
+ * Dental CRM Design System — Clean Light
+ * Light-first. Sora (headings) + Manrope (body).
  * All colors MUST be HSL.
  */
 
 @layer base {
   :root {
-    --background: 252 45% 8%;
-    --foreground: 250 20% 96%;
+    --background: 220 20% 98%;
+    --foreground: 222 35% 18%;
 
-    --card: 252 40% 13%;
-    --card-foreground: 250 20% 96%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 35% 18%;
 
-    --popover: 252 40% 13%;
-    --popover-foreground: 250 20% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 35% 18%;
 
-    --primary: 265 75% 60%;
-    --primary-foreground: 250 25% 98%;
+    --primary: 265 75% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 252 30% 19%;
-    --secondary-foreground: 250 20% 96%;
+    --secondary: 220 18% 93%;
+    --secondary-foreground: 222 35% 18%;
 
-    --muted: 252 30% 17%;
-    --muted-foreground: 250 12% 68%;
+    --muted: 220 16% 92%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 258 42% 25%;
-    --accent-foreground: 250 20% 96%;
+    --accent: 265 70% 96%;
+    --accent-foreground: 265 75% 35%;
 
-    --destructive: 8 78% 58%;
-    --destructive-foreground: 250 25% 98%;
+    --destructive: 8 78% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 152 65% 48%;
-    --success-foreground: 252 45% 8%;
+    --success: 152 65% 42%;
+    --success-foreground: 0 0% 100%;
 
-    --warning: 42 90% 62%;
-    --warning-foreground: 252 45% 8%;
+    --warning: 38 90% 55%;
+    --warning-foreground: 222 35% 18%;
 
-    --info: 288 65% 68%;
-    --info-foreground: 252 45% 8%;
+    --info: 288 65% 58%;
+    --info-foreground: 0 0% 100%;
 
-    --border: 252 25% 26%;
-    --input: 252 25% 24%;
-    --ring: 265 75% 60%;
+    --border: 220 14% 86%;
+    --input: 220 14% 88%;
+    --ring: 265 75% 55%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 252 48% 6%;
-    --sidebar-foreground: 250 15% 85%;
-    --sidebar-primary: 265 75% 60%;
-    --sidebar-primary-foreground: 250 25% 98%;
-    --sidebar-accent: 252 38% 14%;
-    --sidebar-accent-foreground: 250 20% 96%;
-    --sidebar-border: 252 28% 20%;
-    --sidebar-ring: 265 75% 60%;
-    --sidebar-muted: 250 12% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 30% 28%;
+    --sidebar-primary: 265 75% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 265 70% 96%;
+    --sidebar-accent-foreground: 265 75% 35%;
+    --sidebar-border: 220 14% 90%;
+    --sidebar-ring: 265 75% 55%;
+    --sidebar-muted: 220 10% 50%;
 
-    --chart-1: 265 75% 60%;
-    --chart-2: 152 65% 48%;
-    --chart-3: 288 65% 68%;
-    --chart-4: 42 90% 62%;
-    --chart-5: 25 85% 62%;
-    --chart-6: 195 75% 58%;
+    --chart-1: 265 75% 55%;
+    --chart-2: 152 65% 42%;
+    --chart-3: 288 65% 58%;
+    --chart-4: 38 90% 55%;
+    --chart-5: 25 85% 55%;
+    --chart-6: 195 75% 52%;
 
-    --monday-blue: 265 75% 60%;
-    --monday-green: 152 65% 48%;
-    --monday-yellow: 48 90% 62%;
-    --monday-orange: 25 85% 62%;
-    --monday-red: 8 78% 58%;
-    --monday-purple: 288 65% 68%;
-    --monday-pink: 330 72% 62%;
-    --monday-teal: 180 65% 52%;
+    --monday-blue: 265 75% 55%;
+    --monday-green: 152 65% 42%;
+    --monday-yellow: 45 90% 55%;
+    --monday-orange: 25 85% 55%;
+    --monday-red: 8 78% 55%;
+    --monday-purple: 288 65% 58%;
+    --monday-pink: 330 72% 58%;
+    --monday-teal: 180 65% 48%;
   }
 
   .dark {

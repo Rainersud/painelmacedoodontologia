@@ -104,11 +104,11 @@ function KanbanBoard({
       {/* Top scrollbar */}
       <div
         ref={topScrollRef}
-        className="shrink-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
-        style={{ height: 20 }}
+        className="shrink-0 overflow-x-auto scroll-container-x-thick"
+        style={{ height: 28 }}
         onScroll={() => syncScroll('top')}
       >
-        <div style={{ width: innerWidth, height: 20 }} />
+        <div style={{ width: innerWidth, height: 28 }} />
       </div>
 
       {/* Kanban content */}

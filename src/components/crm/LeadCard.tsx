@@ -19,6 +19,8 @@ interface LeadCardProps {
   onAddNote?: (lead: Lead) => void;
   onCall?: (lead: Lead) => void;
   compact?: boolean;
+  /** Modo ultra enxuto: apenas nome, valor e sinal de alerta (reduz a rolagem do funil) */
+  dense?: boolean;
   index?: number;
 }
 
@@ -29,6 +31,7 @@ function LeadCardComponent({
   onAddNote,
   onCall,
   compact = false,
+  dense = false,
   index = 0,
 }: LeadCardProps) {
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);

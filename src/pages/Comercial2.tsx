@@ -1321,15 +1321,17 @@ const Comercial2 = () => {
             <div
               ref={topScrollRef}
               className="shrink-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick mb-1"
+              style={{ height: 20 }}
               aria-hidden="true"
             >
-              <div style={{ width: boardScrollWidth, height: 1 }} />
+              <div style={{ width: boardScrollWidth, height: 20 }} />
             </div>
 
             {/* Kanban Board */}
             <div
               ref={boardScrollRef}
               className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick"
+              style={{ willChange: 'scroll-position' }}
             >
               <div className="flex gap-3 min-w-max md:h-full pb-3 px-1">
                 {(searchQuery.trim() ? UPSELL_STAGES.filter(s => getOppsByStatus(s.key).length > 0) : UPSELL_STAGES).map((stage) => {

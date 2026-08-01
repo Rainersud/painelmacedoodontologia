@@ -360,18 +360,24 @@ export function useUpdateLeadRating() {
 
   return useMutation({
     mutationFn: async ({ leadId, rating }: { leadId: string; rating: number }) => {
+      const safeRating = Math.min(Math.max(Math.round(Number(rating) || 0), 0), 3);
       const { error } = await supabase
         .from('leads')
-        .update({ interest_rating: rating })
+        .update({ interest_rating: safeRating })
         .eq('id', leadId);
 
       if (error) throw error;
+      return safeRating;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
     },
+    onError: (error: any) => {
+      toast.error(`Erro ao salvar avaliação: ${error?.message ?? 'tente novamente'}`);
+    },
   });
+
 }
 
 export function useUpdateLead() {

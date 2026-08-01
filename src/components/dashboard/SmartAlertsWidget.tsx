@@ -153,6 +153,7 @@ function Column({
             {alerts.length}
           </Badge>
         </div>
+        <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">{cfg.subtitle}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2.5 space-y-2 max-h-[480px] min-h-[200px]">

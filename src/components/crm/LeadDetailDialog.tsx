@@ -41,6 +41,7 @@ import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';
 import { CurrencyInput } from './CurrencyInput';
+import { LossAttachments } from './LossAttachments';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
 import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import {

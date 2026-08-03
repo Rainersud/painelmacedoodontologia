@@ -330,7 +330,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </div>
             {/* Quick actions */}
             <div className="flex gap-1">
-            {isAdmin && (
+            {(
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button

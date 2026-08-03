@@ -28,7 +28,7 @@ export function useRmktCopyTemplates() {
       if (error) throw error;
       return (data || []) as unknown as RmktCopyTemplate[];
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
   });
 }
 

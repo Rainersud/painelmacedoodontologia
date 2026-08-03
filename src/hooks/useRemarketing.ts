@@ -20,7 +20,7 @@ export function useRemarketingEntries() {
       if (error) throw error;
       return (data || []) as unknown as RemarketingEntry[];
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
   });
 }
 

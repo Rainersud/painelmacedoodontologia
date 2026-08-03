@@ -68,7 +68,7 @@ export function useSmartAlerts() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 60000,
   });
 
@@ -82,7 +82,7 @@ export function useSmartAlerts() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 60000,
   });
 

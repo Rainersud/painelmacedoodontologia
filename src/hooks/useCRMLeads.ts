@@ -70,7 +70,7 @@ export function useCRMLeads() {
         tasks: taskMap[lead.id] ? [{ id: 'has-task' } as any] : [],
       }));
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
   });
 }
 

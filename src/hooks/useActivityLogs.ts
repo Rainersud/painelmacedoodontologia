@@ -62,7 +62,7 @@ export function useActivityLogs(limit: number = 50) {
         profiles: agentMap[log.agent_id] || null,
       }));
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 30000, // Refresh every 30s
   });
 }

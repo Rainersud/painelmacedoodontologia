@@ -193,7 +193,7 @@ export function useAgentMetricsRange(range: DateRange, agentId?: string) {
   return useQuery({
     queryKey: ['agent-metrics', range.start.toISOString(), range.end.toISOString(), agentId ?? 'all'],
     queryFn: () => fetchAgentMetrics(range, agentId),
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 60000,
   });
 }

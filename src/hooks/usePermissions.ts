@@ -60,14 +60,17 @@ export function usePermissions() {
     enabled: !!user?.id && !isAdmin,
   });
 
+  // Acesso aberto: sem usuário autenticado, libera todos os módulos
+  const openAccess = !user?.id;
+
   const canView = (module: string): boolean => {
-    if (isAdmin) return true;
+    if (isAdmin || openAccess) return true;
     const perm = permissions.find(p => p.module === module);
     return perm?.can_view ?? false;
   };
 
   const canEdit = (module: string): boolean => {
-    if (isAdmin) return true;
+    if (isAdmin || openAccess) return true;
     const perm = permissions.find(p => p.module === module);
     return perm?.can_edit ?? false;
   };

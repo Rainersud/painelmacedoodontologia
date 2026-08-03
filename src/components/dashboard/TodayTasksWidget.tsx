@@ -144,16 +144,6 @@ export function TodayTasksWidget() {
             <RefreshCw className="h-3 w-3" />
             Reagendar
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 text-[10px] gap-1"
-            onClick={() => setEditTask(task)}
-            disabled={updateTask.isPending}
-          >
-            <Pencil className="h-3 w-3" />
-            Editar
-          </Button>
         </div>
       </div>
     );
@@ -278,13 +268,7 @@ export function TodayTasksWidget() {
         />
       )}
 
-      {editTask && (
-        <EditTaskDialog
-          open={!!editTask}
-          onOpenChange={(open) => !open && setEditTask(null)}
-          task={editTask}
-        />
-      )}
+
     </>
   );
 }

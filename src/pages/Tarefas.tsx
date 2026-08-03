@@ -35,12 +35,14 @@ function TaskItem({
   onComplete, 
   onReopen,
   onReschedule,
+  onEdit,
   onViewLead,
 }: { 
   task: Task; 
   onComplete: (response: string) => void;
   onReopen: () => void;
   onReschedule: () => void;
+  onEdit: () => void;
   onViewLead?: () => void;
 }) {
   const [responseText, setResponseText] = useState('');

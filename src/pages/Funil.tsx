@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Search, X, Rows2, LayoutList } from 'lucide-react';
+import { Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -58,6 +58,35 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('funil-collapsed');
+      return new Set<string>(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  const persistCollapsed = useCallback((next: Set<string>) => {
+    localStorage.setItem('funil-collapsed', JSON.stringify([...next]));
+    return next;
+  }, []);
+
+  const toggleColumn = useCallback((key: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return persistCollapsed(next);
+    });
+  }, [persistCollapsed]);
+
+  const collapseAll = useCallback(() => {
+    setCollapsed(persistCollapsed(new Set(stages.map(s => s.key))));
+  }, [stages, persistCollapsed]);
+
+  const expandAll = useCallback(() => {
+    setCollapsed(persistCollapsed(new Set()));
+  }, [persistCollapsed]);
 
   const toggleDense = useCallback(() => {
     setDense((prev) => {
@@ -69,7 +98,25 @@ function KanbanBoard({
   return (
     <div className="flex flex-col min-h-0 flex-1">
       {/* Densidade da visualização */}
-      <div className="shrink-0 flex justify-end px-1 pb-1">
+      <div className="shrink-0 flex justify-end gap-1.5 px-1 pb-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={collapseAll}
+          className="h-7 text-[11px] gap-1.5"
+        >
+          <ChevronsLeftRight className="h-3.5 w-3.5" />
+          Recolher tudo
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={expandAll}
+          className="h-7 text-[11px] gap-1.5"
+        >
+          <ChevronsRightLeft className="h-3.5 w-3.5" />
+          Expandir tudo
+        </Button>
         <Button
           variant={dense ? 'default' : 'outline'}
           size="sm"
@@ -98,6 +145,7 @@ function KanbanBoard({
             const isFollowUp = FOLLOWUP_KEYS.has(stage.key);
             const isFirstFollowUp = stage.key === 'followup_1';
             const isLastFollowUp = stage.key === 'followup_14';
+            const isCollapsed = collapsed.has(stage.key);
 
             return (
               <div key={stage.key} className="flex gap-2 h-full">
@@ -112,6 +160,32 @@ function KanbanBoard({
                   </div>
                 )}
 
+                {isCollapsed ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleColumn(stage.key)}
+                    onDragOver={(e) => handleDragOver(e, stage.key)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, stage.key)}
+                    title={`${stage.label} — clique para expandir`}
+                    className={cn(
+                      "w-10 flex-shrink-0 h-full rounded-xl bg-card border shadow-sm flex flex-col items-center gap-2 py-2 hover:bg-accent transition-colors",
+                      isFollowUp ? 'border-warning/30' : 'border-border/50',
+                      isDropTarget && 'ring-2 ring-primary ring-offset-2'
+                    )}
+                  >
+                    <div className={`h-2 w-2 rounded-full ${stage.color}`} />
+                    <Badge variant="secondary" className="font-semibold bg-muted text-[10px] h-4 min-w-4 px-1 flex items-center justify-center">
+                      {stageLeads.length}
+                    </Badge>
+                    <span
+                      className="text-[11px] font-semibold whitespace-nowrap"
+                      style={{ writingMode: 'vertical-rl' }}
+                    >
+                      {stage.label}
+                    </span>
+                  </button>
+                ) : (
                 <div
                   className={cn(
                     "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full",
@@ -128,8 +202,19 @@ function KanbanBoard({
                     {/* Column header */}
                     <div className="shrink-0 px-2 pt-2 pb-1.5">
                       <div className="flex items-center gap-1.5 mb-0.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleColumn(stage.key)}
+                          title="Recolher coluna"
+                          className="shrink-0 rounded hover:bg-accent p-0.5"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
                         <div className={`h-2 w-2 rounded-full ${stage.color}`} />
-                        <span className="text-[11px] font-semibold flex-1 truncate">
+                        <span
+                          className="text-[11px] font-semibold flex-1 truncate cursor-pointer"
+                          onClick={() => toggleColumn(stage.key)}
+                        >
                           {stage.label}
                         </span>
                         {isFollowUp && (
@@ -143,6 +228,7 @@ function KanbanBoard({
                         {formatCurrency(totalValue)}
                       </p>
                     </div>
+
 
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
@@ -218,6 +304,8 @@ function KanbanBoard({
                   </div>
                 </div>
               </div>
+              )}
+
 
               {/* Section separator after last follow-up */}
               {isLastFollowUp && (

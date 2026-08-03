@@ -41,6 +41,7 @@ import { ReferralSection } from './ReferralSection';
 import { TriageFormDialog } from './TriageFormDialog';
 import { PaymentDialog } from './PaymentDialog';
 import { CurrencyInput } from './CurrencyInput';
+import { LossAttachments } from './LossAttachments';
 import { usePatientTriage } from '@/hooks/usePatientTriage';
 import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
 import {
@@ -706,44 +707,57 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               )}
 
-              {/* Budget Field - separate from payments */}
-              <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
-                <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
-                  📋 Valor do Orçamento
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
-                </p>
-                <CurrencyInput
-                  value={budgetValue}
-                  onChange={(value) => setBudgetValue(value)}
-                  onBlur={() => {
-                    if (budgetValue !== (lead.budget_value || 0)) {
-                      updateLead.mutate({ leadId: lead.id, updates: { budget_value: budgetValue } });
-                    }
-                  }}
-                />
-                {budgetValue > 0 && (
-                  <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
-                    Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
-                  </Badge>
-                )}
-              </div>
+              {/* Budget + Payment: only from "Compareceu" onwards */}
+              {(() => {
+                const POST_ATTENDANCE_STAGES: string[] = [
+                  'compareceu', 'quase_cliente', 'potencial', 'nao_cliente', 'fechado',
+                  'tratamento_andamento', 'concluido', 'pos_venda', 'orcamentos_abertos',
+                ];
+                if (!POST_ATTENDANCE_STAGES.includes(statusForView)) return null;
+                return (
+                  <>
+                    {/* Budget Field - separate from payments */}
+                    <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
+                      <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
+                        📋 Valor do Orçamento
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
+                      </p>
+                      <CurrencyInput
+                        value={budgetValue}
+                        onChange={(value) => setBudgetValue(value)}
+                        onBlur={() => {
+                          if (budgetValue !== (lead.budget_value || 0)) {
+                            updateLead.mutate({ leadId: lead.id, updates: { budget_value: budgetValue } });
+                          }
+                        }}
+                      />
+                      {budgetValue > 0 && (
+                        <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                          Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
+                        </Badge>
+                      )}
+                    </div>
 
-              {/* Payment Button - available on ALL stages */}
-              <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
-                <h4 className="font-medium text-sm flex items-center gap-2 text-success">
-                  💰 Pagamento (Faturamento Real)
-                </h4>
-                <Button
-                  variant="outline"
-                  className="w-full border-success/30 text-success hover:bg-success/10"
-                  onClick={() => setPaymentOpen(true)}
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Registrar Pagamento
-                </Button>
-              </div>
+                    {/* Payment Button */}
+                    <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
+                      <h4 className="font-medium text-sm flex items-center gap-2 text-success">
+                        💰 Pagamento (Faturamento Real)
+                      </h4>
+                      <Button
+                        variant="outline"
+                        className="w-full border-success/30 text-success hover:bg-success/10"
+                        onClick={() => setPaymentOpen(true)}
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Registrar Pagamento
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
+
 
 
               {/* (Data da Consulta now rendered right after the status select) */}
@@ -787,18 +801,25 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                             : 'bg-background border-chart-5/30 hover:bg-chart-5/10'
                         }`}
                       >
-                        Outro
+                        ✍️ Adicionar motivo manualmente
                       </button>
                     </div>
                     {isOther && (
-                      <Input
+                      <Textarea
                         autoFocus
-                        placeholder="Descreva o motivo..."
+                        rows={3}
+                        placeholder="Descreva o motivo com suas palavras..."
                         value={formData.loss_reason.trim() === '' ? '' : formData.loss_reason}
                         onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
                         className="border-chart-5/30 focus-visible:ring-chart-5"
                       />
                     )}
+                    <div className="pt-1 border-t border-chart-5/20">
+                      <p className="text-[11px] text-muted-foreground mb-1.5">
+                        📎 Anexos (áudio ou imagem) para avaliação posterior — aparecem na "Análise de Perdas".
+                      </p>
+                      <LossAttachments leadId={lead.id} />
+                    </div>
                     {!formData.loss_reason.trim() && (
                       <p className="text-[10px] text-destructive">* Selecione um motivo</p>
                     )}
@@ -814,8 +835,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     ❓ Motivo de não fechamento
                   </h4>
                   <p className="text-sm">{(lead as any).loss_reason}</p>
+                  <LossAttachments leadId={lead.id} />
                 </div>
               )}
+
 
               {/* Contact attempts counter - per stage period (manhã/tarde) */}
               {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (() => {

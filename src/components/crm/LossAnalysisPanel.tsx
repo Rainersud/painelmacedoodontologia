@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, TrendingDown, Users, BarChart3 } from 'lucide-react';
+import { Search, TrendingDown, Users, BarChart3, Mic, Image as ImageIcon } from 'lucide-react';
+import { useLossAttachments, getSignedUrl, type LossAttachment } from './LossAttachments';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -25,6 +27,14 @@ interface LossEntry {
 export function LossAnalysisPanel() {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: allAttachments = [] } = useLossAttachments();
+  const attachmentsByLead = useMemo(() => {
+    const map: Record<string, LossAttachment[]> = {};
+    allAttachments.forEach(a => { (map[a.lead_id] ||= []).push(a); });
+    return map;
+  }, [allAttachments]);
+
+
 
   const { data: lossLeads = [] } = useQuery({
     queryKey: ['loss-analysis'],
@@ -197,7 +207,9 @@ export function LossAnalysisPanel() {
                   Nenhum registro de perda encontrado.
                 </p>
               ) : (
-                filteredLeads.map(lead => (
+                filteredLeads.map(lead => {
+                  const atts = attachmentsByLead[lead.id] || [];
+                  return (
                   <div key={lead.id} className="p-3 rounded-lg border space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{lead.name}</span>
@@ -212,8 +224,29 @@ export function LossAnalysisPanel() {
                       {lead.profiles && <span>👤 {lead.profiles.full_name}</span>}
                       <span>📍 {sourceLabels[lead.source] || lead.source}</span>
                     </div>
+                    {atts.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {atts.map(att => (
+                          <Button
+                            key={att.id}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[11px] gap-1"
+                            onClick={async () => {
+                              const url = await getSignedUrl(att.file_path);
+                              if (url) window.open(url, '_blank');
+                            }}
+                          >
+                            {(att.mime_type || '').startsWith('audio') ? <Mic className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
+                            <span className="max-w-[140px] truncate">{att.file_name}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
+
               )}
             </div>
           </ScrollArea>

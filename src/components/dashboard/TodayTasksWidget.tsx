@@ -38,6 +38,9 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
   const pending = [...overdue, ...todayPending];
   const total = pending.length + completed.length;
 
+  // No Comercial 1, o bloco só aparece quando existe tarefa para hoje (ou atrasada)
+  if (onlyToday && (isLoading || total === 0)) return null;
+
 
   const handleComplete = (taskId: string) => {
     if (showResponseFor !== taskId) {

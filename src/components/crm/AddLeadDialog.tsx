@@ -96,10 +96,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       if (error) throw error;
 
       // Log activity with actual lead ID
-      if (user && newLead) {
+      if (newLead) {
         await supabase.from('activity_logs').insert({
           lead_id: newLead.id,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           activity_type: 'lead_created',
           title: `Novo lead: ${form.name.trim()}`,
         }).then(({ error: logError }) => {

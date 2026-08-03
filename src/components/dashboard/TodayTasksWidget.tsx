@@ -12,7 +12,12 @@ import { TASK_TYPE_CONFIG, PRIORITY_CONFIG } from '@/types/crm';
 import { RescheduleDialog } from '@/components/tasks/RescheduleDialog';
 import type { Task } from '@/types/crm';
 
-export function TodayTasksWidget() {
+interface TodayTasksWidgetProps {
+  /** Quando true, o bloco só aparece se houver tarefas para hoje (ou atrasadas) e oculta as próximas agendadas */
+  onlyToday?: boolean;
+}
+
+export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
   const today = new Date();
   const { data: allTasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
@@ -26,11 +31,16 @@ export function TodayTasksWidget() {
 
   const overdue = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) < todayStart);
   const todayPending = tasks.filter(t => t.status === 'pendente' && isSameDay(new Date(t.scheduled_at), today));
-  const upcoming = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) > todayStart && !isSameDay(new Date(t.scheduled_at), today));
+  const upcomingAll = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) > todayStart && !isSameDay(new Date(t.scheduled_at), today));
+  const upcoming = onlyToday ? [] : upcomingAll;
   const completed = tasks.filter(t => t.status === 'concluido' && isSameDay(new Date(t.scheduled_at), today));
 
   const pending = [...overdue, ...todayPending];
   const total = pending.length + completed.length;
+
+  // No Comercial 1, o bloco só aparece quando existe tarefa para hoje (ou atrasada)
+  if (onlyToday && (isLoading || total === 0)) return null;
+
 
   const handleComplete = (taskId: string) => {
     if (showResponseFor !== taskId) {

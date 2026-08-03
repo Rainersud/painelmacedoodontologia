@@ -202,7 +202,7 @@ export function AppSidebar() {
           </CollapsibleGroup>
         )}
 
-        {isAdmin && (
+        {(isAdmin || canView('configuracoes')) && (
           <CollapsibleGroup
             label="Administração"
             className="mt-4"

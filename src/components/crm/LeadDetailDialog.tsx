@@ -171,8 +171,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   const statusForView = (newStatus || lead.status) as LeadStatus;
   const currentStage = FUNNEL_STAGES.find(s => s.key === statusForView);
   const displayedNoShowCount = statusForView === 'faltou' && lead.status !== 'faltou'
-    ? (lead.no_show_count || 0) + 1
-    : (lead.no_show_count || 0);
+    ? noShowCount + 1
+    : noShowCount;
 
   const handleSaveInfo = async () => {
     const updates: Partial<Lead> = {
@@ -185,6 +185,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       attendance_discount_status: formData.attendance_discount_status,
       discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
       sale_type: formData.sale_type || null,
+      no_show_count: noShowCount,
     };
     if (formData.lead_arrival_source) {
       (updates as any).lead_arrival_source = formData.lead_arrival_source;

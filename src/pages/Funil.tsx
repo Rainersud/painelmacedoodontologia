@@ -304,6 +304,8 @@ function KanbanBoard({
                   </div>
                 </div>
               </div>
+              )}
+
 
               {/* Section separator after last follow-up */}
               {isLastFollowUp && (

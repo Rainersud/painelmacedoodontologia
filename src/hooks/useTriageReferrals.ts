@@ -89,7 +89,7 @@ export function useConvertReferralToLead() {
       referrerLeadId,
     }: {
       referral: TriageReferral;
-      agentId: string;
+      agentId: string | null;
       referrerLeadId: string;
     }) => {
       // Check for duplicate phone
@@ -169,7 +169,7 @@ export function useBulkLinkReferrals() {
       referrerLeadId,
     }: {
       referrals: TriageReferral[];
-      agentId: string;
+      agentId: string | null;
       referrerLeadId: string;
     }) => {
       const results: { name: string; success: boolean; error?: string }[] = [];

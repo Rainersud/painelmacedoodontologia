@@ -426,6 +426,7 @@ const Tarefas = () => {
                             onComplete={(response) => handleComplete(task.id, response)}
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => setRescheduleTask(task)}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}
@@ -445,6 +446,7 @@ const Tarefas = () => {
                             onComplete={(response) => handleComplete(task.id, response)}
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => {}}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}
@@ -464,6 +466,7 @@ const Tarefas = () => {
                             onComplete={() => {}}
                             onReopen={() => {}}
                             onReschedule={() => {}}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}

@@ -197,7 +197,9 @@ export function LossAnalysisPanel() {
                   Nenhum registro de perda encontrado.
                 </p>
               ) : (
-                filteredLeads.map(lead => (
+                filteredLeads.map(lead => {
+                  const atts = attachmentsByLead[lead.id] || [];
+                  return (
                   <div key={lead.id} className="p-3 rounded-lg border space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{lead.name}</span>
@@ -212,8 +214,29 @@ export function LossAnalysisPanel() {
                       {lead.profiles && <span>👤 {lead.profiles.full_name}</span>}
                       <span>📍 {sourceLabels[lead.source] || lead.source}</span>
                     </div>
+                    {atts.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {atts.map(att => (
+                          <Button
+                            key={att.id}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[11px] gap-1"
+                            onClick={async () => {
+                              const url = await getSignedUrl(att.file_path);
+                              if (url) window.open(url, '_blank');
+                            }}
+                          >
+                            {(att.mime_type || '').startsWith('audio') ? <Mic className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
+                            <span className="max-w-[140px] truncate">{att.file_name}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
+
               )}
             </div>
           </ScrollArea>

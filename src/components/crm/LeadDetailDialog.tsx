@@ -630,19 +630,53 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   ❌ Faltas Registradas
                 </h4>
                 <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => {
+                      const newCount = Math.max(0, noShowCount - 1);
+                      setNoShowCount(newCount);
+                      setFormData(prev => ({
+                        ...prev,
+                        attendance_discount_status: newCount > 0 ? 'cancelado' : 'liberado',
+                        discount_percentage: newCount > 0 ? '0' : (parseFloat(prev.discount_percentage) > 0 ? prev.discount_percentage : '5'),
+                      }));
+                    }}
+                  >
+                    −
+                  </Button>
                   <Input
                     type="number"
                     min="0"
                     className="w-24 text-2xl font-bold text-destructive h-12"
                     value={displayedNoShowCount}
                     onChange={(e) => {
-                      const newCount = Math.max(0, parseInt(e.target.value) || 0);
-                      const newStatus = newCount > 0 ? 'cancelado' : 'liberado';
-                      const newPct = newCount > 0 ? 0 : (parseFloat(formData.discount_percentage) || 5);
-                      setFormData(prev => ({ ...prev, attendance_discount_status: newStatus, discount_percentage: String(newPct) }));
+                      const raw = e.target.value;
+                      const newCount = raw === '' ? 0 : Math.max(0, parseInt(raw) || 0);
+                      setNoShowCount(newCount);
+                      setFormData(prev => ({
+                        ...prev,
+                        attendance_discount_status: newCount > 0 ? 'cancelado' : 'liberado',
+                        discount_percentage: newCount > 0 ? '0' : (parseFloat(prev.discount_percentage) > 0 ? prev.discount_percentage : '5'),
+                      }));
                     }}
                   />
-                  <span className="text-xs text-muted-foreground">Edite para corrigir manualmente. Recalcula o desconto automaticamente.</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10"
+                    onClick={() => {
+                      const newCount = noShowCount + 1;
+                      setNoShowCount(newCount);
+                      setFormData(prev => ({ ...prev, attendance_discount_status: 'cancelado', discount_percentage: '0' }));
+                    }}
+                  >
+                    +
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Edite para corrigir manualmente. Salve para aplicar.</span>
                 </div>
               </div>
 

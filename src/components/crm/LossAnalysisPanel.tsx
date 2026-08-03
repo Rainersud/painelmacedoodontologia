@@ -27,6 +27,14 @@ interface LossEntry {
 export function LossAnalysisPanel() {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: allAttachments = [] } = useLossAttachments();
+  const attachmentsByLead = useMemo(() => {
+    const map: Record<string, LossAttachment[]> = {};
+    allAttachments.forEach(a => { (map[a.lead_id] ||= []).push(a); });
+    return map;
+  }, [allAttachments]);
+
+
 
   const { data: lossLeads = [] } = useQuery({
     queryKey: ['loss-analysis'],

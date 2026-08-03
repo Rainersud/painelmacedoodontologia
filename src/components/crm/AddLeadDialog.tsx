@@ -88,6 +88,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         source: form.source as any,
         lead_arrival_source: form.lead_arrival_source as any,
         status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
+        sale_type: '1_etapa',
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,

@@ -12,7 +12,12 @@ import { TASK_TYPE_CONFIG, PRIORITY_CONFIG } from '@/types/crm';
 import { RescheduleDialog } from '@/components/tasks/RescheduleDialog';
 import type { Task } from '@/types/crm';
 
-export function TodayTasksWidget() {
+interface TodayTasksWidgetProps {
+  /** Quando true, o bloco só aparece se houver tarefas para hoje (ou atrasadas) e oculta as próximas agendadas */
+  onlyToday?: boolean;
+}
+
+export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
   const today = new Date();
   const { data: allTasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();

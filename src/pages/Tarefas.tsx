@@ -21,6 +21,7 @@ import {
   User,
   RefreshCw,
   AlertCircle,
+  Pencil,
 } from 'lucide-react';
 import { useTasks, useUpdateTask } from '@/hooks/useTasks';
 import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
@@ -28,6 +29,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { TASK_TYPE_CONFIG, PRIORITY_CONFIG, type Task } from '@/types/crm';
 import { RescheduleDialog } from '@/components/tasks/RescheduleDialog';
+import { EditTaskDialog } from '@/components/tasks/EditTaskDialog';
 import { toast } from 'sonner';
 
 function TaskItem({ 
@@ -35,12 +37,14 @@ function TaskItem({
   onComplete, 
   onReopen,
   onReschedule,
+  onEdit,
   onViewLead,
 }: { 
   task: Task; 
   onComplete: (response: string) => void;
   onReopen: () => void;
   onReschedule: () => void;
+  onEdit: () => void;
   onViewLead?: () => void;
 }) {
   const [responseText, setResponseText] = useState('');
@@ -209,6 +213,18 @@ function TaskItem({
                 </Button>
               </>
             )}
+            {!isRescheduled && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={onEdit}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </Button>
+            )}
+
             {isCompleted && (
               <Button
                 variant="outline"
@@ -231,6 +247,7 @@ const Tarefas = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   
   const { data: allTasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
@@ -424,6 +441,7 @@ const Tarefas = () => {
                             onComplete={(response) => handleComplete(task.id, response)}
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => setRescheduleTask(task)}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}
@@ -443,6 +461,7 @@ const Tarefas = () => {
                             onComplete={(response) => handleComplete(task.id, response)}
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => {}}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}
@@ -462,6 +481,7 @@ const Tarefas = () => {
                             onComplete={() => {}}
                             onReopen={() => {}}
                             onReschedule={() => {}}
+                            onEdit={() => setEditTask(task)}
                           />
                         ))
                       )}
@@ -480,6 +500,14 @@ const Tarefas = () => {
           onOpenChange={(open) => !open && setRescheduleTask(null)}
           taskId={rescheduleTask.id}
           taskTitle={rescheduleTask.title}
+        />
+      )}
+
+      {editTask && (
+        <EditTaskDialog
+          open={!!editTask}
+          onOpenChange={(open) => !open && setEditTask(null)}
+          task={editTask}
         />
       )}
     </AppLayout>

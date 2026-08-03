@@ -123,7 +123,7 @@ export function useUpdateTask() {
       updates 
     }: { 
       id: string; 
-      updates: Partial<Pick<Task, 'title' | 'description' | 'scheduled_at' | 'status' | 'priority' | 'response'>> 
+      updates: Partial<Pick<Task, 'title' | 'description' | 'scheduled_at' | 'status' | 'priority' | 'response' | 'task_type'>> 
     }) => {
       const finalUpdates: Record<string, unknown> = { ...updates };
       

@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Circle, ClipboardList, Loader2, Undo2, Phone, MessageSquare, Calendar, CheckSquare, Clock, User, RefreshCw, AlertCircle, Pencil, CalendarClock } from 'lucide-react';
+import { CheckCircle2, Circle, ClipboardList, Loader2, Undo2, Phone, MessageSquare, Calendar, CheckSquare, Clock, User, RefreshCw, AlertCircle, CalendarClock } from 'lucide-react';
 import { useTasks, useUpdateTask } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, isSameDay, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TASK_TYPE_CONFIG, PRIORITY_CONFIG } from '@/types/crm';
 import { RescheduleDialog } from '@/components/tasks/RescheduleDialog';
-import { EditTaskDialog } from '@/components/tasks/EditTaskDialog';
 import type { Task } from '@/types/crm';
 
 export function TodayTasksWidget() {
@@ -21,7 +20,6 @@ export function TodayTasksWidget() {
   const [showResponseFor, setShowResponseFor] = useState<string | null>(null);
   const [responseError, setResponseError] = useState<string | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
-  const [editTask, setEditTask] = useState<Task | null>(null);
 
   const tasks = allTasks || [];
   const todayStart = startOfDay(today);
@@ -143,16 +141,6 @@ export function TodayTasksWidget() {
           >
             <RefreshCw className="h-3 w-3" />
             Reagendar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 text-[10px] gap-1"
-            onClick={() => setEditTask(task)}
-            disabled={updateTask.isPending}
-          >
-            <Pencil className="h-3 w-3" />
-            Editar
           </Button>
         </div>
       </div>
@@ -278,13 +266,7 @@ export function TodayTasksWidget() {
         />
       )}
 
-      {editTask && (
-        <EditTaskDialog
-          open={!!editTask}
-          onOpenChange={(open) => !open && setEditTask(null)}
-          task={editTask}
-        />
-      )}
+
     </>
   );
 }

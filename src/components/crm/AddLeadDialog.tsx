@@ -88,6 +88,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         source: form.source as any,
         lead_arrival_source: form.lead_arrival_source as any,
         status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
+        sale_type: '1_etapa',
         interest_product: form.interest_product,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
@@ -96,10 +97,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       if (error) throw error;
 
       // Log activity with actual lead ID
-      if (user && newLead) {
+      if (newLead) {
         await supabase.from('activity_logs').insert({
           lead_id: newLead.id,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           activity_type: 'lead_created',
           title: `Novo lead: ${form.name.trim()}`,
         }).then(({ error: logError }) => {

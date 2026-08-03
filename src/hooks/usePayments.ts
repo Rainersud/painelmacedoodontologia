@@ -102,14 +102,14 @@ export function useCreatePayment() {
       boleto_dates?: string[];
       upsell_opportunity_id?: string;
     }) => {
-      if (!user) throw new Error('Não autenticado');
+      
 
       if (data.payment_method === 'boleto' && data.boleto_dates && data.boleto_dates.length > 0) {
         // Create multiple boleto payments (one per installment)
         const perInstallment = data.gross_value / data.boleto_dates.length;
         const payments = data.boleto_dates.map((date, idx) => ({
           lead_id: data.lead_id,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           payment_method: 'boleto',
           gross_value: perInstallment,
           installments: data.boleto_dates!.length,
@@ -129,7 +129,7 @@ export function useCreatePayment() {
         // Credit card: single payment, immediately "pago" but with fee deduction
         const { error } = await supabase.from('payments').insert({
           lead_id: data.lead_id,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           payment_method: 'credito',
           gross_value: data.gross_value,
           installments: data.installments,
@@ -147,7 +147,7 @@ export function useCreatePayment() {
         // Pix, Débito, Cheque: immediate full payment
         const { error } = await supabase.from('payments').insert({
           lead_id: data.lead_id,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           payment_method: data.payment_method,
           gross_value: data.gross_value,
           installments: 1,
@@ -188,7 +188,7 @@ export function useCreatePayment() {
 
       await supabase.from('activity_logs').insert({
         lead_id: data.lead_id,
-        agent_id: user.id,
+        agent_id: user?.id ?? null,
         activity_type: 'value_updated',
         title: `Pagamento registrado: ${leadData?.name || 'Lead'}`,
         description: `${data.payment_method.toUpperCase()} - R$ ${data.gross_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}${data.payment_method === 'credito' ? ` (${data.installments}x, líquido: R$ ${data.net_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` : ''}`,

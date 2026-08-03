@@ -81,11 +81,11 @@ export function useCreateTask() {
       scheduled_at: string;
       priority?: TaskPriority;
     }) => {
-      if (!user) throw new Error('Usuário não autenticado');
+      
 
       const { error } = await supabase.from('tasks').insert({
         ...data,
-        agent_id: user.id,
+        agent_id: user?.id ?? null,
         status: 'pendente',
       });
 
@@ -94,7 +94,7 @@ export function useCreateTask() {
       // Log activity (non-blocking, don't fail the mutation)
       await supabase.from('activity_logs').insert({
         lead_id: data.lead_id,
-        agent_id: user.id,
+        agent_id: user?.id ?? null,
         activity_type: 'task_created',
         title: `Tarefa criada: ${data.title}`,
         description: data.description,
@@ -151,7 +151,7 @@ export function useUpdateTask() {
         if (task) {
           await supabase.from('activity_logs').insert({
             lead_id: task.lead_id,
-            agent_id: user.id,
+            agent_id: user?.id ?? null,
             activity_type: 'task_completed',
             title: `Tarefa concluída: ${task.title}`,
             description: updates.response || undefined,
@@ -188,7 +188,7 @@ export function useRescheduleTask() {
       reason: string; 
       observation?: string; 
     }) => {
-      if (!user) throw new Error('Usuário não autenticado');
+      
 
       const { data: original, error: fetchError } = await supabase
         .from('tasks')
@@ -211,7 +211,7 @@ export function useRescheduleTask() {
 
       const { error: insertError } = await supabase.from('tasks').insert({
         lead_id: original.lead_id,
-        agent_id: user.id,
+        agent_id: user?.id ?? null,
         title: original.title,
         description: original.description,
         task_type: original.task_type,
@@ -225,7 +225,7 @@ export function useRescheduleTask() {
 
       await supabase.from('activity_logs').insert({
         lead_id: original.lead_id,
-        agent_id: user.id,
+        agent_id: user?.id ?? null,
         activity_type: 'task_created',
         title: `Tarefa reagendada: ${original.title}`,
         description: `Motivo: ${reason}`,

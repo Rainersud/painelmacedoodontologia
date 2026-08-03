@@ -131,7 +131,7 @@ export function useUpdateLeadStatus() {
           .eq('attendance_discount_eligible', true)
           .select('referrer_lead_id');
 
-        if (refData?.length && user) {
+        if (refData?.length ) {
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
           await supabase.from('alerts').insert({
             type: 'indicacao_compareceu' as any,
@@ -166,7 +166,7 @@ export function useUpdateLeadStatus() {
           .select('id, referrer_lead_id, reward_type, reward_value')
           .eq('referred_lead_id', leadId);
         
-        if (refConvert?.length && user) {
+        if (refConvert?.length ) {
           const ref = refConvert[0];
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
           
@@ -249,11 +249,11 @@ export function useUpdateLeadStatus() {
       }
 
       // Auto-create appointment when moving to agendou
-      if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') && user) {
+      if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') ) {
         const scheduledAt = (additionalData?.scheduled_appointment_at as string) || new Date().toISOString();
         await supabase.from('appointments').insert({
           lead_id: leadId,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           scheduled_at: scheduledAt,
           notes: `Agendamento criado automaticamente via funil`,
         });
@@ -272,10 +272,10 @@ export function useUpdateLeadStatus() {
       }
 
       // Log activity (non-blocking)
-      if (user && oldLead) {
+      if (oldLead) {
         supabase.from('activity_logs').insert({
           lead_id: leadId,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           activity_type: 'status_changed',
           title: `Status alterado: ${oldLead.name}`,
           old_value: oldLead.status,
@@ -400,10 +400,10 @@ export function useUpdateLead() {
       if (error) throw error;
 
       // Log edit activity (non-blocking)
-      if (user) {
+      if (true) {
         supabase.from('activity_logs').insert({
           lead_id: leadId,
-          agent_id: user.id,
+          agent_id: user?.id ?? null,
           activity_type: 'lead_edited',
           title: 'Lead editado',
           metadata: { fields: Object.keys(updates) },

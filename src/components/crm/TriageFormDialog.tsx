@@ -122,7 +122,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
   };
 
   const handleConvertToLead = (index: number) => {
-    if (!user) return;
+    
     const entry = referralEntries[index];
     if (!entry.referral_name.trim()) {
       toast.error('Preencha o nome da pessoa para converter em lead');
@@ -131,7 +131,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
     convertToLead.mutate(
       {
         referral: { ...entry, lead_id: lead.id },
-        agentId: user.id,
+        agentId: user?.id ?? null,
         referrerLeadId: lead.id,
       },
       {
@@ -147,7 +147,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
   };
 
   const handleBulkLink = () => {
-    if (!user) return;
+    
     const linkable = referralEntries.filter(
       (e) => !e.converted_lead_id && e.referral_name.trim() && e.phone && e.phone.replace(/\D/g, '').length >= 10
     );
@@ -156,7 +156,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
       return;
     }
     bulkLink.mutate(
-      { referrals: linkable.map(r => ({ ...r, lead_id: lead.id })), agentId: user.id, referrerLeadId: lead.id },
+      { referrals: linkable.map(r => ({ ...r, lead_id: lead.id })), agentId: user?.id ?? null, referrerLeadId: lead.id },
       {
         onSuccess: (results) => {
           const success = results.filter(r => r.success);

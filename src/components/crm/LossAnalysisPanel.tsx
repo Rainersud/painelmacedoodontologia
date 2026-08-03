@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, TrendingDown, Users, BarChart3 } from 'lucide-react';
+import { Search, TrendingDown, Users, BarChart3, Mic, Image as ImageIcon } from 'lucide-react';
+import { useLossAttachments, getSignedUrl, type LossAttachment } from './LossAttachments';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

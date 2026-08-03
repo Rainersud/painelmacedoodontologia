@@ -31,11 +31,13 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
 
   const overdue = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) < todayStart);
   const todayPending = tasks.filter(t => t.status === 'pendente' && isSameDay(new Date(t.scheduled_at), today));
-  const upcoming = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) > todayStart && !isSameDay(new Date(t.scheduled_at), today));
+  const upcomingAll = tasks.filter(t => t.status === 'pendente' && new Date(t.scheduled_at) > todayStart && !isSameDay(new Date(t.scheduled_at), today));
+  const upcoming = onlyToday ? [] : upcomingAll;
   const completed = tasks.filter(t => t.status === 'concluido' && isSameDay(new Date(t.scheduled_at), today));
 
   const pending = [...overdue, ...todayPending];
   const total = pending.length + completed.length;
+
 
   const handleComplete = (taskId: string) => {
     if (showResponseFor !== taskId) {

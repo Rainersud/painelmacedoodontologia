@@ -19,7 +19,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           id: string
           reference_month: string
@@ -29,7 +29,7 @@ export type Database = {
           amount?: number
           category: string
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           id?: string
           reference_month?: string
@@ -39,7 +39,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           reference_month?: string
@@ -50,7 +50,7 @@ export type Database = {
       activity_logs: {
         Row: {
           activity_type: string
-          agent_id: string
+          agent_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -62,7 +62,7 @@ export type Database = {
         }
         Insert: {
           activity_type: string
-          agent_id: string
+          agent_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -74,7 +74,7 @@ export type Database = {
         }
         Update: {
           activity_type?: string
-          agent_id?: string
+          agent_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -100,7 +100,7 @@ export type Database = {
           attendance: number
           clicks: number
           created_at: string
-          created_by: string
+          created_by: string | null
           id: string
           investment: number
           is_active: boolean
@@ -118,7 +118,7 @@ export type Database = {
           attendance?: number
           clicks?: number
           created_at?: string
-          created_by: string
+          created_by?: string | null
           id?: string
           investment?: number
           is_active?: boolean
@@ -136,7 +136,7 @@ export type Database = {
           attendance?: number
           clicks?: number
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           id?: string
           investment?: number
           is_active?: boolean
@@ -153,7 +153,7 @@ export type Database = {
       }
       agent_daily_metrics: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           appointments_confirmed: number | null
           appointments_scheduled: number | null
           attended_appointments: number | null
@@ -172,7 +172,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           appointments_confirmed?: number | null
           appointments_scheduled?: number | null
           attended_appointments?: number | null
@@ -191,7 +191,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           appointments_confirmed?: number | null
           appointments_scheduled?: number | null
           attended_appointments?: number | null
@@ -254,7 +254,7 @@ export type Database = {
       }
       appointments: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           attended_at: string | null
           cancelled_at: string | null
           confirmed_at: string | null
@@ -268,7 +268,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           attended_at?: string | null
           cancelled_at?: string | null
           confirmed_at?: string | null
@@ -282,7 +282,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           attended_at?: string | null
           cancelled_at?: string | null
           confirmed_at?: string | null
@@ -307,7 +307,7 @@ export type Database = {
       }
       call_logs: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           call_type: string
           created_at: string
           duration_seconds: number | null
@@ -317,7 +317,7 @@ export type Database = {
           result: string | null
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           call_type: string
           created_at?: string
           duration_seconds?: number | null
@@ -327,7 +327,7 @@ export type Database = {
           result?: string | null
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           call_type?: string
           created_at?: string
           duration_seconds?: number | null
@@ -409,7 +409,7 @@ export type Database = {
       goals: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           end_date: string
           id: string
           period: Database["public"]["Enums"]["goal_period"]
@@ -420,7 +420,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           end_date: string
           id?: string
           period: Database["public"]["Enums"]["goal_period"]
@@ -431,7 +431,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           end_date?: string
           id?: string
           period?: Database["public"]["Enums"]["goal_period"]
@@ -446,7 +446,7 @@ export type Database = {
         Row: {
           bonus_value: number
           created_at: string
-          created_by: string
+          created_by: string | null
           id: string
           is_active: boolean
           name: string
@@ -457,7 +457,7 @@ export type Database = {
         Insert: {
           bonus_value?: number
           created_at?: string
-          created_by: string
+          created_by?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -468,7 +468,7 @@ export type Database = {
         Update: {
           bonus_value?: number
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -486,7 +486,7 @@ export type Database = {
           id: string
           lead_id: string
           type: Database["public"]["Enums"]["interaction_type"]
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content?: string | null
@@ -495,7 +495,7 @@ export type Database = {
           id?: string
           lead_id: string
           type: Database["public"]["Enums"]["interaction_type"]
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string | null
@@ -504,7 +504,7 @@ export type Database = {
           id?: string
           lead_id?: string
           type?: Database["public"]["Enums"]["interaction_type"]
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -728,7 +728,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
-          created_by: string
+          created_by: string | null
           id: string
           meeting_id: string
           metric_key: string
@@ -736,7 +736,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
-          created_by: string
+          created_by?: string | null
           id?: string
           meeting_id: string
           metric_key: string
@@ -744,7 +744,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           id?: string
           meeting_id?: string
           metric_key?: string
@@ -794,7 +794,7 @@ export type Database = {
       meetings: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           general_notes: string | null
           id: string
           meeting_date: string
@@ -803,7 +803,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           general_notes?: string | null
           id?: string
           meeting_date: string
@@ -812,7 +812,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           general_notes?: string | null
           id?: string
           meeting_date?: string
@@ -874,7 +874,7 @@ export type Database = {
           facebook: string | null
           fear_of_dentist: string | null
           filled_at: string
-          filled_by: string
+          filled_by: string | null
           full_name: string | null
           ice_cream_flavor: string | null
           id: string
@@ -917,7 +917,7 @@ export type Database = {
           facebook?: string | null
           fear_of_dentist?: string | null
           filled_at?: string
-          filled_by: string
+          filled_by?: string | null
           full_name?: string | null
           ice_cream_flavor?: string | null
           id?: string
@@ -960,7 +960,7 @@ export type Database = {
           facebook?: string | null
           fear_of_dentist?: string | null
           filled_at?: string
-          filled_by?: string
+          filled_by?: string | null
           full_name?: string | null
           ice_cream_flavor?: string | null
           id?: string
@@ -993,7 +993,7 @@ export type Database = {
       }
       payments: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           created_at: string
           due_date: string | null
           fee_amount: number
@@ -1014,7 +1014,7 @@ export type Database = {
           upsell_opportunity_id: string | null
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           created_at?: string
           due_date?: string | null
           fee_amount?: number
@@ -1035,7 +1035,7 @@ export type Database = {
           upsell_opportunity_id?: string | null
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           created_at?: string
           due_date?: string | null
           fee_amount?: number
@@ -1304,7 +1304,7 @@ export type Database = {
       }
       tasks: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           completed_at: string | null
           created_at: string
           description: string | null
@@ -1321,7 +1321,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -1338,7 +1338,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -1437,7 +1437,7 @@ export type Database = {
       }
       upsell_contact_history: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           contact_type: string
           created_at: string
           id: string
@@ -1446,7 +1446,7 @@ export type Database = {
           result: string | null
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           contact_type?: string
           created_at?: string
           id?: string
@@ -1455,7 +1455,7 @@ export type Database = {
           result?: string | null
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           contact_type?: string
           created_at?: string
           id?: string

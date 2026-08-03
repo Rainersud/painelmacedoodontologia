@@ -800,18 +800,25 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                             : 'bg-background border-chart-5/30 hover:bg-chart-5/10'
                         }`}
                       >
-                        Outro
+                        ✍️ Adicionar motivo manualmente
                       </button>
                     </div>
                     {isOther && (
-                      <Input
+                      <Textarea
                         autoFocus
-                        placeholder="Descreva o motivo..."
+                        rows={3}
+                        placeholder="Descreva o motivo com suas palavras..."
                         value={formData.loss_reason.trim() === '' ? '' : formData.loss_reason}
                         onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))}
                         className="border-chart-5/30 focus-visible:ring-chart-5"
                       />
                     )}
+                    <div className="pt-1 border-t border-chart-5/20">
+                      <p className="text-[11px] text-muted-foreground mb-1.5">
+                        📎 Anexos (áudio ou imagem) para avaliação posterior — aparecem na "Análise de Perdas".
+                      </p>
+                      <LossAttachments leadId={lead.id} />
+                    </div>
                     {!formData.loss_reason.trim() && (
                       <p className="text-[10px] text-destructive">* Selecione um motivo</p>
                     )}
@@ -827,8 +834,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     ❓ Motivo de não fechamento
                   </h4>
                   <p className="text-sm">{(lead as any).loss_reason}</p>
+                  <LossAttachments leadId={lead.id} />
                 </div>
               )}
+
 
               {/* Contact attempts counter - per stage period (manhã/tarde) */}
               {(statusForView === 'nao_respondeu' || statusForView?.startsWith('followup_')) && (() => {

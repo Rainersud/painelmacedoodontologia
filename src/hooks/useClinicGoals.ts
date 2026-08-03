@@ -261,7 +261,7 @@ export function useClinicGoals() {
 
       return { goals, funnelData, healthyRates };
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 30000,
   });
 

@@ -64,7 +64,7 @@ export function useTasks(filters?: {
         lead: task.lead_id ? leadMap[task.lead_id] : null,
       }));
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
   });
 }
 

@@ -22,7 +22,7 @@ export function useStagnationAlerts() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 5 * 60 * 1000, // Check every 5 minutes
   });
 
@@ -119,6 +119,6 @@ export function useAppointmentMetrics() {
         leadsWithNoShows: leadsWithNoShows || [],
       };
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
   });
 }

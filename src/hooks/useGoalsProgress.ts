@@ -166,7 +166,7 @@ export function useGoalsProgress() {
 
       return progress;
     },
-    enabled: !!user,
+    // acesso aberto: sem login obrigatorio
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 }

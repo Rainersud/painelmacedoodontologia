@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
 const Funil = lazy(() => import("./pages/Funil"));
+const FollowUp = lazy(() => import("./pages/FollowUp"));
 const Tarefas = lazy(() => import("./pages/Tarefas"));
 const Indicacoes = lazy(() => import("./pages/Indicacoes"));
 const Agendamentos = lazy(() => import("./pages/Agendamentos"));

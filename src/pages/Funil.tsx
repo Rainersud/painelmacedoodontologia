@@ -322,7 +322,17 @@ function KanbanBoard({
   );
 }
 
-const Funil = () => { // v2
+interface FunilProps {
+  mode?: 'comercial1' | 'followup';
+}
+
+const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
+  const isFollowUpMode = mode === 'followup';
+  const pageTitle = isFollowUpMode ? 'Follow Up — D1 a D7' : 'Comercial 1 – Aquisição';
+  const boardStages = useMemo(
+    () => FUNNEL_STAGES.filter(s => (isFollowUpMode ? FOLLOWUP_KEYS.has(s.key) : !FOLLOWUP_KEYS.has(s.key))),
+    [isFollowUpMode],
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();

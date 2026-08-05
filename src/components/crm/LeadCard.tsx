@@ -234,7 +234,7 @@ function LeadCardComponent({
           <div className="flex items-center gap-0.5">
             <DollarSign className="h-3 w-3 text-success" />
             <span className="font-bold text-[11px]">
-              {formatCurrency(lead.treatment_value || 0)}
+              {formatCurrency(lead.budget_value || lead.treatment_value || 0)}
             </span>
           </div>
         </div>

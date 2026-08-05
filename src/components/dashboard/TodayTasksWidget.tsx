@@ -92,6 +92,11 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
               {task.lead && (
                 <span className="text-primary font-medium flex items-center gap-0.5">
                   <User className="h-3 w-3" />{task.lead.name}
+                  {!!task.lead.budget_value && task.lead.budget_value > 0 && (
+                    <span className="ml-1 text-warning">
+                      (Orçamento: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(task.lead.budget_value)})
+                    </span>
+                  )}
                 </span>
               )}
               <span className="flex items-center gap-0.5">

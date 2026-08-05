@@ -716,8 +716,8 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
         <KanbanBoard
           stages={(() => {
             const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'all' || smartCategory !== 'all';
-            if (!anyFilterActive) return FUNNEL_STAGES;
-            return FUNNEL_STAGES.filter(s => getLeadsByStatus(s.key).length > 0);
+            if (!anyFilterActive) return boardStages;
+            return boardStages.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}
           getLeadsByStatus={getLeadsByStatus}
           getTotalBudgetByStatus={getTotalBudgetByStatus}

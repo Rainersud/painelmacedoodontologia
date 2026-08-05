@@ -333,16 +333,17 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
             </div>
             {/* Quick actions */}
-            <div className="flex gap-1">
+            <div className="absolute left-1 top-1 z-20">
             {(
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  title="Excluir lead"
+                  className="h-6 w-6 opacity-20 hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

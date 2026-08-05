@@ -732,9 +732,11 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
         />
 
         {/* Loss Analysis Panel */}
-        <div className="mt-6">
-          <LossAnalysisPanel />
-        </div>
+        {!isFollowUpMode && (
+          <div className="mt-6">
+            <LossAnalysisPanel />
+          </div>
+        )}
       </div>
 
       <LeadDetailDialog

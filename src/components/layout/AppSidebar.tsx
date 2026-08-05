@@ -80,6 +80,7 @@ function CollapsibleGroup({
 
 const mainNavItems = [
   { title: 'Comercial 1', url: '/funil', icon: Filter, module: 'funil' },
+  { title: 'Follow Up', url: '/follow-up', icon: Repeat, module: 'funil' },
   { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },

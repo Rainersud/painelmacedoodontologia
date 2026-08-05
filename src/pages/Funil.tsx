@@ -322,7 +322,17 @@ function KanbanBoard({
   );
 }
 
-const Funil = () => { // v2
+interface FunilProps {
+  mode?: 'comercial1' | 'followup';
+}
+
+const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
+  const isFollowUpMode = mode === 'followup';
+  const pageTitle = isFollowUpMode ? 'Follow Up — D1 a D7' : 'Comercial 1 – Aquisição';
+  const boardStages = useMemo(
+    () => FUNNEL_STAGES.filter(s => (isFollowUpMode ? FOLLOWUP_KEYS.has(s.key) : !FOLLOWUP_KEYS.has(s.key))),
+    [isFollowUpMode],
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
   const updateStatus = useUpdateLeadStatus();
@@ -557,7 +567,7 @@ const Funil = () => { // v2
 
   if (isLoading) {
     return (
-      <AppLayout title="Comercial 1 – Aquisição">
+      <AppLayout title={pageTitle}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -566,14 +576,16 @@ const Funil = () => { // v2
   }
 
   return (
-    <AppLayout title="Comercial 1 – Aquisição">
+    <AppLayout title={pageTitle}>
       {/* The entire funnel page */}
       <div className="flex flex-col min-h-0 flex-1">
         {/* Operational command center — above search, below page title */}
-        <div className="shrink-0 space-y-4 mb-4">
-          <TodayTasksWidget onlyToday />
-          <SmartAlertsWidget />
-        </div>
+        {!isFollowUpMode && (
+          <div className="shrink-0 space-y-4 mb-4">
+            <TodayTasksWidget onlyToday />
+            <SmartAlertsWidget />
+          </div>
+        )}
 
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
@@ -704,8 +716,8 @@ const Funil = () => { // v2
         <KanbanBoard
           stages={(() => {
             const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'all' || smartCategory !== 'all';
-            if (!anyFilterActive) return FUNNEL_STAGES;
-            return FUNNEL_STAGES.filter(s => getLeadsByStatus(s.key).length > 0);
+            if (!anyFilterActive) return boardStages;
+            return boardStages.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}
           getLeadsByStatus={getLeadsByStatus}
           getTotalBudgetByStatus={getTotalBudgetByStatus}
@@ -720,9 +732,11 @@ const Funil = () => { // v2
         />
 
         {/* Loss Analysis Panel */}
-        <div className="mt-6">
-          <LossAnalysisPanel />
-        </div>
+        {!isFollowUpMode && (
+          <div className="mt-6">
+            <LossAnalysisPanel />
+          </div>
+        )}
       </div>
 
       <LeadDetailDialog

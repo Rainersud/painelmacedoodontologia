@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const CRMDashboard = lazy(() => import("./pages/CRMDashboard"));
 const Funil = lazy(() => import("./pages/Funil"));
+const FollowUp = lazy(() => import("./pages/FollowUp"));
 const Tarefas = lazy(() => import("./pages/Tarefas"));
 const Indicacoes = lazy(() => import("./pages/Indicacoes"));
 const Agendamentos = lazy(() => import("./pages/Agendamentos"));
@@ -98,6 +99,7 @@ const App = () => (
                 <Route path="/funil-trafego" element={<ProtectedRoute><FunilTrafego /></ProtectedRoute>} />
                 <Route path="/central-funis" element={<ProtectedRoute><CentralFunis /></ProtectedRoute>} />
                 <Route path="/comercial-2" element={<ProtectedRoute><Comercial2 /></ProtectedRoute>} />
+                <Route path="/follow-up" element={<ProtectedRoute><FollowUp /></ProtectedRoute>} />
                 <Route path="/remarketing" element={<ProtectedRoute><Remarketing /></ProtectedRoute>} />
                 <Route path="/bi" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />

@@ -112,9 +112,9 @@ function LeadCardComponent({
           <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotClass)} />
           <p className="font-medium truncate text-[11px] flex-1 min-w-0">{lead.name}</p>
           {hasTask && <CheckSquare className="h-2.5 w-2.5 text-warning shrink-0" />}
-          {(lead.treatment_value || 0) > 0 && (
+          {(lead.budget_value || lead.treatment_value || 0) > 0 && (
             <span className="font-semibold text-[10px] text-muted-foreground shrink-0">
-              {formatCurrency(lead.treatment_value || 0)}
+              {formatCurrency(lead.budget_value || lead.treatment_value || 0)}
             </span>
           )}
         </CardContent>

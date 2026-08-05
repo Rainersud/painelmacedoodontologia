@@ -567,7 +567,7 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
 
   if (isLoading) {
     return (
-      <AppLayout title="Comercial 1 – Aquisição">
+      <AppLayout title={pageTitle}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -576,14 +576,16 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
   }
 
   return (
-    <AppLayout title="Comercial 1 – Aquisição">
+    <AppLayout title={pageTitle}>
       {/* The entire funnel page */}
       <div className="flex flex-col min-h-0 flex-1">
         {/* Operational command center — above search, below page title */}
-        <div className="shrink-0 space-y-4 mb-4">
-          <TodayTasksWidget onlyToday />
-          <SmartAlertsWidget />
-        </div>
+        {!isFollowUpMode && (
+          <div className="shrink-0 space-y-4 mb-4">
+            <TodayTasksWidget onlyToday />
+            <SmartAlertsWidget />
+          </div>
+        )}
 
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">

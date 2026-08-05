@@ -114,7 +114,7 @@ function TaskItem({
                 >
                   <User className="h-3 w-3" />
                   {task.lead.name}
-                  {task.lead.budget_value && task.lead.budget_value > 0 && !(task.lead.treatment_value && task.lead.treatment_value > 0) && (
+                  {!!task.lead.budget_value && task.lead.budget_value > 0 && (
                     <span className="ml-1 text-warning font-medium">
                       (Orçamento: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(task.lead.budget_value)})
                     </span>

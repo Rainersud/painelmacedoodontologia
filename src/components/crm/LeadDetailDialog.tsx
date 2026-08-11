@@ -536,8 +536,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
+                    // Auto-salvar imediatamente, exceto status que exigem dados extras
+                    const needsExtraInput = ['nao_cliente', 'fechado'].includes(target);
+                    if (!needsExtraInput && target !== lead.status) {
+                      handleChangeStatus(target).then((ok) => {
+                        if (ok) toast.success('Status salvo automaticamente');
+                      });
+                    }
                   }}
                 >
+
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o novo status" />
                   </SelectTrigger>

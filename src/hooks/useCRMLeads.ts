@@ -45,7 +45,8 @@ export function useCRMLeads() {
           .from('tasks')
           .select('lead_id')
           .in('lead_id', leadIds)
-          .eq('status', 'pendente');
+          .in('status', ['pendente', 'reagendado']);
+
         
         if (tasks) {
           tasks.forEach(t => {

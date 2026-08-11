@@ -104,6 +104,7 @@ export function useCreateTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast.success('Tarefa criada com sucesso!');
     },
@@ -163,6 +164,7 @@ export function useUpdateTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast.success('Tarefa atualizada!');
     },
@@ -235,6 +237,7 @@ export function useRescheduleTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast.success('Tarefa reagendada com sucesso!');
     },
@@ -254,6 +257,7 @@ export function useDeleteTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       toast.success('Tarefa excluída!');
     },
     onError: () => {

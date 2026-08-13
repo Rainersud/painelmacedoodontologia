@@ -62,6 +62,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [duplicates, setDuplicates] = useState<{ id: string; name: string; status: string; created_at: string }[] | null>(null);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -77,10 +78,33 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       return;
     }
 
+    const cleanPhone = form.phone.replace(/\D/g, '');
+
+    // Verificação de duplicidade por telefone
     setSaving(true);
     try {
-      const cleanPhone = form.phone.replace(/\D/g, '');
+      const { data: existing } = await supabase
+        .from('leads')
+        .select('id, name, status, created_at')
+        .or(`phone.eq.${cleanPhone},whatsapp.eq.${cleanPhone}`)
+        .limit(5);
 
+      if (existing && existing.length > 0) {
+        setDuplicates(existing as any);
+        setSaving(false);
+        return;
+      }
+    } catch {
+      // se a checagem falhar, segue o fluxo normal
+    }
+    setSaving(false);
+
+    await persistLead(cleanPhone);
+  };
+
+  const persistLead = async (cleanPhone: string) => {
+    setSaving(true);
+    try {
       const { data: newLead, error } = await supabase.from('leads').insert({
         name: form.name.trim(),
         phone: cleanPhone,
@@ -93,6 +117,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
       }).select('id').single();
+
 
       if (error) throw error;
 

@@ -264,6 +264,43 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={!!duplicates} onOpenChange={(o) => !o && setDuplicates(null)}>
+        <AlertDialogContent className="z-[200]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Telefone já cadastrado</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Já existe {duplicates?.length === 1 ? 'um contato' : `${duplicates?.length} contatos`} com este telefone:</p>
+                <ul className="text-sm list-disc pl-5">
+                  {duplicates?.map((d) => (
+                    <li key={d.id}>
+                      <span className="font-medium">{d.name}</span>{' '}
+                      <span className="text-muted-foreground">
+                        — {d.status} • {new Date(d.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p>Deseja cadastrar mesmo assim?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const phone = form.phone.replace(/\D/g, '');
+                setDuplicates(null);
+                persistLead(phone);
+              }}
+            >
+              Cadastrar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
+
   );
 }

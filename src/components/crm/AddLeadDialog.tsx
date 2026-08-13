@@ -138,7 +138,9 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
       queryClient.invalidateQueries({ queryKey: ['strategic-origins'] });
       setForm({ name: '', phone: '', source: 'outro', lead_arrival_source: undefined, interest_product: undefined, notes: '' });
+      setDuplicates(null);
       onOpenChange(false);
+
     } catch (err) {
       toast.error('Erro ao adicionar lead');
     } finally {

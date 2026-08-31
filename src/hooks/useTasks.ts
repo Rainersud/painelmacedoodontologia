@@ -56,12 +56,47 @@ export function useTasks(filters?: {
         }
       }
 
-      return (data || []).map(task => ({
+      const tasks = data || [];
+
+      // Fetch original tasks for rescheduled ones
+      const originalIds = [...new Set(tasks.map(t => t.rescheduled_from_id).filter(Boolean))] as string[];
+      let originalMap: Record<string, { scheduled_at: string }> = {};
+      if (originalIds.length > 0) {
+        const { data: originals } = await supabase
+          .from('tasks')
+          .select('id, scheduled_at')
+          .in('id', originalIds);
+        if (originals) {
+          originalMap = Object.fromEntries(originals.map(o => [o.id, { scheduled_at: o.scheduled_at }]));
+        }
+      }
+
+      // Fetch child tasks for rescheduled originals
+      const rescheduledIds = [...new Set(tasks.filter(t => t.status === 'reagendado').map(t => t.id))];
+      let childMap: Record<string, { scheduled_at: string }> = {};
+      if (rescheduledIds.length > 0) {
+        const { data: children } = await supabase
+          .from('tasks')
+          .select('rescheduled_from_id, scheduled_at')
+          .in('rescheduled_from_id', rescheduledIds)
+          .eq('status', 'pendente');
+        if (children) {
+          for (const child of children) {
+            if (child.rescheduled_from_id && !childMap[child.rescheduled_from_id]) {
+              childMap[child.rescheduled_from_id] = { scheduled_at: child.scheduled_at };
+            }
+          }
+        }
+      }
+
+      return tasks.map(task => ({
         ...task,
         task_type: task.task_type as TaskType,
         status: task.status as TaskStatus,
         priority: task.priority as TaskPriority | undefined,
         lead: task.lead_id ? leadMap[task.lead_id] : null,
+        original_task: task.rescheduled_from_id ? originalMap[task.rescheduled_from_id] : null,
+        rescheduled_to_task: task.status === 'reagendado' ? childMap[task.id] : null,
       }));
     },
     // acesso aberto: sem login obrigatorio

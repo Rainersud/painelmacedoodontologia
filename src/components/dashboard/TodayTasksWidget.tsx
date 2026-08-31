@@ -105,6 +105,12 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
                   ? format(new Date(task.scheduled_at), "dd/MM 'às' HH:mm", { locale: ptBR })
                   : format(new Date(task.scheduled_at), 'HH:mm')}
               </span>
+              {task.original_task && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <RefreshCw className="h-3 w-3" />
+                  Reagendada de {format(new Date(task.original_task.scheduled_at), "dd/MM HH:mm", { locale: ptBR })}
+                </span>
+              )}
               {isOverdue && <Badge variant="destructive" className="text-[9px] h-4">Atrasada</Badge>}
             </div>
           </div>

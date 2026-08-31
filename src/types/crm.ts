@@ -116,6 +116,9 @@ export interface Task {
   // Joined data
   lead?: { name: string; phone: string; budget_value?: number | null; treatment_value?: number | null } | null;
   profiles?: { full_name: string } | null;
+  // Reagendamento context
+  original_task?: { scheduled_at: string } | null;
+  rescheduled_to_task?: { scheduled_at: string } | null;
 }
 
 export interface ActivityLog {

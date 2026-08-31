@@ -360,6 +360,15 @@
   .scroll-container-y-thick::-webkit-scrollbar-thumb:active {
     background: hsl(var(--primary) / 0.9);
   }
+
+  /* Hide native scrollbar so a custom one can be rendered instead */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Ocultar badge "Made with Lovable" em todas as formas */

@@ -89,6 +89,28 @@ export function useTasks(filters?: {
         }
       }
 
+      // Histórico de reagendamentos de todas as tarefas listadas
+      const allIds = tasks.map(t => t.id);
+      let historyMap: Record<string, Array<{ previous_scheduled_at: string | null; new_scheduled_at: string; reason: string; observation: string | null; created_at: string }>> = {};
+      if (allIds.length > 0) {
+        const { data: history } = await supabase
+          .from('task_reschedule_history')
+          .select('task_id, previous_scheduled_at, new_scheduled_at, reason, observation, created_at')
+          .in('task_id', allIds)
+          .order('created_at', { ascending: true });
+        if (history) {
+          for (const h of history) {
+            (historyMap[h.task_id] ||= []).push({
+              previous_scheduled_at: h.previous_scheduled_at,
+              new_scheduled_at: h.new_scheduled_at,
+              reason: h.reason,
+              observation: h.observation,
+              created_at: h.created_at,
+            });
+          }
+        }
+      }
+
       return tasks.map(task => ({
         ...task,
         task_type: task.task_type as TaskType,
@@ -97,7 +119,9 @@ export function useTasks(filters?: {
         lead: task.lead_id ? leadMap[task.lead_id] : null,
         original_task: task.rescheduled_from_id ? originalMap[task.rescheduled_from_id] : null,
         rescheduled_to_task: task.status === 'reagendado' ? childMap[task.id] : null,
+        reschedule_history: historyMap[task.id] || [],
       }));
+
     },
     // acesso aberto: sem login obrigatorio
   });
@@ -251,6 +275,32 @@ export function useUpdateTask() {
   });
 }
 
+export interface TaskRescheduleHistoryItem {
+  id: string;
+  task_id: string;
+  previous_scheduled_at: string | null;
+  new_scheduled_at: string;
+  reason: string;
+  observation: string | null;
+  created_at: string;
+}
+
+export function useTaskRescheduleHistory(taskId?: string) {
+  return useQuery({
+    queryKey: ['task-reschedule-history', taskId],
+    enabled: !!taskId,
+    queryFn: async (): Promise<TaskRescheduleHistoryItem[]> => {
+      const { data, error } = await supabase
+        .from('task_reschedule_history')
+        .select('*')
+        .eq('task_id', taskId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data || []) as TaskRescheduleHistoryItem[];
+    },
+  });
+}
+
 export function useRescheduleTask() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -267,62 +317,62 @@ export function useRescheduleTask() {
       reason: string; 
       observation?: string; 
     }) => {
-      
-
       const { data: original, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
         .eq('id', taskId)
-        .single();
+        .maybeSingle();
 
       if (fetchError || !original) throw fetchError || new Error('Tarefa não encontrada');
 
+      // Move o próprio card para a nova data (mantém pendente)
       const { error: updateError } = await supabase
         .from('tasks')
-        .update({ 
-          status: 'reagendado', 
+        .update({
+          scheduled_at: newDate,
+          status: 'pendente',
+          completed_at: null,
           reschedule_reason: reason,
-          description: observation ? `${original.description || ''}\n[Reagendamento] ${observation}`.trim() : original.description,
         })
         .eq('id', taskId);
 
       if (updateError) throw updateError;
 
-      const { error: insertError } = await supabase.from('tasks').insert({
+      // Registra o histórico do reagendamento
+      const { error: histError } = await supabase.from('task_reschedule_history').insert({
+        task_id: taskId,
         lead_id: original.lead_id,
         agent_id: user?.id ?? null,
-        title: original.title,
-        description: original.description,
-        task_type: original.task_type,
-        priority: original.priority,
-        scheduled_at: newDate,
-        status: 'pendente',
-        rescheduled_from_id: taskId,
+        previous_scheduled_at: original.scheduled_at,
+        new_scheduled_at: newDate,
+        reason,
+        observation: observation || null,
       });
-
-      if (insertError) throw insertError;
+      if (histError) throw histError;
 
       await supabase.from('activity_logs').insert({
         lead_id: original.lead_id,
         agent_id: user?.id ?? null,
         activity_type: 'task_created',
         title: `Tarefa reagendada: ${original.title}`,
-        description: `Motivo: ${reason}`,
+        description: observation ? `Motivo: ${reason} — ${observation}` : `Motivo: ${reason}`,
       }).then(({ error: logError }) => {
         if (logError) console.warn('Activity log failed:', logError);
       });
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task-reschedule-history', vars.taskId] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      toast.success('Tarefa reagendada com sucesso!');
+      toast.success('Tarefa reagendada e movida para a nova data!');
     },
     onError: () => {
       toast.error('Erro ao reagendar tarefa');
     },
   });
 }
+
 
 export function useDeleteTask() {
   const queryClient = useQueryClient();

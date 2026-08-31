@@ -213,6 +213,35 @@ function TaskItem({
             </div>
           )}
 
+          {/* Histórico de reagendamentos */}
+          {!!task.reschedule_history?.length && (
+            <details className="mt-2 rounded border border-primary/20 bg-primary/5 p-2">
+              <summary className="cursor-pointer text-xs font-medium text-primary">
+                🔁 Histórico de reagendamentos ({task.reschedule_history.length})
+              </summary>
+              <ul className="mt-2 space-y-2">
+                {task.reschedule_history.map((h, i) => (
+                  <li key={i} className="border-l-2 border-primary/40 pl-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      {h.previous_scheduled_at
+                        ? format(new Date(h.previous_scheduled_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        : '—'}
+                      {' → '}
+                      <span className="font-medium text-foreground">
+                        {format(new Date(h.new_scheduled_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Motivo: {h.reason}</p>
+                    {h.observation && (
+                      <p className="text-[11px] text-muted-foreground italic">"{h.observation}"</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+
           {/* Response input for pending tasks */}
           {showResponseField && !isCompleted && !isRescheduled && (
             <div className="mt-3 space-y-2">

@@ -119,6 +119,14 @@ export interface Task {
   // Reagendamento context
   original_task?: { scheduled_at: string } | null;
   rescheduled_to_task?: { scheduled_at: string } | null;
+  reschedule_history?: Array<{
+    previous_scheduled_at: string | null;
+    new_scheduled_at: string;
+    reason: string;
+    observation: string | null;
+    created_at: string;
+  }>;
+
 }
 
 export interface ActivityLog {

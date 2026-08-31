@@ -1340,6 +1340,57 @@ export type Database = {
         }
         Relationships: []
       }
+      task_reschedule_history: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          new_scheduled_at: string
+          observation: string | null
+          previous_scheduled_at: string | null
+          reason: string
+          task_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          new_scheduled_at: string
+          observation?: string | null
+          previous_scheduled_at?: string | null
+          reason: string
+          task_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          new_scheduled_at?: string
+          observation?: string | null
+          previous_scheduled_at?: string | null
+          reason?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reschedule_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_reschedule_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           agent_id: string | null

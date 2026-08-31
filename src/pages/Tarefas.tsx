@@ -22,8 +22,23 @@ import {
   RefreshCw,
   AlertCircle,
   Pencil,
+  Trash2,
 } from 'lucide-react';
-import { useTasks, useUpdateTask } from '@/hooks/useTasks';
+import { useTasks, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useCRMLeads } from '@/hooks/useCRMLeads';
+import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import type { Lead } from '@/types/crm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -38,6 +53,7 @@ function TaskItem({
   onReopen,
   onReschedule,
   onEdit,
+  onDelete,
   onViewLead,
 }: { 
   task: Task; 
@@ -45,6 +61,7 @@ function TaskItem({
   onReopen: () => void;
   onReschedule: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onViewLead?: () => void;
 }) {
   const [responseText, setResponseText] = useState('');
@@ -100,13 +117,20 @@ function TaskItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className={cn(
-                "font-medium",
-                isCompleted && "line-through text-muted-foreground",
-                isRescheduled && "line-through text-muted-foreground"
-              )}>
+              <button
+                type="button"
+                onClick={onViewLead}
+                disabled={!task.lead_id}
+                title={task.lead_id ? 'Abrir card do lead' : undefined}
+                className={cn(
+                  "font-medium text-left",
+                  task.lead_id && "hover:underline hover:text-primary",
+                  isCompleted && "line-through text-muted-foreground",
+                  isRescheduled && "line-through text-muted-foreground"
+                )}
+              >
                 {task.title}
-              </p>
+              </button>
               {task.lead && (
                 <button 
                   onClick={onViewLead}
@@ -236,6 +260,36 @@ function TaskItem({
                 Reverter para Pendente
               </Button>
             )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-destructive ml-auto"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="z-[200]">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. A tarefa "{task.title}" será removida permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
@@ -249,8 +303,19 @@ const Tarefas = () => {
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
   const { data: allTasks, isLoading } = useTasks();
+  const { data: allLeads } = useCRMLeads();
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+
+  const openLead = (leadId?: string | null) => {
+    if (!leadId) return;
+    const lead = allLeads?.find((l) => l.id === leadId);
+    if (lead) setSelectedLead(lead);
+    else toast.error('Lead não encontrado');
+  };
 
   const filteredTasks = useMemo(() => {
     if (!allTasks) return [];
@@ -442,6 +507,8 @@ const Tarefas = () => {
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => setRescheduleTask(task)}
                             onEdit={() => setEditTask(task)}
+                            onDelete={() => deleteTask.mutate(task.id)}
+                            onViewLead={() => openLead(task.lead_id)}
                           />
                         ))
                       )}
@@ -462,6 +529,8 @@ const Tarefas = () => {
                             onReopen={() => handleReopen(task.id)}
                             onReschedule={() => {}}
                             onEdit={() => setEditTask(task)}
+                            onDelete={() => deleteTask.mutate(task.id)}
+                            onViewLead={() => openLead(task.lead_id)}
                           />
                         ))
                       )}
@@ -482,6 +551,8 @@ const Tarefas = () => {
                             onReopen={() => {}}
                             onReschedule={() => {}}
                             onEdit={() => setEditTask(task)}
+                            onDelete={() => deleteTask.mutate(task.id)}
+                            onViewLead={() => openLead(task.lead_id)}
                           />
                         ))
                       )}
@@ -502,6 +573,12 @@ const Tarefas = () => {
           taskTitle={rescheduleTask.title}
         />
       )}
+
+      <LeadDetailDialog
+        lead={selectedLead}
+        open={!!selectedLead}
+        onOpenChange={(open) => !open && setSelectedLead(null)}
+      />
 
       {editTask && (
         <EditTaskDialog

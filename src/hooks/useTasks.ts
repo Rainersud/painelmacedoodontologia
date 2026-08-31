@@ -81,13 +81,50 @@ export function useCreateTask() {
       scheduled_at: string;
       priority?: TaskPriority;
     }) => {
-      
+      // Bloqueia duplicidade: mesma pessoa (nome ou telefone) com tarefa no mesmo dia
+      if (data.lead_id) {
+        const { data: lead } = await supabase
+          .from('leads')
+          .select('id, name, phone, whatsapp')
+          .eq('id', data.lead_id)
+          .maybeSingle();
+
+        if (lead) {
+          const phones = [lead.phone, lead.whatsapp].filter(Boolean) as string[];
+          const filters = [`name.eq.${lead.name}`, ...phones.map(p => `phone.eq.${p}`)];
+          const { data: sameLeads } = await supabase
+            .from('leads')
+            .select('id')
+            .or(filters.join(','));
+
+          const ids = (sameLeads || []).map(l => l.id);
+          if (ids.length > 0) {
+            const day = new Date(data.scheduled_at);
+            const start = new Date(day); start.setHours(0, 0, 0, 0);
+            const end = new Date(day); end.setHours(23, 59, 59, 999);
+
+            const { data: existing } = await supabase
+              .from('tasks')
+              .select('id')
+              .in('lead_id', ids)
+              .neq('status', 'reagendado')
+              .gte('scheduled_at', start.toISOString())
+              .lte('scheduled_at', end.toISOString())
+              .limit(1);
+
+            if (existing && existing.length > 0) {
+              throw new Error('DUPLICATE_TASK');
+            }
+          }
+        }
+      }
 
       const { error } = await supabase.from('tasks').insert({
         ...data,
         agent_id: user?.id ?? null,
         status: 'pendente',
       });
+
 
       if (error) throw error;
 
@@ -108,9 +145,14 @@ export function useCreateTask() {
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast.success('Tarefa criada com sucesso!');
     },
-    onError: () => {
+    onError: (err: Error) => {
+      if (err?.message === 'DUPLICATE_TASK') {
+        toast.error('Já existe uma tarefa neste dia para este contato (mesmo nome ou telefone).');
+        return;
+      }
       toast.error('Erro ao criar tarefa');
     },
+
   });
 }
 

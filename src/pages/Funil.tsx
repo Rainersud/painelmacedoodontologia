@@ -232,7 +232,7 @@ function KanbanBoard({
 
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
-                    <div className="h-full overflow-y-auto scroll-container-y space-y-1 pr-0.5">
+                    <div className="h-full overflow-y-auto scroll-container-y-thick space-y-1 pr-1 pb-4">
                       {(() => {
                         const groupsOrder: { key: string; label: string; cls: string }[] = [
                           { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
+import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';

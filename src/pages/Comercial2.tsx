@@ -1448,6 +1448,7 @@ const Comercial2 = () => {
                             </div>
                           </CustomScrollbar>
                         </div>
+                        </div>
                       </div>
                     </div>
                   );

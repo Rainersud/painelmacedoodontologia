@@ -233,8 +233,9 @@ function KanbanBoard({
 
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
-                    <CustomScrollbar>
-                      <div className="space-y-1 pr-1 pb-4">
+                    <div className="h-[calc(100vh-280px)]">
+                      <CustomScrollbar>
+                        <div className="space-y-1 pr-1 pb-4">
                         {(() => {
                           const groupsOrder: { key: string; label: string; cls: string }[] = [
                             { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },

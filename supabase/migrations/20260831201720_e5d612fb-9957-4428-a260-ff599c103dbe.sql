@@ -1,0 +1,2 @@
+ALTER TABLE public.tasks DROP CONSTRAINT IF EXISTS tasks_rescheduled_from_id_fkey;
+ALTER TABLE public.tasks ADD CONSTRAINT tasks_rescheduled_from_id_fkey FOREIGN KEY (rescheduled_from_id) REFERENCES public.tasks(id) ON DELETE SET NULL;

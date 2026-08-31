@@ -337,8 +337,8 @@ export function useDeleteTask() {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       toast.success('Tarefa excluída!');
     },
-    onError: () => {
-      toast.error('Erro ao excluir tarefa');
+    onError: (error: any) => {
+      toast.error(`Erro ao excluir tarefa: ${error?.message ?? 'desconhecido'}`);
     },
   });
 }

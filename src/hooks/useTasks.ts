@@ -145,9 +145,14 @@ export function useCreateTask() {
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
       toast.success('Tarefa criada com sucesso!');
     },
-    onError: () => {
+    onError: (err: Error) => {
+      if (err?.message === 'DUPLICATE_TASK') {
+        toast.error('Já existe uma tarefa neste dia para este contato (mesmo nome ou telefone).');
+        return;
+      }
       toast.error('Erro ao criar tarefa');
     },
+
   });
 }
 

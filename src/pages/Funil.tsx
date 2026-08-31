@@ -306,6 +306,7 @@ function KanbanBoard({
                       </div>
                     </CustomScrollbar>
                   </div>
+                  </div>
                 </div>
               </div>
               )}

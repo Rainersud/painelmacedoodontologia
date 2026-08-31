@@ -193,6 +193,26 @@ function TaskItem({
             </div>
           )}
 
+          {/* New date for rescheduled originals */}
+          {isRescheduled && task.rescheduled_to_task && (
+            <div className="mt-2 p-2 rounded bg-primary/5 border border-primary/20">
+              <p className="text-xs font-medium text-primary">Novo retorno agendado para:</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {format(new Date(task.rescheduled_to_task.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              </p>
+            </div>
+          )}
+
+          {/* Previous date for child tasks */}
+          {task.original_task && (
+            <div className="mt-2 p-2 rounded bg-muted border border-muted-foreground/20">
+              <p className="text-xs font-medium text-muted-foreground">Anteriormente agendada para:</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {format(new Date(task.original_task.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              </p>
+            </div>
+          )}
+
           {/* Response input for pending tasks */}
           {showResponseField && !isCompleted && !isRescheduled && (
             <div className="mt-3 space-y-2">

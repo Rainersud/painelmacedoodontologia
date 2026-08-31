@@ -95,10 +95,10 @@ export function CustomScrollbar({
         {children}
       </div>
       {visible && (
-        <div className={cn("absolute right-0 top-0 bottom-0 w-5 rounded-full bg-muted/50", trackClassName)}>
+        <div className={cn("absolute right-0 top-0 bottom-0 w-5 rounded-full bg-muted/80 z-10", trackClassName)}>
           <div
             className={cn(
-              "absolute right-1 w-3 rounded-full bg-primary/70 hover:bg-primary cursor-grab active:cursor-grabbing transition-colors",
+              "absolute right-1 w-3 rounded-full bg-primary shadow-sm hover:bg-primary/90 cursor-grab active:cursor-grabbing transition-colors",
               thumbClassName
             )}
             style={{ height: thumbHeight, top: thumbTop }}

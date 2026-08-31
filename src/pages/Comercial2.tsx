@@ -1329,121 +1329,123 @@ const Comercial2 = () => {
                         </div>
 
                         <div className="flex-1 min-h-0 px-2 pb-2">
-                          <div className="h-full overflow-y-auto scroll-container-y-thick space-y-2 pr-1 pb-4">
-                            {stageOpps.map((opp) => {
-                              const contactCfg = CONTACT_STATUS_CONFIG[opp.contact_status] || CONTACT_STATUS_CONFIG.nao_contatado;
-                              return (
-                                <div
-                                  key={opp.id}
-                                  draggable={!isLocked}
-                                  onDragStart={(e) => handleDragStart(e, opp.id, stage.key)}
-                                  onDragEnd={() => { setDraggedId(null); setDropTarget(null); }}
-                                  className={cn(
-                                    !isLocked && "cursor-grab active:cursor-grabbing",
-                                    isLocked && "cursor-pointer",
-                                    draggedId === opp.id && 'opacity-40'
-                                  )}
-                                >
-                                  <Card
-                                    className="monday-card cursor-pointer hover:shadow-md transition-shadow"
-                                    onClick={() => { setSelectedOpp(opp); setDetailOpen(true); }}
+                          <CustomScrollbar>
+                            <div className="space-y-2 pr-1 pb-4">
+                              {stageOpps.map((opp) => {
+                                const contactCfg = CONTACT_STATUS_CONFIG[opp.contact_status] || CONTACT_STATUS_CONFIG.nao_contatado;
+                                return (
+                                  <div
+                                    key={opp.id}
+                                    draggable={!isLocked}
+                                    onDragStart={(e) => handleDragStart(e, opp.id, stage.key)}
+                                    onDragEnd={() => { setDraggedId(null); setDropTarget(null); }}
+                                    className={cn(
+                                      !isLocked && "cursor-grab active:cursor-grabbing",
+                                      isLocked && "cursor-pointer",
+                                      draggedId === opp.id && 'opacity-40'
+                                    )}
                                   >
-                                    <CardContent className="p-3 space-y-2">
-                                      <div className="flex items-start justify-between">
-                                        <p className="text-sm font-semibold truncate flex-1">
-                                          {opp.lead?.name || 'Paciente'}
-                                        </p>
-                                        {isLocked ? <Lock className="h-3.5 w-3.5 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                      </div>
-                                      {/* Paciente Amigo on card */}
-                                      {opp.friendly_patient && (
-                                        <div className={cn(
-                                          "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
-                                          opp.friendly_patient_video_recorded
-                                            ? "border-success/30 bg-success/5 text-success"
-                                            : "border-warning/30 bg-warning/5 text-warning animate-pulse"
-                                        )}>
-                                          <span className="font-medium">
-                                            {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
-                                          </span>
+                                    <Card
+                                      className="monday-card cursor-pointer hover:shadow-md transition-shadow"
+                                      onClick={() => { setSelectedOpp(opp); setDetailOpen(true); }}
+                                    >
+                                      <CardContent className="p-3 space-y-2">
+                                        <div className="flex items-start justify-between">
+                                          <p className="text-sm font-semibold truncate flex-1">
+                                            {opp.lead?.name || 'Paciente'}
+                                          </p>
+                                          {isLocked ? <Lock className="h-3.5 w-3.5 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                                         </div>
-                                      )}
-                                      <div className="flex items-center gap-1.5">
-                                        <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                          🔄 {opp.purchase_count || 1}x
-                                        </Badge>
-                                        {(() => {
-                                          const entries = parsePurchaseEntries(opp.purchase_values);
-                                          const ltv = entries.reduce((s, p) => s + p.value, 0);
-                                          return ltv > 0 ? (
-                                            <Badge className="text-[9px] bg-success/10 text-success border-success/30">
-                                              💰 {formatCurrency(ltv)}
-                                            </Badge>
-                                          ) : null;
-                                        })()}
-                                      </div>
-                                      <div className="flex items-center justify-between">
-                                        <Badge className={cn('text-[9px]', contactCfg.color)}>
-                                          {contactCfg.label}
-                                        </Badge>
-                                        {!isLocked && opp.estimated_value > 0 && (
-                                          <span className="text-[10px] font-bold text-success">
-                                            {formatCurrency(opp.estimated_value)}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {opp.attempt_count > 0 && (
-                                        <p className="text-[10px] text-muted-foreground">
-                                          {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
-                                        </p>
-                                      )}
-                                      {/* Return status indicator */}
-                                      {(() => {
-                                        const rs = getReturnStatus(opp);
-                                        if (!rs) return null;
-                                        const colorMap = { success: 'border-success/30 bg-success/5 text-success', warning: 'border-warning/30 bg-warning/5 text-warning', destructive: 'border-destructive/30 bg-destructive/5 text-destructive' };
-                                        return (
-                                          <div className={cn("flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]", colorMap[rs.color])}>
-                                            <Timer className="h-3 w-3" />
-                                            <span className="font-medium">{rs.label}</span>
-                                            {!opp.return_scheduled && <span className="ml-auto text-[8px] opacity-75">⚠️ Não agendado</span>}
+                                        {/* Paciente Amigo on card */}
+                                        {opp.friendly_patient && (
+                                          <div className={cn(
+                                            "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
+                                            opp.friendly_patient_video_recorded
+                                              ? "border-success/30 bg-success/5 text-success"
+                                              : "border-warning/30 bg-warning/5 text-warning animate-pulse"
+                                          )}>
+                                            <span className="font-medium">
+                                              {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
+                                            </span>
                                           </div>
-                                        );
-                                      })()}
-                                      {/* Gift indicators on card */}
-                                      <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                                        <div className={cn(
-                                          "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
-                                          opp.gift_surgery_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
-                                        )}>
-                                          <Gift className="h-3 w-3" />
-                                          <span className="font-medium">{opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}</span>
+                                        )}
+                                        <div className="flex items-center gap-1.5">
+                                          <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
+                                            🔄 {opp.purchase_count || 1}x
+                                          </Badge>
+                                          {(() => {
+                                            const entries = parsePurchaseEntries(opp.purchase_values);
+                                            const ltv = entries.reduce((s, p) => s + p.value, 0);
+                                            return ltv > 0 ? (
+                                              <Badge className="text-[9px] bg-success/10 text-success border-success/30">
+                                                💰 {formatCurrency(ltv)}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
                                         </div>
-                                        <div className={cn(
-                                          "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
-                                          opp.gift_prosthesis_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
-                                        )}>
-                                          <Gift className="h-3 w-3" />
-                                          <span className="font-medium">{opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}</span>
+                                        <div className="flex items-center justify-between">
+                                          <Badge className={cn('text-[9px]', contactCfg.color)}>
+                                            {contactCfg.label}
+                                          </Badge>
+                                          {!isLocked && opp.estimated_value > 0 && (
+                                            <span className="text-[10px] font-bold text-success">
+                                              {formatCurrency(opp.estimated_value)}
+                                            </span>
+                                          )}
                                         </div>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
+                                        {opp.attempt_count > 0 && (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {opp.attempt_count} tentativa{opp.attempt_count > 1 ? 's' : ''}
+                                          </p>
+                                        )}
+                                        {/* Return status indicator */}
+                                        {(() => {
+                                          const rs = getReturnStatus(opp);
+                                          if (!rs) return null;
+                                          const colorMap = { success: 'border-success/30 bg-success/5 text-success', warning: 'border-warning/30 bg-warning/5 text-warning', destructive: 'border-destructive/30 bg-destructive/5 text-destructive' };
+                                          return (
+                                            <div className={cn("flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]", colorMap[rs.color])}>
+                                              <Timer className="h-3 w-3" />
+                                              <span className="font-medium">{rs.label}</span>
+                                              {!opp.return_scheduled && <span className="ml-auto text-[8px] opacity-75">⚠️ Não agendado</span>}
+                                            </div>
+                                          );
+                                        })()}
+                                        {/* Gift indicators on card */}
+                                        <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                                          <div className={cn(
+                                            "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
+                                            opp.gift_surgery_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                          )}>
+                                            <Gift className="h-3 w-3" />
+                                            <span className="font-medium">{opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}</span>
+                                          </div>
+                                          <div className={cn(
+                                            "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
+                                            opp.gift_prosthesis_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                          )}>
+                                            <Gift className="h-3 w-3" />
+                                            <span className="font-medium">{opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}</span>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                );
+                              })}
+                              {stageOpps.length === 0 && (
+                                <div className={cn(
+                                  "text-center py-8 rounded-lg",
+                                  stage.bgColor,
+                                  isDropping && !isLocked && 'border-2 border-dashed border-primary'
+                                )}>
+                                  <p className="text-xs text-muted-foreground">
+                                    {isDropping && !isLocked ? 'Solte aqui' : 'Nenhuma oportunidade'}
+                                  </p>
                                 </div>
-                              );
-                            })}
-                            {stageOpps.length === 0 && (
-                              <div className={cn(
-                                "text-center py-8 rounded-lg",
-                                stage.bgColor,
-                                isDropping && !isLocked && 'border-2 border-dashed border-primary'
-                              )}>
-                                <p className="text-xs text-muted-foreground">
-                                  {isDropping && !isLocked ? 'Solte aqui' : 'Nenhuma oportunidade'}
-                                </p>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          </CustomScrollbar>
                         </div>
                       </div>
                     </div>

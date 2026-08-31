@@ -64,10 +64,10 @@ export function RescheduleDialog({ open, onOpenChange, taskId, taskTitle }: Resc
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="observation">Observação adicional (opcional)</Label>
+            <Label htmlFor="observation">O que foi falado neste contato (opcional)</Label>
             <Textarea
               id="observation"
-              placeholder="Alguma informação extra..."
+              placeholder="Resumo da conversa deste contato..."
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
               maxLength={500}

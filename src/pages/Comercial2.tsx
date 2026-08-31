@@ -1329,8 +1329,9 @@ const Comercial2 = () => {
                         </div>
 
                         <div className="flex-1 min-h-0 px-2 pb-2">
-                          <CustomScrollbar>
-                            <div className="space-y-2 pr-1 pb-4">
+                          <div className="h-[calc(100vh-280px)]">
+                            <CustomScrollbar>
+                              <div className="space-y-2 pr-1 pb-4">
                               {stageOpps.map((opp) => {
                                 const contactCfg = CONTACT_STATUS_CONFIG[opp.contact_status] || CONTACT_STATUS_CONFIG.nao_contatado;
                                 return (

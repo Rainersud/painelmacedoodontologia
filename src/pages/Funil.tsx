@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
+import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -232,75 +233,79 @@ function KanbanBoard({
 
                   {/* Column body */}
                   <div className="flex-1 min-h-0 px-1.5 pb-1.5">
-                    <div className="h-full overflow-y-auto scroll-container-y space-y-1 pr-0.5">
-                      {(() => {
-                        const groupsOrder: { key: string; label: string; cls: string }[] = [
-                          { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
-                          { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
-                          { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
-                          { key: 'antigo', label: '📦 Antigos', cls: 'bg-muted text-muted-foreground' },
-                        ];
-                        const now = Date.now();
-                        const categorize = (lead: Lead): string => {
-                          const created = new Date(lead.created_at).getTime();
-                          const createdDays = Math.floor((now - created) / 86400000);
-                          if (createdDays === 0) return 'hoje';
-                          if (createdDays === 1) return 'ontem';
-                          if (createdDays <= 7) return 'semana';
-                          return 'antigo';
-                        };
-                        const buckets: Record<string, typeof stageLeads> = {};
-                        stageLeads.forEach(l => {
-                          const k = categorize(l);
-                          (buckets[k] ||= []).push(l);
-                        });
-                        let globalIndex = 0;
-                        const rendered: React.ReactNode[] = [];
-                        groupsOrder.forEach(g => {
-                          const items = buckets[g.key];
-                          if (!items || items.length === 0) return;
-                          rendered.push(
-                            <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-1.5 py-0.5 mt-1 first:mt-0 flex items-center justify-between", g.cls)}>
-                              <span className="text-[9px] font-bold uppercase tracking-wide">{g.label}</span>
-                              <span className="text-[9px] font-bold">{items.length}</span>
-                            </div>
-                          );
-                          items.forEach(lead => {
+                    <div className="h-[calc(100vh-280px)]">
+                      <CustomScrollbar>
+                        <div className="space-y-1 pr-1 pb-4">
+                        {(() => {
+                          const groupsOrder: { key: string; label: string; cls: string }[] = [
+                            { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
+                            { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
+                            { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
+                            { key: 'antigo', label: '📦 Antigos', cls: 'bg-muted text-muted-foreground' },
+                          ];
+                          const now = Date.now();
+                          const categorize = (lead: Lead): string => {
+                            const created = new Date(lead.created_at).getTime();
+                            const createdDays = Math.floor((now - created) / 86400000);
+                            if (createdDays === 0) return 'hoje';
+                            if (createdDays === 1) return 'ontem';
+                            if (createdDays <= 7) return 'semana';
+                            return 'antigo';
+                          };
+                          const buckets: Record<string, typeof stageLeads> = {};
+                          stageLeads.forEach(l => {
+                            const k = categorize(l);
+                            (buckets[k] ||= []).push(l);
+                          });
+                          let globalIndex = 0;
+                          const rendered: React.ReactNode[] = [];
+                          groupsOrder.forEach(g => {
+                            const items = buckets[g.key];
+                            if (!items || items.length === 0) return;
                             rendered.push(
-                              <div
-                                key={lead.id}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, lead)}
-                                onDragEnd={handleDragEnd}
-                                className={cn(
-                                  "cursor-grab active:cursor-grabbing",
-                                  draggedLeadId === lead.id && 'opacity-40'
-                                )}
-                              >
-                                <LeadCard lead={lead} onClick={handleOpenDetail} compact dense={dense} index={globalIndex++} />
+                              <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-1.5 py-0.5 mt-1 first:mt-0 flex items-center justify-between", g.cls)}>
+                                <span className="text-[9px] font-bold uppercase tracking-wide">{g.label}</span>
+                                <span className="text-[9px] font-bold">{items.length}</span>
                               </div>
                             );
+                            items.forEach(lead => {
+                              rendered.push(
+                                <div
+                                  key={lead.id}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, lead)}
+                                  onDragEnd={handleDragEnd}
+                                  className={cn(
+                                    "cursor-grab active:cursor-grabbing",
+                                    draggedLeadId === lead.id && 'opacity-40'
+                                  )}
+                                >
+                                  <LeadCard lead={lead} onClick={handleOpenDetail} compact dense={dense} index={globalIndex++} />
+                                </div>
+                              );
+                            });
                           });
-                        });
-                        if (stageLeads.length === 0) {
-                          rendered.push(
-                            <div
-                              key="empty"
-                              className={cn(
-                                "text-center py-6 rounded-lg",
-                                stage.bgColor,
-                                isDropTarget && 'border-2 border-dashed border-primary'
-                              )}
-                            >
-                              <p className="text-[10px] text-muted-foreground">
-                                {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return rendered;
-                      })()}
-                    </div>
+                          if (stageLeads.length === 0) {
+                            rendered.push(
+                              <div
+                                key="empty"
+                                className={cn(
+                                  "text-center py-6 rounded-lg",
+                                  stage.bgColor,
+                                  isDropTarget && 'border-2 border-dashed border-primary'
+                                )}
+                              >
+                                <p className="text-[10px] text-muted-foreground">
+                                  {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return rendered;
+                        })()}
+                      </div>
+                    </CustomScrollbar>
+                  </div>
                   </div>
                 </div>
               </div>

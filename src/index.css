@@ -332,6 +332,43 @@
   .scroll-container-y::-webkit-scrollbar-thumb:active {
     background: hsl(var(--primary) / 0.8);
   }
+
+  /* Thick, always-visible vertical scrollbar for kanban/status columns */
+  .scroll-container-y-thick {
+    @apply overflow-y-auto overflow-x-hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted));
+  }
+
+  .scroll-container-y-thick::-webkit-scrollbar {
+    width: 20px;
+  }
+
+  .scroll-container-y-thick::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 10px;
+  }
+
+  .scroll-container-y-thick::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.6);
+    border-radius: 10px;
+    border: 4px solid hsl(var(--muted));
+  }
+
+  .scroll-container-y-thick::-webkit-scrollbar-thumb:hover,
+  .scroll-container-y-thick::-webkit-scrollbar-thumb:active {
+    background: hsl(var(--primary) / 0.9);
+  }
+
+  /* Hide native scrollbar so a custom one can be rendered instead */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Ocultar badge "Made with Lovable" em todas as formas */

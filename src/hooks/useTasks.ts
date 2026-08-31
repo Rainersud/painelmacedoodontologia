@@ -89,6 +89,28 @@ export function useTasks(filters?: {
         }
       }
 
+      // Histórico de reagendamentos de todas as tarefas listadas
+      const allIds = tasks.map(t => t.id);
+      let historyMap: Record<string, Array<{ previous_scheduled_at: string | null; new_scheduled_at: string; reason: string; observation: string | null; created_at: string }>> = {};
+      if (allIds.length > 0) {
+        const { data: history } = await supabase
+          .from('task_reschedule_history')
+          .select('task_id, previous_scheduled_at, new_scheduled_at, reason, observation, created_at')
+          .in('task_id', allIds)
+          .order('created_at', { ascending: true });
+        if (history) {
+          for (const h of history) {
+            (historyMap[h.task_id] ||= []).push({
+              previous_scheduled_at: h.previous_scheduled_at,
+              new_scheduled_at: h.new_scheduled_at,
+              reason: h.reason,
+              observation: h.observation,
+              created_at: h.created_at,
+            });
+          }
+        }
+      }
+
       return tasks.map(task => ({
         ...task,
         task_type: task.task_type as TaskType,
@@ -97,7 +119,9 @@ export function useTasks(filters?: {
         lead: task.lead_id ? leadMap[task.lead_id] : null,
         original_task: task.rescheduled_from_id ? originalMap[task.rescheduled_from_id] : null,
         rescheduled_to_task: task.status === 'reagendado' ? childMap[task.id] : null,
+        reschedule_history: historyMap[task.id] || [],
       }));
+
     },
     // acesso aberto: sem login obrigatorio
   });

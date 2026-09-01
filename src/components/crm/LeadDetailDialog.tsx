@@ -416,7 +416,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             );
           })()}
 
-          <div className="flex-1 min-h-0 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
+          <CustomScrollbar className="flex-1 min-h-0 mt-4 pb-4 px-1">
             {/* Smart Alerts Banner */}
             <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}

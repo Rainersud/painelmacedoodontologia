@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -302,7 +303,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[90vh] flex flex-col p-0 overflow-hidden"
+      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[95vh] flex flex-col p-0 overflow-hidden"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
@@ -415,7 +416,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             );
           })()}
 
-          <div className="flex-1 min-h-0 mt-4 pb-4 overflow-y-auto scroll-container-y px-1">
+          <CustomScrollbar className="flex-1 min-h-0 mt-4 pb-4 px-1">
             {/* Smart Alerts Banner */}
             <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}
@@ -1191,7 +1192,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <TabsContent value="history" className="m-0">
               <LeadTimeline leadId={lead.id} />
             </TabsContent>
-          </div>
+          </CustomScrollbar>
         </Tabs>
 
         {/* Global footer - single primary action */}

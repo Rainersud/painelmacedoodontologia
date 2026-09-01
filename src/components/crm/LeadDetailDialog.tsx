@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {

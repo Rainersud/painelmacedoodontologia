@@ -87,19 +87,26 @@ export function CustomScrollbar({
   }, [isDragging, thumbHeight]);
 
   return (
-    <div className={cn("relative h-full", className)}>
+    <div className={cn("relative h-full min-h-0", className)}>
       <div
         ref={contentRef}
-        className="h-full overflow-y-auto overflow-x-hidden scrollbar-hide"
+        className="h-full overflow-y-auto overflow-x-hidden scrollbar-hide overscroll-contain"
+        style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
         {children}
       </div>
       {visible && (
-        <div data-testid="custom-scrollbar-track" className={cn("absolute right-0 top-0 bottom-0 w-5 rounded-full bg-muted/80 z-10", trackClassName)}>
+        <div
+          data-testid="custom-scrollbar-track"
+          className={cn(
+            "pointer-events-none absolute right-0 top-0 bottom-0 w-5 rounded-full bg-muted/60 z-10 hidden md:block",
+            trackClassName
+          )}
+        >
           <div
             data-testid="custom-scrollbar-thumb"
             className={cn(
-              "absolute right-1 w-3 rounded-full bg-primary shadow-sm hover:bg-primary/90 cursor-grab active:cursor-grabbing transition-colors",
+              "pointer-events-auto absolute right-1 w-3 rounded-full bg-primary shadow-sm hover:bg-primary/90 cursor-grab active:cursor-grabbing transition-colors",
               thumbClassName
             )}
             style={{ height: thumbHeight, top: thumbTop }}

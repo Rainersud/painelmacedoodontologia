@@ -135,7 +135,7 @@ function KanbanBoard({
       {/* Kanban content */}
       <div
         ref={bottomScrollRef}
-        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
+        className="flex-1 min-h-[65vh] overflow-x-auto overflow-y-hidden scroll-container-x-thick"
         style={{ willChange: 'scroll-position' }}
       >
         <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">

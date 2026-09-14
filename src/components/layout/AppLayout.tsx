@@ -62,7 +62,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
             </div>
           </header>
           
-          <div className="flex-1 min-h-0 p-3 sm:p-6 lg:p-8 bg-muted/30 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:p-8 bg-muted/30 overflow-y-auto overscroll-contain">
             {children}
           </div>
         </main>

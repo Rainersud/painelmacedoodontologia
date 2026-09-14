@@ -17,7 +17,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="h-screen flex w-full bg-background overflow-hidden">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
           <header className="sticky top-0 z-10 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shrink-0">

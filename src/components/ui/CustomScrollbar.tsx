@@ -87,10 +87,10 @@ export function CustomScrollbar({
   }, [isDragging, thumbHeight]);
 
   return (
-    <div className={cn("relative h-full min-h-0", className)}>
+    <div className={cn("relative flex flex-col min-h-0 h-full", className)}>
       <div
         ref={contentRef}
-        className="h-full overflow-y-auto overflow-x-hidden scrollbar-hide overscroll-contain"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide overscroll-contain"
         style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
         {children}

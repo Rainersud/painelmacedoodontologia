@@ -1291,7 +1291,7 @@ const Comercial2 = () => {
             {/* Kanban Board */}
             <div
               ref={boardScrollRef}
-              className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick"
+              className="flex-1 min-h-[65vh] overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick"
               style={{ willChange: 'scroll-position' }}
             >
               <div className="flex gap-3 min-w-max md:h-full pb-3 px-1">

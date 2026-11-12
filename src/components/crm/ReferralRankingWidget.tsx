@@ -28,18 +28,16 @@ export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProp
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 
   const getMedal = (pos: number) => {
-    if (pos === 0) return '🥇';
-    if (pos === 1) return '🥈';
-    if (pos === 2) return '🥉';
+    if (pos <= 2) return `${pos + 1}º`;
     return `${pos + 1}º`;
   };
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="monday-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-warning" />
+            <Trophy className="h-5 w-5 text-warning-strong" />
             <CardTitle className="text-base font-semibold">Ranking de Indicações</CardTitle>
           </div>
           <Select value={period} onValueChange={setPeriod}>
@@ -85,7 +83,7 @@ export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProp
                 {/* Position */}
                 <div className={cn(
                   "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-                  i === 0 && "bg-warning/20 text-warning",
+                  i === 0 && "bg-warning/20 text-warning-strong",
                   i === 1 && "bg-muted-foreground/20 text-muted-foreground",
                   i === 2 && "bg-chart-2/20 text-chart-2",
                   i > 2 && "bg-muted text-muted-foreground",

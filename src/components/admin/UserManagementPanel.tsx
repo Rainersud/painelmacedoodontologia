@@ -202,7 +202,7 @@ export default function UserManagementPanel() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-0 shadow-sm">
+      <Card className="monday-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base">Gerenciar Usuários</CardTitle>
@@ -342,7 +342,7 @@ export default function UserManagementPanel() {
                           })}
                           title={user.banned ? 'Ativar' : 'Desativar'}
                         >
-                          <Power className={`h-4 w-4 ${user.banned || user.is_active === false ? 'text-destructive' : 'text-green-600'}`} />
+                          <Power className={`h-4 w-4 ${user.banned || user.is_active === false ? 'text-destructive' : 'text-success'}`} />
                         </Button>
                         <Button
                           variant="ghost"

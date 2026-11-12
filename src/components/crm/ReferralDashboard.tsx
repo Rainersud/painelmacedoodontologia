@@ -61,7 +61,7 @@ export function ReferralDashboard() {
                 <p className="text-xs text-muted-foreground">{m.title}</p>
                 <p className="text-lg font-bold">{m.value}</p>
                 {'subtitle' in m && m.subtitle && (
-                  <p className="text-[10px] text-warning">{m.subtitle}</p>
+                  <p className="text-[10px] text-warning-strong">{m.subtitle}</p>
                 )}
               </div>
             </div>

@@ -50,11 +50,11 @@ export function EditableFollowUpCopy({ stageKey, leadName }: Props) {
     <div className="p-4 bg-chart-1/5 rounded-lg border border-chart-1/20 space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h4 className="font-medium text-chart-1 flex items-center gap-2 text-sm">
-          💬 SUGESTÃO DE COPY - {tpl.label}
+          SUGESTÃO DE COPY - {tpl.label}
         </h4>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-[10px]">
-            {tpl.format === 'audio' ? '🎙️ Áudio' : '📝 Texto'}
+            {tpl.format === 'audio'? 'Áudio': 'Texto'}
           </Badge>
           {savedAt && (
             <span className="text-[10px] text-success flex items-center gap-1">
@@ -75,7 +75,7 @@ export function EditableFollowUpCopy({ stageKey, leadName }: Props) {
       </p>
       <div className="flex gap-2">
         <Button variant="outline" size="sm" className="text-xs" onClick={handleCopy}>
-          📋 Copiar mensagem
+          Copiar mensagem
         </Button>
         <Button variant="ghost" size="sm" className="text-xs" onClick={handleReset}>
           <RotateCcw className="h-3 w-3 mr-1" /> Restaurar padrão

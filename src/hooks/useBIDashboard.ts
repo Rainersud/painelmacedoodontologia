@@ -268,7 +268,7 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
         return new Date(p.due_date) < now;
       });
       if (overdue.length > 5) {
-        alerts.push({ type: 'danger', icon: '🔴', message: `${overdue.length} parcelas em atraso totalizando R$ ${overdue.reduce((s, p) => s + (p.net_value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}` });
+        alerts.push({ type: 'danger', icon: '', message: `${overdue.length} parcelas em atraso totalizando R$ ${overdue.reduce((s, p) => s + (p.net_value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`});
       }
 
       // Revenue drop
@@ -277,25 +277,25 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       const currentRev = monthlyMap[currentMonth]?.faturamentoReal || 0;
       const lastRev = monthlyMap[lastMonth]?.faturamentoReal || 0;
       if (lastRev > 0 && currentRev < lastRev * 0.7) {
-        alerts.push({ type: 'warning', icon: '⚠️', message: `Faturamento caiu ${Math.round(((lastRev - currentRev) / lastRev) * 100)}% em relação ao mês anterior` });
+        alerts.push({ type: 'warning', icon: '', message: `Faturamento caiu ${Math.round(((lastRev - currentRev) / lastRev) * 100)}% em relação ao mês anterior`});
       }
 
       // Low repurchase
       const singleBuyers = Object.values(leadPurchaseCounts).filter(c => c === 1).length;
       const totalBuyers = Object.keys(leadPurchaseCounts).length;
       if (totalBuyers > 0 && (singleBuyers / totalBuyers) > 0.7) {
-        alerts.push({ type: 'warning', icon: '🔁', message: `${Math.round((singleBuyers / totalBuyers) * 100)}% dos pacientes compraram apenas 1 vez - ação de recompra necessária` });
+        alerts.push({ type: 'warning', icon: '', message: `${Math.round((singleBuyers / totalBuyers) * 100)}% dos pacientes compraram apenas 1 vez - ação de recompra necessária`});
       }
 
       // Low LTV
       if (ticketMedio < cacMedio && cacMedio > 0) {
-        alerts.push({ type: 'danger', icon: '📉', message: `Ticket médio (R$ ${ticketMedio.toFixed(0)}) abaixo do CAC (R$ ${cacMedio.toFixed(0)}) - operação em prejuízo` });
+        alerts.push({ type: 'danger', icon: '', message: `Ticket médio (R$ ${ticketMedio.toFixed(0)}) abaixo do CAC (R$ ${cacMedio.toFixed(0)}) - operação em prejuízo`});
       }
 
       // Concentration alert
       const maxMonth = monthlyData.reduce((max, m) => m.faturamentoFuturo > max.faturamentoFuturo ? m : max, monthlyData[0]);
       if (faturamentoPrevisto > 0 && maxMonth && (maxMonth.faturamentoFuturo / faturamentoPrevisto) > 0.4) {
-        alerts.push({ type: 'info', icon: '📊', message: `${Math.round((maxMonth.faturamentoFuturo / faturamentoPrevisto) * 100)}% do faturamento futuro concentrado em ${maxMonth.label}` });
+        alerts.push({ type: 'info', icon: '', message: `${Math.round((maxMonth.faturamentoFuturo / faturamentoPrevisto) * 100)}% do faturamento futuro concentrado em ${maxMonth.label}`});
       }
 
       return {

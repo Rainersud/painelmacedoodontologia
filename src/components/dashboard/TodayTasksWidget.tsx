@@ -93,7 +93,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
                 <span className="text-primary font-medium flex items-center gap-0.5">
                   <User className="h-3 w-3" />{task.lead.name}
                   {!!task.lead.budget_value && task.lead.budget_value > 0 && (
-                    <span className="ml-1 text-warning">
+                    <span className="ml-1 text-warning-strong">
                       (Orçamento: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(task.lead.budget_value)})
                     </span>
                   )}
@@ -213,8 +213,8 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
             <div className="space-y-4">
               {pending.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-warning uppercase tracking-wider flex items-center gap-1.5">
-                    <Circle className="h-2.5 w-2.5 fill-warning text-warning" />
+                  <p className="text-xs font-semibold text-warning-strong flex items-center gap-1.5">
+                    <Circle className="h-2.5 w-2.5 fill-warning text-warning-strong" />
                     Pendentes ({pending.length})
                   </p>
                   <div className="space-y-1.5">
@@ -225,7 +225,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
 
               {upcoming.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                     <CalendarClock className="h-3 w-3" />
                     Próximas agendadas ({upcoming.length})
                   </p>
@@ -237,7 +237,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
 
               {completed.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-success uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-success flex items-center gap-1.5">
                     <CheckCircle2 className="h-2.5 w-2.5 text-success" />
                     Concluídas ({completed.length})
                   </p>
@@ -260,7 +260,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-[10px] gap-1 text-warning border-warning/30 hover:bg-warning/10"
+                            className="h-7 text-[10px] gap-1 text-warning-strong border-warning/30 hover:bg-warning/10"
                             onClick={() => handleReopen(task.id)}
                             disabled={updateTask.isPending}
                           >

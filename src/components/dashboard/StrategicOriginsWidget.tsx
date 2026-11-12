@@ -61,26 +61,26 @@ export function StrategicOriginsWidget() {
 
                   <div className="grid grid-cols-4 gap-2 text-center">
                     <div className="p-2 rounded-lg bg-card border">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center justify-center gap-1">
+                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-1">
                         <Users className="h-2.5 w-2.5" /> Recebidos
                       </p>
                       <p className="text-xl font-bold text-foreground">{r.recebidos}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-card border">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center justify-center gap-1">
+                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-1">
                         <Calendar className="h-2.5 w-2.5" /> Agendados
                       </p>
                       <p className="text-xl font-bold text-primary">{r.agendados}</p>
                       <p className="text-[9px] text-muted-foreground">{r.taxaAgendamento}%</p>
                     </div>
                     <div className="p-2 rounded-lg bg-card border">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center justify-center gap-1">
+                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-1">
                         <CheckCircle2 className="h-2.5 w-2.5" /> Compareceu
                       </p>
                       <p className="text-xl font-bold text-success">{r.compareceram}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-card border">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center justify-center gap-1">
+                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-1">
                         <DollarSign className="h-2.5 w-2.5" /> Faturamento
                       </p>
                       <p className="text-sm font-bold text-chart-5 leading-tight">{formatCurrency(r.faturamento)}</p>

@@ -52,7 +52,7 @@ export function useStagnationAlerts() {
         .filter(l => !existingLeadIds.has(l.id))
         .map(l => {
           const days = getDaysInStage(l.stage_entered_at);
-          const level = days >= 7 ? '🔴 Lead esquecido' : days >= 5 ? '🟠 Lead parado' : '🟡 Atenção';
+          const level = days >= 7 ? 'Lead esquecido': days >= 5 ? 'Lead parado': 'Atenção';
           return {
             type: 'lembrete_followup' as const,
             title: `${level} há ${days} dias`,

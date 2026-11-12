@@ -10,10 +10,10 @@ export interface RemarketingStage {
 export type RemarketingPhase = 'aquecimento' | 'nutricao' | 'reativacao' | 'urgencia';
 
 export const RMKT_PHASE_CONFIG: Record<RemarketingPhase, { label: string; color: string; bgColor: string; emoji: string }> = {
-  aquecimento: { label: 'Aquecimento', color: 'text-blue-600', bgColor: 'bg-blue-500/10', emoji: '🔵' },
-  nutricao: { label: 'Nutrição', color: 'text-yellow-600', bgColor: 'bg-yellow-500/10', emoji: '🟡' },
-  reativacao: { label: 'Reativação', color: 'text-orange-600', bgColor: 'bg-orange-500/10', emoji: '🟠' },
-  urgencia: { label: 'Urgência', color: 'text-red-600', bgColor: 'bg-red-500/10', emoji: '🔴' },
+  aquecimento: { label: 'Aquecimento', color: 'text-primary', bgColor: 'bg-primary/10', emoji: ''},
+  nutricao: { label: 'Nutrição', color: 'text-warning-strong', bgColor: 'bg-warning/10', emoji: ''},
+  reativacao: { label: 'Reativação', color: 'text-warning-strong', bgColor: 'bg-warning/10', emoji: ''},
+  urgencia: { label: 'Urgência', color: 'text-destructive', bgColor: 'bg-destructive/10', emoji: ''},
 };
 
 export const RMKT_STAGES: RemarketingStage[] = [

@@ -111,7 +111,7 @@ export function useSmartAlerts() {
         createdAt: new Date(),
       };
 
-      // 🟢 OPORTUNIDADE — Quase Cliente ou Crédito Liberado
+      // OPORTUNIDADE — Quase Cliente ou Crédito Liberado
       if (lead.status === 'quase_cliente') {
         result.push({
           ...base,
@@ -135,7 +135,7 @@ export function useSmartAlerts() {
         continue;
       }
 
-      // 🔴 CRÍTICO — 10+ dias sem movimentação
+      // CRÍTICO — 10+ dias sem movimentação
       if (days >= CRITICAL_DAYS) {
         result.push({
           ...base,
@@ -148,7 +148,7 @@ export function useSmartAlerts() {
         continue;
       }
 
-      // 🔶 ATENÇÃO — 5+ dias sem movimentação
+      // ATENÇÃO — 5+ dias sem movimentação
       if (days >= ATTENTION_DAYS) {
         result.push({
           ...base,

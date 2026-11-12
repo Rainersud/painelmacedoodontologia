@@ -78,7 +78,7 @@ export function StageHistoryPanel({ leadId }: StageHistoryPanelProps) {
                       "text-[10px] border-0",
                       isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
-                      {isActive ? '⏳ aguardando' : formatDuration(entry.duration_seconds)}
+                      {isActive ? 'aguardando': formatDuration(entry.duration_seconds)}
                     </Badge>
                   </td>
                 </tr>

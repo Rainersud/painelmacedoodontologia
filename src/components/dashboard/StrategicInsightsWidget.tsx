@@ -15,7 +15,7 @@ export function StrategicInsightsWidget() {
       <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-warning" />
+            <Trophy className="h-5 w-5 text-warning-strong" />
             Ranking de Vendedores
           </CardTitle>
         </CardHeader>
@@ -60,10 +60,10 @@ export function StrategicInsightsWidget() {
       </Card>
 
       {/* AI Insights */}
-      <Card className="monday-card lg:col-span-2 bg-gradient-to-br from-primary/5 to-chart-5/5 border-primary/20">
+      <Card className="monday-card lg:col-span-2 border-primary/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-warning" />
+            <Lightbulb className="h-5 w-5 text-warning-strong" />
             Insights Comerciais
           </CardTitle>
         </CardHeader>

@@ -26,7 +26,7 @@ export const STATUS: Record<GoalStatusKey, StatusStyle> = {
   warning: {
     label: 'Atenção',
     icon: AlertTriangle,
-    text: 'text-foreground',
+    text: 'text-warning-strong',
     fill: 'bg-warning',
     soft: 'bg-warning/15',
   },

@@ -16,14 +16,14 @@ import { LTVExecutivePanel } from './LTVExecutivePanel';
 
 const HEALTH_STYLES = {
   success: 'bg-success/10 text-success border-success/30',
-  warning: 'bg-warning/10 text-warning border-warning/30',
+  warning: 'bg-warning/10 text-warning-strong border-warning/30',
   destructive: 'bg-destructive/10 text-destructive border-destructive/30',
 } as const;
 
 const HEALTH_LABELS = {
-  success: '🟢 Lucrativo',
-  warning: '🟡 Atenção',
-  destructive: '🔴 Prejuízo',
+  success: 'Lucrativo',
+  warning: 'Atenção',
+  destructive: 'Prejuízo',
 } as const;
 
 const PERIOD_OPTIONS = [
@@ -218,10 +218,10 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
       </div>
 
       {/* Executive Table */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            📊 Geração de Caixa por Recorrência
+            Geração de Caixa por Recorrência
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -257,10 +257,10 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                       <div className="flex items-center gap-1.5">
                         {group.label}
                         {group.label === metrics.bestProfitGroup && (
-                          <span className="text-[10px]">⭐</span>
+                          <span className="text-[10px] font-medium text-success">maior lucro</span>
                         )}
                         {group.label === metrics.bestLTVGroup && group.label !== metrics.bestProfitGroup && (
-                          <span className="text-[10px]">📈</span>
+                          <span className="text-[10px] font-medium text-primary">maior LTV</span>
                         )}
                       </div>
                     </TableCell>
@@ -307,10 +307,10 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
 
       {/* Smart Insights */}
       {metrics.insights.length > 0 && (
-        <Card className="border-primary/20">
+        <Card className="monday-card border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-warning" />
+              <Lightbulb className="h-4 w-4 text-warning-strong" />
               Insights Automáticos
             </CardTitle>
           </CardHeader>

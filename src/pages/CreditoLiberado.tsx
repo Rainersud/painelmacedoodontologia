@@ -25,7 +25,7 @@ const CreditoLiberado = () => {
     <AppLayout title="Pacientes com Crédito Liberado">
       <div className="space-y-6">
         {/* Summary */}
-        <Card className="border-0 shadow-sm">
+        <Card className="monday-card">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
@@ -44,7 +44,7 @@ const CreditoLiberado = () => {
         </Card>
 
         {/* Patient List */}
-        <Card className="border-0 shadow-sm">
+        <Card className="monday-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-success" />

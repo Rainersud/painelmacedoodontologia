@@ -59,7 +59,7 @@ function FinancialDashboardInner() {
       <MasterPeriodFilter />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-chart-5/30 bg-chart-5/5">
+        <Card className="monday-card border-chart-5/30 bg-chart-5/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Wallet className="h-4 w-4 text-chart-5" />
@@ -70,7 +70,7 @@ function FinancialDashboardInner() {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/30 bg-primary/5">
+        <Card className="monday-card border-primary/30 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-primary" />
@@ -83,7 +83,7 @@ function FinancialDashboardInner() {
           </CardContent>
         </Card>
 
-        <Card className="border-success/30 bg-success/5">
+        <Card className="monday-card border-success/30 bg-success/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-success" />
@@ -95,7 +95,7 @@ function FinancialDashboardInner() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />

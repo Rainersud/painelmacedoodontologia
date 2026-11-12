@@ -27,20 +27,20 @@ import {
 import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { chartGrid, chartAxis } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, SERIES, SERIES_OTHER } from '@/lib/chartStyle';
 
 const categoryLabels: Record<string, string> = Object.fromEntries(
   COST_CATEGORIES.map(c => [c.value, c.label])
 );
 
 const categoryColors: Record<string, string> = {
-  anuncios: 'hsl(var(--primary))',
-  salarios_vendas: 'hsl(199, 89%, 48%)',
-  comissoes: 'hsl(38, 92%, 50%)',
-  ferramentas: 'hsl(262, 80%, 55%)',
-  marketing_geral: 'hsl(340, 75%, 55%)',
-  salarios_operacional: 'hsl(180, 70%, 45%)',
-  outros: 'hsl(0, 0%, 55%)',
+  anuncios: SERIES[0],
+  salarios_vendas: SERIES[1],
+  comissoes: SERIES[2],
+  ferramentas: SERIES[3],
+  marketing_geral: SERIES[4],
+  salarios_operacional: SERIES_OTHER,
+  outros: SERIES_OTHER,
 };
 
 export default function CACDashboard() {
@@ -78,7 +78,7 @@ export default function CACDashboard() {
   const pieData = totalByCategory.filter(c => c.total > 0).map(c => ({
     name: c.label.split(' (')[0],
     value: c.total,
-    fill: categoryColors[c.value] || 'hsl(0,0%,55%)',
+    fill: categoryColors[c.value] || SERIES_OTHER,
   }));
 
   const barData = metrics ? [
@@ -91,15 +91,15 @@ export default function CACDashboard() {
     ? Math.min(Math.max(((metrics.ticketMedio - metrics.cac) / metrics.ticketMedio) * 100, -100), 100)
     : 0;
 
-  const gaugeData = [{ value: Math.abs(gaugePercent), fill: gaugePercent >= 0 ? 'hsl(142, 70%, 45%)' : 'hsl(var(--destructive))' }];
+  const gaugeData = [{ value: Math.abs(gaugePercent), fill: gaugePercent >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))' }];
 
   return (
-    <AppLayout>
+    <AppLayout title="CAC & Financeiro">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">CAC & Análise Financeira</h1>
+            <h2 className="text-lg font-semibold">CAC & Análise Financeira</h2>
             <p className="text-muted-foreground text-sm">Custo de Aquisição de Cliente vs Ticket Médio</p>
           </div>
           <div className="flex items-center gap-2">
@@ -120,17 +120,17 @@ export default function CACDashboard() {
           <Card className={cn(
             "border-2",
             metrics.isProfitable
-              ? "border-green-500/50 bg-green-500/5"
+              ? "border-success/50 bg-success/5"
               : "border-destructive/50 bg-destructive/5"
           )}>
             <CardContent className="py-4 flex items-center gap-4">
               {metrics.isProfitable ? (
                 <>
-                  <CheckCircle className="h-8 w-8 text-green-500 shrink-0" />
+                  <CheckCircle className="h-8 w-8 text-success shrink-0" />
                   <div>
-                    <p className="font-bold text-green-600 text-lg">🟢 LUCRO NA VENDA</p>
+                    <p className="font-bold text-success text-lg">LUCRO NA VENDA</p>
                     <p className="text-sm text-muted-foreground">
-                      Lucro de <span className="font-bold text-green-600">{formatCurrency(metrics.lucroPorVenda)}</span> por cliente adquirido
+                      Lucro de <span className="font-bold text-success">{formatCurrency(metrics.lucroPorVenda)}</span> por cliente adquirido
                     </p>
                   </div>
                 </>
@@ -138,7 +138,7 @@ export default function CACDashboard() {
                 <>
                   <AlertTriangle className="h-8 w-8 text-destructive shrink-0" />
                   <div>
-                    <p className="font-bold text-destructive text-lg">🔴 PREJUÍZO NA VENDA</p>
+                    <p className="font-bold text-destructive text-lg">PREJUÍZO NA VENDA</p>
                     <p className="text-sm text-muted-foreground">
                       Prejuízo de <span className="font-bold text-destructive">{formatCurrency(Math.abs(metrics.lucroPorVenda))}</span> por cliente adquirido
                     </p>
@@ -151,7 +151,7 @@ export default function CACDashboard() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="monday-card">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="h-4 w-4 text-destructive" />
@@ -161,7 +161,7 @@ export default function CACDashboard() {
               <p className="text-xs text-muted-foreground mt-1">Custo por cliente</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
@@ -171,22 +171,22 @@ export default function CACDashboard() {
               <p className="text-xs text-muted-foreground mt-1">Receita por venda</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-2">
                 {(metrics?.lucroPorVenda || 0) >= 0
-                  ? <ArrowUpRight className="h-4 w-4 text-green-500" />
+                  ? <ArrowUpRight className="h-4 w-4 text-success" />
                   : <ArrowDownRight className="h-4 w-4 text-destructive" />
                 }
                 <span className="text-xs text-muted-foreground font-medium">Lucro/Venda</span>
               </div>
-              <p className={cn("text-2xl font-bold", (metrics?.lucroPorVenda || 0) >= 0 ? "text-green-600" : "text-destructive")}>
+              <p className={cn("text-2xl font-bold", (metrics?.lucroPorVenda || 0) >= 0 ? "text-success" : "text-destructive")}>
                 {formatCurrency(metrics?.lucroPorVenda || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Líquido por cliente</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="h-4 w-4 text-primary" />
@@ -203,7 +203,7 @@ export default function CACDashboard() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* CAC vs TM Bar Chart */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
@@ -234,7 +234,7 @@ export default function CACDashboard() {
           </Card>
 
           {/* Gauge */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4" />
@@ -259,13 +259,13 @@ export default function CACDashboard() {
                       </RadialBarChart>
                     </ResponsiveContainer>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
-                      <p className={cn("text-2xl font-bold", gaugePercent >= 0 ? "text-green-600" : "text-destructive")}>
+                      <p className={cn("text-2xl font-bold", gaugePercent >= 0 ? "text-success" : "text-destructive")}>
                         {gaugePercent >= 0 ? '+' : ''}{gaugePercent.toFixed(0)}%
                       </p>
                       <p className="text-xs text-muted-foreground">margem</p>
                     </div>
                   </div>
-                  <Badge className={cn("mt-2", gaugePercent >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                  <Badge className={cn("mt-2", gaugePercent >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
                     {gaugePercent >= 0 ? 'Operação Lucrativa' : 'Operação no Prejuízo'}
                   </Badge>
                 </>
@@ -278,7 +278,7 @@ export default function CACDashboard() {
           </Card>
 
           {/* Cost Distribution Pie */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <PieChart className="h-4 w-4" />
@@ -320,7 +320,7 @@ export default function CACDashboard() {
         </div>
 
         {/* Expense Management */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-base font-semibold">Despesas de Aquisição</CardTitle>
             {isAdmin && (
@@ -416,7 +416,7 @@ export default function CACDashboard() {
         </Card>
 
         {/* Summary Footer */}
-        <Card className="bg-muted/30 border-border/50">
+        <Card className="monday-card bg-muted/30 border-border/50">
           <CardContent className="py-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div>
@@ -429,7 +429,7 @@ export default function CACDashboard() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">ROI</p>
-                <p className={cn("text-lg font-bold", (metrics?.totalRevenue || 0) > (metrics?.totalCosts || 0) ? "text-green-600" : "text-destructive")}>
+                <p className={cn("text-lg font-bold", (metrics?.totalRevenue || 0) > (metrics?.totalCosts || 0) ? "text-success" : "text-destructive")}>
                   {metrics && metrics.totalCosts > 0 ? `${((metrics.totalRevenue / metrics.totalCosts) * 100).toFixed(0)}%` : '—'}
                 </p>
               </div>

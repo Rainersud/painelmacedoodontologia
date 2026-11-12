@@ -74,7 +74,7 @@ export const UPSELL_STAGES = [
 
 export const CONTACT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   nao_contatado: { label: 'Não Contatado', color: 'bg-muted text-muted-foreground' },
-  em_negociacao: { label: 'Em Negociação', color: 'bg-warning/10 text-warning' },
+  em_negociacao: { label: 'Em Negociação', color: 'bg-warning/10 text-warning-strong' },
   interessado: { label: 'Interessado', color: 'bg-primary/10 text-primary' },
   recusado: { label: 'Recusado', color: 'bg-destructive/10 text-destructive' },
   fechado: { label: 'Fechado', color: 'bg-success/10 text-success' },

@@ -37,7 +37,7 @@ const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: React.ElementT
   { key: 'credito', label: 'Crédito', icon: CreditCard, color: 'bg-primary/10 text-primary border-primary/30' },
   { key: 'debito', label: 'Débito', icon: Wallet, color: 'bg-chart-2/10 text-chart-2 border-chart-2/30' },
   { key: 'pix', label: 'Pix', icon: QrCode, color: 'bg-success/10 text-success border-success/30' },
-  { key: 'cheque', label: 'Cheque', icon: Banknote, color: 'bg-warning/10 text-warning border-warning/30' },
+  { key: 'cheque', label: 'Cheque', icon: Banknote, color: 'bg-warning/10 text-warning-strong border-warning/30' },
   { key: 'boleto', label: 'Boleto', icon: FileText, color: 'bg-chart-5/10 text-chart-5 border-chart-5/30' },
 ];
 
@@ -167,19 +167,19 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
             {budgetValue > 0 ? (
               <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">💰 Total orçado</span>
+                  <span className="text-muted-foreground">Total orçado</span>
                   <span className="font-bold text-primary">{formatCurrency(grossValue)}</span>
                 </div>
                 {totalPaid > 0 && (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">✅ Já pago</span>
+                      <span className="text-muted-foreground">Já pago</span>
                       <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-sm font-medium">
                       <span>Saldo restante</span>
-                      <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+                      <span className={remainingBalance > 0 ? 'text-warning-strong' : 'text-success'}>
                         {formatCurrency(remainingBalance)}
                       </span>
                     </div>
@@ -188,7 +188,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
               </div>
             ) : (
               <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
-                <div className="flex items-center gap-2 text-sm text-warning">
+                <div className="flex items-center gap-2 text-sm text-warning-strong">
                   <AlertCircle className="h-4 w-4" />
                   <span className="font-medium">Nenhum orçamento definido</span>
                 </div>
@@ -218,7 +218,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                   className={cn(
                     "p-3 rounded-lg border-2 text-sm font-medium transition-all",
                     paymentType === 'parcial'
-                      ? "border-warning bg-warning/10 text-warning"
+                      ? "border-warning bg-warning/10 text-warning-strong"
                       : "border-border hover:border-warning/50"
                   )}
                 >
@@ -301,7 +301,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                 {creditCalc && (
                   <div className="space-y-2 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">💳 Valor pago pelo paciente</span>
+                      <span className="text-sm">Valor pago pelo paciente</span>
                       <span className="font-bold">{formatCurrency(effectiveValue)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-destructive">
@@ -310,7 +310,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">💰 Valor líquido recebido</span>
+                      <span className="text-sm font-medium">Valor líquido recebido</span>
                       <span className="font-bold text-lg text-success">{formatCurrency(creditCalc.netValue)}</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -326,7 +326,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
             {(method === 'debito' || method === 'pix' || method === 'cheque') && (
               <div className="p-4 rounded-lg border-2 border-success/20 bg-success/5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">💰 Valor recebido</span>
+                  <span className="text-sm font-medium">Valor recebido</span>
                   <span className="font-bold text-lg text-success">{formatCurrency(effectiveValue)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -379,7 +379,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                 </div>
 
                 <div className="p-3 rounded-lg border-2 border-warning/20 bg-warning/5">
-                  <p className="text-xs text-warning flex items-center gap-1">
+                  <p className="text-xs text-warning-strong flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     Boletos só serão contabilizados no faturamento quando confirmados como pagos
                   </p>

@@ -94,8 +94,8 @@ function RmktLeadCard({ entry, onAdvance, onReturn, onOpen, index }: {
           canAdvance ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
         )}>
           {canAdvance
-            ? `✅ Pode avançar para ${nextStage.label}`
-            : `⏳ Avança em ${daysRemaining}d (req. ${requiredDays}d)`}
+            ? `Pode avançar para ${nextStage.label}`
+            : `Avança em ${daysRemaining}d (req. ${requiredDays}d)`}
         </div>
       )}
       <div className="flex gap-1">
@@ -164,7 +164,7 @@ function CopyEditor({ stageKey, suggestedCopy, customCopy, onSave }: {
         >
           <div className="flex items-center gap-1 mb-0.5">
             {isCustom ? (
-              <Badge variant="outline" className="text-[8px] px-1 py-0 h-3">✏️ Personalizada</Badge>
+              <Badge variant="outline"className="text-[8px] px-1 py-0 h-3">Personalizada</Badge>
             ) : (
               <Badge variant="outline" className="text-[8px] px-1 py-0 h-3 text-muted-foreground">
                 <Copy className="h-2 w-2 mr-0.5" /> Sugestão
@@ -242,15 +242,12 @@ export default function Remarketing() {
   }, [filteredStages]);
 
   return (
-    <AppLayout>
+    <AppLayout title="Follow Up / Remarketing">
       <div className="space-y-4 p-4 min-h-0 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between shrink-0">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Zap className="h-6 w-6 text-primary" />
-              Remarketing 365 Dias
-            </h1>
+            <h2 className="text-lg font-semibold">Remarketing 365 Dias</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
               Recuperação contínua de leads não convertidos
             </p>
@@ -276,7 +273,7 @@ export default function Remarketing() {
               >
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{cfg.emoji} {cfg.label}</span>
+                    <span className="text-sm font-medium">{cfg.label}</span>
                     <Badge variant="outline">{phaseStats[phase]}</Badge>
                   </div>
                 </CardContent>
@@ -301,7 +298,7 @@ export default function Remarketing() {
                       "w-[32px] shrink-0 rounded-lg flex flex-col items-center py-2 gap-1 cursor-pointer",
                       phaseCfg.bgColor
                     )} onClick={() => togglePhase(phase)} title={`${phaseCfg.label}: ${orientation.objetivo}`}>
-                      <span className="text-lg">{phaseCfg.emoji}</span>
+                      <span className={`h-2.5 w-2.5 rounded-full ${phaseCfg.bgColor.replace(/\/\d+$/, '')}`} aria-hidden />
                       <span className={cn("text-[9px] font-bold writing-vertical", phaseCfg.color)}
                         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
                         {phaseCfg.label.toUpperCase()}
@@ -375,13 +372,13 @@ export default function Remarketing() {
 
         {/* Phase Orientation Panel */}
         {activePhase !== 'todos' && (
-          <Card className="shrink-0">
+          <Card className="monday-card shrink-0">
             <CardContent className="p-3">
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium">
-                    {RMKT_PHASE_CONFIG[activePhase].emoji} {RMKT_PHASE_CONFIG[activePhase].label}
+                    {RMKT_PHASE_CONFIG[activePhase].label}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     <strong>Objetivo:</strong> {PHASE_ORIENTATION[activePhase].objetivo}

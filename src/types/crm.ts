@@ -270,7 +270,7 @@ export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }>
   telefone: { color: 'bg-chart-2/10 text-chart-2', label: 'Telefone' },
   instagram: { color: 'bg-chart-5/10 text-chart-5', label: 'Instagram' },
   facebook: { color: 'bg-primary/10 text-primary', label: 'Facebook' },
-  google_ads: { color: 'bg-warning/10 text-warning', label: 'Google Ads' },
+  google_ads: { color: 'bg-warning/10 text-warning-strong', label: 'Google Ads' },
   indicacao: { color: 'bg-primary/10 text-primary', label: 'Indicação' },
   site: { color: 'bg-muted text-muted-foreground', label: 'Site' },
   outro: { color: 'bg-muted text-muted-foreground', label: 'Outro' },
@@ -279,14 +279,14 @@ export const SOURCE_CONFIG: Record<LeadSource, { color: string; label: string }>
 export const TASK_TYPE_CONFIG: Record<TaskType, { icon: string; label: string; color: string }> = {
   ligacao: { icon: 'Phone', label: 'Ligação', color: 'bg-chart-2/10 text-chart-2' },
   tarefa: { icon: 'CheckSquare', label: 'Tarefa', color: 'bg-primary/10 text-primary' },
-  compromisso: { icon: 'Calendar', label: 'Compromisso', color: 'bg-warning/10 text-warning' },
+  compromisso: { icon: 'Calendar', label: 'Compromisso', color: 'bg-warning/10 text-warning-strong' },
   followup: { icon: 'MessageSquare', label: 'Follow-up', color: 'bg-chart-5/10 text-chart-5' },
 };
 
 export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = {
   baixa: { label: 'Baixa', color: 'bg-muted text-muted-foreground' },
   normal: { label: 'Normal', color: 'bg-primary/10 text-primary' },
-  alta: { label: 'Alta', color: 'bg-warning/10 text-warning' },
+  alta: { label: 'Alta', color: 'bg-warning/10 text-warning-strong' },
   urgente: { label: 'Urgente', color: 'bg-destructive/10 text-destructive' },
 };
 
@@ -306,8 +306,8 @@ export function getStageAlertLevel(days: number): 'normal' | 'attention' | 'crit
 }
 
 export function getStagnationLabel(days: number): string {
-  if (days >= 7) return '🔴 Lead esquecido';
-  if (days >= 5) return '🟠 Lead parado';
-  if (days >= 3) return '🟡 Atenção';
+  if (days >= 7) return 'Lead esquecido';
+  if (days >= 5) return 'Lead parado';
+  if (days >= 3) return 'Atenção';
   return '';
 }

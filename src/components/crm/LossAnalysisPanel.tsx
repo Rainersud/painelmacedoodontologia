@@ -125,7 +125,7 @@ export function LossAnalysisPanel() {
   };
 
   return (
-    <Card>
+    <Card className="monday-card">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <TrendingDown className="h-5 w-5 text-destructive" />
@@ -182,7 +182,7 @@ export function LossAnalysisPanel() {
         {reasonPatterns.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-semibold flex items-center gap-2">
-              📊 Motivos mais frequentes
+              Motivos mais frequentes
             </h4>
             <div className="space-y-1.5">
               {reasonPatterns.map(([reason, count], i) => (
@@ -199,7 +199,7 @@ export function LossAnalysisPanel() {
 
         {/* Full list */}
         <div className="space-y-2">
-          <h4 className="text-sm font-semibold">📋 Todos os registros</h4>
+          <h4 className="text-sm font-semibold">Todos os registros</h4>
           <ScrollArea className="max-h-[400px]">
             <div className="space-y-2 pr-2">
               {filteredLeads.length === 0 ? (
@@ -218,11 +218,11 @@ export function LossAnalysisPanel() {
                       </span>
                     </div>
                     <p className="text-sm text-destructive">
-                      ❌ {lead.loss_reason}
+                      {lead.loss_reason}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {lead.profiles && <span>👤 {lead.profiles.full_name}</span>}
-                      <span>📍 {sourceLabels[lead.source] || lead.source}</span>
+                      {lead.profiles && <span>{lead.profiles.full_name}</span>}
+                      <span>{sourceLabels[lead.source] || lead.source}</span>
                     </div>
                     {atts.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">

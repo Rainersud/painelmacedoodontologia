@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils';
 import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const HEALTH_MAP = {
-  success: { label: '🟢 Saudável', cls: 'bg-success/10 text-success border-success/30' },
-  warning: { label: '🟡 Estável', cls: 'bg-warning/10 text-warning border-warning/30' },
-  destructive: { label: '🔴 Atenção', cls: 'bg-destructive/10 text-destructive border-destructive/30' },
+  success: { label: 'Saudável', cls: 'bg-success/10 text-success border-success/30'},
+  warning: { label: 'Estável', cls: 'bg-warning/10 text-warning-strong border-warning/30'},
+  destructive: { label: 'Atenção', cls: 'bg-destructive/10 text-destructive border-destructive/30'},
 } as const;
 
 export function LTVExecutivePanel() {
@@ -61,7 +61,7 @@ export function LTVExecutivePanel() {
   return (
     <div className="space-y-4">
       {/* ============== HERO LTV CARD ============== */}
-      <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-chart-3/5 to-success/10">
+      <Card className="monday-card relative overflow-hidden border-primary/30">
         <div className="absolute inset-0 opacity-50 pointer-events-none"
              style={{ background: 'radial-gradient(circle at 20% 20%, hsl(var(--primary)/0.15), transparent 60%), radial-gradient(circle at 80% 80%, hsl(var(--success)/0.15), transparent 60%)' }} />
         <CardContent className="relative p-5">
@@ -69,10 +69,10 @@ export function LTVExecutivePanel() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">LTV Inteligente · $ Financeiro</span>
+                <span className="text-xs font-semibold text-muted-foreground">LTV Inteligente · $ Financeiro</span>
                 <Badge className={cn('text-[10px] ml-1', health.cls)}>{health.label}</Badge>
               </div>
-              <p className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-chart-3 to-success bg-clip-text text-transparent">
+              <p className="text-4xl font-bold tracking-tight bg-clip-text text-transparent">
                 {formatCurrency(data.ltvAtual)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -82,7 +82,7 @@ export function LTVExecutivePanel() {
 
             <div className="grid grid-cols-3 gap-4 min-w-[300px]">
               <div className="text-right">
-                <p className="text-[10px] uppercase text-muted-foreground">Crescimento</p>
+                <p className="text-[10px] text-muted-foreground">Crescimento</p>
                 <div className={cn('flex items-center justify-end gap-1 text-lg font-bold',
                   positive ? 'text-success' : 'text-destructive')}>
                   {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
@@ -91,13 +91,13 @@ export function LTVExecutivePanel() {
                 <p className="text-[10px] text-muted-foreground">vs. mês anterior</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase text-muted-foreground">Recorrente 30d</p>
+                <p className="text-[10px] text-muted-foreground">Recorrente 30d</p>
                 <p className="text-lg font-bold text-chart-3">{formatCurrency(data.receitaRecorrente)}</p>
                 <p className="text-[10px] text-muted-foreground">últimos 30 dias</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase text-muted-foreground">Projeção Futura</p>
-                <p className="text-lg font-bold text-warning">{formatCurrency(data.projecaoFutura)}</p>
+                <p className="text-[10px] text-muted-foreground">Projeção Futura</p>
+                <p className="text-lg font-bold text-warning-strong">{formatCurrency(data.projecaoFutura)}</p>
                 <p className="text-[10px] text-muted-foreground">pendente a receber</p>
               </div>
             </div>
@@ -124,7 +124,7 @@ export function LTVExecutivePanel() {
       {/* ============== CHARTS ============== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Evolution */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-success" />
@@ -152,7 +152,7 @@ export function LTVExecutivePanel() {
         </Card>
 
         {/* Comparative Com1 vs Com2 */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
@@ -177,7 +177,7 @@ export function LTVExecutivePanel() {
 
       {/* ============== REVENUE PER SELLER ============== */}
       {data.receitaPorVendedor.length > 0 && (
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Trophy className="h-4 w-4 text-chart-4" />
@@ -199,7 +199,7 @@ export function LTVExecutivePanel() {
                     <span className="font-bold text-success">{formatCurrency(v.total)}</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-success to-chart-3 transition-all"
+                    <div className="h-full transition-all"
                          style={{ width: `${pct}%` }} />
                   </div>
                 </div>
@@ -218,7 +218,7 @@ function MiniCard({ icon, label, value, color }: {
 }) {
   const colorMap: Record<string, string> = {
     'success': 'text-success border-success/20 bg-success/5',
-    'warning': 'text-warning border-warning/20 bg-warning/5',
+    'warning': 'text-warning-strong border-warning/20 bg-warning/5',
     'primary': 'text-primary border-primary/20 bg-primary/5',
     'chart-3': 'text-chart-3 border-chart-3/20 bg-chart-3/5',
     'chart-5': 'text-chart-5 border-chart-5/20 bg-chart-5/5',
@@ -229,7 +229,7 @@ function MiniCard({ icon, label, value, color }: {
       <CardContent className="p-3">
         <div className={cn('flex items-center gap-1.5 mb-1', colorMap[color].split(' ')[0])}>
           {icon}
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+          <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
         </div>
         <p className={cn('text-base font-bold', colorMap[color].split(' ')[0])}>{value}</p>
       </CardContent>

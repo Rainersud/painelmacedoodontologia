@@ -52,7 +52,7 @@ const REWARD_TIERS = [
     count: 40,
     percent: 5,
     perks: ['1 limpeza gratuita', '4 sessões de clareamento a laser', '5% sobre cada tratamento fechado'],
-    color: 'text-warning',
+    color: 'text-warning-strong',
     bg: 'bg-warning/10',
     border: 'border-warning/30',
   },
@@ -183,7 +183,7 @@ export function TriageReferralSection({
       </div>
 
       {/* Reward tiers panel */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/5 via-background to-chart-5/5">
+      <Card className="monday-card">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export function TriageReferralSection({
           ) : (
             <div className="flex items-center gap-2 text-xs text-success">
               <CheckCircle2 className="h-4 w-4" />
-              Todos os níveis desbloqueados! 🎉
+              Todos os níveis desbloqueados! 
             </div>
           )}
 
@@ -262,7 +262,7 @@ export function TriageReferralSection({
       </Card>
 
       {/* RMKT Script */}
-      <Card className="border-0 shadow-sm">
+      <Card className="monday-card">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">

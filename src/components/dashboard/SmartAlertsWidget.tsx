@@ -35,16 +35,16 @@ const columnConfig: Record<SmartAlertLevel, {
     title: 'Atenção',
     subtitle: 'Leads parados há 5 a 9 dias sem movimentação no funil',
     icon: Clock,
-    headerBg: 'bg-gradient-to-br from-warning/15 to-warning/5',
+    headerBg: '',
     border: 'border-warning/30',
-    accent: 'text-warning',
+    accent: 'text-warning-strong',
     cardBorder: 'border-l-warning',
   },
   critical: {
     title: 'Crítico',
     subtitle: 'Leads parados há 10 dias ou mais — risco alto de perda',
     icon: AlertTriangle,
-    headerBg: 'bg-gradient-to-br from-destructive/15 to-destructive/5',
+    headerBg: '',
     border: 'border-destructive/30',
     accent: 'text-destructive',
     cardBorder: 'border-l-destructive',
@@ -53,7 +53,7 @@ const columnConfig: Record<SmartAlertLevel, {
     title: 'Oportunidades',
     subtitle: 'Leads em "Quase Cliente" ou com crédito já aprovado',
     icon: Sparkles,
-    headerBg: 'bg-gradient-to-br from-success/15 to-success/5',
+    headerBg: '',
     border: 'border-success/30',
     accent: 'text-success',
     cardBorder: 'border-l-success',
@@ -224,7 +224,7 @@ export function SmartAlertsWidget() {
 
   if (alerts.length === 0) {
     return (
-      <Card className="border-0 shadow-sm">
+      <Card className="monday-card">
         <CardContent className="p-6 text-center">
           <div className="h-12 w-12 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
             <Zap className="h-6 w-6 text-success" />
@@ -237,12 +237,12 @@ export function SmartAlertsWidget() {
   }
 
   return (
-    <Card className="border-0 shadow-sm overflow-hidden">
-      <div className="px-4 sm:px-5 pt-4 pb-3 border-b bg-gradient-to-r from-card to-muted/20">
+    <Card className="monday-card overflow-hidden">
+      <div className="px-4 sm:px-5 pt-4 pb-3 border-b">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-warning/20 to-destructive/10 flex items-center justify-center">
-              <Zap className="h-5 w-5 text-warning" />
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center">
+              <Zap className="h-5 w-5 text-warning-strong" />
             </div>
             <div>
               <h2 className="text-base font-bold flex items-center gap-2">

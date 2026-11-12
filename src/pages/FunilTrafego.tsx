@@ -44,16 +44,16 @@ function getPerformanceStatus(rate: number): 'healthy' | 'attention' | 'critical
 
 function getStatusColors(status: 'healthy' | 'attention' | 'critical') {
   const map = {
-    healthy: { gradient: 'from-success/80 to-success', text: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
-    attention: { gradient: 'from-warning/80 to-warning', text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
-    critical: { gradient: 'from-destructive/80 to-destructive', text: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' },
+    healthy: { gradient: ' ', text: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
+    attention: { gradient: ' ', text: 'text-warning-strong', bg: 'bg-warning/10', border: 'border-warning/20' },
+    critical: { gradient: ' ', text: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' },
   };
   return map[status];
 }
 
 function StatusIcon({ status }: { status: 'healthy' | 'attention' | 'critical' }) {
   if (status === 'healthy') return <CheckCircle className="h-4 w-4 text-success" />;
-  if (status === 'attention') return <AlertTriangle className="h-4 w-4 text-warning" />;
+  if (status === 'attention') return <AlertTriangle className="h-4 w-4 text-warning-strong" />;
   return <XCircle className="h-4 w-4 text-destructive" />;
 }
 
@@ -102,7 +102,7 @@ function CreativeFunnel({ creative }: { creative: AdCreative }) {
               <div
                 className={cn(
                   'relative rounded-lg py-2.5 px-3 transition-all duration-300',
-                  'bg-gradient-to-r shadow-md hover:shadow-lg',
+                  ' shadow-md hover:shadow-lg',
                   colors.gradient,
                   'cursor-pointer hover:scale-[1.02]',
                   isExp && 'ring-2 ring-primary/50'
@@ -169,12 +169,12 @@ function CreativeFunnel({ creative }: { creative: AdCreative }) {
 function getCreativeInsights(c: AdCreative): string[] {
   const m = calculateCreativeMetrics(c);
   const insights: string[] = [];
-  if (m.convClickToLead < 15) insights.push('🚨 Alto clique e baixo lead → problema na página ou atendimento');
-  if (m.convLeadToAppointment < 20) insights.push('⚠️ Poucos agendamentos → revisar abordagem de captação');
-  if (m.convAppointmentToAttendance < 30) insights.push('⚠️ Baixo comparecimento → melhorar confirmação de consulta');
-  if (m.convAttendanceToSale < 25) insights.push('⚠️ Baixa taxa de fechamento → revisar abordagem comercial');
-  if (m.isProfitable && m.roi > 100) insights.push('🟢 Criativo altamente lucrativo → considere escalar');
-  if (!m.isProfitable) insights.push('🚨 Criativo com CAC acima do retorno → avaliar pausar');
+  if (m.convClickToLead < 15) insights.push('Alto clique e baixo lead → problema na página ou atendimento');
+  if (m.convLeadToAppointment < 20) insights.push('Poucos agendamentos → revisar abordagem de captação');
+  if (m.convAppointmentToAttendance < 30) insights.push('Baixo comparecimento → melhorar confirmação de consulta');
+  if (m.convAttendanceToSale < 25) insights.push('Baixa taxa de fechamento → revisar abordagem comercial');
+  if (m.isProfitable && m.roi > 100) insights.push('Criativo altamente lucrativo → considere escalar');
+  if (!m.isProfitable) insights.push('Criativo com CAC acima do retorno → avaliar pausar');
   return insights;
 }
 
@@ -290,7 +290,7 @@ function TrafficReconciliation({ month, creatives }: { month: Date; creatives: A
     <Card className={cn('monday-card', !check.matches && 'border-warning')}>
       <CardContent className="p-3 space-y-2 text-xs">
         <div className="flex items-center gap-2 font-semibold">
-          {check.matches ? <CheckCircle className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning" />}
+          {check.matches ? <CheckCircle className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning-strong" />}
           {check.matches
             ? 'Investimento das campanhas confere com o CAC (Anúncios)'
             : `Investimento das campanhas difere do CAC (Anúncios) em ${formatCurrency(Math.abs(check.difference))}`}
@@ -354,7 +354,7 @@ export default function FunilTrafego() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="Funil de Tráfego Pago">
         <div className="p-4 space-y-4">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-96 w-full" />
@@ -364,15 +364,12 @@ export default function FunilTrafego() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout title="Funil de Tráfego Pago">
       <div className="p-4 space-y-4 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Megaphone className="h-5 w-5 text-primary" />
-              Funil de Tráfego Pago
-            </h1>
+            <h2 className="text-lg font-semibold">Funil de Tráfego Pago</h2>
             <p className="text-xs text-muted-foreground">Análise inteligente por criativo</p>
           </div>
           <div className="flex items-center gap-2">
@@ -399,19 +396,19 @@ export default function FunilTrafego() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Investimento</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">Investimento</p>
                 <p className="text-sm font-bold">{formatCurrency(consolidated.totalInvestment)}</p>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Faturamento</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">Faturamento</p>
                 <p className="text-sm font-bold text-success">{formatCurrency(consolidated.totalRevenue)}</p>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">ROI</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">ROI</p>
                 <p className={cn('text-sm font-bold', consolidatedMetrics.roi >= 0 ? 'text-success' : 'text-destructive')}>
                   {consolidatedMetrics.roi.toFixed(1)}%
                 </p>
@@ -419,7 +416,7 @@ export default function FunilTrafego() {
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Lucro</p>
+                <p className="text-[10px] text-muted-foreground font-semibold">Lucro</p>
                 <p className={cn('text-sm font-bold', consolidatedMetrics.isProfitable ? 'text-success' : 'text-destructive')}>
                   {formatCurrency(consolidatedMetrics.profit)}
                 </p>
@@ -436,7 +433,7 @@ export default function FunilTrafego() {
                 <CardContent className="p-3 flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-success" />
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Melhor Criativo</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Melhor Criativo</p>
                     <p className="text-sm font-bold text-success">{bestCreative.name}</p>
                     <p className="text-xs text-muted-foreground">Lucro: {formatCurrency(Number(bestCreative.revenue) - Number(bestCreative.investment))}</p>
                   </div>
@@ -448,7 +445,7 @@ export default function FunilTrafego() {
                 <CardContent className="p-3 flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-destructive" />
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Pior Criativo</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Pior Criativo</p>
                     <p className="text-sm font-bold text-destructive">{worstCreative.name}</p>
                     <p className="text-xs text-muted-foreground">Resultado: {formatCurrency(Number(worstCreative.revenue) - Number(worstCreative.investment))}</p>
                   </div>
@@ -495,7 +492,7 @@ export default function FunilTrafego() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Badge variant={metrics.isProfitable ? 'default' : 'destructive'} className="text-[9px] shrink-0">
-                            {metrics.isProfitable ? '✅ Lucrativo' : '🚨 Prejuízo'}
+                            {metrics.isProfitable ? 'Lucrativo': 'Prejuízo'}
                           </Badge>
                           <CardTitle className="text-sm truncate">{c.name}</CardTitle>
                         </div>

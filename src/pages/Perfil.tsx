@@ -79,7 +79,7 @@ export default function Perfil() {
     <AppLayout title="Meu Perfil">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Profile Header */}
-        <Card className="border-0 shadow-sm">
+        <Card className="monday-card">
           <CardContent className="p-8">
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24 ring-4 ring-primary/20">
@@ -102,7 +102,7 @@ export default function Perfil() {
         </Card>
 
         {/* Profile Form */}
-        <Card className="border-0 shadow-sm">
+        <Card className="monday-card">
           <CardHeader>
             <CardTitle className="text-base">Informações Pessoais</CardTitle>
             <CardDescription>

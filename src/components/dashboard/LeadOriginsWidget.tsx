@@ -11,19 +11,18 @@ import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import type { Lead } from '@/types/crm';
-import { chartTooltipProps } from '@/lib/chartStyle';
+import { chartTooltipProps, originColor } from '@/lib/chartStyle';
 
-const COLORS = ['hsl(213 94% 58%)', 'hsl(156 72% 45%)', 'hsl(270 75% 60%)', 'hsl(32 95% 55%)', 'hsl(340 82% 60%)', 'hsl(180 70% 50%)', 'hsl(45 93% 58%)', 'hsl(0 84% 60%)'];
 
 
 export function LeadOriginsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
   const { data, isLoading } = useStrategicInsights(range);
 
-  const chartData = (data?.origins || []).map((o, i) => ({
+  const chartData = (data?.origins || []).map((o) => ({
     name: SOURCE_CONFIG[o.source as keyof typeof SOURCE_CONFIG]?.label || o.source,
     value: o.count,
-    fill: COLORS[i % COLORS.length],
+    fill: originColor(o.source),
   }));
 
   return (
@@ -55,10 +54,10 @@ export function LeadOriginsWidget() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-2 max-h-[220px] overflow-y-auto">
-              {(data?.origins || []).map((o, i) => (
+              {(data?.origins || []).map((o) => (
                 <div key={o.source} className="flex items-center justify-between text-xs p-2 rounded-md bg-muted/30">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                    <div className="h-3 w-3 rounded-full" style={{ background: originColor(o.source) }} />
                     <span className="font-medium">{SOURCE_CONFIG[o.source as keyof typeof SOURCE_CONFIG]?.label || o.source}</span>
                   </div>
                   <div className="text-right">
@@ -104,12 +103,12 @@ export function LossReasonsWidget() {
         {isLoading ? (
           <Skeleton className="h-[200px] w-full" />
         ) : losses.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Nenhuma perda registrada no período 🎉</p>
+          <p className="text-sm text-muted-foreground text-center py-8">Nenhuma perda registrada no período </p>
         ) : (
           <div className="space-y-3">
             {top && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
-                <p className="text-xs uppercase tracking-wide text-destructive font-bold">Maior perda atual</p>
+                <p className="text-xs text-destructive font-bold">Maior perda atual</p>
                 <p className="text-base font-semibold mt-0.5">
                   {top.reason} <span className="text-destructive">({top.pct}%)</span>
                 </p>
@@ -123,7 +122,7 @@ export function LossReasonsWidget() {
                 <div key={l.reason} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-semibold">
-                      {idx === 0 && '🔥 '}
+                      {idx === 0 && ''}
                       {l.reason}
                     </span>
                     <span className="text-xs font-bold text-destructive">{l.pct}%</span>

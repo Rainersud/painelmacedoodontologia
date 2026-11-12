@@ -32,24 +32,13 @@ import {
   DollarSign,
   BarChart3
 } from 'lucide-react';
-import { chartGrid, chartAxis, chartTooltipProps } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, chartTooltipProps, originColor, SERIES_OTHER } from '@/lib/chartStyle';
 import { FUNNEL_STAGES } from '@/types/crm';
 import {
   ARRIVAL_SOURCE_LABELS, agentRevenue, bookedAppointments, conversionRate as conversionRate_, fetchMetricsData,
   leadOrigin, newLeads, normalizeStatus, summarize,
 } from '@/lib/metrics';
 
-// Origem oficial do lead: "Como o lead chegou?" (lead_arrival_source)
-const sourceColors: Record<string, string> = {
-  facebook: 'hsl(221, 44%, 41%)',
-  instagram: 'hsl(340, 75%, 55%)',
-  google: 'hsl(38, 92%, 50%)',
-  passou_na_frente: 'hsl(199, 89%, 48%)',
-  indicacao_pac: 'hsl(280, 60%, 55%)',
-  prospeccao_ativa: 'hsl(142, 70%, 45%)',
-  indicacao_parceria: 'hsl(262, 80%, 55%)',
-  social_selling: 'hsl(180, 60%, 45%)',
-};
 
 export default function Relatorios() {
   const [period, setPeriod] = useState('30');
@@ -95,11 +84,13 @@ export default function Relatorios() {
     return acc;
   }, {} as Record<string, number>);
 
-  const sourceChartData = Object.entries(leadsBySource).map(([source, count]) => ({
-    name: ARRIVAL_SOURCE_LABELS[source] || source,
-    value: count,
-    color: sourceColors[source] || 'hsl(240, 5%, 50%)',
-  }));
+  // Cinco origens com cor própria; o resto vira "Outras origens" (cinza)
+  const MAIN_ORIGINS = ['facebook', 'instagram', 'google', 'indicacao_pac', 'passou_na_frente'];
+  const otherCount = Object.entries(leadsBySource).filter(([k]) => !MAIN_ORIGINS.includes(k)).reduce((s, [, n]) => s + n, 0);
+  const sourceChartData = [
+    ...MAIN_ORIGINS.filter(k => leadsBySource[k]).map(k => ({ name: ARRIVAL_SOURCE_LABELS[k] || k, value: leadsBySource[k], color: originColor(k) })),
+    ...(otherCount ? [{ name: 'Outras origens', value: otherCount, color: SERIES_OTHER }] : []),
+  ];
 
   // Leads by status (etapas com o mesmo nome do Funil)
   const leadsByStatus = leads.reduce((acc, lead) => {
@@ -170,9 +161,6 @@ export default function Relatorios() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
             <div>
               <h2 className="text-lg font-semibold">Relatórios e Análises</h2>
               <p className="text-sm text-muted-foreground">
@@ -195,7 +183,7 @@ export default function Relatorios() {
 
         {/* KPI Summary */}
         <div className="grid gap-4 md:grid-cols-5">
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-chart-2/10 flex items-center justify-center">
@@ -208,7 +196,7 @@ export default function Relatorios() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -221,7 +209,7 @@ export default function Relatorios() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
@@ -234,11 +222,11 @@ export default function Relatorios() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-warning" />
+                  <BarChart3 className="h-5 w-5 text-warning-strong" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{attendanceRate}%</p>
@@ -247,7 +235,7 @@ export default function Relatorios() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
@@ -271,7 +259,7 @@ export default function Relatorios() {
           </TabsList>
 
           <TabsContent value="sources" className="space-y-4">
-            <Card className="border-0 shadow-sm">
+            <Card className="monday-card">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Leads por Origem</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => exportToCSV(sourceChartData, 'leads-por-origem')}>
@@ -306,7 +294,7 @@ export default function Relatorios() {
           </TabsContent>
 
           <TabsContent value="status" className="space-y-4">
-            <Card className="border-0 shadow-sm">
+            <Card className="monday-card">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Leads por Status</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => exportToCSV(statusChartData, 'leads-por-status')}>
@@ -333,7 +321,7 @@ export default function Relatorios() {
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-4">
-            <Card className="border-0 shadow-sm">
+            <Card className="monday-card">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Performance por Agente</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => exportToCSV(agentPerformance, 'performance-agentes')}>
@@ -361,7 +349,7 @@ export default function Relatorios() {
                         <TableCell className="text-center">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             agent.conversion >= 70 ? 'bg-success/10 text-success' :
-                            agent.conversion >= 50 ? 'bg-warning/10 text-warning' :
+                            agent.conversion >= 50 ? 'bg-warning/10 text-warning-strong' :
                             'bg-destructive/10 text-destructive'
                           }`}>
                             {agent.conversion}%

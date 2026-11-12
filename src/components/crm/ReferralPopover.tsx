@@ -54,10 +54,10 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
   if (!hasAnyReferralData) return null;
 
   // Determine which icons to show
-  const icons: { emoji: string; title: string; className: string }[] = [];
+  const icons: { icon: typeof Users; title: string; className: string }[] = [];
   
-  if (refTags.isReferrer) icons.push({ emoji: '👥', title: 'Indicador', className: 'bg-primary/10' });
-  if (refTags.pendingBonuses.length > 0) icons.push({ emoji: '💰', title: 'Bonificação disponível', className: 'bg-warning/10' });
+  if (refTags.isReferrer) icons.push({ icon: Users, title: 'Indicador', className: 'bg-primary/10 text-primary' });
+  if (refTags.pendingBonuses.length > 0) icons.push({ icon: DollarSign, title: 'Bonificação disponível', className: 'bg-warning/15 text-warning-strong' });
 
   const handleSaveDiscount = () => {
     if (!referralData?.asReferred) return;
@@ -116,8 +116,8 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
       <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
         <button className="flex items-center gap-0.5 rounded-md px-1 py-0.5 hover:bg-muted/50 transition-colors">
           {icons.map((icon, i) => (
-            <span key={i} className={cn("text-xs rounded px-0.5", icon.className)} title={icon.title}>
-              {icon.emoji}
+            <span key={i} className={cn("rounded p-0.5", icon.className)} title={icon.title}>
+              <icon.icon className="h-3 w-3" aria-label={icon.title} />
             </span>
           ))}
         </button>
@@ -148,7 +148,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
               {/* Referral discount - editable */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs">🎁 Desconto por indicação</span>
+                  <span className="text-xs">Desconto por indicação</span>
                   {editingDiscount ? (
                     <div className="flex items-center gap-1">
                       <Input
@@ -177,7 +177,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
               {/* Attendance discount - editable */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs">🎁 Desconto por comparecimento</span>
+                  <span className="text-xs">Desconto por comparecimento</span>
                   {editingAttendanceDiscount ? (
                     <div className="flex items-center gap-1">
                       <Input
@@ -210,9 +210,9 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
                       'bg-muted text-muted-foreground': attendanceStatus === 'aguardando',
                     })}
                   >
-                    {attendanceStatus === 'compareceu' && '✔ Compareceu'}
-                    {attendanceStatus === 'faltou' && '❌ Faltou — desconto removido'}
-                    {attendanceStatus === 'aguardando' && '⏳ Aguardando comparecimento'}
+                    {attendanceStatus === 'compareceu'&& 'Compareceu'}
+                    {attendanceStatus === 'faltou'&& 'Faltou — desconto removido'}
+                    {attendanceStatus === 'aguardando'&& 'Aguardando comparecimento'}
                   </Badge>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
 
               {refTags.convertedCount > 0 && (
                 <Badge variant="outline" className="text-[10px] border-0 bg-success/10 text-success h-5">
-                  ✅ {refTags.convertedCount} fecharam tratamento
+                  {refTags.convertedCount} fecharam tratamento
                 </Badge>
               )}
 
@@ -309,7 +309,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
                                   isPaid ? (
                                     <div className="flex items-center gap-1">
                                       <Badge variant="outline" className="text-[9px] border-0 bg-success/10 text-success h-4">
-                                        ✅ Pago
+                                        Pago
                                       </Badge>
                                       <button
                                         onClick={() => handleMarkPending(ref.id)}
@@ -344,10 +344,10 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
               {/* Pending bonus summary */}
               {refTags.pendingBonuses.length > 0 && (
                 <div className="rounded bg-warning/10 px-2 py-1.5 border border-warning/20">
-                  <p className="text-[10px] font-semibold text-warning">
-                    💰 {refTags.pendingBonuses.length} bonificaç{refTags.pendingBonuses.length === 1 ? 'ão' : 'ões'} pendente{refTags.pendingBonuses.length === 1 ? '' : 's'}
+                  <p className="text-[10px] font-semibold text-warning-strong">
+                    {refTags.pendingBonuses.length} bonificaç{refTags.pendingBonuses.length === 1 ? 'ão': 'ões'} pendente{refTags.pendingBonuses.length === 1 ? '': 's'}
                   </p>
-                  <p className="text-[10px] text-warning font-bold">
+                  <p className="text-[10px] text-warning-strong font-bold">
                     Total: R$ {refTags.pendingBonuses.reduce((s, b) => s + b.rewardValue, 0)}
                   </p>
                 </div>

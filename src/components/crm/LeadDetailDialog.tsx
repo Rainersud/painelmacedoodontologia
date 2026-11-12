@@ -328,7 +328,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {currentStage?.label}
                 </Badge>
                 <span className="text-[11px] text-muted-foreground" title="Data de cadastro (não editável)">
-                  📅 Cadastrado em {new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  Cadastrado em {new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}
                 </span>
               </div>
 
@@ -588,7 +588,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {statusForView === 'faltou' && (
                 <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/20 space-y-3">
                   <h4 className="font-medium text-destructive flex items-center gap-2">
-                    🔁 Reagendar para
+                    Reagendar para
                   </h4>
                   <Input
                     type="datetime-local"
@@ -611,10 +611,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     borderColor: hasNoShow ? 'hsl(var(--destructive) / 0.2)' : 'hsl(var(--success) / 0.2)',
                   }}>
                     <h4 className="font-medium text-sm flex items-center gap-2">
-                      🎁 Status do Desconto de Comparecimento
+                      Status do Desconto de Comparecimento
                     </h4>
                     {hasNoShow ? (
-                      <p className="text-sm font-semibold text-destructive">❌ Não disponível por falta</p>
+                      <p className="text-sm font-semibold text-destructive">Não disponível por falta</p>
                     ) : statusForView === 'compareceu' ? (
                       <div className="space-y-2">
                         <p className="text-2xl font-bold text-success">{pct}%</p>
@@ -628,7 +628,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           value={formData.discount_percentage}
                           onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
                         />
-                        <p className="text-xs text-success">🟢 Disponível — sem faltas registradas.</p>
+                        <p className="text-xs text-success">Disponível — sem faltas registradas.</p>
                       </div>
                     )}
                   </div>
@@ -638,7 +638,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {/* No-show count — editable */}
               <div className="p-3 rounded-lg border space-y-2">
                 <h4 className="font-medium text-sm flex items-center gap-2">
-                  ❌ Faltas Registradas
+                  Faltas Registradas
                 </h4>
                 <div className="flex items-center gap-3">
                   <Button
@@ -695,7 +695,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {appointmentHistory && appointmentHistory.length > 0 && (
                 <div className="p-3 rounded-lg border space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2">
-                    📋 Histórico de Agendamentos
+                    Histórico de Agendamentos
                   </h4>
                   <div className="space-y-1">
                     {appointmentHistory.map((apt, idx) => {
@@ -728,8 +728,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <>
                     {/* Budget Field - separate from payments */}
                     <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 space-y-2">
-                      <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
-                        📋 Valor do Orçamento
+                      <h4 className="font-medium text-sm flex items-center gap-2 text-warning-strong">
+                        Valor do Orçamento
                       </h4>
                       <p className="text-xs text-muted-foreground">
                         O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
@@ -744,7 +744,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         }}
                       />
                       {budgetValue > 0 && (
-                        <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                        <Badge variant="outline" className="text-xs bg-warning/10 text-warning-strong border-warning/20">
                           Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
                         </Badge>
                       )}
@@ -753,7 +753,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     {/* Payment Button */}
                     <div className="p-3 rounded-lg border-2 border-success/30 bg-success/5 space-y-2">
                       <h4 className="font-medium text-sm flex items-center gap-2 text-success">
-                        💰 Pagamento (Faturamento Real)
+                        Pagamento (Faturamento Real)
                       </h4>
                       <Button
                         variant="outline"
@@ -779,7 +779,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 return (
                   <div className="p-4 bg-chart-5/5 rounded-lg border border-chart-5/20 space-y-3">
                     <h4 className="font-medium text-chart-5 flex items-center gap-2">
-                      ❓ Não fechou porque:
+                      Não fechou porque:
                     </h4>
                     <p className="text-xs text-muted-foreground">
                       Selecione o motivo — alimenta o painel "Perdas por Motivo" no Dashboard.
@@ -811,7 +811,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                             : 'bg-background border-chart-5/30 hover:bg-chart-5/10'
                         }`}
                       >
-                        ✍️ Adicionar motivo manualmente
+                        Adicionar motivo manualmente
                       </button>
                     </div>
                     {isOther && (
@@ -826,7 +826,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     )}
                     <div className="pt-1 border-t border-chart-5/20">
                       <p className="text-[11px] text-muted-foreground mb-1.5">
-                        📎 Anexos (áudio ou imagem) para avaliação posterior — aparecem na "Análise de Perdas".
+                        Anexos (áudio ou imagem) para avaliação posterior — aparecem na "Análise de Perdas".
                       </p>
                       <LossAttachments leadId={lead.id} />
                     </div>
@@ -842,7 +842,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {statusForView === 'nao_cliente' && (lead as any).loss_reason && newStatus !== 'nao_cliente' && (
                 <div className="p-3 rounded-lg border border-chart-5/30 bg-chart-5/5 space-y-2">
                   <h4 className="font-medium text-sm flex items-center gap-2 text-chart-5">
-                    ❓ Motivo de não fechamento
+                    Motivo de não fechamento
                   </h4>
                   <p className="text-sm">{(lead as any).loss_reason}</p>
                   <LossAttachments leadId={lead.id} />
@@ -902,12 +902,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
                 return (
                   <div className="p-4 bg-warning/5 rounded-lg border border-warning/20 space-y-3">
-                    <h4 className="font-medium text-warning flex items-center gap-2">
-                      📞 Tentativas de contato — {stageLabel}
+                    <h4 className="font-medium text-warning-strong flex items-center gap-2">
+                      Tentativas de contato — {stageLabel}
                     </h4>
                     {stageAttempts >= 2 && (
                       <div className="text-xs text-destructive bg-destructive/10 rounded p-2 font-medium">
-                        ⚠️ Limite de 2 tentativas atingido neste período
+                        Limite de 2 tentativas atingido neste período
                       </div>
                     )}
                     <div className="flex items-center gap-3">
@@ -954,7 +954,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         className="w-full"
                         onClick={advanceToNext}
                       >
-                        ➡️ Avançar para próximo período
+                        Avançar para próximo período
                       </Button>
                     )}
 
@@ -965,14 +965,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         className="w-full"
                         onClick={sendToRmkt}
                       >
-                        🚀 Enviar para RMKT (Dia 1)
+                        Enviar para RMKT (Dia 1)
                       </Button>
                     )}
 
                     <div className="text-[11px] text-muted-foreground space-y-1 bg-muted/50 rounded p-2">
-                      <p>✅ Máximo 2 tentativas por período (Manhã/Tarde)</p>
-                      <p>✅ Histórico mantido por período</p>
-                      <p>✅ Avanço automático para o próximo período</p>
+                      <p>Máximo 2 tentativas por período (Manhã/Tarde)</p>
+                      <p>Histórico mantido por período</p>
+                      <p>Avanço automático para o próximo período</p>
                     </div>
                   </div>
                 );
@@ -989,7 +989,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {statusForView === 'fechado' && newStatus !== 'fechado' && friendlyData && (
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <h4 className="font-medium text-primary flex items-center gap-2">
-                    🤝 Paciente Amigo
+                    Paciente Amigo
                   </h4>
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -1004,7 +1004,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         }}
                         className="h-4 w-4 accent-primary"
                       />
-                      <span className="text-sm font-medium">✅ Sim</span>
+                      <span className="text-sm font-medium">Sim</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1018,11 +1018,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         }}
                         className="h-4 w-4 accent-destructive"
                       />
-                      <span className="text-sm font-medium">❌ Não</span>
+                      <span className="text-sm font-medium">Não</span>
                     </label>
                   </div>
                   <Badge className={cn("text-xs", friendlyPatient ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>
-                    {friendlyPatient ? '✅ Aceitou participar' : '❌ Não participa'}
+                    {friendlyPatient ? 'Aceitou participar': 'Não participa'}
                   </Badge>
                 </div>
               )}
@@ -1032,7 +1032,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {/* Paciente Amigo Section */}
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                     <h4 className="font-medium text-primary flex items-center gap-2">
-                      🤝 Paciente Amigo
+                      Paciente Amigo
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       "Você se sentindo realizado com o tratamento no final, você aceita participar do programa <strong>'Paciente Amigo'</strong>, onde podemos gravar um pequeno vídeo de depoimento ou uma breve entrevista relatando sua experiência com seu tratamento? Isso te dá um <strong>cashback de R$ 200,00</strong> no seu tratamento. Lembrando que é opcional, apenas se realmente se sentir feliz com o tratamento e tiver o desejo de participar!"
@@ -1046,7 +1046,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           onChange={() => setFriendlyPatient(true)}
                           className="h-4 w-4 accent-primary"
                         />
-                        <span className="text-sm font-medium">✅ Sim</span>
+                        <span className="text-sm font-medium">Sim</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -1056,7 +1056,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           onChange={() => setFriendlyPatient(false)}
                           className="h-4 w-4 accent-destructive"
                         />
-                        <span className="text-sm font-medium">❌ Não</span>
+                        <span className="text-sm font-medium">Não</span>
                       </label>
                     </div>
                     {friendlyPatient === null && (
@@ -1082,15 +1082,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               {/* Rescue button for Follow-up 4 */}
               {statusForView === 'followup_4' && (
                 <div className="p-3 rounded-lg border-2 border-warning/40 bg-warning/5 space-y-2">
-                  <h4 className="font-medium text-sm flex items-center gap-2 text-warning">
-                    🔄 Lead em Follow-up 4
+                  <h4 className="font-medium text-sm flex items-center gap-2 text-warning-strong">
+                    Lead em Follow-up 4
                   </h4>
                   <p className="text-xs text-muted-foreground">
                     Este lead chegou ao último follow-up. Marque como resgatado se houver retorno positivo.
                   </p>
                   <Button
                     variant="outline"
-                    className="w-full border-warning/30 text-warning hover:bg-warning/10"
+                    className="w-full border-warning/30 text-warning-strong hover:bg-warning/10"
                     onClick={() => {
                       updateStatus.mutate({
                         leadId: lead.id,
@@ -1101,7 +1101,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     }}
                     disabled={updateStatus.isPending}
                   >
-                    ✅ Marcar como Resgatado
+                    Marcar como Resgatado
                   </Button>
                 </div>
               )}

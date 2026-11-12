@@ -26,7 +26,7 @@ export function IndicacaoBadge({ source, size = 'sm', className }: IndicacaoBadg
     <Badge
       className={cn(
         'shrink-0 border-0 font-semibold rounded-full',
-        'bg-gradient-to-r from-chart-5 to-primary text-white shadow-sm',
+        '   text-white shadow-sm',
         sizes[size],
         className
       )}

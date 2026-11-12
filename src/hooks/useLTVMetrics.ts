@@ -224,33 +224,33 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
 
       const insights: string[] = [];
       if (singleBuyers.clientCount > 0 && singleBuyers.avgProfit < 0) {
-        insights.push(`🔴 Clientes de 1 compra não são lucrativos (lucro médio: ${formatBRL(singleBuyers.avgProfit)}) → melhorar pós-venda`);
+        insights.push(`Clientes de 1 compra não são lucrativos (lucro médio: ${formatBRL(singleBuyers.avgProfit)}) → melhorar pós-venda`);
       } else if (singleBuyers.clientCount > 0) {
-        insights.push(`⚠️ ${singleBuyers.clientCount} pacientes compraram apenas 1 vez → ação de pós-venda necessária`);
+        insights.push(`${singleBuyers.clientCount} pacientes compraram apenas 1 vez → ação de pós-venda necessária`);
       }
 
       const twoBuyers = groups[1];
       if (twoBuyers.clientCount > 0) {
-        insights.push(`📈 Clientes com 2 compras têm alto potencial de LTV → focar upsell (${twoBuyers.clientCount} pacientes)`);
+        insights.push(`Clientes com 2 compras têm alto potencial de LTV → focar upsell (${twoBuyers.clientCount} pacientes)`);
       }
 
       const threePlus = groups.slice(2).reduce((sum, g) => sum + g.clientCount, 0);
       if (threePlus > 0) {
         const threePlusRevenue = groups.slice(2).reduce((sum, g) => sum + g.totalRevenue, 0);
-        insights.push(`🟢 Grupo 3+ compras gera maior lucro → priorizar retenção (${threePlus} pacientes, ${formatBRL(threePlusRevenue)} em receita)`);
+        insights.push(`Grupo 3+ compras gera maior lucro → priorizar retenção (${threePlus} pacientes, ${formatBRL(threePlusRevenue)} em receita)`);
       }
 
       if (bestProfitGroup) {
         const best = activeGroups.find(g => g.label === bestProfitGroup);
         if (best) {
-          insights.push(`💰 Grupo mais lucrativo: ${best.label} com lucro médio de ${formatBRL(best.avgProfit)} por paciente`);
+          insights.push(`Grupo mais lucrativo: ${best.label} com lucro médio de ${formatBRL(best.avgProfit)} por paciente`);
         }
       }
 
       // Break-even insight
       const breakEvenGroup = activeGroups.find(g => g.avgProfit > 0);
       if (breakEvenGroup && breakEvenGroup.minCount > 1) {
-        insights.push(`🎯 O cliente precisa comprar pelo menos ${breakEvenGroup.minCount}x para dar lucro`);
+        insights.push(`O cliente precisa comprar pelo menos ${breakEvenGroup.minCount}x para dar lucro`);
       }
 
       return {

@@ -43,6 +43,8 @@
 
     --warning: 38 76% 45%;
     --warning-foreground: 193 26% 14%;
+    /* atenção como TEXTO sobre fundo claro (contraste ≥ 4,5:1) */
+    --warning-strong: 35 86% 28%;
 
     --info: 226 62% 57%;
     --info-foreground: 0 0% 100%;
@@ -112,6 +114,7 @@
 
     --warning: 39 73% 55%;
     --warning-foreground: 172 22% 7%;
+    --warning-strong: 39 73% 60%;
 
     --info: 227 75% 67%;
     --info-foreground: 172 22% 7%;

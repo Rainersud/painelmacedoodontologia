@@ -308,7 +308,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
       )}
 
       {inline && readOnly && (
-        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-yellow-300">
+        <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-warning-strong">
           A ficha de triagem está em modo leitura. Edição liberada apenas quando o status do lead for "Compareceu".
         </div>
       )}
@@ -425,7 +425,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   },
                 ] as const).map(block => (
                   <div key={block.title} className="mb-5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 mb-2">{block.title}</h4>
+                    <h4 className="text-xs font-bold text-primary/80 mb-2">{block.title}</h4>
                     <div className="space-y-3 pl-1">
                       {block.questions.map(q => {
                         const answers = (form.spin_answers as Record<string, string> | undefined) || {};
@@ -464,13 +464,13 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
               {/* Personalização de Brinde */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-primary flex items-center gap-2">
-                  🎁 Personalização de Brinde
+                  Personalização de Brinde
                 </h3>
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold text-chart-5">Brinde 1 — Dia da Cirurgia</p>
                     <Label className="text-xs flex items-center gap-1">
-                      🍦 Qual sabor de sorvete você mais prefere? <span className="text-destructive">*</span>
+                      Qual sabor de sorvete você mais prefere? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       value={form.ice_cream_flavor || ''}
@@ -482,7 +482,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold text-chart-5">Brinde 2 — Entrega da Prótese</p>
                     <Label className="text-xs flex items-center gap-1">
-                      🍽️ O que você mais deseja comer assim que arrumar seus dentes novos? <span className="text-destructive">*</span>
+                      O que você mais deseja comer assim que arrumar seus dentes novos? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       value={form.post_treatment_food || ''}

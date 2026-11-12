@@ -46,20 +46,20 @@ export function ROIAnalyticsWidget() {
                   <AreaChart data={data?.evolution || []}>
                     <defs>
                       <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(156 72% 45%)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(156 72% 45%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="inv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(0 84% 60%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(0 84% 60%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid {...chartGrid} />
                     <XAxis {...chartAxis} dataKey="date" />
                     <YAxis {...chartAxis} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                     <Tooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
-                    <Area type="monotone" dataKey="receita" stroke="hsl(156 72% 45%)" strokeWidth={2} fill="url(#rev)" name="Receita" />
-                    <Area type="monotone" dataKey="investimento" stroke="hsl(0 84% 60%)" strokeWidth={2} fill="url(#inv)" name="Investimento" />
+                    <Area type="monotone" dataKey="receita" stroke="hsl(var(--chart-1))" strokeWidth={2} fill="url(#rev)" name="Receita" />
+                    <Area type="monotone" dataKey="investimento" stroke="hsl(var(--chart-3))" strokeWidth={2} fill="url(#inv)" name="Investimento" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -120,7 +120,7 @@ export function ROIAnalyticsWidget() {
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="bg-background/60 rounded px-2 py-1.5 border border-border/40">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className="text-xs font-semibold">{value}</p>
     </div>
   );

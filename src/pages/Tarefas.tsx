@@ -139,7 +139,7 @@ function TaskItem({
                   <User className="h-3 w-3" />
                   {task.lead.name}
                   {!!task.lead.budget_value && task.lead.budget_value > 0 && (
-                    <span className="ml-1 text-warning font-medium">
+                    <span className="ml-1 text-warning-strong font-medium">
                       (Orçamento: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(task.lead.budget_value)})
                     </span>
                   )}
@@ -163,7 +163,7 @@ function TaskItem({
               )}
               {isRescheduled && (
                 <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary">
-                  🔁 Reagendada
+                  Reagendada
                 </Badge>
               )}
             </div>
@@ -217,7 +217,7 @@ function TaskItem({
           {!!task.reschedule_history?.length && (
             <details className="mt-2 rounded border border-primary/20 bg-primary/5 p-2">
               <summary className="cursor-pointer text-xs font-medium text-primary">
-                🔁 Histórico de reagendamentos ({task.reschedule_history.length})
+                Histórico de reagendamentos ({task.reschedule_history.length})
               </summary>
               <ul className="mt-2 space-y-2">
                 {task.reschedule_history.map((h, i) => (
@@ -302,7 +302,7 @@ function TaskItem({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs gap-1.5 text-warning border-warning/30 hover:bg-warning/10"
+                className="h-7 text-xs gap-1.5 text-warning-strong border-warning/30 hover:bg-warning/10"
                 onClick={onReopen}
               >
                 <Circle className="h-3.5 w-3.5" />
@@ -424,7 +424,7 @@ const Tarefas = () => {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar + Controls */}
         <div className="space-y-4">
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardContent className="pt-4">
               <Calendar
                 mode="single"
@@ -444,7 +444,7 @@ const Tarefas = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Resumo</CardTitle>
             </CardHeader>
@@ -473,7 +473,7 @@ const Tarefas = () => {
 
         {/* Tasks List */}
         <div className="lg:col-span-2">
-          <Card className="border-0 shadow-sm">
+          <Card className="monday-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

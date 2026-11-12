@@ -36,11 +36,11 @@ export function PendingTasksBanner() {
             "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
             overdue.length > 0 ? "bg-destructive/15" : "bg-warning/15"
           )}>
-            <AlertTriangle className={cn("h-5 w-5", overdue.length > 0 ? "text-destructive" : "text-warning")} />
+            <AlertTriangle className={cn("h-5 w-5", overdue.length > 0 ? "text-destructive" : "text-warning-strong")} />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-sm">
-              ⚡ {pending.length} tarefa{pending.length > 1 ? 's' : ''} pendente{pending.length > 1 ? 's' : ''} hoje
+              {pending.length} tarefa{pending.length > 1 ? 's': ''} pendente{pending.length > 1 ? 's': ''} hoje
             </h3>
             {overdue.length > 0 && (
               <p className="text-xs text-destructive font-medium">
@@ -50,7 +50,7 @@ export function PendingTasksBanner() {
           </div>
           <Badge variant="outline" className={cn(
             "text-xs font-bold",
-            overdue.length > 0 ? "border-destructive/30 text-destructive bg-destructive/10" : "border-warning/30 text-warning bg-warning/10"
+            overdue.length > 0 ? "border-destructive/30 text-destructive bg-destructive/10" : "border-warning/30 text-warning-strong bg-warning/10"
           )}>
             {pending.length}
           </Badge>

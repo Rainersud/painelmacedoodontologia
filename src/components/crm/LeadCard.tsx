@@ -53,11 +53,11 @@ function LeadCardComponent({
   const lastActivity = (lead as any).last_interaction_at || lead.updated_at || lead.created_at;
   const inactivityDays = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86400000);
   let timeCategory: { label: string; cls: string } | null = null;
-  if (inactivityDays >= 7) timeCategory = { label: '⚠️ Sem acomp.', cls: 'bg-destructive/10 text-destructive' };
-  else if (createdDays === 0) timeCategory = { label: '🟢 Hoje', cls: 'bg-success/10 text-success' };
-  else if (createdDays === 1) timeCategory = { label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' };
-  else if (createdDays <= 7) timeCategory = { label: '📅 Semana', cls: 'bg-primary/10 text-primary' };
-  else timeCategory = { label: '📦 Antigo', cls: 'bg-muted text-muted-foreground' };
+  if (inactivityDays >= 7) timeCategory = { label: 'Sem acomp.', cls: 'bg-destructive/10 text-destructive'};
+  else if (createdDays === 0) timeCategory = { label: 'Hoje', cls: 'bg-success/10 text-success'};
+  else if (createdDays === 1) timeCategory = { label: 'Ontem', cls: 'bg-warning/10 text-warning-strong'};
+  else if (createdDays <= 7) timeCategory = { label: 'Semana', cls: 'bg-primary/10 text-primary'};
+  else timeCategory = { label: 'Antigo', cls: 'bg-muted text-muted-foreground'};
 
   // Calculate total days in follow-up (from first follow-up entry)
   const totalFollowUpDays = isFollowUpStage && lead.stage_entered_at
@@ -68,7 +68,7 @@ function LeadCardComponent({
   const showExcessWarning = isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && days === 0 && (lead.contact_attempts ?? 0) >= 2;
   const alertColors = {
     normal: 'bg-success/10 text-success',
-    attention: 'bg-warning/10 text-warning',
+    attention: 'bg-warning/10 text-warning-strong',
     critical: 'bg-destructive/10 text-destructive',
   };
 
@@ -111,7 +111,7 @@ function LeadCardComponent({
         <CardContent className="px-1.5 py-1 flex items-center gap-1.5">
           <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotClass)} />
           <p className="font-medium truncate text-[11px] flex-1 min-w-0">{lead.name}</p>
-          {hasTask && <CheckSquare className="h-2.5 w-2.5 text-warning shrink-0" />}
+          {hasTask && <CheckSquare className="h-2.5 w-2.5 text-warning-strong shrink-0" />}
           {(lead.budget_value || lead.treatment_value || 0) > 0 && (
             <span className="font-semibold text-[10px] text-muted-foreground shrink-0">
               {formatCurrency(lead.budget_value || lead.treatment_value || 0)}
@@ -165,7 +165,7 @@ function LeadCardComponent({
               "text-[9px] border-0 font-medium px-1 py-0 h-4",
               topAlert.level === 'critical' ? 'bg-destructive/10 text-destructive' :
               topAlert.level === 'opportunity' ? 'bg-success/10 text-success' :
-              'bg-warning/10 text-warning'
+              'bg-warning/10 text-warning-strong'
             )}>
               <Zap className="h-2 w-2 mr-0.5" />
               {topAlert.shortLabel}
@@ -173,24 +173,24 @@ function LeadCardComponent({
           )}
           {lead.interest_product && (
             <Badge variant="outline" className="text-[9px] bg-chart-3/10 text-chart-3 border-chart-3/20 px-1 py-0 h-4">
-              🦷 {lead.interest_product === 'implante' ? 'Impl.' : 
+              {lead.interest_product === 'implante'? 'Impl.': 
                    lead.interest_product === 'protese_flexivel' ? 'P.Flex' :
                    lead.interest_product === 'protese_total' ? 'P.Total' : lead.interest_product}
             </Badge>
           )}
           {lead.scheduled_appointment_at && (
             <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 px-1 py-0 h-4">
-              📅 {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' })}
+              {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit'})}
             </Badge>
           )}
           {lead.no_show_count > 0 && (
             <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-0 px-1 py-0 h-4">
-              ❌ {lead.no_show_count}x falta
+              {lead.no_show_count}x falta
             </Badge>
           )}
           {isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && (
-            <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning border-0 px-1 py-0 h-4">
-              📞 {lead.contact_attempts}/9
+            <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning-strong border-0 px-1 py-0 h-4">
+              {lead.contact_attempts}/9
             </Badge>
           )}
           {(() => {
@@ -202,7 +202,7 @@ function LeadCardComponent({
                 className="text-[9px] bg-success/10 text-success border-0 px-1 py-0 h-4"
                 title="Ganhou Limpeza + 10% de desconto em qualquer tratamento"
               >
-                🎁 Limpeza + 10% off
+                Limpeza + 10% off
               </Badge>
             ) : null;
           })()}
@@ -212,7 +212,7 @@ function LeadCardComponent({
         {showExcessWarning && (
           <div className="bg-destructive/10 rounded px-1.5 py-0.5 mb-1">
             <p className="text-[8px] text-destructive font-medium">
-              ⚠️ Excesso de tentativas neste período – pode reduzir conversão
+              Excesso de tentativas neste período – pode reduzir conversão
             </p>
           </div>
         )}
@@ -224,7 +224,7 @@ function LeadCardComponent({
               "text-[9px] border-0 font-medium px-1 py-0 h-4",
               friendlyData.friendly_patient ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
             )}>
-              🤝 {friendlyData.friendly_patient ? 'Amigo ✓' : 'Amigo ✗'}
+              {friendlyData.friendly_patient ? 'Paciente amigo' : 'Não é paciente amigo'}
             </Badge>
           </div>
         )}

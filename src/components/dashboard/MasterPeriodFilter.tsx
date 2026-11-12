@@ -28,7 +28,6 @@ export function MasterPeriodFilter() {
 
   return (
     <Card className="monday-card overflow-hidden border-primary/30">
-      <div className="h-1 w-full bg-gradient-to-r from-primary via-primary/70 to-primary/40" />
       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">

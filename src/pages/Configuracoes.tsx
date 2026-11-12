@@ -16,7 +16,7 @@ export default function Configuracoes() {
   if (!isAdmin) {
     return (
       <AppLayout title="Configurações">
-        <Card className="border-0 shadow-sm">
+        <Card className="monday-card">
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
             <p className="text-muted-foreground">Você não tem permissão para acessar as configurações</p>
@@ -30,9 +30,6 @@ export default function Configuracoes() {
     <AppLayout title="Configurações">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Settings className="h-5 w-5 text-primary" />
-          </div>
           <div>
             <h2 className="text-lg font-semibold">Configurações do Sistema</h2>
             <p className="text-sm text-muted-foreground">Gerencie usuários, permissões e preferências</p>
@@ -65,7 +62,7 @@ export default function Configuracoes() {
 
 
           <TabsContent value="notifications" className="space-y-4">
-            <Card className="border-0 shadow-sm">
+            <Card className="monday-card">
               <CardHeader>
                 <CardTitle className="text-base">Configurações de Notificações</CardTitle>
                 <CardDescription>Defina quando e como os alertas são enviados</CardDescription>
@@ -90,7 +87,7 @@ export default function Configuracoes() {
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4">
-            <Card className="border-0 shadow-sm">
+            <Card className="monday-card">
               <CardHeader>
                 <CardTitle className="text-base">Aparência</CardTitle>
                 <CardDescription>Personalize a aparência do sistema</CardDescription>

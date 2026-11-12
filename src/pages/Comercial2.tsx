@@ -141,8 +141,8 @@ function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center gap-2">
-        <Lock className="h-4 w-4 text-warning" />
-        <p className="text-xs text-warning font-semibold">Esta coluna é somente leitura. A 1ª compra é aquisição (CAC).</p>
+        <Lock className="h-4 w-4 text-warning-strong" />
+        <p className="text-xs text-warning-strong font-semibold">Esta coluna é somente leitura. A 1ª compra é aquisição (CAC).</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
@@ -170,11 +170,11 @@ function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
           <Gift className="h-3.5 w-3.5" /> Brindes
         </p>
         <div className="flex items-center gap-2">
-          <Badge className={cn("text-[10px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-            🎁 Cirurgia: {opp.gift_surgery_sent ? '✅ Enviado' : '⏳ Pendente'}
+          <Badge className={cn("text-[10px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>
+            Cirurgia: {opp.gift_surgery_sent ? 'Enviado': 'Pendente'}
           </Badge>
-          <Badge className={cn("text-[10px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-            🎁 Prótese: {opp.gift_prosthesis_sent ? '✅ Enviado' : '⏳ Pendente'}
+          <Badge className={cn("text-[10px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>
+            Prótese: {opp.gift_prosthesis_sent ? 'Enviado': 'Pendente'}
           </Badge>
         </div>
       </div>
@@ -182,18 +182,18 @@ function LockedDetailContent({ opp }: { opp: UpsellOpportunity }) {
       {/* Paciente Amigo */}
       {opp.friendly_patient && (
         <div className="rounded-lg border p-3">
-          <p className="text-xs font-bold text-chart-5 mb-1">🤝 Paciente Amigo</p>
-          <Badge className={cn("text-[10px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
-            {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento Gravado' : '🎬 Pendente'}
+          <p className="text-xs font-bold text-chart-5 mb-1">Paciente Amigo</p>
+          <Badge className={cn("text-[10px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>
+            {opp.friendly_patient_video_recorded ? 'Depoimento Gravado': 'Pendente'}
           </Badge>
         </div>
       )}
 
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs font-bold text-chart-5">🎁 Personalização</p>
-          {triage.ice_cream_flavor && <p className="text-sm">🍦 {triage.ice_cream_flavor}</p>}
-          {triage.post_treatment_food && <p className="text-sm">🍽️ {triage.post_treatment_food}</p>}
+          <p className="text-xs font-bold text-chart-5">Personalização</p>
+          {triage.ice_cream_flavor && <p className="text-sm">{triage.ice_cream_flavor}</p>}
+          {triage.post_treatment_food && <p className="text-sm">{triage.post_treatment_food}</p>}
         </div>
       )}
     </div>
@@ -218,7 +218,7 @@ function EditableDetailContent({
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
     }, {
       onSuccess: () => {
-        toast.success(date ? '📅 Data selecionada!' : 'Data removida');
+        toast.success(date ? 'Data selecionada!': 'Data removida');
         if (field === 'gift_surgery_date') setSurgeryCalendarOpen(false);
         if (field === 'gift_prosthesis_date') setProsthesisCalendarOpen(false);
       },
@@ -365,8 +365,8 @@ function EditableDetailContent({
         setStageEditing({});
         const nextLabel = nextStage ? UPSELL_STAGES.find(s => s.key === nextStage)?.label : null;
         toast.success(nextLabel
-          ? `✅ Evolução salva! Paciente movido para "${nextLabel}"`
-          : '✅ Evolução salva! (última etapa)'
+          ? `Evolução salva! Paciente movido para "${nextLabel}"`
+          : 'Evolução salva! (última etapa)'
         );
       },
       onError: () => toast.error('Erro ao salvar evolução'),
@@ -420,13 +420,13 @@ function EditableDetailContent({
       </div>
 
       <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30">
-        📍 Etapa atual: {currentStageLabel}
+        Etapa atual: {currentStageLabel}
       </Badge>
 
       {/* ===== SUGESTÃO DE TRATAMENTO ===== */}
       {treatmentSuggestions.length > 0 && (
         <div className="rounded-md border border-chart-5/30 bg-chart-5/5 p-2.5 space-y-2">
-          <p className="text-[11px] font-bold text-chart-5">💡 Sugestão de Tratamento</p>
+          <p className="text-[11px] font-bold text-chart-5">Sugestão de Tratamento</p>
           <p className="text-[9px] text-muted-foreground">Selecione para adicionar automaticamente em Tratamento</p>
           <div className="flex flex-wrap gap-1.5">
             {treatmentSuggestions.map((sug, i) => (
@@ -459,7 +459,7 @@ function EditableDetailContent({
       {/* ===== TRATAMENTO (entries with CRUD) ===== */}
       {localPurchases.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[11px] font-bold text-chart-5">📋 Tratamento</p>
+          <p className="text-[11px] font-bold text-chart-5">Tratamento</p>
           {localPurchases.map((entry, i) => {
             const isEditable = !entry.locked || stageEditing[i];
             const showDate = needsDateField(entry.treatment);
@@ -473,17 +473,17 @@ function EditableDetailContent({
               )}>
                 {/* Upsell pending alert */}
                 {isUpsellPending && (
-                  <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-warning/10 border border-warning/30 text-warning text-[10px] font-semibold">
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-warning/10 border border-warning/30 text-warning-strong text-[10px] font-semibold">
                     <AlertTriangle className="h-3 w-3" />
-                    ⚠️ Upsell pendente — agendado para {format(new Date(entry.upsell_date + 'T12:00:00'), 'dd/MM/yyyy')}
+                    Upsell pendente — agendado para {format(new Date(entry.upsell_date + 'T12:00:00'), 'dd/MM/yyyy')}
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-chart-5">🔹 {entry.treatment || `Tratamento ${i + 1}`}</p>
+                  <p className="text-[10px] font-bold text-chart-5">{entry.treatment || `Tratamento ${i + 1}`}</p>
                   <div className="flex items-center gap-1">
                     {entry.locked && !stageEditing[i] && (
                       <>
-                        <Badge className="text-[8px] bg-success/10 text-success border-success/30">🔒 Salvo</Badge>
+                        <Badge className="text-[8px] bg-success/10 text-success border-success/30">Salvo</Badge>
                         <Button size="sm" variant="ghost" className="h-6 text-[9px] px-1.5" onClick={() => handleEditEntry(i)}>
                           <Pencil className="h-3 w-3 mr-0.5" /> Editar
                         </Button>
@@ -512,14 +512,14 @@ function EditableDetailContent({
                   </div>
                   {showDate && (
                     <div>
-                      <Label className="text-[9px] text-muted-foreground">📅 Data</Label>
+                      <Label className="text-[9px] text-muted-foreground">Data</Label>
                       <Input type="date" value={entry.date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'date', e.target.value)} className="h-7 text-xs mt-0.5" disabled={!isEditable} />
                     </div>
                   )}
                 </div>
                 {/* Data do Upsell */}
                 <div>
-                  <Label className="text-[9px] text-muted-foreground">📅 Data do Upsell</Label>
+                  <Label className="text-[9px] text-muted-foreground">Data do Upsell</Label>
                   <Input type="date" value={entry.upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
                 </div>
                 {/* Status do Pagamento */}
@@ -529,11 +529,11 @@ function EditableDetailContent({
                     <div
                       className={cn(
                         "flex items-center gap-1 rounded-md border px-2 py-1 cursor-pointer transition-colors text-[10px]",
-                        entry.payment_status !== 'pago' ? "border-warning/40 bg-warning/10 text-warning font-semibold" : "border-border bg-background hover:bg-muted/50"
+                        entry.payment_status !== 'pago' ? "border-warning/40 bg-warning/10 text-warning-strong font-semibold" : "border-border bg-background hover:bg-muted/50"
                       )}
                       onClick={() => handlePurchaseFieldChange(i, 'payment_status', 'pendente')}
                     >
-                      <span>⏳</span> Pendente
+                      Pendente
                     </div>
                     <div
                       className={cn(
@@ -549,7 +549,7 @@ function EditableDetailContent({
                 {/* Agendar novo Upsell after payment */}
                 {entry.payment_status === 'pago' && (
                   <div className="rounded-md bg-primary/5 border border-primary/20 p-2 mt-1">
-                    <Label className="text-[9px] text-primary font-semibold">🔄 Agendar Novo Upsell</Label>
+                    <Label className="text-[9px] text-primary font-semibold">Agendar Novo Upsell</Label>
                     <Input type="date" value={entry.next_upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'next_upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
                   </div>
                 )}
@@ -561,30 +561,30 @@ function EditableDetailContent({
 
       {/* ===== FINANCEIRO DA ETAPA (Replicação completa do Comercial 1) ===== */}
       <div className="rounded-lg border-2 border-primary/30 p-3 space-y-3">
-        <p className="text-xs font-bold text-chart-5">💰 Financeiro da Etapa</p>
+        <p className="text-xs font-bold text-chart-5">Financeiro da Etapa</p>
 
 
         {/* Resumo financeiro — sempre visível */}
         <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">💰 Valor do tratamento orçado</span>
+            <span className="text-muted-foreground">Valor do tratamento orçado</span>
             <span className="font-bold text-primary">{formatCurrency(budgetValue)}</span>
           </div>
           <p className="text-[8px] text-muted-foreground">Soma automática de {Array.isArray(localPurchases) ? localPurchases.length : 0} tratamento(s)</p>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">✅ Já pago (automático)</span>
+            <span className="text-muted-foreground">Já pago (automático)</span>
             <span className="font-medium text-success">{formatCurrency(totalPaidStage)}</span>
           </div>
           {pendingBoletos.length > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Boletos pendentes</span>
-              <span className="font-medium text-warning">{pendingBoletos.length}x</span>
+              <span className="font-medium text-warning-strong">{pendingBoletos.length}x</span>
             </div>
           )}
           <div className="border-t my-1" />
           <div className="flex justify-between text-sm font-medium">
             <span>Saldo restante</span>
-            <span className={remainingBalance > 0 ? 'text-warning' : 'text-success'}>
+            <span className={remainingBalance > 0 ? 'text-warning-strong' : 'text-success'}>
               {formatCurrency(remainingBalance)}
             </span>
           </div>
@@ -603,7 +603,7 @@ function EditableDetailContent({
         {/* Boletos pendentes - confirmar pagamento */}
         {pendingBoletos.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-warning">📄 Boletos Pendentes</p>
+            <p className="text-[10px] font-bold text-warning-strong">Boletos Pendentes</p>
             {pendingBoletos.map((boleto) => (
               <div key={boleto.id} className="flex items-center justify-between p-2 rounded-md border border-warning/30 bg-warning/5">
                 <div className="text-xs">
@@ -628,18 +628,18 @@ function EditableDetailContent({
         {/* Histórico de pagamentos desta etapa */}
         {(stagePayments || []).filter(p => p.status === 'pago').length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-[10px] font-bold text-success">✅ Pagamentos Confirmados</p>
+            <p className="text-[10px] font-bold text-success">Pagamentos Confirmados</p>
             {(stagePayments || []).filter(p => p.status === 'pago').map((p) => (
               <div key={p.id} className="rounded-md border border-success/30 bg-success/5 text-xs">
                 {editingPaymentId === p.id ? (
                   <div className="p-2 space-y-2">
                     <div className="flex items-center gap-1.5">
                       <Badge variant="outline" className="text-[8px]">
-                        {p.payment_method === 'credito' ? '💳 Crédito' :
-                         p.payment_method === 'debito' ? '💳 Débito' :
-                         p.payment_method === 'pix' ? '⚡ Pix' :
-                         p.payment_method === 'cheque' ? '📝 Cheque' :
-                         p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
+                        {p.payment_method === 'credito'? 'Crédito':
+                         p.payment_method === 'debito'? 'Débito':
+                         p.payment_method === 'pix'? 'Pix':
+                         p.payment_method === 'cheque'? 'Cheque':
+                         p.payment_method === 'boleto'? 'Boleto': p.payment_method}
                       </Badge>
                       <span className="text-muted-foreground">Editando valor</span>
                     </div>
@@ -667,11 +667,11 @@ function EditableDetailContent({
                   <div className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-1.5">
                       <Badge variant="outline" className="text-[8px]">
-                        {p.payment_method === 'credito' ? '💳 Crédito' :
-                         p.payment_method === 'debito' ? '💳 Débito' :
-                         p.payment_method === 'pix' ? '⚡ Pix' :
-                         p.payment_method === 'cheque' ? '📝 Cheque' :
-                         p.payment_method === 'boleto' ? '📄 Boleto' : p.payment_method}
+                        {p.payment_method === 'credito'? 'Crédito':
+                         p.payment_method === 'debito'? 'Débito':
+                         p.payment_method === 'pix'? 'Pix':
+                         p.payment_method === 'cheque'? 'Cheque':
+                         p.payment_method === 'boleto'? 'Boleto': p.payment_method}
                       </Badge>
                       {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
                     </div>
@@ -686,7 +686,7 @@ function EditableDetailContent({
                         onClick={() => { setEditingPaymentId(p.id); setEditingPaymentValue(p.gross_value); }}>
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning hover:bg-warning/10" title="Reverter pagamento"
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning-strong hover:bg-warning/10" title="Reverter pagamento"
                         onClick={() => revertPayment.mutate(p.id)} disabled={revertPayment.isPending}>
                         <Undo2 className="h-3 w-3" />
                       </Button>
@@ -729,19 +729,19 @@ function EditableDetailContent({
             </div>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-md bg-success/5 border border-success/20 p-2">
-                <p className="text-[9px] text-muted-foreground">📊 LTV (Pagos)</p>
+                <p className="text-[9px] text-muted-foreground">LTV (Pagos)</p>
                 <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
                 <p className="text-[8px] text-muted-foreground">Valor total dos tratamentos pagos</p>
               </div>
               <div className="rounded-md bg-chart-5/5 border border-chart-5/20 p-2">
-                <p className="text-[9px] text-muted-foreground">💵 Faturamento (Caixa)</p>
+                <p className="text-[9px] text-muted-foreground">Faturamento (Caixa)</p>
                 <p className="text-sm font-bold text-chart-5">{formatCurrency(totalPaidStage)}</p>
                 <p className="text-[8px] text-muted-foreground">Parcelas efetivamente recebidas</p>
               </div>
             </div>
             {totalOrcamento > 0 && totalOrcamento !== calculatedLTV && (
               <div className="rounded-md bg-muted/50 border p-2 text-center">
-                <p className="text-[9px] text-muted-foreground">💰 Valor orçado</p>
+                <p className="text-[9px] text-muted-foreground">Valor orçado</p>
                 <p className="text-sm font-bold">{formatCurrency(totalOrcamento)}</p>
               </div>
             )}
@@ -765,10 +765,9 @@ function EditableDetailContent({
       {/* Triage personalization */}
       {triage && (triage.ice_cream_flavor || triage.post_treatment_food) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <p className="text-xs font-bold text-chart-5">🎁 Personalização de Brinde</p>
+          <p className="text-xs font-bold text-chart-5">Personalização de Brinde</p>
           {triage.ice_cream_flavor && (
             <div className="flex items-start gap-2 text-sm">
-              <span>🍦</span>
               <div>
                 <p className="text-[10px] text-muted-foreground">Sabor de sorvete preferido</p>
                 <p className="font-medium">{triage.ice_cream_flavor}</p>
@@ -777,7 +776,6 @@ function EditableDetailContent({
           )}
           {triage.post_treatment_food && (
             <div className="flex items-start gap-2 text-sm">
-              <span>🍽️</span>
               <div>
                 <p className="text-[10px] text-muted-foreground">Desejo pós-tratamento</p>
                 <p className="font-medium">{triage.post_treatment_food}</p>
@@ -796,16 +794,16 @@ function EditableDetailContent({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Checkbox checked={opp.gift_surgery_sent} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, gift_surgery_sent: !!checked, gift_surgery_sent_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
-              <span className="text-xs font-semibold">🎁 Brinde – Dia da Cirurgia</span>
+              <span className="text-xs font-semibold">Brinde – Dia da Cirurgia</span>
             </div>
-            <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}</Badge>
+            <Badge className={cn("text-[9px]", opp.gift_surgery_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>{opp.gift_surgery_sent ? 'Realizado' : 'Pendente'}</Badge>
           </div>
           <div className="rounded-md bg-background/60 border border-border/60 p-2">
-            <p className="text-[10px] text-muted-foreground">🍦 Sabor de sorvete preferido</p>
+            <p className="text-[10px] text-muted-foreground">Sabor de sorvete preferido</p>
             <p className="text-xs font-medium">{triage?.ice_cream_flavor || 'Não informado na triagem'}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
+            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Data:</Label>
             <Popover open={surgeryCalendarOpen} onOpenChange={setSurgeryCalendarOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
@@ -823,16 +821,16 @@ function EditableDetailContent({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Checkbox checked={opp.gift_prosthesis_sent} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, gift_prosthesis_sent: !!checked, gift_prosthesis_sent_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
-              <span className="text-xs font-semibold">🎁 Brinde – Entrega da Prótese</span>
+              <span className="text-xs font-semibold">Brinde – Entrega da Prótese</span>
             </div>
-            <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}</Badge>
+            <Badge className={cn("text-[9px]", opp.gift_prosthesis_sent ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>{opp.gift_prosthesis_sent ? 'Realizado' : 'Pendente'}</Badge>
           </div>
           <div className="rounded-md bg-background/60 border border-border/60 p-2">
-            <p className="text-[10px] text-muted-foreground">🍽️ O que deseja comer com os dentes novos</p>
+            <p className="text-[10px] text-muted-foreground">O que deseja comer com os dentes novos</p>
             <p className="text-xs font-medium">{triage?.post_treatment_food || 'Não informado na triagem'}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">📅 Data:</Label>
+            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Data:</Label>
             <Popover open={prosthesisCalendarOpen} onOpenChange={setProsthesisCalendarOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
@@ -850,7 +848,7 @@ function EditableDetailContent({
 
       {/* Paciente Amigo */}
       <div className="rounded-lg border p-3 space-y-3">
-        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">🤝 Paciente Amigo</p>
+        <p className="text-xs font-bold flex items-center gap-1.5 text-chart-5">Paciente Amigo</p>
         <div className="flex items-center gap-2">
           <Checkbox checked={opp.friendly_patient} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, friendly_patient: !!checked })} className="h-4 w-4" />
           <span className="text-xs">Aceitou participar</span>
@@ -860,9 +858,9 @@ function EditableDetailContent({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Checkbox checked={opp.friendly_patient_video_recorded} onCheckedChange={(checked) => updateOpp.mutate({ id: opp.id, friendly_patient_video_recorded: !!checked, friendly_patient_video_recorded_at: checked ? new Date().toISOString() : null })} className="h-4 w-4" />
-                <span className="text-xs font-semibold">🎬 Gravar Depoimento</span>
+                <span className="text-xs font-semibold">Gravar Depoimento</span>
               </div>
-              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>{opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}</Badge>
+              <Badge className={cn("text-[9px]", opp.friendly_patient_video_recorded ? "bg-success/10 text-success" : "bg-warning/10 text-warning-strong")}>{opp.friendly_patient_video_recorded ? 'Realizado' : 'Pendente'}</Badge>
             </div>
           </div>
         )}
@@ -891,7 +889,7 @@ function EditableDetailContent({
           if (rs) {
             const colorMap = {
               success: 'border-success/30 bg-success/5 text-success',
-              warning: 'border-warning/30 bg-warning/5 text-warning',
+              warning: 'border-warning/30 bg-warning/5 text-warning-strong',
               destructive: 'border-destructive/30 bg-destructive/5 text-destructive',
             };
             return (
@@ -918,7 +916,7 @@ function EditableDetailContent({
         {/* Return scheduling */}
         <div className="space-y-2">
           <div>
-            <Label className="text-[10px] text-muted-foreground">📅 Data do Próximo Retorno</Label>
+            <Label className="text-[10px] text-muted-foreground">Data do Próximo Retorno</Label>
             <Input
               type="date"
               value={opp.next_return_date || ''}
@@ -939,7 +937,7 @@ function EditableDetailContent({
                 id: opp.id,
                 return_scheduled: true,
               }, {
-                onSuccess: () => toast.success('✅ Retorno marcado como agendado!'),
+                onSuccess: () => toast.success('Retorno marcado como agendado!'),
               })}
             >
               <CalendarIcon className="h-3.5 w-3.5" />
@@ -1081,7 +1079,7 @@ const Comercial2 = () => {
 
       // Block: can't drop into locked column
       if (targetStage?.locked) {
-        toast.error('❌ Não é possível mover para a coluna "Comprou 1 vez"');
+        toast.error('Não é possível mover para a coluna "Comprou 1 vez"');
         setDraggedId(null);
         setDropTarget(null);
         return;
@@ -1186,7 +1184,7 @@ const Comercial2 = () => {
                 <Card className="monday-card">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-warning" />
+                      <DollarSign className="h-4 w-4 text-warning-strong" />
                       <div>
                         <p className="text-[10px] text-muted-foreground">Ticket Médio</p>
                         <p className="text-lg font-bold">{formatCurrency(metrics.avgTicket)}</p>
@@ -1208,10 +1206,10 @@ const Comercial2 = () => {
                 <Card className="monday-card border-warning/30">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2">
-                      <Gift className="h-4 w-4 text-warning" />
+                      <Gift className="h-4 w-4 text-warning-strong" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">🎁 Pendentes</p>
-                        <p className="text-lg font-bold text-warning">{metrics.giftsPending}</p>
+                        <p className="text-[10px] text-muted-foreground">Pendentes</p>
+                        <p className="text-lg font-bold text-warning-strong">{metrics.giftsPending}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1221,7 +1219,7 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Gift className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">🎁 Enviados</p>
+                        <p className="text-[10px] text-muted-foreground">Enviados</p>
                         <p className="text-lg font-bold text-success">{metrics.giftsSent}</p>
                       </div>
                     </div>
@@ -1232,7 +1230,7 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Video className="h-4 w-4 text-primary" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">🤝 Pac. Amigo</p>
+                        <p className="text-[10px] text-muted-foreground">Pac. Amigo</p>
                         <p className="text-lg font-bold text-primary">{metrics.friendlyAccepted}</p>
                       </div>
                     </div>
@@ -1241,10 +1239,10 @@ const Comercial2 = () => {
                 <Card className="monday-card border-warning/30">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2">
-                      <Video className="h-4 w-4 text-warning" />
+                      <Video className="h-4 w-4 text-warning-strong" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">🎬 Pendentes</p>
-                        <p className="text-lg font-bold text-warning">{metrics.videoPending}</p>
+                        <p className="text-[10px] text-muted-foreground">Pendentes</p>
+                        <p className="text-lg font-bold text-warning-strong">{metrics.videoPending}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1254,7 +1252,7 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Video className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">🎬 Realizados</p>
+                        <p className="text-[10px] text-muted-foreground">Realizados</p>
                         <p className="text-lg font-bold text-success">{metrics.videoRecorded}</p>
                       </div>
                     </div>
@@ -1318,13 +1316,13 @@ const Comercial2 = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
                             <span className="text-xs font-semibold flex-1 truncate">{stage.label}</span>
-                            {isLocked && <Lock className="h-3 w-3 text-warning" />}
+                            {isLocked && <Lock className="h-3 w-3 text-warning-strong" />}
                             <Badge variant="secondary" className="font-semibold bg-muted text-xs h-5 min-w-5 flex items-center justify-center">
                               {stageOpps.length}
                             </Badge>
                           </div>
                           <p className="text-[10px] text-muted-foreground font-medium">
-                            {isLocked ? '🔒 Somente leitura (CAC)' : formatCurrency(totalValue)}
+                            {isLocked ? 'Somente leitura (CAC)': formatCurrency(totalValue)}
                           </p>
                         </div>
 
@@ -1355,7 +1353,7 @@ const Comercial2 = () => {
                                           <p className="text-sm font-semibold truncate flex-1">
                                             {opp.lead?.name || 'Paciente'}
                                           </p>
-                                          {isLocked ? <Lock className="h-3.5 w-3.5 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                                          {isLocked ? <Lock className="h-3.5 w-3.5 text-warning-strong shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                                         </div>
                                         {/* Paciente Amigo on card */}
                                         {opp.friendly_patient && (
@@ -1363,23 +1361,23 @@ const Comercial2 = () => {
                                             "flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]",
                                             opp.friendly_patient_video_recorded
                                               ? "border-success/30 bg-success/5 text-success"
-                                              : "border-warning/30 bg-warning/5 text-warning animate-pulse"
+                                              : "border-warning/30 bg-warning/5 text-warning-strong animate-pulse"
                                           )}>
                                             <span className="font-medium">
-                                              {opp.friendly_patient_video_recorded ? '🎬 ✅ Depoimento' : '🎬 Gravar Depoimento'}
+                                              {opp.friendly_patient_video_recorded ? 'Depoimento': 'Gravar Depoimento'}
                                             </span>
                                           </div>
                                         )}
                                         <div className="flex items-center gap-1.5">
                                           <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                            🔄 {opp.purchase_count || 1}x
+                                            {opp.purchase_count || 1}x
                                           </Badge>
                                           {(() => {
                                             const entries = parsePurchaseEntries(opp.purchase_values);
                                             const ltv = entries.reduce((s, p) => s + p.value, 0);
                                             return ltv > 0 ? (
                                               <Badge className="text-[9px] bg-success/10 text-success border-success/30">
-                                                💰 {formatCurrency(ltv)}
+                                                {formatCurrency(ltv)}
                                               </Badge>
                                             ) : null;
                                           })()}
@@ -1403,12 +1401,12 @@ const Comercial2 = () => {
                                         {(() => {
                                           const rs = getReturnStatus(opp);
                                           if (!rs) return null;
-                                          const colorMap = { success: 'border-success/30 bg-success/5 text-success', warning: 'border-warning/30 bg-warning/5 text-warning', destructive: 'border-destructive/30 bg-destructive/5 text-destructive' };
+                                          const colorMap = { success: 'border-success/30 bg-success/5 text-success', warning: 'border-warning/30 bg-warning/5 text-warning-strong', destructive: 'border-destructive/30 bg-destructive/5 text-destructive' };
                                           return (
                                             <div className={cn("flex items-center gap-1.5 p-1.5 rounded-md border text-[10px]", colorMap[rs.color])}>
                                               <Timer className="h-3 w-3" />
                                               <span className="font-medium">{rs.label}</span>
-                                              {!opp.return_scheduled && <span className="ml-auto text-[8px] opacity-75">⚠️ Não agendado</span>}
+                                              {!opp.return_scheduled && <span className="ml-auto text-[8px] opacity-75">Não agendado</span>}
                                             </div>
                                           );
                                         })()}
@@ -1416,17 +1414,17 @@ const Comercial2 = () => {
                                         <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
                                           <div className={cn(
                                             "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
-                                            opp.gift_surgery_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                            opp.gift_surgery_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning-strong"
                                           )}>
                                             <Gift className="h-3 w-3" />
-                                            <span className="font-medium">{opp.gift_surgery_sent ? '✅ Cirurgia' : '🎁 Cirurgia'}</span>
+                                            <span className="font-medium">{opp.gift_surgery_sent ? 'Cirurgia: enviado' : 'Cirurgia: pendente'}</span>
                                           </div>
                                           <div className={cn(
                                             "flex items-center gap-1.5 p-1 rounded-md border text-[10px]",
-                                            opp.gift_prosthesis_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning"
+                                            opp.gift_prosthesis_sent ? "border-success/30 bg-success/5 text-success" : "border-warning/30 bg-warning/5 text-warning-strong"
                                           )}>
                                             <Gift className="h-3 w-3" />
-                                            <span className="font-medium">{opp.gift_prosthesis_sent ? '✅ Prótese' : '🎁 Prótese'}</span>
+                                            <span className="font-medium">{opp.gift_prosthesis_sent ? 'Prótese: enviado' : 'Prótese: pendente'}</span>
                                           </div>
                                         </div>
                                       </CardContent>
@@ -1466,7 +1464,7 @@ const Comercial2 = () => {
                 <Users className="h-5 w-5 text-primary" />
                 {selectedOpp?.lead?.name || 'Detalhes'}
                 {selectedOpp && isLockedColumn(selectedOpp.status) && (
-                  <Badge className="text-[9px] bg-warning/10 text-warning border-warning/30 ml-2">
+                  <Badge className="text-[9px] bg-warning/10 text-warning-strong border-warning/30 ml-2">
                     <Lock className="h-3 w-3 mr-1" /> Somente leitura
                   </Badge>
                 )}

@@ -32,19 +32,19 @@ function getStatus(rate: number, thresholds = [40, 20]): PerfStatus {
 }
 
 const STATUS_COLORS: Record<PerfStatus, { gradient: string; text: string; bg: string; border: string }> = {
-  healthy: { gradient: 'from-success/80 to-success', text: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
-  attention: { gradient: 'from-warning/80 to-warning', text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
-  critical: { gradient: 'from-destructive/80 to-destructive', text: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' },
+  healthy: { gradient: ' ', text: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
+  attention: { gradient: ' ', text: 'text-warning-strong', bg: 'bg-warning/10', border: 'border-warning/20' },
+  critical: { gradient: ' ', text: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' },
 };
 
 function StatusIcon({ status }: { status: PerfStatus }) {
   if (status === 'healthy') return <CheckCircle className="h-3.5 w-3.5 text-success" />;
-  if (status === 'attention') return <AlertTriangle className="h-3.5 w-3.5 text-warning" />;
+  if (status === 'attention') return <AlertTriangle className="h-3.5 w-3.5 text-warning-strong" />;
   return <XCircle className="h-3.5 w-3.5 text-destructive" />;
 }
 
 function StatusBadge({ status }: { status: PerfStatus }) {
-  const labels: Record<PerfStatus, string> = { healthy: '✅ Saudável', attention: '⚠️ Atenção', critical: '🚨 Crítico' };
+  const labels: Record<PerfStatus, string> = { healthy: 'Saudável', attention: 'Atenção', critical: 'Crítico'};
   const c = STATUS_COLORS[status];
   return <Badge variant="outline" className={cn('text-[9px] font-semibold border', c.bg, c.text, c.border)}>{labels[status]}</Badge>;
 }
@@ -85,7 +85,7 @@ function FunnelLayer({
       <button onClick={onToggle} className="w-full focus:outline-none" style={{ maxWidth: `${width}%` }}>
         <div
           className={cn(
-            'relative rounded-lg py-2.5 px-3 transition-all duration-300 bg-gradient-to-r shadow-md hover:shadow-lg cursor-pointer hover:scale-[1.02]',
+            'relative rounded-lg py-2.5 px-3 transition-all duration-300  shadow-md hover:shadow-lg cursor-pointer hover:scale-[1.02]',
             c.gradient, isExpanded && 'ring-2 ring-primary/50'
           )}
           style={{
@@ -201,7 +201,7 @@ function SalesFunnel({ leads }: { leads: any[] }) {
         </div>
         <Badge variant="outline" className={cn('text-xs font-bold border',
           totalConv >= 15 ? 'bg-success/10 text-success border-success/20'
-            : totalConv >= 8 ? 'bg-warning/10 text-warning border-warning/20'
+            : totalConv >= 8 ? 'bg-warning/10 text-warning-strong border-warning/20'
             : 'bg-destructive/10 text-destructive border-destructive/20'
         )}>{totalConv}%</Badge>
       </div>
@@ -297,17 +297,17 @@ function getCrossInsights(consolidated: any, salesLeads: any[]): string[] {
   const attended = salesLeads.filter(l => ['compareceu', 'fechado'].includes(l.status)).length;
 
   if (consolidated.totalClicks > 0 && consolidated.totalLeads / consolidated.totalClicks < 0.1)
-    insights.push('🚨 Muito clique e pouco lead → problema na landing page ou atendimento inicial');
+    insights.push('Muito clique e pouco lead → problema na landing page ou atendimento inicial');
   if (totalLeads > 0 && scheduled / totalLeads < 0.3)
-    insights.push('⚠️ Poucos leads agendando → revisar abordagem de captação e tempo de resposta');
+    insights.push('Poucos leads agendando → revisar abordagem de captação e tempo de resposta');
   if (scheduled > 0 && attended / scheduled < 0.5)
-    insights.push('⚠️ Baixo comparecimento → melhorar confirmação de consulta e lembretes');
+    insights.push('Baixo comparecimento → melhorar confirmação de consulta e lembretes');
   if (attended > 0 && closedLeads / attended < 0.3)
-    insights.push('⚠️ Baixa taxa de fechamento → revisar abordagem comercial e condições');
+    insights.push('Baixa taxa de fechamento → revisar abordagem comercial e condições');
   if (consolidated.totalRevenue > consolidated.totalInvestment * 3)
-    insights.push('🟢 ROI excelente → considere escalar os melhores criativos');
+    insights.push('ROI excelente → considere escalar os melhores criativos');
   if (consolidated.totalInvestment > 0 && consolidated.totalRevenue < consolidated.totalInvestment)
-    insights.push('🚨 Prejuízo geral → CAC acima do retorno, avaliar pausar campanhas');
+    insights.push('Prejuízo geral → CAC acima do retorno, avaliar pausar campanhas');
   return insights;
 }
 
@@ -351,7 +351,7 @@ export default function CentralFunis() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout title="Central de Funis">
         <div className="p-4 space-y-4">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-96 w-full" />
@@ -361,15 +361,12 @@ export default function CentralFunis() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout title="Central de Funis">
       <div className="p-4 space-y-4 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" />
-              Central de Funis Inteligente
-            </h1>
+            <h2 className="text-lg font-semibold">Central de Funis Inteligente</h2>
             <p className="text-xs text-muted-foreground">Tráfego + Vendas integrados em tempo real</p>
           </div>
           <div className="flex items-center gap-2">
@@ -398,7 +395,7 @@ export default function CentralFunis() {
             <Card key={i} className="monday-card">
               <CardContent className="p-2.5 text-center">
                 <item.icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-[9px] text-muted-foreground uppercase font-semibold leading-tight">{item.label}</p>
+                <p className="text-[9px] text-muted-foreground font-semibold leading-tight">{item.label}</p>
                 <p className={cn('text-sm font-bold mt-0.5',
                   item.status === true ? 'text-success' : item.status === false ? 'text-destructive' : 'text-foreground'
                 )}>{item.value}</p>
@@ -415,7 +412,7 @@ export default function CentralFunis() {
                 <CardContent className="p-3 flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-success" />
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Melhor Criativo</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Melhor Criativo</p>
                     <p className="text-sm font-bold text-success">{bestCreative.name}</p>
                     <p className="text-xs text-muted-foreground">Lucro: {formatCurrency(Number(bestCreative.revenue) - Number(bestCreative.investment))}</p>
                   </div>
@@ -427,7 +424,7 @@ export default function CentralFunis() {
                 <CardContent className="p-3 flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-destructive" />
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Pior Criativo</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Pior Criativo</p>
                     <p className="text-sm font-bold text-destructive">{worstCreative.name}</p>
                     <p className="text-xs text-muted-foreground">Resultado: {formatCurrency(Number(worstCreative.revenue) - Number(worstCreative.investment))}</p>
                   </div>
@@ -478,7 +475,7 @@ export default function CentralFunis() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <Badge variant={m.isProfitable ? 'default' : 'destructive'} className="text-[9px] shrink-0">
-                              {m.isProfitable ? '✅ Lucro' : '🚨 Prejuízo'}
+                              {m.isProfitable ? 'Lucro': 'Prejuízo'}
                             </Badge>
                             <span className="text-xs font-bold truncate">{c.name}</span>
                           </div>

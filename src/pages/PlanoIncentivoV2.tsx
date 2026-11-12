@@ -26,9 +26,10 @@ const statusToColor = (s: PanelMetric['status']): StatusColor =>
   s === 'healthy' ? 'azul' : s === 'warning' ? 'verde' : 'vermelho';
 
 const colorClasses: Record<StatusColor, { bar: string; text: string; bg: string; ring: string; label: string }> = {
-  azul:     { bar: 'bg-[hsl(213_94%_58%)]', text: 'text-[hsl(213_94%_58%)]', bg: 'bg-[hsl(213_94%_58%)]/10', ring: 'ring-[hsl(213_94%_58%)]/30', label: 'Saudável' },
-  verde:    { bar: 'bg-[hsl(156_72%_45%)]', text: 'text-[hsl(156_72%_45%)]', bg: 'bg-[hsl(156_72%_45%)]/10', ring: 'ring-[hsl(156_72%_45%)]/30', label: 'Atenção' },
-  vermelho: { bar: 'bg-[hsl(0_84%_60%)]',   text: 'text-[hsl(0_84%_60%)]',   bg: 'bg-[hsl(0_84%_60%)]/10',   ring: 'ring-[hsl(0_84%_60%)]/30',   label: 'Crítico' },
+  // mesmas cores de status do painel inteiro (src/components/metrics/status.ts)
+  azul:     { bar: 'bg-success',     text: 'text-success',        bg: 'bg-success/10',     ring: 'ring-success/30',     label: 'Saudável' },
+  verde:    { bar: 'bg-warning',     text: 'text-warning-strong', bg: 'bg-warning/15',     ring: 'ring-warning/30',     label: 'Atenção' },
+  vermelho: { bar: 'bg-destructive', text: 'text-destructive',    bg: 'bg-destructive/10', ring: 'ring-destructive/30', label: 'Crítico' },
 };
 
 interface DisplayGoal {
@@ -200,10 +201,7 @@ export default function PlanoIncentivoV2() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Zap className="h-6 w-6 text-primary" />
-              Plano de Incentivo Inteligente
-            </h1>
+            <h2 className="text-lg font-semibold">Plano de Incentivo Inteligente</h2>
             <p className="text-muted-foreground text-sm">
               Metas oficiais da clínica · sincronizado com o Comercial 1 · proporcional aos dias úteis
             </p>
@@ -225,7 +223,7 @@ export default function PlanoIncentivoV2() {
 
         {/* Resumo */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="monday-card">
             <CardContent className="p-5">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -238,11 +236,11 @@ export default function PlanoIncentivoV2() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="p-5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[hsl(213_94%_58%)]/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-[hsl(213_94%_58%)]" />
+                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Metas saudáveis</p>
@@ -251,11 +249,11 @@ export default function PlanoIncentivoV2() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="p-5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[hsl(156_72%_45%)]/10 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-[hsl(156_72%_45%)]" />
+                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-success" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Metas atingidas</p>
@@ -264,7 +262,7 @@ export default function PlanoIncentivoV2() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="monday-card">
             <CardContent className="p-5">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
@@ -320,14 +318,14 @@ export default function PlanoIncentivoV2() {
                           {g.remaining > 0 ? (
                             <span className="text-muted-foreground">faltam {g.remaining}</span>
                           ) : (
-                            <span className="text-[hsl(156_72%_45%)] font-semibold">meta atingida ✓</span>
+                            <span className="text-success font-semibold">meta atingida </span>
                           )}
                         </div>
                       </div>
 
                       {g.trend.length > 1 && (
                         <div className="pt-2 border-t">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Evolução</p>
+                          <p className="text-[10px] text-muted-foreground mb-1">Evolução</p>
                           <Sparkline data={g.trend} />
                         </div>
                       )}
@@ -339,7 +337,7 @@ export default function PlanoIncentivoV2() {
 
         {/* Insights */}
         {panel && panel.insights.length > 0 && (
-          <Card>
+          <Card className="monday-card">
             <CardContent className="p-5 space-y-2">
               <p className="text-sm font-semibold">Insights inteligentes</p>
               <ul className="space-y-1.5">

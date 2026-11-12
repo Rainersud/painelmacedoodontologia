@@ -28,15 +28,16 @@ import { cn } from '@/lib/utils';
 type Period = 'diario' | 'semanal' | 'mensal';
 
 // Monday.com style colors
+// Cores do padrão: série fixa por métrica, laranja vira o tom de destaque da marca
 const mondayColors = {
-  blue: 'hsl(213 94% 58%)',
-  green: 'hsl(156 72% 45%)',
-  purple: 'hsl(270 75% 60%)',
-  orange: 'hsl(32 95% 55%)',
-  pink: 'hsl(340 82% 60%)',
-  teal: 'hsl(180 70% 50%)',
-  yellow: 'hsl(45 93% 58%)',
-  red: 'hsl(0 84% 60%)',
+  blue: 'hsl(var(--chart-1))',
+  green: 'hsl(var(--chart-5))',
+  purple: 'hsl(var(--chart-2))',
+  orange: 'hsl(var(--primary))',
+  pink: 'hsl(var(--chart-4))',
+  teal: 'hsl(var(--chart-1))',
+  yellow: 'hsl(var(--warning))',
+  red: 'hsl(var(--destructive))',
 };
 
 const metricConfig: Record<string, { icon: React.ElementType; color: string }> = {
@@ -73,7 +74,7 @@ export default function BonusMetas() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Bônus por Metas</h1>
+            <h2 className="text-lg font-semibold">Bônus por Metas</h2>
             <p className="text-muted-foreground">Acompanhamento de metas individuais</p>
           </div>
           <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
@@ -94,7 +95,6 @@ export default function BonusMetas() {
         {/* My Bonus Summary - Monday Style */}
         {agentData && (
           <Card className="monday-card overflow-hidden">
-            <div className="h-1.5 w-full" style={{ backgroundColor: mondayColors.orange }} />
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">

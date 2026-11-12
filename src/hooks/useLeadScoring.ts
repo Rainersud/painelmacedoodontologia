@@ -46,9 +46,9 @@ export function getScoreCategory(score: number): 'frio' | 'morno' | 'quente' {
 
 export function getScoreColor(category: string) {
   switch (category) {
-    case 'quente': return { bg: 'bg-success/10', text: 'text-success', dot: '🟢' };
-    case 'morno': return { bg: 'bg-warning/10', text: 'text-warning', dot: '🟡' };
-    default: return { bg: 'bg-destructive/10', text: 'text-destructive', dot: '🔴' };
+    case 'quente': return { bg: 'bg-success/10', text: 'text-success', dot: ''};
+    case 'morno': return { bg: 'bg-warning/10', text: 'text-warning-strong', dot: ''};
+    default: return { bg: 'bg-destructive/10', text: 'text-destructive', dot: ''};
   }
 }
 

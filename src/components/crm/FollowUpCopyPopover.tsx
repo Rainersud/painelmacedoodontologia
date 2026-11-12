@@ -182,7 +182,7 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
             <div className="flex items-center gap-1">
               {isCustom && (
                 <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/40 text-primary">
-                  ✏️ Personalizada
+                  Personalizada
                 </Badge>
               )}
               <Badge variant="outline" className="text-[9px] h-4 px-1.5">

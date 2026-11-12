@@ -71,20 +71,20 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="text-center space-y-4 p-8">
-            <div className="h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-gray-600">Recarregando...</p>
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground">Recarregando...</p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen bg-white text-gray-900">
+      <div className="min-h-screen bg-white text-foreground">
         <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12">
           <h1 className="text-2xl font-semibold tracking-tight">
             {isAuthError ? 'Sessão expirada' : 'Ocorreu um erro na aplicação'}
           </h1>
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="mt-3 text-sm text-muted-foreground">
             {isAuthError 
               ? 'Sua sessão expirou ou foi encerrada. Por favor, faça login novamente.'
               : 'A interface travou ao executar uma ação. Você pode tentar novamente ou recarregar a página.'
@@ -96,7 +96,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <button
                 type="button"
                 onClick={this.handleGoToLogin}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white hover:bg-primary"
               >
                 Ir para Login
               </button>
@@ -105,14 +105,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 <button
                   type="button"
                   onClick={this.handleTryAgain}
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white hover:bg-primary"
                 >
                   Tentar novamente
                 </button>
                 <button
                   type="button"
                   onClick={this.handleReload}
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium hover:bg-gray-50"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-white px-4 text-sm font-medium hover:bg-muted"
                 >
                   Recarregar página
                 </button>
@@ -121,7 +121,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           </div>
 
           {this.state.error && !isAuthError && (
-            <pre className="mt-6 max-h-64 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-4 text-xs text-gray-800">
+            <pre className="mt-6 max-h-64 overflow-auto rounded-md border border-border bg-muted p-4 text-xs text-foreground">
               {this.state.error.message}
               {this.state.error.stack && (
                 <>

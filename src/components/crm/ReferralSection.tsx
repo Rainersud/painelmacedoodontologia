@@ -52,7 +52,7 @@ const REWARD_TIERS = [
     count: 50,
     percent: 5,
     perks: ['1 limpeza gratuita', '4 sessões de clareamento a laser', '5% sobre cada tratamento fechado'],
-    color: 'text-warning',
+    color: 'text-warning-strong',
     bg: 'bg-warning/10',
     border: 'border-warning/30',
   },
@@ -255,7 +255,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
     <div className="space-y-4">
       {/* Indicated by */}
       {referrals?.asReferred && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="monday-card border-primary/20 bg-primary/5">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <Tag className="h-4 w-4 text-primary" />
@@ -266,14 +266,14 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
             </p>
             {Number(referrals.asReferred.discount_value) > 0 && (
               <Badge className="mt-1 bg-success/10 text-success border-0 text-xs">
-                💰 Desconto: {referrals.asReferred.discount_type === 'percentual'
+                Desconto: {referrals.asReferred.discount_type === 'percentual'
                   ? `${referrals.asReferred.discount_value}%`
                   : `R$ ${Number(referrals.asReferred.discount_value).toFixed(2)}`}
               </Badge>
             )}
             {referrals.asReferred.attendance_discount_applied && (
               <Badge className="mt-1 ml-1 bg-success/10 text-success border-0 text-xs">
-                📅 Compareceu +5%
+                Compareceu +5%
               </Badge>
             )}
           </CardContent>
@@ -281,7 +281,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
       )}
 
       {/* Reward tiers panel */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/5 via-background to-chart-5/5">
+      <Card className="monday-card">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
           ) : (
             <div className="flex items-center gap-2 text-xs text-success">
               <CheckCircle2 className="h-4 w-4" />
-              Todos os níveis desbloqueados! 🎉
+              Todos os níveis desbloqueados! 
             </div>
           )}
 
@@ -351,10 +351,10 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
 
           {currentTier && commission > 0 && (
             <div className="flex items-center gap-2 text-xs pt-2 border-t">
-              <Gift className="h-4 w-4 text-warning" />
+              <Gift className="h-4 w-4 text-warning-strong" />
               <span>
                 Comissão acumulada ({currentTier.percent}%):{' '}
-                <strong className="text-warning">
+                <strong className="text-warning-strong">
                   R$ {commission.toFixed(2)}
                 </strong>
               </span>
@@ -364,7 +364,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
       </Card>
 
       {/* RMKT Script */}
-      <Card className="border-0 shadow-sm">
+      <Card className="monday-card">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{ref.referred?.name || 'Desconhecido'}</p>
-                        <Badge className="bg-chart-5/10 text-chart-5 border-0 text-[9px]">🏷️ Indicação</Badge>
+                        <Badge className="bg-chart-5/10 text-chart-5 border-0 text-[9px]">Indicação</Badge>
                       </div>
                       {ref.referred?.phone && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
@@ -448,13 +448,13 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
                         <Badge className="bg-chart-2/10 text-chart-2 border-0 text-[10px]">Em Tratamento</Badge>
                       )}
                       {closed && treatmentValue > 0 && (
-                        <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">
+                        <Badge variant="outline" className="text-[10px] border-warning/30 text-warning-strong">
                           R$ {treatmentValue.toFixed(2)}
                         </Badge>
                       )}
                       {tierCommission > 0 && (
-                        <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
-                          🎁 +R$ {tierCommission.toFixed(2)}
+                        <Badge className="bg-warning/10 text-warning-strong border-0 text-[10px]">
+                          +R$ {tierCommission.toFixed(2)}
                         </Badge>
                       )}
                     </div>
@@ -482,7 +482,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
           <Card key={draft.id} className="border-dashed">
             <CardContent className="p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                <span className="text-[10px] font-semibold text-muted-foreground">
                   Indicação {idx + 1}
                 </span>
                 {drafts.length > 1 && (

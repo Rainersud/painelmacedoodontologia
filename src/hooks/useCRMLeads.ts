@@ -136,7 +136,7 @@ export function useUpdateLeadStatus() {
           const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
           await supabase.from('alerts').insert({
             type: 'indicacao_compareceu' as any,
-            title: '📅 Indicação compareceu!',
+            title: 'Indicação compareceu!',
             message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'você'}) compareceu à consulta. Desconto de 5% aplicado!`,
             user_id: null,
             lead_id: leadId,
@@ -177,8 +177,8 @@ export function useUpdateLeadStatus() {
               : `R$${ref.reward_value} em crédito`;
             await supabase.from('alerts').insert({
               type: 'indicacao_converteu' as any,
-              title: '🎉 Indicação convertida!',
-              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou tratamento!\n\n💰 Bonificação disponível para pagamento\nValor: ${rewardText}`,
+              title: 'Indicação convertida!',
+              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou tratamento!\n\nBonificação disponível para pagamento\nValor: ${rewardText}`,
               user_id: null,
               lead_id: leadId,
             });
@@ -190,7 +190,7 @@ export function useUpdateLeadStatus() {
               : `R$${ref.reward_value} em crédito`;
             await supabase.from('alerts').insert({
               type: 'indicacao_converteu' as any,
-              title: '🎁 Bonificação liberada!',
+              title: 'Bonificação liberada!',
               message: `${oldLead?.name || 'Paciente'} iniciou tratamento. Bonificação de ${rewardText} liberada para ${referrerLead?.name || 'indicador'}.`,
               user_id: null,
               lead_id: leadId,

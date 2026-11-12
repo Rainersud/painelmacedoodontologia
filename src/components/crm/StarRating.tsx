@@ -10,9 +10,9 @@ interface StarRatingProps {
 
 /** 1 = vermelho, 2 = amarelo escuro, 3 = verde escuro */
 const RATING_COLORS: Record<number, string> = {
-  1: 'text-red-600 fill-red-600',
-  2: 'text-yellow-600 fill-yellow-600',
-  3: 'text-green-700 fill-green-700',
+  1: 'text-destructive fill-destructive',
+  2: 'text-warning-strong fill-warning',
+  3: 'text-success fill-success',
 };
 
 export function StarRating({

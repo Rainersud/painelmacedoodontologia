@@ -97,7 +97,7 @@ function RewardEditor({ value, percentage, treatmentValue, onSave, editable }: {
         <span className="text-[10px] text-muted-foreground">{fmtCur(value)}</span>
       )}
       {treatmentValue <= 0 && (
-        <span className="text-[9px] text-warning">Defina o valor do tratamento</span>
+        <span className="text-[9px] text-warning-strong">Defina o valor do tratamento</span>
       )}
     </div>
   );
@@ -190,34 +190,34 @@ export function ReferrerDetailDialog({
           <div className="space-y-4">
             {/* Metrics cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Card className="border-0 shadow-sm">
+              <Card className="monday-card">
                 <CardContent className="p-3 text-center">
                   <Users className="h-5 w-5 mx-auto mb-1 text-primary" />
                   <p className="text-2xl font-bold text-primary">{referrals.length}</p>
                   <p className="text-[10px] text-muted-foreground">Indicações</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-sm">
+              <Card className="monday-card">
                 <CardContent className="p-3 text-center">
                   <TrendingUp className="h-5 w-5 mx-auto mb-1 text-chart-2" />
                   <p className="text-2xl font-bold text-chart-2">{totalConverted}</p>
                   <p className="text-[10px] text-muted-foreground">Convertidos</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-sm">
+              <Card className="monday-card">
                 <CardContent className="p-3 text-center">
-                  <DollarSign className="h-5 w-5 mx-auto mb-1 text-warning" />
-                  <p className="text-2xl font-bold text-warning">{formatCurrency(totalRevenue)}</p>
+                  <DollarSign className="h-5 w-5 mx-auto mb-1 text-warning-strong" />
+                  <p className="text-2xl font-bold text-warning-strong">{formatCurrency(totalRevenue)}</p>
                   <p className="text-[10px] text-muted-foreground">Faturamento</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 shadow-sm">
+              <Card className="monday-card">
                 <CardContent className="p-3 text-center">
                   <Gift className="h-5 w-5 mx-auto mb-1 text-success" />
                   <p className="text-lg font-bold text-success">{formatCurrency(totalBonusPaid)}</p>
                   <p className="text-[10px] text-muted-foreground">Bônus Pago</p>
                   {totalBonusPending > 0 && (
-                    <p className="text-[9px] text-warning">{formatCurrency(totalBonusPending)} pendente</p>
+                    <p className="text-[9px] text-warning-strong">{formatCurrency(totalBonusPending)} pendente</p>
                   )}
                 </CardContent>
               </Card>
@@ -276,12 +276,12 @@ export function ReferrerDetailDialog({
                               {ref.bonus_status === 'pago' ? (
                                 <button onClick={() => handleMarkAsPending(ref.id)} className="cursor-pointer" disabled={updateReferral.isPending}>
                                   <Badge className="bg-success/10 text-success border-0 text-[10px] cursor-pointer hover:opacity-80">
-                                    ✅ Pago
+                                    Pago
                                   </Badge>
                                 </button>
                               ) : isConverted && ref.reward_value > 0 ? (
-                                <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
-                                  ⏳ Pendente
+                                <Badge className="bg-warning/10 text-warning-strong border-0 text-[10px]">
+                                  Pendente
                                 </Badge>
                               ) : (
                                 <span className="text-[10px] text-muted-foreground">—</span>
@@ -309,7 +309,7 @@ export function ReferrerDetailDialog({
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-7 text-xs gap-1 text-warning hover:text-warning"
+                                  className="h-7 text-xs gap-1 text-warning-strong hover:text-warning-strong"
                                   onClick={() => handleMarkAsPending(ref.id)}
                                   disabled={updateReferral.isPending}
                                 >

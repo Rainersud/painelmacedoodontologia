@@ -29,7 +29,7 @@ const alertTypeConfig: Record<AlertType, { label: string; icon: React.ElementTyp
   lead_nao_respondido: { 
     label: 'Lead Não Respondido', 
     icon: Clock, 
-    color: 'bg-warning/10 text-warning border-warning/20' 
+    color: 'bg-warning/10 text-warning-strong border-warning/20' 
   },
   meta_nao_atingida: { 
     label: 'Meta Não Atingida', 
@@ -174,9 +174,6 @@ export default function Alertas() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Bell className="h-5 w-5 text-primary" />
-            </div>
             <div>
               <h2 className="text-lg font-semibold">Central de Alertas</h2>
               <p className="text-sm text-muted-foreground">
@@ -241,7 +238,7 @@ export default function Alertas() {
                 ))}
               </div>
             ) : unreadAlerts.length === 0 ? (
-              <Card className="border-dashed">
+              <Card className="monday-card border-dashed">
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-success/50" />
                   <p className="text-muted-foreground">Nenhum alerta pendente!</p>
@@ -265,7 +262,7 @@ export default function Alertas() {
                 ))}
               </div>
             ) : alerts?.length === 0 ? (
-              <Card className="border-dashed">
+              <Card className="monday-card border-dashed">
                 <CardContent className="py-12 text-center">
                   <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <p className="text-muted-foreground">Nenhum alerta registrado</p>

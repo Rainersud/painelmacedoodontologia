@@ -33,7 +33,7 @@ export function LTVStageLeadsDialog({ open, onOpenChange, stageLabel, leads, onL
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            📊 Leads – {stageLabel}
+            Leads – {stageLabel}
           </DialogTitle>
           <DialogDescription>
             {leads.length} paciente{leads.length !== 1 ? 's' : ''} • LTV Total: {formatCurrency(totalLTV)}
@@ -67,8 +67,8 @@ export function LTVStageLeadsDialog({ open, onOpenChange, stageLabel, leads, onL
                           LTV: {formatCurrency(lead.ltv)}
                         </span>
                         {lead.hasOpenUpsell && (
-                          <Badge className="text-[8px] bg-warning/10 text-warning border-warning/30">
-                            ⚠️ Upsell aberto
+                          <Badge className="text-[8px] bg-warning/10 text-warning-strong border-warning/30">
+                            Upsell aberto
                           </Badge>
                         )}
                       </div>

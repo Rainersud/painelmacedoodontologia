@@ -51,15 +51,15 @@ const MetricasVendas = () => {
 
   const alerts: { type: 'danger' | 'warning' | 'success'; message: string }[] = [];
   if (oneStep.salesCount > 0 && oneStep.cac > oneStep.ticketMedio)
-    alerts.push({ type: 'danger', message: '🔴 Prejuízo na Venda em 1 Etapa: CAC maior que Ticket Médio' });
+    alerts.push({ type: 'danger', message: 'Prejuízo na Venda em 1 Etapa: CAC maior que Ticket Médio'});
   if (twoStep.salesCount > 0 && twoStep.cac > twoStep.ticketMedio)
-    alerts.push({ type: 'danger', message: '🔴 Prejuízo na Venda em 2 Etapas: CAC maior que Ticket Médio' });
+    alerts.push({ type: 'danger', message: 'Prejuízo na Venda em 2 Etapas: CAC maior que Ticket Médio'});
   if (bestProfit !== 'equal' && oneStep.salesCount > 0 && twoStep.salesCount > 0) {
     const bestLabel = bestProfit === '1_etapa' ? '1 Etapa' : '2 Etapas';
-    alerts.push({ type: 'success', message: `🟢 Modelo mais lucrativo identificado: ${bestLabel}` });
+    alerts.push({ type: 'success', message: `Modelo mais lucrativo identificado: ${bestLabel}`});
   }
   if ((oneStep.salesCount > 0 && twoStep.salesCount === 0) || (twoStep.salesCount > 0 && oneStep.salesCount === 0)) {
-    alerts.push({ type: 'warning', message: '⚠️ Apenas um modelo de venda utilizado. Compare para tomar melhores decisões.' });
+    alerts.push({ type: 'warning', message: 'Apenas um modelo de venda utilizado. Compare para tomar melhores decisões.'});
   }
 
   return (
@@ -86,7 +86,7 @@ const MetricasVendas = () => {
             {alerts.map((alert, i) => (
               <div key={i} className={`p-3 rounded-lg border text-sm font-medium ${
                 alert.type === 'danger' ? 'bg-destructive/10 border-destructive/30 text-destructive' :
-                alert.type === 'warning' ? 'bg-warning/10 border-warning/30 text-warning' :
+                alert.type === 'warning' ? 'bg-warning/10 border-warning/30 text-warning-strong' :
                 'bg-success/10 border-success/30 text-success'
               }`}>
                 {alert.message}
@@ -110,7 +110,7 @@ const MetricasVendas = () => {
         </div>
 
         {/* Comparison block */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Análise Comparativa</CardTitle>
           </CardHeader>
@@ -134,7 +134,7 @@ const MetricasVendas = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Bar comparison */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Comparativo Financeiro</CardTitle>
             </CardHeader>
@@ -155,7 +155,7 @@ const MetricasVendas = () => {
           </Card>
 
           {/* Pie distribution */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Distribuição de Vendas</CardTitle>
             </CardHeader>
@@ -183,7 +183,7 @@ const MetricasVendas = () => {
 
 function SummaryCard({ label, value, subtitle }: { label: string; value: string; subtitle?: string }) {
   return (
-    <Card>
+    <Card className="monday-card">
       <CardContent className="p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-lg font-bold mt-1">{value}</p>

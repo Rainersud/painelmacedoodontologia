@@ -154,8 +154,8 @@ function KanbanBoard({
                 {/* Section separator before first follow-up */}
                 {isFirstFollowUp && (
                   <div className="flex flex-col items-center justify-start shrink-0 py-2">
-                    <div className="bg-warning/20 text-warning rounded-lg px-2 py-1.5 text-center whitespace-nowrap">
-                      <p className="text-[10px] font-bold">🔄 FOLLOW-UP</p>
+                    <div className="bg-warning/20 text-warning-strong rounded-lg px-2 py-1.5 text-center whitespace-nowrap">
+                      <p className="text-[10px] font-bold">FOLLOW-UP</p>
                       <p className="text-[8px] font-medium">INTELIGENTE</p>
                     </div>
                     <div className="flex-1 w-px bg-warning/30 mt-1" />
@@ -239,10 +239,10 @@ function KanbanBoard({
                         <div className="space-y-1 pr-1 pb-4">
                         {(() => {
                           const groupsOrder: { key: string; label: string; cls: string }[] = [
-                            { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
-                            { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
-                            { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
-                            { key: 'antigo', label: '📦 Antigos', cls: 'bg-muted text-muted-foreground' },
+                            { key: 'hoje', label: 'Hoje', cls: 'bg-success/10 text-success'},
+                            { key: 'ontem', label: 'Ontem', cls: 'bg-warning/10 text-warning-strong'},
+                            { key: 'semana', label: 'Esta Semana', cls: 'bg-primary/10 text-primary'},
+                            { key: 'antigo', label: 'Antigos', cls: 'bg-muted text-muted-foreground'},
                           ];
                           const now = Date.now();
                           const categorize = (lead: Lead): string => {
@@ -265,7 +265,7 @@ function KanbanBoard({
                             if (!items || items.length === 0) return;
                             rendered.push(
                               <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-1.5 py-0.5 mt-1 first:mt-0 flex items-center justify-between", g.cls)}>
-                                <span className="text-[9px] font-bold uppercase tracking-wide">{g.label}</span>
+                                <span className="text-[9px] font-bold">{g.label}</span>
                                 <span className="text-[9px] font-bold">{items.length}</span>
                               </div>
                             );
@@ -692,9 +692,9 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
-              { key: 'hoje', label: '🟢 Hoje', cls: 'bg-success/10 text-success' },
-              { key: 'ontem', label: '🟡 Ontem', cls: 'bg-warning/10 text-warning' },
-              { key: 'semana', label: '📅 Esta Semana', cls: 'bg-primary/10 text-primary' },
+              { key: 'hoje', label: 'Hoje', cls: 'bg-success/10 text-success'},
+              { key: 'ontem', label: 'Ontem', cls: 'bg-warning/10 text-warning-strong'},
+              { key: 'semana', label: 'Esta Semana', cls: 'bg-primary/10 text-primary'},
             ].map(c => {
               const active = smartCategory === c.key;
               const count = smartCounts[c.key] ?? 0;

@@ -37,9 +37,9 @@ const METRIC_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  pendente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  em_andamento: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  concluido: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  pendente: 'bg-warning/10 text-warning-strong  ',
+  em_andamento: 'bg-accent text-primary  ',
+  concluido: 'bg-success/10 text-success  ',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -52,13 +52,13 @@ function MetricCard({ icon: Icon, title, value, subtitle, status }: { icon: any;
   return (
     <div className={cn(
       "rounded-lg border p-4 transition-all",
-      status === 'green' && "border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/30",
-      status === 'red' && "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
-      status === 'yellow' && "border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30",
+      status === 'green' && "border-success/30 bg-success/10  ",
+      status === 'red' && "border-destructive/30 bg-destructive/10  ",
+      status === 'yellow' && "border-warning/30 bg-warning/10  ",
       !status && "border-border bg-card"
     )}>
       <div className="flex items-center gap-2 mb-2">
-        <Icon className={cn("h-4 w-4", status === 'green' && "text-green-600", status === 'red' && "text-red-600", status === 'yellow' && "text-yellow-600", !status && "text-muted-foreground")} />
+        <Icon className={cn("h-4 w-4", status === 'green' && "text-success", status === 'red' && "text-destructive", status === 'yellow' && "text-warning-strong", !status && "text-muted-foreground")} />
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
       </div>
       <p className="text-lg font-bold">{value}</p>
@@ -114,12 +114,12 @@ export default function Reunioes() {
   };
 
   return (
-    <AppLayout>
+    <AppLayout title="Reuniões Semanais">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Reuniões Semanais</h1>
+            <h2 className="text-lg font-semibold">Reuniões Semanais</h2>
             <p className="text-sm text-muted-foreground">Gestão estratégica e acompanhamento de métricas</p>
           </div>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -162,7 +162,7 @@ export default function Reunioes() {
         </div>
 
         {/* Meeting selector */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Histórico de Reuniões</CardTitle>
           </CardHeader>
@@ -259,7 +259,7 @@ function MeetingContent({ meeting, cacMetrics, salesMetrics, goalsProgress, refe
         </TabsContent>
 
         <TabsContent value="resumo">
-          <Card>
+          <Card className="monday-card">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Anotações Gerais da Reunião</CardTitle>
               <CardDescription>Resumo, decisões tomadas, direcionamentos e feedback</CardDescription>
@@ -290,7 +290,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
   return (
     <div className="space-y-6">
       {/* CAC & Financeiro */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><DollarSign className="h-4 w-4" /> CAC & Financeiro</CardTitle>
         </CardHeader>
@@ -299,7 +299,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <MetricCard icon={DollarSign} title="CAC" value={formatCurrency(cacMetrics.cac)} status={cacMetrics.isProfitable ? 'green' : 'red'} />
               <MetricCard icon={TrendingUp} title="Ticket Médio" value={formatCurrency(cacMetrics.ticketMedio)} status={cacMetrics.isProfitable ? 'green' : 'red'} />
-              <MetricCard icon={DollarSign} title="Lucro/Venda" value={formatCurrency(cacMetrics.lucroPorVenda)} status={cacMetrics.lucroPorVenda > 0 ? 'green' : 'red'} subtitle={cacMetrics.isProfitable ? '🟢 Lucro na Venda' : '🔴 Prejuízo na Venda'} />
+              <MetricCard icon={DollarSign} title="Lucro/Venda"value={formatCurrency(cacMetrics.lucroPorVenda)} status={cacMetrics.lucroPorVenda > 0 ? 'green': 'red'} subtitle={cacMetrics.isProfitable ? 'Lucro na Venda': 'Prejuízo na Venda'} />
               <MetricCard icon={BarChart3} title="Faturamento" value={formatCurrency(cacMetrics.totalRevenue)} />
               <MetricCard icon={DollarSign} title="Custos Totais" value={formatCurrency(cacMetrics.totalCosts)} />
               <MetricCard icon={Users} title="Clientes Adquiridos" value={String(cacMetrics.salesCount)} />
@@ -313,7 +313,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
       </Card>
 
       {/* Vendas 1 etapa vs 2 etapas */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Métricas de Vendas (1 Etapa vs 2 Etapas)</CardTitle>
         </CardHeader>
@@ -326,15 +326,15 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
                 <MetricCard icon={TrendingDown} title="2 Etapas" value={String(salesMetrics.twoStep.salesCount)} subtitle={`Receita: ${formatCurrency(salesMetrics.twoStep.totalRevenue)}`} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className={cn("rounded-lg border p-3", salesMetrics.bestProfit === '1_etapa' ? "border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/30" : "border-border")}>
+                <div className={cn("rounded-lg border p-3", salesMetrics.bestProfit === '1_etapa' ? "border-success/30 bg-success/10  " : "border-border")}>
                   <p className="text-xs text-muted-foreground">Lucro/Cliente (1 Etapa)</p>
                   <p className="font-bold">{formatCurrency(salesMetrics.oneStep.lucroPorCliente)}</p>
-                  {salesMetrics.bestProfit === '1_etapa' && <Badge className="mt-1 text-xs bg-green-600">🟢 Melhor</Badge>}
+                  {salesMetrics.bestProfit === '1_etapa'&& <Badge className="mt-1 text-xs bg-success">Melhor</Badge>}
                 </div>
-                <div className={cn("rounded-lg border p-3", salesMetrics.bestProfit === '2_etapas' ? "border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/30" : "border-border")}>
+                <div className={cn("rounded-lg border p-3", salesMetrics.bestProfit === '2_etapas' ? "border-success/30 bg-success/10  " : "border-border")}>
                   <p className="text-xs text-muted-foreground">Lucro/Cliente (2 Etapas)</p>
                   <p className="font-bold">{formatCurrency(salesMetrics.twoStep.lucroPorCliente)}</p>
-                  {salesMetrics.bestProfit === '2_etapas' && <Badge className="mt-1 text-xs bg-green-600">🟢 Melhor</Badge>}
+                  {salesMetrics.bestProfit === '2_etapas'&& <Badge className="mt-1 text-xs bg-success">Melhor</Badge>}
                 </div>
               </div>
             </div>
@@ -345,7 +345,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
       </Card>
 
       {/* Metas da Clínica */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><Target className="h-4 w-4" /> Metas da Clínica</CardTitle>
         </CardHeader>
@@ -358,7 +358,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
                     <span className="font-medium">{g.label || goalTypeLabels[g.type] || g.type}</span>
                     <div className="flex items-center gap-2">
                       <span>{g.current}/{g.target}</span>
-                      <Badge className={cn("text-xs", g.status === 'green' && "bg-green-600", g.status === 'yellow' && "bg-yellow-600", g.status === 'red' && "bg-red-600")}>
+                      <Badge className={cn("text-xs", g.status === 'green' && "bg-success", g.status === 'yellow' && "bg-warning", g.status === 'red' && "bg-destructive")}>
                         {g.percentage}%
                       </Badge>
                     </div>
@@ -374,7 +374,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
       </Card>
 
       {/* Indicações */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><Gift className="h-4 w-4" /> Indicações</CardTitle>
         </CardHeader>
@@ -395,7 +395,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
       </Card>
 
       {/* Plano de Incentivo */}
-      <Card>
+      <Card className="monday-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><Award className="h-4 w-4" /> Plano de Incentivo</CardTitle>
         </CardHeader>
@@ -441,7 +441,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
   };
 
   return (
-    <Card>
+    <Card className="monday-card">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Planos de Ação</CardTitle>
         <CardDescription>Defina ações, responsáveis e prazos vinculados às métricas</CardDescription>
@@ -475,8 +475,8 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium">{plan.description}</p>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>👤 {plan.responsible}</span>
-                    {plan.execution_date && <span>📅 {format(new Date(plan.execution_date + 'T12:00:00'), 'dd/MM/yyyy')}</span>}
+                    <span>{plan.responsible}</span>
+                    {plan.execution_date && <span>{format(new Date(plan.execution_date + 'T12:00:00'), 'dd/MM/yyyy')}</span>}
                     {plan.related_metric && (
                       <Badge variant="outline" className="text-xs">{METRIC_OPTIONS.find(o => o.value === plan.related_metric)?.label || plan.related_metric}</Badge>
                     )}
@@ -519,7 +519,7 @@ function AnnotationsPanel({ meetingId }: { meetingId: string }) {
   };
 
   return (
-    <Card>
+    <Card className="monday-card">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Anotações Estratégicas</CardTitle>
         <CardDescription>Registre observações e comentários para cada métrica</CardDescription>
@@ -572,7 +572,7 @@ function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
   };
 
   return (
-    <Card>
+    <Card className="monday-card">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2"><BookOpen className="h-4 w-4" /> Treinamento da Equipe</CardTitle>
         <CardDescription>Links de treinamentos, vídeos e documentos</CardDescription>

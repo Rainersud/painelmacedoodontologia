@@ -278,7 +278,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       <AlertDialog open={!!duplicates} onOpenChange={(o) => !o && setDuplicates(null)}>
         <AlertDialogContent className="z-[200]">
           <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Telefone já cadastrado</AlertDialogTitle>
+            <AlertDialogTitle>Telefone já cadastrado</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>Já existe {duplicates?.length === 1 ? 'um contato' : `${duplicates?.length} contatos`} com este telefone:</p>

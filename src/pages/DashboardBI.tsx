@@ -32,17 +32,18 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { chartGrid, chartAxis } from '@/lib/chartStyle';
+import { chartGrid, chartAxis, seriesColor } from '@/lib/chartStyle';
 
 const formatBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
+// Séries fixas do padrão; vermelho só como status (ROI negativo)
 const biColors = {
-  green: 'hsl(156 72% 45%)',
-  blue: 'hsl(213 94% 58%)',
-  purple: 'hsl(270 75% 60%)',
-  orange: 'hsl(32 95% 55%)',
-  red: 'hsl(0 84% 60%)',
+  green: 'hsl(var(--chart-1))',
+  blue: 'hsl(var(--chart-2))',
+  orange: 'hsl(var(--chart-3))',
+  purple: 'hsl(var(--chart-4))',
+  red: 'hsl(var(--destructive))',
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -72,7 +73,6 @@ const DashboardBI = () => {
           value: data.kpis.faturamentoRecebido,
           icon: DollarSign,
           color: biColors.green,
-          emoji: '💰',
           subtitle: 'Mês atual (caixa)',
         },
         {
@@ -80,7 +80,6 @@ const DashboardBI = () => {
           value: data.kpis.faturamentoPrevisto,
           icon: TrendingUp,
           color: biColors.orange,
-          emoji: '📈',
           subtitle: 'Parcelas pendentes',
         },
         {
@@ -88,7 +87,6 @@ const DashboardBI = () => {
           value: data.kpis.ltvTotal,
           icon: BarChart3,
           color: biColors.purple,
-          emoji: '🧠',
           subtitle: 'Valor total vendido',
         },
         {
@@ -96,7 +94,6 @@ const DashboardBI = () => {
           value: data.kpis.ticketMedio,
           icon: ShoppingCart,
           color: biColors.blue,
-          emoji: '🎯',
           subtitle: 'Faturamento ÷ vendas',
         },
         {
@@ -104,7 +101,6 @@ const DashboardBI = () => {
           value: data.kpis.mediaComprasPaciente,
           icon: Repeat,
           color: biColors.purple,
-          emoji: '🔁',
           subtitle: 'Por paciente',
           formatAsNumber: true,
         },
@@ -113,7 +109,6 @@ const DashboardBI = () => {
           value: data.kpis.cacMedio,
           icon: Target,
           color: biColors.blue,
-          emoji: '💵',
           subtitle: 'Custo de aquisição',
         },
         {
@@ -121,7 +116,6 @@ const DashboardBI = () => {
           value: data.kpis.totalPacientes,
           icon: Users,
           color: biColors.green,
-          emoji: '👥',
           subtitle: 'Que geraram receita',
           formatAsNumber: true,
         },
@@ -130,7 +124,6 @@ const DashboardBI = () => {
           value: data.kpis.roiGeral,
           icon: ArrowUpRight,
           color: data.kpis.roiGeral >= 0 ? biColors.green : biColors.red,
-          emoji: data.kpis.roiGeral >= 0 ? '📊' : '📉',
           subtitle: 'Retorno sobre investimento',
           formatAsPercent: true,
         },
@@ -143,9 +136,7 @@ const DashboardBI = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              📊 Painel Executivo (BI)
-            </h1>
+            <h2 className="text-lg font-semibold">Painel Executivo (BI)</h2>
             <p className="text-sm text-muted-foreground">
               Visão 360° da clínica — receita, LTV, CAC e performance
             </p>
@@ -166,7 +157,6 @@ const DashboardBI = () => {
           {isLoading
             ? Array.from({ length: 8 }).map((_, i) => (
                 <Card key={i} className="overflow-hidden">
-                  <div className="h-1.5 w-full bg-muted" />
                   <CardContent className="p-4">
                     <Skeleton className="h-4 w-24 mb-2" />
                     <Skeleton className="h-8 w-32" />
@@ -175,12 +165,11 @@ const DashboardBI = () => {
               ))
             : kpiCards.map((kpi) => (
                 <Card key={kpi.title} className="overflow-hidden group hover:shadow-md transition-shadow">
-                  <div className="h-1.5 w-full" style={{ backgroundColor: kpi.color }} />
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 min-w-0 flex-1">
                         <p className="text-xs font-medium text-muted-foreground truncate">
-                          {kpi.emoji} {kpi.title}
+                          {kpi.title}
                         </p>
                         <p className="text-xl sm:text-2xl font-bold truncate">
                           {kpi.formatAsNumber
@@ -205,10 +194,10 @@ const DashboardBI = () => {
 
         {/* Smart Alerts */}
         {data?.alerts && data.alerts.length > 0 && (
-          <Card className="border-warning/30 bg-warning/5">
+          <Card className="monday-card border-warning/30 bg-warning/5">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertTriangle className="h-4 w-4 text-warning-strong" />
                 Alertas Inteligentes
               </CardTitle>
             </CardHeader>
@@ -220,7 +209,7 @@ const DashboardBI = () => {
                     className={cn(
                       'flex items-start gap-2 p-3 rounded-lg text-sm',
                       alert.type === 'danger' && 'bg-destructive/10 text-destructive',
-                      alert.type === 'warning' && 'bg-warning/10 text-warning',
+                      alert.type === 'warning' && 'bg-warning/10 text-warning-strong',
                       alert.type === 'info' && 'bg-primary/10 text-primary'
                     )}
                   >
@@ -235,7 +224,7 @@ const DashboardBI = () => {
 
         {/* Cash Projection */}
         {data && (
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
@@ -262,10 +251,10 @@ const DashboardBI = () => {
         {/* Charts Row 1: Real Revenue + Future Revenue */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Real Revenue (Bars) */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">
-                📊 Faturamento Real (Caixa)
+                Faturamento Real (Caixa)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -288,10 +277,10 @@ const DashboardBI = () => {
           </Card>
 
           {/* Future Revenue (Area) */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">
-                📈 Faturamento Futuro (Parcelas)
+                Faturamento Futuro (Parcelas)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -323,10 +312,10 @@ const DashboardBI = () => {
         {/* Charts Row 2: CAC + LTV */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* CAC Chart */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">
-                💵 CAC por mês (investimento ÷ vendas)
+                CAC por mês (investimento ÷ vendas)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -349,10 +338,10 @@ const DashboardBI = () => {
           </Card>
 
           {/* LTV Chart */}
-          <Card>
+          <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">
-                🧠 Comercial 2 (LTV – Valor Total)
+                Comercial 2 (LTV – Valor Total)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -382,10 +371,10 @@ const DashboardBI = () => {
         </div>
 
         {/* LTV Evolution by Purchase Stage */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">
-              📈 Evolução do LTV por Paciente
+              Evolução do LTV por Paciente
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -399,7 +388,7 @@ const DashboardBI = () => {
                     <XAxis {...chartAxis} dataKey="stage" />
                     <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={3} dot={{ r: 6, fill: biColors.purple, strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={3} dot={{ r: 6, fill: biColors.purple, strokeWidth: 2, stroke: 'hsl(var(--card))' }} activeDot={{ r: 8 }} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -408,10 +397,10 @@ const DashboardBI = () => {
         </Card>
 
         {/* LTV Funnel Visual */}
-        <Card>
+        <Card className="monday-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">
-              🔁 Funil de LTV – Progressão de Compras
+              Funil de LTV – Progressão de Compras
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -422,7 +411,7 @@ const DashboardBI = () => {
                 {data?.ltvFunnel.map((stage, i) => {
                   const maxCount = Math.max(...(data?.ltvFunnel.map(s => s.count) || [1]), 1);
                   const widthPercent = Math.max((stage.count / maxCount) * 100, 8);
-                  const colors = [biColors.blue, biColors.green, biColors.purple, biColors.orange, biColors.red];
+                  const colors = [0, 1, 2, 3, 4].map(seriesColor);
                   const color = colors[i % colors.length];
 
                   return (
@@ -453,7 +442,7 @@ const DashboardBI = () => {
                           className={cn(
                             'text-[10px] shrink-0',
                             stage.progressionRate >= 30 ? 'bg-success/10 text-success' :
-                            stage.progressionRate >= 15 ? 'bg-warning/10 text-warning' :
+                            stage.progressionRate >= 15 ? 'bg-warning/10 text-warning-strong' :
                             'bg-destructive/10 text-destructive'
                           )}
                         >

@@ -72,6 +72,7 @@ export default {
           3: "hsl(var(--chart-3))",
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
+          6: "hsl(var(--chart-6))",
         },
       },
       borderRadius: {
@@ -102,8 +103,8 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       fontFamily: {
-        sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Sora', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Schibsted Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Schibsted Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

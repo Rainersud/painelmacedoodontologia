@@ -9,7 +9,7 @@ import {
   trafficInvestmentCheck, summarize, percentChange,
   type LeadRow, type AppointmentRow, type PaymentRow, type AcquisitionCostRow,
 } from './rules';
-import { monthlyGoal, periodGoal, periodProportion, goalStatus, expectedPace } from './goals';
+import { monthlyGoal, periodGoal, periodProportion, goalStatus, expectedPace, paceStatus } from './goals';
 
 // Datas locais fixas: novembro/2026 (seg 02/11 … seg 30/11).
 const d = (y: number, m: number, day: number, h = 10) => new Date(y, m - 1, day, h).toISOString();
@@ -225,5 +225,10 @@ describe('metas', () => {
     expect(goalStatus(250, 300, true)).toBe('healthy');
     expect(expectedPace(nov, nov.start)).toBe(0);
     expect(expectedPace(nov, nov.end)).toBe(100);
+  });
+  it('régua de ritmo: 50 de 135 no dia 9 de 21 está no ritmo', () => {
+    expect(goalStatus(50, 135)).toBe('critical');          // contra o mês inteiro
+    expect(paceStatus(50, 135, 9 / 21)).toBe('healthy');   // contra o esperado até hoje
+    expect(paceStatus(20, 135, 9 / 21)).toBe('critical');
   });
 });

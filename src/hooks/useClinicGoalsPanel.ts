@@ -8,7 +8,7 @@ import {
 } from 'date-fns';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
 import {
-  attendances, bookedAppointments, buildPeriod, businessDaysPerMonth, fetchMetricsData, inRange, monthlyGoal,
+  attendances, bookedAppointments, buildPeriod, expectedPace, paceStatus, businessDaysPerMonth, fetchMetricsData, inRange, monthlyGoal,
   newLeads, periodGoal, periodProportion, sales as salesOf, summarize, type GoalKey,
 } from '@/lib/metrics';
 
@@ -37,6 +37,11 @@ export interface PanelMetric {
   delta: number;
   trend: number[];
   lowerIsBetter?: boolean;
+  /**
+   * Régua de ritmo: % da meta que já deveria ter sido atingido até agora
+   * (dias úteis decorridos ÷ dias úteis do período). Só para metas de volume.
+   */
+  expectedPercentage?: number;
   unit?: 'currency' | 'count' | 'percent' | 'multiplier' | 'duration';
   /** taxa associada (ex.: Agendamentos -> taxa de agendamento) embutida no mesmo card */
   rate?: {
@@ -152,8 +157,11 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
 }
 
 
+/** Decimal com vírgula (pt-BR). */
+const dec = (v: number, d = 1) => v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
 const fmtBRL = (v: number) =>
-  v >= 1000 ? `R$ ${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `R$ ${v.toLocaleString('pt-BR')}`;
+  v >= 1000 ? `R$ ${dec(v / 1000, v >= 10000 ? 0 : 1)} mil` : `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
 const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
@@ -286,7 +294,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       });
       const fmtDuration = (m: number) => {
         if (m < 1) return `${Math.round(m * 60)}s`;
-        if (m < 60) return `${m.toFixed(1)} min`;
+        if (m < 60) return `${dec(m)} min`;
         const h = Math.floor(m / 60);
         return `${h}h ${Math.round(m - h * 60)}m`;
       };
@@ -336,7 +344,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
           trend: trendAgend, unit: 'count',
           rate: {
             label: 'Taxa de Agendamento',
-            display: `${taxaAgendamento.toFixed(1)}%`,
+            display: `${dec(taxaAgendamento)}%`,
             targetDisplay: `${monthly.taxaAgendamento}%`,
             status: rateStatus(taxaAgendamento, monthly.taxaAgendamento),
           },
@@ -352,7 +360,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
           trend: trendComp, unit: 'count',
           rate: {
             label: 'Taxa de Comparecimento',
-            display: `${taxaComparecimento.toFixed(1)}%`,
+            display: `${dec(taxaComparecimento)}%`,
             targetDisplay: `${monthly.taxaComparecimento}%`,
             status: rateStatus(taxaComparecimento, monthly.taxaComparecimento),
           },
@@ -368,7 +376,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
           trend: trendSales, unit: 'count',
           rate: {
             label: 'Taxa de Fechamento',
-            display: `${taxaFechamento.toFixed(1)}%`,
+            display: `${dec(taxaFechamento)}%`,
             targetDisplay: `${monthly.taxaFechamento}%`,
             status: rateStatus(taxaFechamento, monthly.taxaFechamento),
           },
@@ -433,10 +441,10 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
           key: 'roas', label: 'ROAS Bruto',
           current: Math.round(roas * 10) / 10, target: monthly.roas,
           percentage: Math.min(100, Math.round((roas / monthly.roas) * 100)),
-          display: `${roas.toFixed(1)}x`, targetDisplay: `${monthly.roas}x`,
+          display: `${dec(roas)}x`, targetDisplay: `${monthly.roas}x`,
           healthyGoal: roas >= monthly.roas
             ? `${monthly.roas}x · meta atingida`
-            : `${monthly.roas}x · falta ${(monthly.roas - roas).toFixed(1)}x`,
+            : `${monthly.roas}x · falta ${dec((monthly.roas - roas))}x`,
           status: statusOf(roas, monthly.roas),
           delta: delta(roas, prevRoas),
           trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
@@ -446,10 +454,10 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
           key: 'roi', label: 'ROI Líquido',
           current: Math.round(roi * 10) / 10, target: monthly.roi,
           percentage: Math.min(100, Math.round((roi / monthly.roi) * 100)),
-          display: `${roi.toFixed(1)}x`, targetDisplay: `${monthly.roi}x`,
+          display: `${dec(roi)}x`, targetDisplay: `${monthly.roi}x`,
           healthyGoal: roi >= monthly.roi
             ? `${monthly.roi}x · meta atingida`
-            : `${monthly.roi}x · falta ${(monthly.roi - roi).toFixed(1)}x`,
+            : `${monthly.roi}x · falta ${dec((monthly.roi - roi))}x`,
           status: statusOf(roi, monthly.roi),
           delta: delta(roi, prevRoi), trend: trendRevenue.map(v => investmentProp ? Math.round((v / (investmentProp / range.buckets.length)) * 10) / 10 : 0),
           unit: 'multiplier',
@@ -466,6 +474,18 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         },
       ];
 
+      // Régua de ritmo: metas de volume são julgadas contra o esperado até agora,
+      // não contra a meta do período inteiro (no dia 12 ninguém precisa ter 100%).
+      const paceFraction = period === 'hoje'
+        ? expectedPace(cur) / 100
+        : Math.min(1, range.businessDays / Math.max(1, range.totalBusinessDays));
+      const PACE_KEYS = new Set(['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento']);
+      for (const mt of metrics) {
+        if (!PACE_KEYS.has(mt.key)) continue;
+        mt.expectedPercentage = Math.round(paceFraction * 100);
+        mt.status = paceStatus(mt.current, mt.target, paceFraction);
+      }
+
       // Insights
       const insights: string[] = [];
       const m = (k: string) => metrics.find(x => x.key === k)!;
@@ -473,40 +493,33 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         ? Math.round((revenue / range.businessDays) * range.totalBusinessDays)
         : 0;
 
-      if (period === 'mes' && projectedRevenue > 0) {
-        if (projectedRevenue >= monthly.faturamento) {
-          insights.push(`📈 No ritmo atual, o faturamento projeta ${fmtBRLFull(projectedRevenue)} este mês — acima da meta.`);
-        } else {
-          insights.push(`⚠️ No ritmo atual, o faturamento projeta apenas ${fmtBRLFull(projectedRevenue)} este mês.`);
-        }
-      }
       const vendas = m('vendas');
       if (vendas.current < vendas.target) {
-        insights.push(`🎯 Faltam ${vendas.target - vendas.current} vendas para atingir a meta do período.`);
+        insights.push(`Faltam ${vendas.target - vendas.current} vendas para atingir a meta do período inteiro.`);
       }
       const compM = m('comparecimentos');
       if (compM.rate && compM.rate.status !== 'healthy' && compM.current > 0) {
-        insights.push(`👥 Taxa de comparecimento (${compM.rate.display}) abaixo da meta saudável (${compM.rate.targetDisplay}).`);
+        insights.push(`Taxa de comparecimento (${compM.rate.display}) abaixo da meta saudável (${compM.rate.targetDisplay}).`);
       }
       const vendasM = m('vendas');
       if (vendasM.rate) {
         if (vendasM.rate.status === 'healthy' && vendasM.current > 0) {
-          insights.push(`✅ Taxa de fechamento (${vendasM.rate.display}) está saudável.`);
+          insights.push(`Taxa de fechamento (${vendasM.rate.display}) está saudável.`);
         } else if (vendasM.current > 0) {
-          insights.push(`🔻 Taxa de fechamento (${vendasM.rate.display}) abaixo do ideal (${vendasM.rate.targetDisplay}).`);
+          insights.push(`Taxa de fechamento (${vendasM.rate.display}) abaixo do ideal (${vendasM.rate.targetDisplay}).`);
         }
       }
       const cacM = m('cac');
       if (cacM.status === 'critical') {
-        insights.push(`💸 CAC (${cacM.display}) está acima do ideal (${cacM.targetDisplay}).`);
+        insights.push(`CAC (${cacM.display}) está acima do ideal (${cacM.targetDisplay}).`);
       }
       const cplM = m('cpl');
       if (cplM.status === 'critical') {
-        insights.push(`📢 CPL (${cplM.display}) acima da meta (${cplM.targetDisplay}) — revise criativos.`);
+        insights.push(`CPL (${cplM.display}) acima da meta (${cplM.targetDisplay}). Revise os criativos.`);
       }
       const trespM = m('tempo_resposta');
       if (trespM.current > 5) {
-        insights.push(`⏱️ Tempo de resposta (${trespM.display}) acima do ideal (${trespM.targetDisplay}).`);
+        insights.push(`Tempo de resposta (${trespM.display}) acima do ideal (${trespM.targetDisplay}).`);
       }
       // Gargalo (usa as taxas embutidas)
       const stageMetrics = [
@@ -517,7 +530,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       const gargalo = stageMetrics.reduce((worst, s) =>
         s.m.percentage < worst.m.percentage ? s : worst, stageMetrics[0]);
       if (gargalo.m.current > 0) {
-        insights.push(`🔍 Principal gargalo: etapa de ${gargalo.name} (${gargalo.m.percentage}% da meta).`);
+        insights.push(`Principal gargalo: etapa de ${gargalo.name} (${gargalo.m.percentage}% da meta).`);
       }
 
       return {

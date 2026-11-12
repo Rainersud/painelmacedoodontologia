@@ -23,7 +23,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
           <header className="sticky top-0 z-10 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shrink-0">
             <div className="h-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <SidebarTrigger className="shrink-0 md:hidden" />
+                <SidebarTrigger className="shrink-0 md:hidden h-10 w-10 [&_svg]:size-5" />
                 {title && (
                   <h1 className="text-base sm:text-xl font-semibold text-foreground tracking-tight truncate">{title}</h1>
                 )}

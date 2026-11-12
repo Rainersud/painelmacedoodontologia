@@ -192,7 +192,7 @@ export function useCreateTask() {
         lead_id: data.lead_id,
         agent_id: user?.id ?? null,
         activity_type: 'task_created',
-        title: `Tarefa criada: ${data.title}`,
+        title: `Retorno criado: ${data.title}`,
         description: data.description,
       }).then(({ error: logError }) => {
         if (logError) console.warn('Activity log failed:', logError);
@@ -202,14 +202,14 @@ export function useCreateTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      toast.success('Tarefa criada com sucesso!');
+      toast.success('Retorno criado');
     },
     onError: (err: Error) => {
       if (err?.message === 'DUPLICATE_TASK') {
-        toast.error('Já existe uma tarefa neste dia para este contato (mesmo nome ou telefone).');
+        toast.error('Já existe um retorno neste dia para este contato (mesmo nome ou telefone).');
         return;
       }
-      toast.error('Erro ao criar tarefa');
+      toast.error('O retorno não foi criado. Confira a conexão e tente de novo.');
     },
 
   });
@@ -255,7 +255,7 @@ export function useUpdateTask() {
             lead_id: task.lead_id,
             agent_id: user?.id ?? null,
             activity_type: 'task_completed',
-            title: `Tarefa concluída: ${task.title}`,
+            title: `Retorno concluído: ${task.title}`,
             description: updates.response || undefined,
           }).then(({ error: logError }) => {
             if (logError) console.warn('Activity log failed:', logError);
@@ -267,10 +267,10 @@ export function useUpdateTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      toast.success('Tarefa atualizada!');
+      toast.success('Retorno atualizado');
     },
     onError: () => {
-      toast.error('Erro ao atualizar tarefa');
+      toast.error('O retorno não foi atualizado. Tente de novo.');
     },
   });
 }
@@ -354,7 +354,7 @@ export function useRescheduleTask() {
         lead_id: original.lead_id,
         agent_id: user?.id ?? null,
         activity_type: 'task_created',
-        title: `Tarefa reagendada: ${original.title}`,
+        title: `Retorno reagendado: ${original.title}`,
         description: observation ? `Motivo: ${reason} — ${observation}` : `Motivo: ${reason}`,
       }).then(({ error: logError }) => {
         if (logError) console.warn('Activity log failed:', logError);
@@ -365,10 +365,10 @@ export function useRescheduleTask() {
       queryClient.invalidateQueries({ queryKey: ['task-reschedule-history', vars.taskId] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      toast.success('Tarefa reagendada e movida para a nova data!');
+      toast.success('Retorno reagendado para a nova data');
     },
     onError: () => {
-      toast.error('Erro ao reagendar tarefa');
+      toast.error('O retorno não foi reagendado. Tente de novo.');
     },
   });
 }
@@ -385,10 +385,10 @@ export function useDeleteTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      toast.success('Tarefa excluída!');
+      toast.success('Retorno excluído');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao excluir tarefa: ${error?.message ?? 'desconhecido'}`);
+      toast.error(`O retorno não foi excluído: ${error?.message ?? 'erro desconhecido'}`);
     },
   });
 }

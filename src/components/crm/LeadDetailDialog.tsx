@@ -401,7 +401,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </TabsTrigger>
                   <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
                     <Calendar className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Tarefa</span>
+                    <span className="hidden sm:inline">Retorno</span>
                   </TabsTrigger>
                   <TabsTrigger value="funnel" className="text-xs sm:text-sm gap-1">
                     <Clock className="h-3.5 w-3.5" />
@@ -1111,7 +1111,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             {/* Task Tab */}
             <TabsContent value="task" className="space-y-4 m-0">
               <div className="space-y-2">
-                <Label htmlFor="task_title">Título da Tarefa</Label>
+                <Label htmlFor="task_title">Título do retorno</Label>
                 <Input
                   id="task_title"
                   value={taskData.title}
@@ -1153,7 +1153,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   id="task_description"
                   value={taskData.description}
                   onChange={(e) => setTaskData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Detalhes da tarefa..."
+                  placeholder="Detalhes do retorno..."
                   rows={2}
                 />
               </div>
@@ -1164,7 +1164,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   disabled={!taskData.title || !taskData.scheduled_at || createTask.isPending}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {createTask.isPending ? 'Criando...' : 'Criar Tarefa'}
+                  {createTask.isPending ? 'Criando retorno...' : 'Criar retorno'}
                 </Button>
               </div>
             </TabsContent>

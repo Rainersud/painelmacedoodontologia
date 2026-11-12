@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { describeError } from '@/lib/errors';
 import {
   Dialog,
   DialogContent,
@@ -152,7 +153,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       onOpenChange(false);
 
     } catch (err) {
-      toast.error('Erro ao adicionar lead');
+      toast.error(`Não foi possível adicionar lead. ${describeError(err)}`);
     } finally {
       setSaving(false);
     }

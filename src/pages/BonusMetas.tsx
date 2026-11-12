@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { describeError } from '@/lib/errors';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,7 +65,7 @@ export default function BonusMetas() {
       setEditingTarget(null);
       setIsDialogOpen(false);
     } catch (error) {
-      toast.error('Erro ao atualizar');
+      toast.error(`Não foi possível atualizar. ${describeError(error)}`);
     }
   };
 

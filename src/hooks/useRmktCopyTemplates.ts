@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -52,6 +53,6 @@ export function useUpdateRmktCopy() {
       queryClient.invalidateQueries({ queryKey: ['rmkt-copy-templates'] });
       toast.success('Copy salva!');
     },
-    onError: () => toast.error('Erro ao salvar copy'),
+    onError: (e) => toast.error(`Não foi possível salvar copy. ${describeError(e)}`),
   });
 }

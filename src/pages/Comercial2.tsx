@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { describeError } from '@/lib/errors';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -369,7 +370,7 @@ function EditableDetailContent({
           : 'Evolução salva! (última etapa)'
         );
       },
-      onError: () => toast.error('Erro ao salvar evolução'),
+      onError: (e) => toast.error(`Não foi possível salvar evolução. ${describeError(e)}`),
     });
   };
 

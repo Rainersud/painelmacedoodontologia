@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -72,7 +73,7 @@ export function useMeetings() {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
       toast.success('Reunião criada!');
     },
-    onError: () => toast.error('Erro ao criar reunião'),
+    onError: (e) => toast.error(`Não foi possível criar reunião. ${describeError(e)}`),
   });
 
   const updateMeeting = useMutation({
@@ -87,7 +88,7 @@ export function useMeetings() {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
       toast.success('Reunião atualizada');
     },
-    onError: () => toast.error('Erro ao atualizar'),
+    onError: (e) => toast.error(`Não foi possível atualizar. ${describeError(e)}`),
   });
 
   const deleteMeeting = useMutation({
@@ -102,7 +103,7 @@ export function useMeetings() {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
       toast.success('Reunião removida');
     },
-    onError: () => toast.error('Erro ao remover'),
+    onError: (e) => toast.error(`Não foi possível remover. ${describeError(e)}`),
   });
 
   return { meetings: meetingsQuery.data || [], isLoading: meetingsQuery.isLoading, createMeeting, updateMeeting, deleteMeeting };
@@ -135,7 +136,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-action-plans', meetingId] });
       toast.success('Plano de ação adicionado');
     },
-    onError: () => toast.error('Erro ao adicionar plano'),
+    onError: (e) => toast.error(`Não foi possível adicionar plano. ${describeError(e)}`),
   });
 
   const updatePlan = useMutation({
@@ -147,7 +148,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-action-plans', meetingId] });
       toast.success('Plano atualizado');
     },
-    onError: () => toast.error('Erro ao atualizar plano'),
+    onError: (e) => toast.error(`Não foi possível atualizar plano. ${describeError(e)}`),
   });
 
   const deletePlan = useMutation({
@@ -159,7 +160,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-action-plans', meetingId] });
       toast.success('Plano removido');
     },
-    onError: () => toast.error('Erro ao remover plano'),
+    onError: (e) => toast.error(`Não foi possível remover plano. ${describeError(e)}`),
   });
 
   return { plans: query.data || [], isLoading: query.isLoading, addPlan, updatePlan, deletePlan };
@@ -193,7 +194,7 @@ export function useMeetingAnnotations(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-annotations', meetingId] });
       toast.success('Anotação salva');
     },
-    onError: () => toast.error('Erro ao salvar anotação'),
+    onError: (e) => toast.error(`Não foi possível salvar anotação. ${describeError(e)}`),
   });
 
   return { annotations: query.data || [], isLoading: query.isLoading, addAnnotation };
@@ -226,7 +227,7 @@ export function useMeetingTrainingLinks(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-training-links', meetingId] });
       toast.success('Link adicionado');
     },
-    onError: () => toast.error('Erro ao adicionar link'),
+    onError: (e) => toast.error(`Não foi possível adicionar link. ${describeError(e)}`),
   });
 
   const deleteLink = useMutation({
@@ -238,7 +239,7 @@ export function useMeetingTrainingLinks(meetingId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['meeting-training-links', meetingId] });
       toast.success('Link removido');
     },
-    onError: () => toast.error('Erro ao remover link'),
+    onError: (e) => toast.error(`Não foi possível remover link. ${describeError(e)}`),
   });
 
   return { links: query.data || [], isLoading: query.isLoading, addLink, deleteLink };

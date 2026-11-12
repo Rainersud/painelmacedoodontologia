@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { refreshBusinessDataSoon } from '@/lib/refresh';
 
 /**
- * Global realtime sync hook - listens to key tables and invalidates
- * all related React Query caches automatically.
+ * Sincronização em tempo real: quando alguém muda leads, consultas, pagamentos etc.,
+ * todas as telas abertas recalculam (com uma pequena espera para agrupar rajadas).
  */
 export function useRealtimeSync() {
   const queryClient = useQueryClient();
@@ -13,35 +14,13 @@ export function useRealtimeSync() {
     const channel = supabase
       .channel('global-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-        queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-        queryClient.invalidateQueries({ queryKey: ['leads-for-appointment'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-ranking'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-dashboard'] });
-        queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-        queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
-        queryClient.invalidateQueries({ queryKey: ['credit-approved-patients'] });
-        queryClient.invalidateQueries({ queryKey: ['smart-alerts-leads'] });
-        queryClient.invalidateQueries({ queryKey: ['lead-alerts-payments'] });
-        queryClient.invalidateQueries({ queryKey: ['lead-alerts-tasks'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['referrals'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-tags'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-tags-enhanced'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-ranking'] });
-        queryClient.invalidateQueries({ queryKey: ['referral-dashboard'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-        queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-        queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['appointments'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-        queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-        queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
         queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
@@ -57,28 +36,16 @@ export function useRealtimeSync() {
         queryClient.invalidateQueries({ queryKey: ['credit-approved-patients'] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['smart-alerts-tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['lead-alerts-tasks'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['payments'] });
-        queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
-        queryClient.invalidateQueries({ queryKey: ['total-received-revenue'] });
-        queryClient.invalidateQueries({ queryKey: ['cac-monthly-chart'] });
-        queryClient.invalidateQueries({ queryKey: ['ltv-monthly-chart'] });
-        queryClient.invalidateQueries({ queryKey: ['revenue-projection'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-        queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-        queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
-        queryClient.invalidateQueries({ queryKey: ['smart-alerts-payments'] });
-        queryClient.invalidateQueries({ queryKey: ['lead-alerts-payments'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'upsell_opportunities' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['upsell-opportunities'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'remarketing_entries' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
+        refreshBusinessDataSoon(queryClient);
       })
       .subscribe();
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,19 +53,29 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
   const [manualValue, setManualValue] = useState(0);
 
   const createPayment = useCreatePayment();
-  const { data: existingPayments } = usePayments(leadId);
+  const { data: existingPayments } = usePayments(leadId, upsellOpportunityId);
 
-  // Calculate already paid amount
+  // Ao abrir, usa o orçamento atual (antes ficava preso ao valor da primeira abertura)
+  useEffect(() => {
+    if (open) setGrossValue(budgetValue);
+  }, [open, budgetValue]);
+
+  // Já pago ou já lançado (boletos pendentes também abatem o saldo), pelo valor BRUTO:
+  // o orçamento é bruto; a taxa do cartão não pode deixar "saldo" para trás.
   const totalPaid = useMemo(() => {
     return (existingPayments || [])
-      .filter(p => p.status === 'pago')
-      .reduce((sum, p) => sum + (p.net_value || 0), 0);
-  }, [existingPayments]);
+      .filter(p => p.status === 'pago' || p.status === 'pendente')
+      // venda principal não soma pagamentos de recompra (Comercial 2) e vice-versa
+      .filter(p => (upsellOpportunityId ? true : !(p as { upsell_opportunity_id?: string | null }).upsell_opportunity_id))
+      .reduce((sum, p) => sum + Number(p.gross_value || 0), 0);
+  }, [existingPayments, upsellOpportunityId]);
 
-  const remainingBalance = Math.max(0, grossValue - totalPaid);
+  const remainingBalance = Math.max(0, Math.round((grossValue - totalPaid) * 100) / 100);
 
-  // The actual payment value based on type
-  const effectiveValue = budgetValue <= 0 ? manualValue : (paymentType === 'parcial' ? partialValue : grossValue);
+  // Valor deste pagamento: "Total" quita o SALDO (não o orçamento inteiro de novo)
+  const totalValue = totalPaid > 0 ? remainingBalance : grossValue;
+  const effectiveValue = budgetValue <= 0 ? manualValue : (paymentType === 'parcial' ? partialValue : totalValue);
+  const exceedsBalance = budgetValue > 0 && totalPaid > 0 && effectiveValue > remainingBalance + 0.009;
 
   // Credit card calculation
   const creditCalc = useMemo(() => {
@@ -140,6 +150,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
 
   const canConfirm = () => {
     if (!method || effectiveValue <= 0) return false;
+    if (exceedsBalance) return false;
     if (method === 'boleto') {
       return boletoDates.every(d => d.length > 0);
     }
@@ -173,7 +184,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                 {totalPaid > 0 && (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Já pago</span>
+                      <span className="text-muted-foreground">Já pago ou lançado</span>
                       <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
                     </div>
                     <Separator />
@@ -211,7 +222,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                   )}
                 >
                   <CheckCircle2 className="h-4 w-4 mx-auto mb-1" />
-                  Pagamento Total
+                  {totalPaid > 0 ? 'Quitar saldo' : 'Pagamento total'}
+                  {budgetValue > 0 && <span className="block text-xs font-normal text-muted-foreground">{formatCurrency(totalValue)}</span>}
                 </button>
                 <button
                   onClick={() => setPaymentType('parcial')}
@@ -223,7 +235,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                   )}
                 >
                   <Calculator className="h-4 w-4 mx-auto mb-1" />
-                  Pagamento Parcial
+                  Pagamento parcial
                 </button>
               </div>
             </div>
@@ -233,9 +245,14 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
               <div className="space-y-2">
                 <Label>Valor a pagar agora</Label>
                 <CurrencyInput value={partialValue} onChange={setPartialValue} />
-                {partialValue > 0 && grossValue > 0 && (
+                {partialValue > 0 && grossValue > 0 && !exceedsBalance && (
                   <p className="text-xs text-muted-foreground">
                     Saldo restante após pagamento: {formatCurrency(Math.max(0, grossValue - totalPaid - partialValue))}
+                  </p>
+                )}
+                {exceedsBalance && (
+                  <p className="text-xs text-destructive">
+                    O valor passa do saldo de {formatCurrency(remainingBalance)}. Ajuste o valor ou atualize o orçamento.
                   </p>
                 )}
               </div>
@@ -397,7 +414,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
                 disabled={!canConfirm() || createPayment.isPending}
               >
                 {createPayment.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Confirmar Pagamento
+                Confirmar pagamento
               </Button>
             </div>
           </div>

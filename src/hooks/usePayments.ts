@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { describeError } from '@/lib/errors';
+import { refreshBusinessData } from '@/lib/refresh';
+import { isSoldStatus } from '@/lib/metrics/stages';
+import { recordStageTransition } from './useStageHistory';
 
 export interface Payment {
   id: string;
@@ -106,22 +110,29 @@ export function useCreatePayment() {
 
       if (data.payment_method === 'boleto' && data.boleto_dates && data.boleto_dates.length > 0) {
         // Create multiple boleto payments (one per installment)
-        const perInstallment = data.gross_value / data.boleto_dates.length;
-        const payments = data.boleto_dates.map((date, idx) => ({
+        // Parcelas em centavos exatos: a última leva a diferença do arredondamento
+        const n = data.boleto_dates.length;
+        const totalCents = Math.round(data.gross_value * 100);
+        const baseCents = Math.floor(totalCents / n);
+        const payments = data.boleto_dates.map((date, idx) => {
+          const cents = idx === n - 1 ? totalCents - baseCents * (n - 1) : baseCents;
+          const value = cents / 100;
+          return {
           lead_id: data.lead_id,
           agent_id: user?.id ?? null,
           payment_method: 'boleto',
-          gross_value: perInstallment,
-          installments: data.boleto_dates!.length,
+          gross_value: value,
+          installments: n,
           fee_percentage: 0,
           fee_amount: 0,
-          net_value: perInstallment,
+          net_value: value,
           status: 'pendente',
           due_date: date,
           installment_number: idx + 1,
-          total_installments: data.boleto_dates!.length,
+          total_installments: n,
           upsell_opportunity_id: data.upsell_opportunity_id || null,
-        }));
+          };
+        });
 
         const { error } = await supabase.from('payments').insert(payments);
         if (error) throw error;
@@ -163,21 +174,44 @@ export function useCreatePayment() {
         if (error) throw error;
       }
 
-      // Update lead treatment_value and mark as "Venda Realizada" (only for main sale, not upsell)
-      const leadUpdate: Record<string, unknown> = {
-        treatment_value: data.gross_value,
-        budget_value: data.gross_value,
-      };
+      // Atualiza o lead SEM apagar o orçamento digitado.
+      // Antes, cada pagamento trocava orçamento e valor do tratamento pelo valor DESTE pagamento
+      // (uma parcela de R$ 1.000 num orçamento de R$ 10.000 deixava o orçamento em R$ 1.000).
       if (!data.upsell_opportunity_id) {
-        leadUpdate.status = 'fechado';
-        leadUpdate.closed_at = new Date().toISOString();
-        leadUpdate.stage_entered_at = new Date().toISOString();
+        const { data: current, error: readErr } = await supabase
+          .from('leads')
+          .select('status, budget_value, treatment_value')
+          .eq('id', data.lead_id)
+          .maybeSingle();
+        if (readErr) throw new Error(`Pagamento registrado, mas o lead não foi lido: ${describeError(readErr)}`);
+
+        const now = new Date().toISOString();
+        const leadUpdate: Record<string, unknown> = {};
+        // Valor do tratamento = orçamento; sem orçamento, o valor deste pagamento
+        if (!current?.treatment_value) {
+          leadUpdate.treatment_value = current?.budget_value || data.gross_value;
+        }
+        if (!current?.budget_value) leadUpdate.budget_value = data.gross_value;
+        // Vira "Venda realizada" só na primeira venda; pagamentos seguintes não mudam etapa nem data da venda
+        const alreadySold = isSoldStatus(current?.status);
+        if (!alreadySold) {
+          leadUpdate.status = 'fechado';
+          leadUpdate.stage_entered_at = now;
+          leadUpdate.closed_at = now; // nova venda (lead não estava vendido)
+        }
+        if (Object.keys(leadUpdate).length) {
+          const { error: leadUpdateError } = await supabase
+            .from('leads')
+            .update(leadUpdate)
+            .eq('id', data.lead_id);
+          if (leadUpdateError) {
+            throw new Error(`Pagamento registrado, mas o lead não foi marcado como venda: ${describeError(leadUpdateError)}`);
+          }
+          if (!alreadySold && current?.status) {
+            await recordStageTransition(data.lead_id, current.status, 'fechado').catch(() => undefined);
+          }
+        }
       }
-      const { error: leadUpdateError } = await supabase
-        .from('leads')
-        .update(leadUpdate)
-        .eq('id', data.lead_id);
-      if (leadUpdateError) console.warn('Lead update failed:', leadUpdateError);
 
       // Log the payment activity
       const { data: leadData } = await supabase
@@ -199,35 +233,21 @@ export function useCreatePayment() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['received-revenue'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      toast.success('Pagamento registrado com sucesso!');
+      void refreshBusinessData(queryClient);
+      toast.success('Pagamento registrado');
     },
-    onError: () => {
-      toast.error('Erro ao registrar pagamento');
+    onError: (err) => {
+      // a mensagem já diz se o pagamento entrou e só o lead falhou
+      void refreshBusinessData(queryClient);
+      const msg = err instanceof Error && err.message.startsWith('Pagamento registrado') ? err.message : `O pagamento não foi registrado. ${describeError(err)}`;
+      toast.error(msg);
     },
   });
 }
 
-const PAYMENT_INVALIDATION_KEYS = [
-  ['payments'],
-  ['received-revenue'],
-  ['dashboard-metrics'],
-  ['clinic-goals'],
-  ['crm-leads'],
-  ['sales-metrics'],
-  ['ltv-metrics'],
-  ['agent-bonus'],
-  ['revenue-projection'],
-  ['cac-monthly-chart'],
-  ['ltv-monthly-chart'],
-];
-
 function invalidateAllPaymentQueries(queryClient: ReturnType<typeof useQueryClient>) {
-  PAYMENT_INVALIDATION_KEYS.forEach(key => queryClient.invalidateQueries({ queryKey: key }));
+  // todas as telas abertas (Dashboard, metas, BI, relatórios...) recalculam
+  void refreshBusinessData(queryClient);
 }
 
 export function useRevertPayment() {
@@ -243,10 +263,10 @@ export function useRevertPayment() {
     },
     onSuccess: () => {
       invalidateAllPaymentQueries(queryClient);
-      toast.success('Pagamento revertido com sucesso!');
+      toast.success('Pagamento revertido');
     },
-    onError: () => {
-      toast.error('Erro ao reverter pagamento');
+    onError: (e) => {
+      toast.error(`O pagamento não foi revertido. ${describeError(e)}`);
     },
   });
 }
@@ -264,10 +284,10 @@ export function useDeletePayment() {
     },
     onSuccess: () => {
       invalidateAllPaymentQueries(queryClient);
-      toast.success('Pagamento excluído com sucesso!');
+      toast.success('Pagamento excluído');
     },
-    onError: () => {
-      toast.error('Erro ao excluir pagamento');
+    onError: (e) => {
+      toast.error(`O pagamento não foi excluído. ${describeError(e)}`);
     },
   });
 }
@@ -290,10 +310,10 @@ export function useEditPayment() {
     },
     onSuccess: () => {
       invalidateAllPaymentQueries(queryClient);
-      toast.success('Pagamento atualizado com sucesso!');
+      toast.success('Pagamento atualizado');
     },
-    onError: () => {
-      toast.error('Erro ao atualizar pagamento');
+    onError: (e) => {
+      toast.error(`O pagamento não foi atualizado. ${describeError(e)}`);
     },
   });
 }
@@ -311,10 +331,10 @@ export function useConfirmBoletoPayment() {
     },
     onSuccess: () => {
       invalidateAllPaymentQueries(queryClient);
-      toast.success('Boleto dado como pago!');
+      toast.success('Boleto dado como pago');
     },
-    onError: () => {
-      toast.error('Erro ao confirmar pagamento');
+    onError: (e) => {
+      toast.error(`O boleto não foi dado como pago. ${describeError(e)}`);
     },
   });
 }

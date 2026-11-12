@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { describeError } from '@/lib/errors';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -110,7 +111,7 @@ export default function UserManagementPanel() {
       queryClient.invalidateQueries({ queryKey: ['managed-users'] });
       toast.success('Status atualizado!');
     },
-    onError: () => toast.error('Erro ao atualizar status'),
+    onError: (e) => toast.error(`Não foi possível atualizar status. ${describeError(e)}`),
   });
 
   const updateRole = useMutation({
@@ -121,7 +122,7 @@ export default function UserManagementPanel() {
       queryClient.invalidateQueries({ queryKey: ['managed-users'] });
       toast.success('Papel atualizado!');
     },
-    onError: () => toast.error('Erro ao atualizar papel'),
+    onError: (e) => toast.error(`Não foi possível atualizar papel. ${describeError(e)}`),
   });
 
   const savePermissions = useMutation({
@@ -137,7 +138,7 @@ export default function UserManagementPanel() {
       toast.success('Permissões atualizadas!');
       setIsPermOpen(false);
     },
-    onError: () => toast.error('Erro ao salvar permissões'),
+    onError: (e) => toast.error(`Não foi possível salvar permissões. ${describeError(e)}`),
   });
 
   const doResetPassword = useMutation({
@@ -153,7 +154,7 @@ export default function UserManagementPanel() {
       setIsResetOpen(false);
       setResetPassword('');
     },
-    onError: () => toast.error('Erro ao resetar senha'),
+    onError: (e) => toast.error(`Não foi possível resetar senha. ${describeError(e)}`),
   });
 
   const deleteUser = useMutation({
@@ -169,7 +170,7 @@ export default function UserManagementPanel() {
       setIsDeleteOpen(false);
       setSelectedUser(null);
     },
-    onError: () => toast.error('Erro ao deletar usuário'),
+    onError: (e) => toast.error(`Não foi possível deletar usuário. ${describeError(e)}`),
   });
 
   const openPermissions = (user: UserWithDetails) => {

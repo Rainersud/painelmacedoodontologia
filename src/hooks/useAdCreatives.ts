@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -98,7 +99,7 @@ export function useAdCreatives(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
       toast.success('Criativo adicionado');
     },
-    onError: () => toast.error('Erro ao adicionar criativo'),
+    onError: (e) => toast.error(`Não foi possível adicionar criativo. ${describeError(e)}`),
   });
 
   const updateCreative = useMutation({
@@ -113,7 +114,7 @@ export function useAdCreatives(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
       toast.success('Criativo atualizado');
     },
-    onError: () => toast.error('Erro ao atualizar criativo'),
+    onError: (e) => toast.error(`Não foi possível atualizar criativo. ${describeError(e)}`),
   });
 
   const deleteCreative = useMutation({
@@ -128,7 +129,7 @@ export function useAdCreatives(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
       toast.success('Criativo removido');
     },
-    onError: () => toast.error('Erro ao remover criativo'),
+    onError: (e) => toast.error(`Não foi possível remover criativo. ${describeError(e)}`),
   });
 
   const creatives = query.data || [];

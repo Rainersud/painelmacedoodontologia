@@ -19,6 +19,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Calculator,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,13 +32,14 @@ interface PaymentDialogProps {
   upsellOpportunityId?: string;
 }
 
-type PaymentMethod = 'credito' | 'debito' | 'pix' | 'cheque' | 'boleto';
+type PaymentMethod = 'credito' | 'debito' | 'pix' | 'cheque' | 'boleto' | 'dinheiro';
 
 const PAYMENT_METHODS: { key: PaymentMethod; label: string; icon: React.ElementType; color: string }[] = [
   { key: 'credito', label: 'Crédito', icon: CreditCard, color: 'bg-primary/10 text-primary border-primary/30' },
   { key: 'debito', label: 'Débito', icon: Wallet, color: 'bg-chart-2/10 text-chart-2 border-chart-2/30' },
   { key: 'pix', label: 'Pix', icon: QrCode, color: 'bg-success/10 text-success border-success/30' },
   { key: 'cheque', label: 'Cheque', icon: Banknote, color: 'bg-warning/10 text-warning-strong border-warning/30' },
+  { key: 'dinheiro', label: 'Dinheiro', icon: Coins, color: 'bg-success/10 text-success border-success/30' },
   { key: 'boleto', label: 'Boleto', icon: FileText, color: 'bg-chart-5/10 text-chart-5 border-chart-5/30' },
 ];
 
@@ -260,8 +262,8 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
 
             {/* Payment method selection */}
             <div className="space-y-2">
-              <Label>Forma de Pagamento</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <Label>Forma de pagamento</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {PAYMENT_METHODS.map(({ key, label, icon: Icon, color }) => (
                   <button
                     key={key}
@@ -340,7 +342,7 @@ export function PaymentDialog({ open, onOpenChange, leadId, leadName, budgetValu
             )}
 
             {/* Pix / Débito / Cheque */}
-            {(method === 'debito' || method === 'pix' || method === 'cheque') && (
+            {(method === 'debito' || method === 'pix' || method === 'cheque' || method === 'dinheiro') && (
               <div className="p-4 rounded-lg border-2 border-success/20 bg-success/5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Valor recebido</span>

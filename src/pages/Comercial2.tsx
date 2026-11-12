@@ -640,7 +640,8 @@ function EditableDetailContent({
                          p.payment_method === 'debito'? 'Débito':
                          p.payment_method === 'pix'? 'Pix':
                          p.payment_method === 'cheque'? 'Cheque':
-                         p.payment_method === 'boleto'? 'Boleto': p.payment_method}
+                         p.payment_method === 'boleto'? 'Boleto':
+                         p.payment_method === 'dinheiro'? 'Dinheiro': p.payment_method}
                       </Badge>
                       <span className="text-muted-foreground">Editando valor</span>
                     </div>
@@ -672,7 +673,8 @@ function EditableDetailContent({
                          p.payment_method === 'debito'? 'Débito':
                          p.payment_method === 'pix'? 'Pix':
                          p.payment_method === 'cheque'? 'Cheque':
-                         p.payment_method === 'boleto'? 'Boleto': p.payment_method}
+                         p.payment_method === 'boleto'? 'Boleto':
+                         p.payment_method === 'dinheiro'? 'Dinheiro': p.payment_method}
                       </Badge>
                       {p.installments > 1 && <span className="text-muted-foreground">{p.installments}x</span>}
                     </div>

@@ -32,9 +32,7 @@ export function useCreditApprovedPatients() {
       // Filter triages that have at least one company with value > 0
       const validTriages = triages.filter(t => 
         (Number(t.credit_pagmais_value) || 0) > 0 ||
-        (Number(t.credit_capim_value) || 0) > 0 ||
-        (Number(t.credit_maioral_value) || 0) > 0 ||
-        (Number((t as any).credit_drgestao_value) || 0) > 0
+        (Number(t.credit_maioral_value) || 0) > 0
       );
 
       if (validTriages.length === 0) return [];
@@ -57,9 +55,7 @@ export function useCreditApprovedPatients() {
 
           const companies: CreditCompanyEntry[] = [
             { name: 'PAGMAIS', value: Number(t.credit_pagmais_value) || 0 },
-            { name: 'CAPIM', value: Number(t.credit_capim_value) || 0 },
             { name: 'MAIORAL', value: Number(t.credit_maioral_value) || 0 },
-            { name: 'DR GESTÃO', value: Number((t as any).credit_drgestao_value) || 0 },
           ].filter(c => c.value > 0);
 
           return {

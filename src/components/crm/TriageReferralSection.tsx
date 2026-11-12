@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { RewardTiers } from './RewardTiers';
+import { tierProgress } from '@/lib/referralRewards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,32 +33,6 @@ interface TriageReferralSectionProps {
   leadName?: string;
 }
 
-const REWARD_TIERS = [
-  {
-    count: 5,
-    percent: 2,
-    perks: ['1 limpeza gratuita', '2% sobre cada tratamento fechado'],
-    color: 'text-chart-2',
-    bg: 'bg-chart-2/10',
-    border: 'border-chart-2/30',
-  },
-  {
-    count: 15,
-    percent: 4,
-    perks: ['1 limpeza gratuita', '1 clareamento de plaquinha', '4% sobre cada tratamento fechado'],
-    color: 'text-chart-5',
-    bg: 'bg-chart-5/10',
-    border: 'border-chart-5/30',
-  },
-  {
-    count: 40,
-    percent: 5,
-    perks: ['1 limpeza gratuita', '4 sessões de clareamento a laser', '5% sobre cada tratamento fechado'],
-    color: 'text-warning-strong',
-    bg: 'bg-warning/10',
-    border: 'border-warning/30',
-  },
-];
 
 const DEFAULT_RMKT_SCRIPT = (patientName: string) =>
   `Olá, aqui é do consultório do Dr. Rainer Macedo, dentista. Estou entrando em contato porque nosso paciente ${patientName || '[NOME DO PACIENTE]'}, que é seu(ua) [GRAU DE PARENTESCO], presenteou você com uma avaliação odontológica com filmagem 3D gratuita + uma limpeza gratuita válida para esta semana. Além disso, você ainda ganha 10% de desconto em qualquer tratamento que desejar realizar em nosso consultório.`;
@@ -153,16 +129,8 @@ export function TriageReferralSection({
 
   const totalReferrals = referrals.length;
 
-  const currentTier = useMemo(() => {
-    let active: typeof REWARD_TIERS[number] | null = null;
-    for (const t of REWARD_TIERS) if (totalReferrals >= t.count) active = t;
-    return active;
-  }, [totalReferrals]);
+  const { current: currentTier, next: nextTier } = tierProgress(totalReferrals);
 
-  const nextTier = useMemo(
-    () => REWARD_TIERS.find((t) => totalReferrals < t.count) || null,
-    [totalReferrals]
-  );
 
   const unlinkable = referrals.filter(
     (e) => !e.converted_lead_id && e.referral_name.trim()
@@ -202,7 +170,7 @@ export function TriageReferralSection({
                   </p>
                   <p className="text-[11px] text-chart-5 font-medium">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-chart-5 mr-1.5" />
-                    Você ganha ao indicar: limpezas, clareamentos e % sobre tratamentos fechados (veja os níveis abaixo)
+                    Você ganha ao indicar: limpezas, clareamentos e um prêmio em R$ a cada nível (5, 10 e 15 indicações)
                   </p>
                 </div>
               </div>
@@ -231,33 +199,7 @@ export function TriageReferralSection({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            {REWARD_TIERS.map((tier) => {
-              const unlocked = totalReferrals >= tier.count;
-              return (
-                <div
-                  key={tier.count}
-                  className={`rounded-lg border p-2.5 transition-all ${
-                    unlocked ? `${tier.border} ${tier.bg}` : 'border-border bg-muted/30 opacity-70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-semibold ${unlocked ? tier.color : 'text-muted-foreground'}`}>
-                      {tier.count} indicações
-                    </span>
-                    {unlocked && <CheckCircle2 className={`h-3.5 w-3.5 ${tier.color}`} />}
-                  </div>
-                  <ul className="space-y-0.5">
-                    {tier.perks.map((p, i) => (
-                      <li key={i} className="text-[10px] text-muted-foreground leading-tight flex gap-1">
-                        <span>•</span><span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+          <RewardTiers totalReferrals={totalReferrals} />
         </CardContent>
       </Card>
 

@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { RewardTiers } from './RewardTiers';
+import { tierProgress } from '@/lib/referralRewards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,32 +33,6 @@ interface DraftEntry {
   saving?: boolean;
 }
 
-const REWARD_TIERS = [
-  {
-    count: 10,
-    percent: 2,
-    perks: ['1 limpeza gratuita', '2% sobre cada tratamento fechado'],
-    color: 'text-chart-2',
-    bg: 'bg-chart-2/10',
-    border: 'border-chart-2/30',
-  },
-  {
-    count: 20,
-    percent: 4,
-    perks: ['1 limpeza gratuita', '1 clareamento de plaquinha', '4% sobre cada tratamento fechado'],
-    color: 'text-chart-5',
-    bg: 'bg-chart-5/10',
-    border: 'border-chart-5/30',
-  },
-  {
-    count: 50,
-    percent: 5,
-    perks: ['1 limpeza gratuita', '4 sessões de clareamento a laser', '5% sobre cada tratamento fechado'],
-    color: 'text-warning-strong',
-    bg: 'bg-warning/10',
-    border: 'border-warning/30',
-  },
-];
 
 const DEFAULT_RMKT_SCRIPT = (patientName: string) =>
   `Olá, aqui é do consultório do Dr. Rainer Macedo, dentista. Estou entrando em contato porque nosso paciente ${patientName || '[NOME DO PACIENTE]'}, que é seu(ua) [GRAU DE PARENTESCO], presenteou você com uma avaliação odontológica com filmagem 3D gratuita + uma limpeza gratuita válida para esta semana. Além disso, você ainda ganha 10% de desconto em qualquer tratamento que desejar realizar em nosso consultório.`;
@@ -221,27 +197,9 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
   // Stats
   const totalReferrals = referrals?.asReferrer.length || 0;
 
-  const currentTier = useMemo(() => {
-    let active: typeof REWARD_TIERS[number] | null = null;
-    for (const t of REWARD_TIERS) if (totalReferrals >= t.count) active = t;
-    return active;
-  }, [totalReferrals]);
+  const { current: currentTier, next: nextTier } = tierProgress(totalReferrals);
 
-  const nextTier = useMemo(() => {
-    return REWARD_TIERS.find((t) => totalReferrals < t.count) || null;
-  }, [totalReferrals]);
 
-  const commission = useMemo(() => {
-    if (!referrals?.asReferrer || !currentTier) return 0;
-    return referrals.asReferrer.reduce((sum, r) => {
-      const closed = r.referred?.status === 'fechado'
-        || r.referred?.status === 'tratamento_andamento'
-        || r.referred?.status === 'concluido';
-      if (!closed) return sum;
-      const value = Number(r.referred?.treatment_value || 0);
-      return sum + (value * currentTier.percent) / 100;
-    }, 0);
-  }, [referrals, currentTier]);
 
   if (isLoading) {
     return (
@@ -319,47 +277,7 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            {REWARD_TIERS.map((tier) => {
-              const unlocked = totalReferrals >= tier.count;
-              return (
-                <div
-                  key={tier.count}
-                  className={`rounded-lg border p-2.5 transition-all ${
-                    unlocked
-                      ? `${tier.border} ${tier.bg}`
-                      : 'border-border bg-muted/30 opacity-70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-semibold ${unlocked ? tier.color : 'text-muted-foreground'}`}>
-                      {tier.count} indicações
-                    </span>
-                    {unlocked && <CheckCircle2 className={`h-3.5 w-3.5 ${tier.color}`} />}
-                  </div>
-                  <ul className="space-y-0.5">
-                    {tier.perks.map((p, i) => (
-                      <li key={i} className="text-[10px] text-muted-foreground leading-tight flex gap-1">
-                        <span>•</span><span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-
-          {currentTier && commission > 0 && (
-            <div className="flex items-center gap-2 text-xs pt-2 border-t">
-              <Gift className="h-4 w-4 text-warning-strong" />
-              <span>
-                Comissão acumulada ({currentTier.percent}%):{' '}
-                <strong className="text-warning-strong">
-                  R$ {commission.toFixed(2)}
-                </strong>
-              </span>
-            </div>
-          )}
+          <RewardTiers totalReferrals={totalReferrals} />
         </CardContent>
       </Card>
 
@@ -418,7 +336,6 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
               || ref.referred?.status === 'tratamento_andamento'
               || ref.referred?.status === 'concluido';
             const treatmentValue = Number(ref.referred?.treatment_value || 0);
-            const tierCommission = currentTier && closed ? (treatmentValue * currentTier.percent) / 100 : 0;
             return (
               <Card key={ref.id} className="border-0 shadow-sm">
                 <CardContent className="p-3">
@@ -450,11 +367,6 @@ export function ReferralSection({ leadId, leadName }: ReferralSectionProps) {
                       {closed && treatmentValue > 0 && (
                         <Badge variant="outline" className="text-[10px] border-warning/30 text-warning-strong">
                           R$ {treatmentValue.toFixed(2)}
-                        </Badge>
-                      )}
-                      {tierCommission > 0 && (
-                        <Badge className="bg-warning/10 text-warning-strong border-0 text-[10px]">
-                          +R$ {tierCommission.toFixed(2)}
                         </Badge>
                       )}
                     </div>

@@ -383,12 +383,13 @@ export function useUpdateLeadRating() {
       if (error) throw error;
       return safeRating;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
+    onSuccess: (rating) => {
+      void refreshBusinessData(queryClient);
+      const label = ['sem temperatura', 'Frio', 'Morno', 'Quente'][rating] ?? '';
+      toast.success(rating ? `Temperatura: ${label}` : 'Temperatura removida');
     },
-    onError: (error: any) => {
-      toast.error(`Erro ao salvar avaliação: ${error?.message ?? 'tente novamente'}`);
+    onError: (error) => {
+      toast.error(`A temperatura não foi salva. ${describeError(error)}`);
     },
   });
 

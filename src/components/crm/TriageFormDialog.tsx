@@ -52,6 +52,53 @@ const DISCOMFORT_OPTIONS = [
 
 const FEAR_OPTIONS = ['Não', 'Sim', 'Muito'];
 
+/** Situação profissional (guardada em spin_answers, sem mudança no banco). */
+const WORK_STATUS_OPTIONS = ['Aposentado', 'Registrado', 'Autônomo', 'Desempregado'];
+const WORK_STATUS_KEY = 'perfil_situacao_profissional';
+const FAMILY_INCOME_KEY = 'perfil_renda_familiar';
+
+/**
+ * Roteiro SPIN. As chaves (spin_s1, spin_p1...) são as mesmas de antes, para manter as respostas
+ * já gravadas; as perguntas foram reescritas para trazer mais consciência emocional.
+ */
+type SpinQuestion = { key: string; label: string; type: 'open' | 'yesno' };
+const SPIN_BLOCKS: { title: string; questions: SpinQuestion[] }[] = [
+  {
+    title: 'SITUAÇÃO',
+    questions: [
+      { key: 'spin_s1', label: 'O que aconteceu na sua vida que fez você decidir cuidar do seu sorriso justamente agora?', type: 'open' },
+      { key: 'spin_s2', label: 'Quando você se olha no espelho, sorri numa foto ou está à mesa com outras pessoas, o que mais te incomoda?', type: 'open' },
+      { key: 'spin_s3', label: 'Você já chegou a fazer alguma avaliação antes?', type: 'yesno' },
+      { key: 'spin_s4', label: 'Se sim, como foi essa experiência e o que fez você não seguir com o tratamento naquela época?', type: 'open' },
+      { key: 'spin_s5', label: 'Quem é o responsável pelo pagamento do tratamento?', type: 'open' },
+    ],
+  },
+  {
+    title: 'PROBLEMA',
+    questions: [
+      { key: 'spin_p1', label: 'Você já deixou de sorrir, de aparecer em fotos ou de ir a algum compromisso por causa dos seus dentes?', type: 'yesno' },
+      { key: 'spin_p2', label: 'Hoje você evita algum alimento ou sente dor ou desconforto para mastigar, falar ou sorrir?', type: 'yesno' },
+      { key: 'spin_p3', label: 'Você sente que isso vem piorando com o tempo?', type: 'yesno' },
+      { key: 'spin_p4', label: 'Como você se sente quando percebe que alguém está olhando para o seu sorriso?', type: 'open' },
+    ],
+  },
+  {
+    title: 'IMPLICAÇÃO',
+    questions: [
+      { key: 'spin_i1', label: 'Se nada mudar, como você imagina sua saúde, sua alimentação e sua autoestima daqui a 1 ou 2 anos?', type: 'open' },
+      { key: 'spin_i2', label: 'O que você já deixou de viver ou de aproveitar por causa disso? E o que mais te preocupa em continuar adiando?', type: 'open' },
+      { key: 'spin_i3', label: 'Como isso afeta as pessoas mais próximas de você, ou a forma como você se relaciona com elas no trabalho e na família?', type: 'open' },
+    ],
+  },
+  {
+    title: 'NECESSIDADE / SOLUÇÃO',
+    questions: [
+      { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?', type: 'open' },
+      { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?', type: 'open' },
+    ],
+  },
+];
+
 /** Auto-format birth date input as DD/MM/AAAA while typing. */
 function maskBirthDate(value: string): string {
   const d = value.replace(/\D/g, '').slice(0, 8);
@@ -182,7 +229,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
   const handleSave = () => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
-      (form.credit_pagmais_value || 0) + (form.credit_capim_value || 0) + (form.credit_maioral_value || 0) + (form.credit_drgestao_value || 0);
+      (form.credit_pagmais_value || 0) + (form.credit_maioral_value || 0);
     
     saveTriage.mutate(
       { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
@@ -243,32 +290,17 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
           <div class="field"><label>CPF:</label> <span>${esc(form.cpf)}</span></div>
           <div class="field"><label>Data de Nascimento:</label> <span>${esc(form.birth_date)}</span></div>
           <div class="field"><label>Profissão:</label> <span>${esc(form.profession)}</span></div>
+          <div class="field"><label>Situação profissional:</label> <span>${esc(((form.spin_answers || {}) as Record<string, string>)[WORK_STATUS_KEY])}</span></div>
+          <div class="field"><label>Renda familiar aproximada:</label> <span>${Number(((form.spin_answers || {}) as Record<string, string>)[FAMILY_INCOME_KEY]) ? formatCurrency(Number(((form.spin_answers || {}) as Record<string, string>)[FAMILY_INCOME_KEY])) : '-'}</span></div>
           <div class="field"><label>Instagram:</label> <span>${esc(form.instagram)}</span></div>
           <div class="field"><label>Facebook:</label> <span>${esc(form.facebook)}</span></div>
         </div>
         <h2>Roteiro SPIN</h2>
         ${(() => {
           const a = (form.spin_answers || {}) as Record<string, string>;
-          const blocks: Array<[string, Array<[string, string]>]> = [
-            ['SITUAÇÃO', [
-              ['O que te fez procurar tratamento agora?', a.spin_s1 || '-'],
-              ['Hoje, o que mais te incomoda no seu sorriso ou mastigação?', a.spin_s2 || '-'],
-              ['Você já chegou a fazer alguma avaliação anteriormente?', a.spin_s3 || '-'],
-            ]],
-            ['PROBLEMA', [
-              ['Isso tem afetado sua autoestima ou confiança?', a.spin_p1 || '-'],
-              ['Tem dificuldade para comer, sorrir ou falar?', a.spin_p2 || '-'],
-              ['Isso vem piorando com o tempo?', a.spin_p3 || '-'],
-            ]],
-            ['IMPLICAÇÃO', [
-              ['Se continuar assim, como você acha que estará daqui 1 ou 2 anos?', a.spin_i1 || '-'],
-              ['O que mais te preocupa em não resolver isso agora?', a.spin_i2 || '-'],
-            ]],
-            ['NECESSIDADE / SOLUÇÃO', [
-              ['Como você gostaria que fosse seu sorriso ideal?', a.spin_n1 || '-'],
-              ['O que seria importante para você conseguir começar o tratamento?', a.spin_n3 || '-'],
-            ]],
-          ];
+          const blocks: Array<[string, Array<[string, string]>]> = SPIN_BLOCKS.map(bl => [
+            bl.title, bl.questions.map(q => [q.label, a[q.key] || '-'] as [string, string]),
+          ]);
           return blocks.map(([title, qs]) => `
             <h3 style="font-size:14px;margin-top:12px;">${title}</h3>
             ${qs.map(([q, ans]) => `<div class="field"><label>${q}</label> <span>${escapeHtml(ans)}</span></div>`).join('')}
@@ -376,6 +408,29 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                     <Input value={form.profession || ''} onChange={e => updateField('profession', e.target.value)} placeholder="Sua profissão" />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-xs">Situação profissional</Label>
+                    <RadioGroup
+                      value={((form.spin_answers as Record<string, string> | undefined) || {})[WORK_STATUS_KEY] || ''}
+                      onValueChange={v => updateField('spin_answers', { ...((form.spin_answers as Record<string, string> | undefined) || {}), [WORK_STATUS_KEY]: v })}
+                      className="flex flex-wrap gap-x-4 gap-y-1 pt-1"
+                    >
+                      {WORK_STATUS_OPTIONS.map(opt => (
+                        <div key={opt} className="flex items-center gap-1.5">
+                          <RadioGroupItem value={opt} id={`work-${opt}`} />
+                          <Label htmlFor={`work-${opt}`} className="text-xs font-normal cursor-pointer">{opt}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Renda familiar aproximada (por mês)</Label>
+                    <CurrencyInput
+                      value={Number(((form.spin_answers as Record<string, string> | undefined) || {})[FAMILY_INCOME_KEY]) || 0}
+                      onChange={v => updateField('spin_answers', { ...((form.spin_answers as Record<string, string> | undefined) || {}), [FAMILY_INCOME_KEY]: String(v) })}
+                      placeholder="R$ 0,00"
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-xs">Instagram</Label>
                     <Input value={form.instagram || ''} onChange={e => updateField('instagram', e.target.value)} placeholder="@usuario" />
                   </div>
@@ -393,38 +448,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                 <h3 className="text-sm font-semibold mb-1 text-primary">Roteiro SPIN — Primeiro Contato Odontológico</h3>
                 <p className="text-xs text-muted-foreground mb-4">Perguntas estruturadas para entender situação, problema, implicação e necessidade do paciente.</p>
 
-                {([
-                  {
-                    title: 'SITUAÇÃO',
-                    questions: [
-                      { key: 'spin_s1', label: 'O que te fez procurar tratamento agora?', type: 'open' },
-                      { key: 'spin_s2', label: 'Hoje, o que mais te incomoda no seu sorriso ou mastigação?', type: 'open' },
-                      { key: 'spin_s3', label: 'Você já chegou a fazer alguma avaliação anteriormente?', type: 'yesno' },
-                    ],
-                  },
-                  {
-                    title: 'PROBLEMA',
-                    questions: [
-                      { key: 'spin_p1', label: 'Isso tem afetado sua autoestima ou confiança?', type: 'yesno' },
-                      { key: 'spin_p2', label: 'Tem dificuldade para comer, sorrir ou falar?', type: 'yesno' },
-                      { key: 'spin_p3', label: 'Isso vem piorando com o tempo?', type: 'yesno' },
-                    ],
-                  },
-                  {
-                    title: 'IMPLICAÇÃO',
-                    questions: [
-                      { key: 'spin_i1', label: 'Se continuar assim, como você acha que estará daqui 1 ou 2 anos?', type: 'open' },
-                      { key: 'spin_i2', label: 'O que mais te preocupa em não resolver isso agora?', type: 'open' },
-                    ],
-                  },
-                  {
-                    title: 'NECESSIDADE / SOLUÇÃO',
-                    questions: [
-                      { key: 'spin_n1', label: 'Como você gostaria que fosse seu sorriso ideal?', type: 'open' },
-                      { key: 'spin_n3', label: 'O que seria importante para você conseguir começar o tratamento?', type: 'open' },
-                    ],
-                  },
-                ] as const).map(block => (
+                {SPIN_BLOCKS.map(block => (
                   <div key={block.title} className="mb-5">
                     <h4 className="text-xs font-bold text-primary/80 mb-2">{block.title}</h4>
                     <div className="space-y-3 pl-1">
@@ -558,30 +582,10 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold">CAPIM</Label>
-                    <CurrencyInput
-                      value={form.credit_capim_value || 0}
-                      onChange={(v) => updateField('credit_capim_value', v)}
-                      placeholder="Valor liberado"
-                      className="h-8 text-xs"
-                      disabled={form.credit_status === 'negado'}
-                    />
-                  </div>
-                  <div className="space-y-1">
                     <Label className="text-xs font-semibold">MAIORAL</Label>
                     <CurrencyInput
                       value={form.credit_maioral_value || 0}
                       onChange={(v) => updateField('credit_maioral_value', v)}
-                      placeholder="Valor liberado"
-                      className="h-8 text-xs"
-                      disabled={form.credit_status === 'negado'}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">DR GESTÃO</Label>
-                    <CurrencyInput
-                      value={form.credit_drgestao_value || 0}
-                      onChange={(v) => updateField('credit_drgestao_value', v)}
                       placeholder="Valor liberado"
                       className="h-8 text-xs"
                       disabled={form.credit_status === 'negado'}
@@ -595,9 +599,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   {(() => {
                     const entries = [
                       { name: 'PAGMAIS', value: form.credit_pagmais_value || 0 },
-                      { name: 'CAPIM', value: form.credit_capim_value || 0 },
                       { name: 'MAIORAL', value: form.credit_maioral_value || 0 },
-                      { name: 'DR GESTÃO', value: form.credit_drgestao_value || 0 },
                     ].filter(e => e.value > 0);
 
                     if (form.credit_status === 'negado' || entries.length === 0) {

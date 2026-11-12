@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toLocalInputValue } from '@/lib/datetime';
+import { describeError } from '@/lib/errors';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,7 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-import { StarRating } from './StarRating';
+import { LeadTemperature } from './LeadTemperature';
+import { PaymentSummary } from './PaymentSummary';
 import { IndicacaoBadge } from './IndicacaoBadge';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { StageHistoryPanel } from './StageHistoryPanel';
@@ -173,6 +175,72 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   }, [lead?.id, lead?.status, newStatus, open]);
 
 
+  // ---- Salvamento automático do status ----
+  // Status simples salvam ao escolher. Os que precisam de um dado a mais salvam sozinhos
+  // assim que o dado é preenchido: Agendado (data e hora), Não cliente (motivo),
+  // Venda realizada (Paciente amigo). Não é preciso clicar em "Salvar evolução".
+  const autoSaveRef = useRef<((target: LeadStatus) => Promise<boolean>) | null>(null);
+  const rescheduleRef = useRef<((isoDate: string, moveAppointment: boolean) => void) | null>(null);
+  const lastAutoKey = useRef('');
+  useEffect(() => { lastAutoKey.current = ''; }, [lead?.id, open]);
+
+  useEffect(() => {
+    if (!lead) return;
+    const validDate = (v: string) => {
+      const d = new Date(v);
+      const y = d.getFullYear();
+      const now = new Date().getFullYear();
+      // evita salvar enquanto o ano ainda está sendo digitado (ex.: 0002)
+      return !!v && !Number.isNaN(d.getTime()) && y >= now - 1 && y <= now + 2;
+    };
+    let key = '';
+    let run: (() => void) | null = null;
+    if (newStatus && newStatus !== lead.status) {
+      if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
+        const v = scheduledAt || formData.scheduled_appointment_at;
+        if (!validDate(v)) return;
+        key = `${lead.id}|${newStatus}|${v}`;
+      } else if (newStatus === 'nao_cliente') {
+        if (formData.loss_reason.trim().length < 3) return;
+        key = `${lead.id}|${newStatus}|${formData.loss_reason.trim()}`;
+      } else if (newStatus === 'fechado') {
+        if (friendlyPatient === null) return;
+        key = `${lead.id}|${newStatus}|${friendlyPatient}`;
+      } else {
+        return; // status simples já foram salvos ao escolher
+      }
+      const target = newStatus as LeadStatus;
+      run = () => {
+        autoSaveRef.current?.(target).then((ok) => {
+          if (ok) toast.success('Status salvo');
+          else lastAutoKey.current = '';
+        });
+      };
+    } else if (lead.status === 'faltou' && scheduledAt && validDate(scheduledAt)) {
+      // Faltou: a nova data de reagendamento também salva sozinha
+      key = `${lead.id}|reagendar|${scheduledAt}`;
+      run = () => rescheduleRef.current?.(new Date(scheduledAt).toISOString(), false);
+    } else if (
+      (lead.status === 'agendou' || lead.status === 'consulta_agendada') &&
+      formData.scheduled_appointment_at &&
+      formData.scheduled_appointment_at !== toLocalInputValue(lead.scheduled_appointment_at) &&
+      validDate(formData.scheduled_appointment_at)
+    ) {
+      // Já agendado e a data mudou: salva a nova data no lead e na consulta
+      const v = formData.scheduled_appointment_at;
+      key = `${lead.id}|nova-data|${v}`;
+      run = () => rescheduleRef.current?.(new Date(v).toISOString(), true);
+    }
+    if (!key || !run || lastAutoKey.current === key) return;
+    const t = setTimeout(() => {
+      if (lastAutoKey.current === key) return;
+      lastAutoKey.current = key;
+      run?.();
+    }, newStatus === 'nao_cliente' ? 1500 : 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.id, lead?.status, newStatus, scheduledAt, formData.scheduled_appointment_at, formData.loss_reason, friendlyPatient]);
+
   if (!lead) return null;
 
   const statusForView = (newStatus || lead.status) as LeadStatus;
@@ -291,6 +359,34 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     }
   };
 
+  autoSaveRef.current = (target) => handleChangeStatus(target);
+  rescheduleRef.current = (isoDate, moveAppointment) => {
+    updateLead.mutate(
+      { leadId: lead.id, updates: { scheduled_appointment_at: isoDate }, silent: true },
+      {
+        onSuccess: async () => {
+          if (moveAppointment) {
+            // move a consulta em aberto mais recente deste lead para a nova data
+            const { data: appt } = await supabase
+              .from('appointments')
+              .select('id')
+              .eq('lead_id', lead.id)
+              .is('attended_at', null)
+              .is('cancelled_at', null)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (appt) {
+              const { error } = await supabase.from('appointments').update({ scheduled_at: isoDate }).eq('id', appt.id);
+              if (error) { toast.error(`A data do lead foi salva, mas a consulta não foi movida. ${describeError(error)}`); return; }
+            }
+          }
+          toast.success('Nova data da consulta salva');
+        },
+      },
+    );
+  };
+
   const handleCreateTask = () => {
     if (!taskData.title || !taskData.scheduled_at) return;
     
@@ -329,10 +425,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-semibold text-base sm:text-lg truncate">{lead.name}</p>
                 <IndicacaoBadge source={lead.source} size="sm" />
-                <StarRating
+                <LeadTemperature
                   rating={lead.interest_rating || 0}
+                  status={lead.status}
                   onChange={(rating) => updateRating.mutate({ leadId: lead.id, rating })}
-                  size="sm"
                 />
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal flex-wrap">
@@ -579,6 +675,16 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </Select>
               </div>
 
+              {newStatus && newStatus !== lead.status && ['agendou', 'consulta_agendada', 'nao_cliente', 'fechado'].includes(newStatus) && (
+                <p className="text-xs text-muted-foreground -mt-2" role="status">
+                  {newStatus === 'nao_cliente'
+                    ? 'Escolha o motivo abaixo: o status é salvo sozinho.'
+                    : newStatus === 'fechado'
+                      ? 'Responda "Paciente amigo" abaixo: o status é salvo sozinho (é preciso ter um pagamento registrado).'
+                      : 'Escolha a data e o horário da consulta: o status é salvo sozinho.'}
+                </p>
+              )}
+
               {/* Data da Consulta — visible right after status when status is agendou/consulta_agendada */}
               {(['agendou','consulta_agendada'].includes(statusForView)) && (
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
@@ -759,11 +865,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                           }
                         }}
                       />
-                      {budgetValue > 0 && (
-                        <Badge variant="outline" className="text-xs bg-warning/10 text-warning-strong border-warning/20">
-                          Orçamento Pendente: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budgetValue)}
-                        </Badge>
-                      )}
+
                     </div>
 
                     {/* Payment Button */}
@@ -771,13 +873,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <h4 className="font-medium text-sm flex items-center gap-2 text-success">
                         Pagamento (Faturamento Real)
                       </h4>
+                      {/* total do orçamento, quanto já foi pago, o que está em aberto e o histórico */}
+                      <PaymentSummary leadId={lead.id} total={budgetValue || lead.budget_value || lead.treatment_value || 0} />
                       <Button
                         variant="outline"
                         className="w-full border-success/30 text-success hover:bg-success/10"
                         onClick={() => setPaymentOpen(true)}
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
-                        Registrar Pagamento
+                        Registrar pagamento
                       </Button>
                     </div>
                   </>

@@ -1,14 +1,13 @@
-import { 
-  LayoutDashboard, 
-  Users, 
+import {
+  LayoutDashboard,
   Headset,
   Filter,
   Gift,
-  Calendar, 
+  PhoneCall,
   CreditCard,
-  Target, 
-  Bell, 
-  FileText, 
+  Target,
+  Bell,
+  FileText,
   Settings,
   LogOut,
   UserCircle,
@@ -16,7 +15,14 @@ import {
   Megaphone,
   Layers,
   Repeat,
-  Zap
+  Zap,
+  BarChart3,
+  Award,
+  TrendingUp,
+  Wallet,
+  LineChart,
+  HeartHandshake,
+  type LucideIcon,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +39,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -52,20 +59,36 @@ function CollapsibleGroup({
   open,
   onToggle,
   className,
+  current,
+  count,
   children,
 }: {
   label: string;
   open: boolean;
   onToggle: () => void;
   className?: string;
+  /** tela aberta agora, se pertence a este grupo (aparece com o grupo fechado) */
+  current?: string;
+  count: number;
   children: ReactNode;
 }) {
   return (
     <Collapsible open={open} onOpenChange={onToggle}>
-      <SidebarGroup className={className}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-          <span>{label}</span>
-          <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')} />
+      <SidebarGroup className={cn('p-0', className)}>
+        <CollapsibleTrigger
+          className="flex w-full min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+          aria-label={`${label}, ${count} ${count === 1 ? 'tela' : 'telas'}`}
+        >
+          <span className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold text-sidebar-foreground">{label}</span>
+            {!open && current && (
+              <span className="text-xs text-sidebar-muted truncate">Aberta: {current}</span>
+            )}
+          </span>
+          <span className="flex items-center gap-2 shrink-0 text-sidebar-muted">
+            {!open && <span className="text-xs">{count}</span>}
+            <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')} aria-hidden />
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
           <SidebarGroupContent className="mt-1">
@@ -78,25 +101,28 @@ function CollapsibleGroup({
 }
 
 
-const mainNavItems = [
+type NavItemDef = { title: string; url: string; icon: LucideIcon; module: string };
+
+// Comercial / Vendas: o dia a dia do atendimento
+const mainNavItems: NavItemDef[] = [
   { title: 'Comercial 1', url: '/funil', icon: Filter, module: 'funil' },
   { title: 'Follow Up', url: '/follow-up', icon: Repeat, module: 'funil' },
+  { title: 'Retorno', url: '/tarefas', icon: PhoneCall, module: 'tarefas' },
   { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
-  { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: Repeat, module: 'comercial_2' },
+  { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: HeartHandshake, module: 'comercial_2' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
-  { title: 'Tarefas', url: '/tarefas', icon: Calendar, module: 'tarefas' },
   { title: 'Crédito Liberado', url: '/credito-liberado', icon: CreditCard, module: 'credito_liberado' },
 ];
 
-const managementNavItems = [
+const managementNavItems: NavItemDef[] = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
   { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
-  { title: 'Dashboard BI', url: '/bi', icon: LayoutDashboard, module: 'bi' },
+  { title: 'Dashboard BI', url: '/bi', icon: BarChart3, module: 'bi' },
   { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
-  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Target, module: 'bonus_metas' },
-  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: Target, module: 'plano_incentivo' },
-  { title: 'CAC & Financeiro', url: '/cac', icon: LayoutDashboard, module: 'cac' },
-  { title: 'Métricas de Vendas', url: '/metricas-vendas', icon: Target, module: 'metricas_vendas' },
+  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Award, module: 'bonus_metas' },
+  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: TrendingUp, module: 'plano_incentivo' },
+  { title: 'CAC & Financeiro', url: '/cac', icon: Wallet, module: 'cac' },
+  { title: 'Métricas de Vendas', url: '/metricas-vendas', icon: LineChart, module: 'metricas_vendas' },
   { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
   { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
@@ -105,7 +131,7 @@ const managementNavItems = [
 ];
 
 
-const adminNavItems = [
+const adminNavItems: NavItemDef[] = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
 ];
 
@@ -114,6 +140,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { fullName, role, isAdmin, signOut } = useAuth();
   const { canView } = usePermissions();
+  const { isMobile, setOpenMobile } = useSidebar();
   const groupForPath = (path: string): string => {
     if (adminNavItems.some((i) => i.url === path)) return 'admin';
     if (managementNavItems.some((i) => i.url === path)) return 'gestao';
@@ -133,27 +160,31 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
-  const filterVisible = (items: typeof mainNavItems) => 
+  const filterVisible = (items: NavItemDef[]) =>
     items.filter(item => isAdmin || canView(item.module));
+  const currentTitle = (items: NavItemDef[]) => items.find(i => isActive(i.url))?.title;
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
   };
 
-  const NavItem = ({ item }: { item: typeof mainNavItems[0] }) => (
+  const NavItem = ({ item }: { item: NavItemDef }) => (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive(item.url)}>
-        <NavLink 
-          to={item.url} 
+      <SidebarMenuButton asChild isActive={isActive(item.url)} className="h-auto">
+        <NavLink
+          to={item.url}
+          // no celular, o menu fecha ao escolher uma tela
+          onClick={() => { if (isMobile) setOpenMobile(false); }}
+          aria-current={isActive(item.url) ? 'page' : undefined}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            isActive(item.url) 
-              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+            "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+            isActive(item.url)
+              ? "bg-sidebar-primary text-sidebar-primary-foreground"
               : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
-          <item.icon className="h-5 w-5" />
+          <item.icon className="h-5 w-5 shrink-0" aria-hidden />
           <span>{item.title}</span>
         </NavLink>
       </SidebarMenuButton>
@@ -165,9 +196,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r-0">
-      <SidebarHeader className="border-b border-sidebar-border px-6 py-5">
+      <SidebarHeader className="border-b border-sidebar-border px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-sidebar-primary flex items-center justify-center shadow-lg">
+          <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <span className="text-base font-bold text-sidebar-primary-foreground">M</span>
           </div>
           <div className="flex flex-col">
@@ -177,10 +208,12 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-4 py-6">
+      <SidebarContent className="px-3 py-4">
         {visibleMain.length > 0 && (
           <CollapsibleGroup
-            label="Principal"
+            label="Comercial / Vendas"
+            count={visibleMain.length}
+            current={currentTitle(visibleMain)}
             open={openGroup === 'principal'}
             onToggle={() => setOpenGroup(openGroup === 'principal' ? null : 'principal')}
           >
@@ -193,7 +226,9 @@ export function AppSidebar() {
         {visibleMgmt.length > 0 && (
           <CollapsibleGroup
             label="Gestão"
-            className="mt-4"
+            className="mt-2"
+            count={visibleMgmt.length}
+            current={currentTitle(visibleMgmt)}
             open={openGroup === 'gestao'}
             onToggle={() => setOpenGroup(openGroup === 'gestao' ? null : 'gestao')}
           >
@@ -206,7 +241,9 @@ export function AppSidebar() {
         {(isAdmin || canView('configuracoes')) && (
           <CollapsibleGroup
             label="Administração"
-            className="mt-4"
+            className="mt-2"
+            count={adminNavItems.length}
+            current={currentTitle(adminNavItems)}
             open={openGroup === 'admin'}
             onToggle={() => setOpenGroup(openGroup === 'admin' ? null : 'admin')}
           >
@@ -239,7 +276,7 @@ export function AppSidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem asChild>
-              <NavLink to="/perfil" className="flex items-center gap-2 cursor-pointer">
+              <NavLink to="/perfil" onClick={() => { if (isMobile) setOpenMobile(false); }} className="flex items-center gap-2 cursor-pointer">
                 <UserCircle className="h-4 w-4" />
                 Meu Perfil
               </NavLink>

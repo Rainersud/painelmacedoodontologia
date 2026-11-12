@@ -91,7 +91,7 @@ function TaskItem({
       return;
     }
     if (!responseText.trim()) {
-      setResponseError('Preencha a resposta antes de concluir a tarefa');
+      setResponseError('Preencha a resposta antes de concluir o retorno');
       return;
     }
     setResponseError('');
@@ -246,7 +246,7 @@ function TaskItem({
           {showResponseField && !isCompleted && !isRescheduled && (
             <div className="mt-3 space-y-2">
               <Textarea
-                placeholder="Descreva o resultado/resposta da tarefa..."
+                placeholder="Descreva o resultado do retorno..."
                 value={responseText}
                 onChange={(e) => { setResponseText(e.target.value); setResponseError(''); }}
                 rows={2}
@@ -323,9 +323,9 @@ function TaskItem({
               </AlertDialogTrigger>
               <AlertDialogContent className="z-[200]">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                  <AlertDialogTitle>Excluir retorno?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. A tarefa "{task.title}" será removida permanentemente.
+                    Esta ação não pode ser desfeita. O retorno "{task.title}" será removido permanentemente.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -420,7 +420,7 @@ const Tarefas = () => {
   }, [selectedDate, viewMode]);
 
   return (
-    <AppLayout title="Tarefas a Realizar">
+    <AppLayout title="Retorno">
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar + Controls */}
         <div className="space-y-4">
@@ -454,11 +454,11 @@ const Tarefas = () => {
                 <Badge variant="secondary">{pendingTasks.length}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Concluídas</span>
+                <span className="text-sm text-muted-foreground">Concluídos</span>
                 <Badge variant="secondary" className="bg-success/10 text-success">{completedTasks.length}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Reagendadas</span>
+                <span className="text-sm text-muted-foreground">Reagendados</span>
                 <Badge variant="secondary" className="bg-primary/10 text-primary">{rescheduledTasks.length}</Badge>
               </div>
               <div className="flex items-center justify-between">
@@ -537,15 +537,15 @@ const Tarefas = () => {
                   <Tabs defaultValue="pending">
                     <TabsList className="mb-4">
                       <TabsTrigger value="pending">Pendentes ({pendingTasks.length})</TabsTrigger>
-                      <TabsTrigger value="completed">Concluídas ({completedTasks.length})</TabsTrigger>
-                      <TabsTrigger value="rescheduled">Reagendadas ({rescheduledTasks.length})</TabsTrigger>
+                      <TabsTrigger value="completed">Concluídos ({completedTasks.length})</TabsTrigger>
+                      <TabsTrigger value="rescheduled">Reagendados ({rescheduledTasks.length})</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="pending" className="space-y-2 m-0">
                       {pendingTasks.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                           <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">Nenhuma tarefa pendente</p>
+                          <p className="text-sm">Nenhum retorno pendente</p>
                         </div>
                       ) : (
                         pendingTasks.map((task) => (
@@ -567,7 +567,7 @@ const Tarefas = () => {
                       {completedTasks.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                           <Circle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">Nenhuma tarefa concluída</p>
+                          <p className="text-sm">Nenhum retorno concluído</p>
                         </div>
                       ) : (
                         completedTasks.map((task) => (
@@ -589,7 +589,7 @@ const Tarefas = () => {
                       {rescheduledTasks.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                           <RefreshCw className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">Nenhuma tarefa reagendada</p>
+                          <p className="text-sm">Nenhum retorno reagendado</p>
                         </div>
                       ) : (
                         rescheduledTasks.map((task) => (

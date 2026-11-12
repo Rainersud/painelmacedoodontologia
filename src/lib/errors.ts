@@ -19,6 +19,8 @@ export function describeError(err: unknown): string {
       return 'O registro ligado a este (lead, paciente ou atendente) não existe mais.';
     case '23502':
       return `Falta preencher um campo obrigatório${e.details ? ` (${e.details})` : ''}.`;
+    case '23514':
+      return 'O banco não aceita este valor ainda (regra do banco desatualizada). Avise o suporte técnico.';
     case '22P02':
       return `Valor inválido: ${e.message ?? ''}`.trim();
     case 'PGRST204':

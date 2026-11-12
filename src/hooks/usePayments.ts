@@ -11,7 +11,7 @@ export interface Payment {
   id: string;
   lead_id: string;
   agent_id: string;
-  payment_method: 'credito' | 'debito' | 'pix' | 'cheque' | 'boleto';
+  payment_method: 'credito' | 'debito' | 'pix' | 'cheque' | 'boleto' | 'dinheiro';
   gross_value: number;
   installments: number;
   fee_percentage: number;
@@ -24,6 +24,7 @@ export interface Payment {
   total_installments: number;
   parent_payment_id: string | null;
   notes: string | null;
+  upsell_opportunity_id?: string | null;
   created_at: string;
   updated_at: string;
   // Joined

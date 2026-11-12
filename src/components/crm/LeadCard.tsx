@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { LeadTemperatureBadge } from './LeadTemperature';
 import { DollarSign, CheckSquare, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -160,6 +161,7 @@ function LeadCardComponent({
 
         {/* Row 2: Compact badges row */}
         <div className="flex flex-wrap items-center gap-1 mb-1">
+          <LeadTemperatureBadge rating={lead.interest_rating} />
           {topAlert && (
             <Badge variant="outline" className={cn(
               "text-[9px] border-0 font-medium px-1 py-0 h-4",

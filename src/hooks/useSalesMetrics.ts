@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { SOLD_STATUS_LIST } from '@/lib/metrics';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 export interface SaleTypeMetrics {
@@ -46,7 +47,7 @@ export function useSalesMetrics(referenceMonth?: Date) {
       const { data: closedLeads } = await supabase
         .from('leads')
         .select('id, sale_type, closed_at')
-        .eq('status', 'fechado')
+        .in('status', [...SOLD_STATUS_LIST]) // venda = etapa vendida (regra única)
         .gte('closed_at', monthStart.toISOString())
         .lte('closed_at', monthEnd.toISOString());
 

@@ -33,27 +33,22 @@ import {
   BarChart3
 } from 'lucide-react';
 import { chartGrid, chartAxis, chartTooltipProps } from '@/lib/chartStyle';
+import { FUNNEL_STAGES } from '@/types/crm';
+import {
+  ARRIVAL_SOURCE_LABELS, agentRevenue, bookedAppointments, conversionRate as conversionRate_, fetchMetricsData,
+  leadOrigin, newLeads, normalizeStatus, summarize,
+} from '@/lib/metrics';
 
+// Origem oficial do lead: "Como o lead chegou?" (lead_arrival_source)
 const sourceColors: Record<string, string> = {
-  whatsapp: 'hsl(142, 70%, 45%)',
-  telefone: 'hsl(199, 89%, 48%)',
-  instagram: 'hsl(340, 75%, 55%)',
   facebook: 'hsl(221, 44%, 41%)',
-  google_ads: 'hsl(38, 92%, 50%)',
-  site: 'hsl(262, 80%, 55%)',
-  indicacao: 'hsl(280, 60%, 55%)',
-  outro: 'hsl(240, 5%, 50%)',
-};
-
-const sourceLabels: Record<string, string> = {
-  whatsapp: 'WhatsApp',
-  telefone: 'Telefone',
-  instagram: 'Instagram',
-  facebook: 'Facebook',
-  google_ads: 'Google Ads',
-  site: 'Site',
-  indicacao: 'Indicação',
-  outro: 'Outro',
+  instagram: 'hsl(340, 75%, 55%)',
+  google: 'hsl(38, 92%, 50%)',
+  passou_na_frente: 'hsl(199, 89%, 48%)',
+  indicacao_pac: 'hsl(280, 60%, 55%)',
+  prospeccao_ativa: 'hsl(142, 70%, 45%)',
+  indicacao_parceria: 'hsl(262, 80%, 55%)',
+  social_selling: 'hsl(180, 60%, 45%)',
 };
 
 export default function Relatorios() {
@@ -64,32 +59,12 @@ export default function Relatorios() {
     : subDays(new Date(), parseInt(period));
   const endDate = period === 'month' ? endOfMonth(new Date()) : new Date();
 
-  const { data: leads } = useQuery({
-    queryKey: ['report-leads', period],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  const range = { start: startDate, end: endDate };
 
-  const { data: appointments } = useQuery({
-    queryKey: ['report-appointments', period],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .gte('scheduled_at', startDate.toISOString())
-        .lte('scheduled_at', endDate.toISOString());
-      
-      if (error) throw error;
-      return data;
-    },
+  // Todos os números pela camada única (as mesmas regras do Dashboard e do BI)
+  const { data: metrics } = useQuery({
+    queryKey: ['report-metrics', period],
+    queryFn: () => fetchMetricsData(range),
   });
 
   const { data: profiles } = useQuery({
@@ -105,41 +80,38 @@ export default function Relatorios() {
   });
 
   // Calculate metrics
-  const totalLeads = leads?.length || 0;
-  const convertedLeads = leads?.filter(l => ['consulta_agendada', 'confirmado', 'compareceu'].includes(l.status)).length || 0;
-  const conversionRate = totalLeads > 0 ? Math.round((convertedLeads / totalLeads) * 100) : 0;
-  
-  const totalAppointments = appointments?.length || 0;
-  const attendedAppointments = appointments?.filter(a => a.attended_at).length || 0;
-  const attendanceRate = totalAppointments > 0 ? Math.round((attendedAppointments / totalAppointments) * 100) : 0;
-  
-  const totalRevenue = appointments?.reduce((sum, a) => sum + (a.revenue || 0), 0) || 0;
+  const leads = metrics ? newLeads(metrics.leads, range) : [];
+  const summary = metrics ? summarize(metrics, range) : null;
+  const totalLeads = summary?.newLeads ?? 0;
+  const conversionRate = Math.round(summary?.conversionRate ?? 0);  // vendas ÷ novos leads
+  const totalAppointments = summary?.booked ?? 0;                   // marcados no período
+  const attendanceRate = Math.round(summary?.attendanceRate ?? 0);
+  const totalRevenue = summary?.revenue ?? 0;                        // pagamentos recebidos
 
   // Leads by source
-  const leadsBySource = leads?.reduce((acc, lead) => {
-    acc[lead.source] = (acc[lead.source] || 0) + 1;
+  const leadsBySource = leads.reduce((acc, lead) => {
+    const k = leadOrigin(lead);
+    acc[k] = (acc[k] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>) || {};
+  }, {} as Record<string, number>);
 
   const sourceChartData = Object.entries(leadsBySource).map(([source, count]) => ({
-    name: sourceLabels[source] || source,
+    name: ARRIVAL_SOURCE_LABELS[source] || source,
     value: count,
     color: sourceColors[source] || 'hsl(240, 5%, 50%)',
   }));
 
-  // Leads by status
-  const leadsByStatus = leads?.reduce((acc, lead) => {
-    acc[lead.status] = (acc[lead.status] || 0) + 1;
+  // Leads by status (etapas com o mesmo nome do Funil)
+  const leadsByStatus = leads.reduce((acc, lead) => {
+    const k = String(normalizeStatus(lead.status) ?? 'novo_lead');
+    acc[k] = (acc[k] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>) || {};
+  }, {} as Record<string, number>);
 
   const statusLabels: Record<string, string> = {
-    novo_lead: 'Novo Lead',
+    ...Object.fromEntries(FUNNEL_STAGES.map(st => [st.key, st.label])),
     em_atendimento: 'Em Atendimento',
-    consulta_agendada: 'Agendado',
     confirmado: 'Confirmado',
-    compareceu: 'Compareceu',
-    nao_compareceu: 'Não Compareceu',
     nao_convertido: 'Não Convertido',
   };
 
@@ -150,18 +122,13 @@ export default function Relatorios() {
 
   // Agent performance
   const agentPerformance = profiles?.map(profile => {
-    const agentLeads = leads?.filter(l => l.assigned_agent_id === profile.user_id) || [];
-    const agentAppointments = appointments?.filter(a => a.agent_id === profile.user_id) || [];
-    const agentRevenue = agentAppointments.reduce((sum, a) => sum + (a.revenue || 0), 0);
-    const agentConverted = agentLeads.filter(l => ['consulta_agendada', 'confirmado', 'compareceu'].includes(l.status)).length;
-    const agentConversion = agentLeads.length > 0 ? Math.round((agentConverted / agentLeads.length) * 100) : 0;
-
+    const id = profile.user_id;
     return {
       name: profile.full_name,
-      leads: agentLeads.length,
-      appointments: agentAppointments.length,
-      revenue: agentRevenue,
-      conversion: agentConversion,
+      leads: metrics ? newLeads(metrics.leads, range, id).length : 0,
+      appointments: metrics ? bookedAppointments(metrics.appointments, range, id).length : 0,
+      revenue: metrics ? agentRevenue(metrics.payments, metrics.leads, id, range) : 0,
+      conversion: metrics ? Math.round(conversionRate_(metrics.leads, range, id)) : 0,
     };
   }).sort((a, b) => b.revenue - a.revenue) || [];
 

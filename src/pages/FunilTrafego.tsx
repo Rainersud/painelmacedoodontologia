@@ -16,7 +16,9 @@ import {
   AlertTriangle, CheckCircle, XCircle, Lightbulb, Trophy, Megaphone,
   Trash2, Edit2, Eye
 } from 'lucide-react';
-import { format, startOfMonth } from 'date-fns';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { fetchMetricsData, leadOrigin, newLeads, revenue, sales, trafficInvestmentCheck } from '@/lib/metrics';
 import { ptBR } from 'date-fns/locale';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
@@ -262,6 +264,49 @@ function CreativeFormDialog({ creative, onSave, trigger }: {
 }
 
 // ─── Main Page ──────────────────────────────────────────────────
+// ─── Conferência com o CAC e resultado real dos leads de tráfego ──
+const PAID_ORIGINS = ['facebook', 'instagram', 'google'];
+
+function TrafficReconciliation({ month, creatives }: { month: Date; creatives: AdCreative[] }) {
+  const range = { start: startOfMonth(month), end: endOfMonth(month) };
+  const { data } = useQuery({
+    queryKey: ['traffic-reconciliation', range.start.toISOString()],
+    queryFn: () => fetchMetricsData(range),
+  });
+  if (!data) return null;
+
+  const check = trafficInvestmentCheck(creatives, data.costs, month);
+  const isPaid = (id?: string | null) => {
+    const l = data.leads.find(x => x.id === id);
+    return !!l && PAID_ORIGINS.includes(leadOrigin(l));
+  };
+  const paidLeads = newLeads(data.leads, range).filter(l => PAID_ORIGINS.includes(leadOrigin(l))).length;
+  const paidSales = sales(data.leads, range).filter(l => PAID_ORIGINS.includes(leadOrigin(l))).length;
+  const paidRevenue = revenue(data.payments.filter(p => isPaid(p.lead_id)), range);
+  const typedRevenue = creatives.reduce((sum, c) => sum + Number(c.revenue || 0), 0);
+  const typedSales = creatives.reduce((sum, c) => sum + Number(c.sales || 0), 0);
+
+  return (
+    <Card className={cn('monday-card', !check.matches && 'border-warning')}>
+      <CardContent className="p-3 space-y-2 text-xs">
+        <div className="flex items-center gap-2 font-semibold">
+          {check.matches ? <CheckCircle className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning" />}
+          {check.matches
+            ? 'Investimento das campanhas confere com o CAC (Anúncios)'
+            : `Investimento das campanhas difere do CAC (Anúncios) em ${formatCurrency(Math.abs(check.difference))}`}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-muted-foreground">
+          <p>Campanhas: <span className="font-semibold text-foreground">{formatCurrency(check.campaigns)}</span></p>
+          <p>CAC – Anúncios: <span className="font-semibold text-foreground">{formatCurrency(check.cac)}</span></p>
+          <p>Leads reais (Facebook, Instagram, Google): <span className="font-semibold text-foreground">{paidLeads}</span></p>
+          <p>Vendas reais: <span className="font-semibold text-foreground">{paidSales}</span> (digitado: {typedSales})</p>
+          <p className="col-span-2">Faturamento real desses leads: <span className="font-semibold text-foreground">{formatCurrency(paidRevenue)}</span> (digitado: {formatCurrency(typedRevenue)})</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function FunilTrafego() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const { creatives, consolidated, bestCreative, worstCreative, isLoading, addCreative, updateCreative, deleteCreative } = useAdCreatives(selectedMonth);
@@ -346,6 +391,8 @@ export default function FunilTrafego() {
             />
           </div>
         </div>
+
+        <TrafficReconciliation month={selectedMonth} creatives={creatives} />
 
         {/* Summary Cards */}
         {creatives.length > 0 && (

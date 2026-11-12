@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { normalizeStatus } from '@/lib/metrics/stages';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { useSearchParams } from 'react-router-dom';
@@ -561,7 +562,8 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
   }, []);
 
   const getLeadsByStatus = useCallback((status: LeadStatus) => {
-    return filteredLeads.filter(lead => lead.status === status);
+    // "consulta_agendada" (telas antigas) aparece na coluna "Agendado" (agendou)
+    return filteredLeads.filter(lead => normalizeStatus(lead.status) === status);
   }, [filteredLeads]);
 
   const getTotalBudgetByStatus = useCallback((status: LeadStatus) => {

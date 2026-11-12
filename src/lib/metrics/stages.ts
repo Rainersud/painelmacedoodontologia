@@ -15,7 +15,8 @@ export function normalizeStatus<T extends string | null | undefined>(status: T):
 }
 
 /** Etapas que só existem depois de uma venda fechada. */
-export const SOLD_STATUSES = new Set(['fechado', 'pos_venda', 'tratamento_andamento', 'concluido']);
+export const SOLD_STATUS_LIST = ['fechado', 'pos_venda', 'tratamento_andamento', 'concluido'] as const;
+export const SOLD_STATUSES = new Set<string>(SOLD_STATUS_LIST);
 
 export function isSoldStatus(status: string | null | undefined): boolean {
   return !!status && SOLD_STATUSES.has(status);

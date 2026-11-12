@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { attendances, bookedAppointments, buildPeriod, fetchMetricsData, newLeads, sales } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -66,6 +67,58 @@ const DEFAULT_TARGETS: BonusTarget[] = [
   { type: 'fechados', target: 1, bonusValue: 50 },
 ];
 
+// ---------- Cálculo compartilhado (camada única de indicadores) ----------
+
+function bonusRange(p: 'diario' | 'semanal' | 'mensal') {
+  return buildPeriod(p === 'diario' ? 'hoje' : p === 'semanal' ? 'semana' : 'mes');
+}
+
+async function loadBonusTargets(): Promise<BonusTarget[]> {
+  const { data: settings } = await supabase
+    .from('meta_settings')
+    .select('*')
+    .like('setting_key', 'bonus_%');
+  if (!settings || settings.length === 0) return DEFAULT_TARGETS;
+  return DEFAULT_TARGETS.map(def => ({
+    type: def.type,
+    target: settings.find(s => s.setting_key === `bonus_${def.type}_target`)?.setting_value || def.target,
+    bonusValue: settings.find(s => s.setting_key === `bonus_${def.type}_value`)?.setting_value || def.bonusValue,
+  }));
+}
+
+/** Valores do atendente pelas regras únicas: agendamento = data de marcação. */
+async function loadBonusValues(range: { start: Date; end: Date }) {
+  const [data, { data: rescued }] = await Promise.all([
+    fetchMetricsData(range),
+    supabase.from('leads').select('id, assigned_agent_id')
+      .eq('status', 'resgatado')
+      .gte('rescued_at', range.start.toISOString())
+      .lte('rescued_at', range.end.toISOString()),
+  ]);
+  return (agentId: string): Record<string, number> => ({
+    novos_leads: newLeads(data.leads, range, agentId).length,
+    agendamentos: bookedAppointments(data.appointments, range, agentId).length,
+    comparecimentos: attendances(data.appointments, range, agentId).length,
+    resgatados: (rescued ?? []).filter(l => l.assigned_agent_id === agentId).length,
+    fechados: sales(data.leads, range, agentId).length,
+  });
+}
+
+function buildBonusMetrics(targets: BonusTarget[], values: Record<string, number>): AgentBonusMetric[] {
+  return targets.map(t => {
+    const current = values[t.type] || 0;
+    return {
+      type: t.type as AgentBonusMetric['type'],
+      label: metricLabels[t.type],
+      target: t.target,
+      current,
+      percentage: t.target > 0 ? Math.min(100, Math.round((current / t.target) * 100)) : 0,
+      completed: current >= t.target,
+      bonusValue: t.bonusValue,
+    };
+  });
+}
+
 export function useAgentBonus(
   agentId?: string,
   period: 'diario' | 'semanal' | 'mensal' = 'diario'
@@ -74,45 +127,9 @@ export function useAgentBonus(
   const queryClient = useQueryClient();
   const targetAgentId = agentId || user?.id;
 
-  const getDateRange = (p: typeof period) => {
-    const now = new Date();
-    switch (p) {
-      case 'diario':
-        return { start: startOfDay(now), end: endOfDay(now) };
-      case 'semanal':
-        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-      case 'mensal':
-        return { start: startOfMonth(now), end: endOfMonth(now) };
-    }
-  };
-
   const { data: bonusTargets } = useQuery({
     queryKey: ['bonus-targets'],
-    queryFn: async (): Promise<BonusTarget[]> => {
-      const { data: settings } = await supabase
-        .from('meta_settings')
-        .select('*')
-        .like('setting_key', 'bonus_%');
-
-      if (!settings || settings.length === 0) return DEFAULT_TARGETS;
-
-      const targets: BonusTarget[] = [];
-      const types = ['novos_leads', 'agendamentos', 'comparecimentos', 'resgatados', 'fechados'];
-      
-      types.forEach(type => {
-        const targetSetting = settings.find(s => s.setting_key === `bonus_${type}_target`);
-        const valueSetting = settings.find(s => s.setting_key === `bonus_${type}_value`);
-        const defaultTarget = DEFAULT_TARGETS.find(t => t.type === type)!;
-        
-        targets.push({
-          type,
-          target: targetSetting?.setting_value || defaultTarget.target,
-          bonusValue: valueSetting?.setting_value || defaultTarget.bonusValue,
-        });
-      });
-
-      return targets;
-    },
+    queryFn: loadBonusTargets,
   });
 
   const { data: agentData, isLoading } = useQuery({
@@ -129,69 +146,10 @@ export function useAgentBonus(
 
       if (!profile) return null;
 
-      const { start, end } = getDateRange(period);
+      const range = bonusRange(period);
       const targets = bonusTargets || DEFAULT_TARGETS;
-
-      // Calculate current values for each metric
-      const { count: novosLeads } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('assigned_agent_id', targetAgentId)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      const { count: agendamentos } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('agent_id', targetAgentId)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      const { count: comparecimentos } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('agent_id', targetAgentId)
-        .not('attended_at', 'is', null)
-        .gte('scheduled_at', start.toISOString())
-        .lte('scheduled_at', end.toISOString());
-
-      const { count: resgatados } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('assigned_agent_id', targetAgentId)
-        .eq('status', 'resgatado')
-        .gte('rescued_at', start.toISOString())
-        .lte('rescued_at', end.toISOString());
-
-      const { count: fechados } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('assigned_agent_id', targetAgentId)
-        .eq('status', 'fechado')
-        .gte('closed_at', start.toISOString())
-        .lte('closed_at', end.toISOString());
-
-      const currentValues: Record<string, number> = {
-        novos_leads: novosLeads || 0,
-        agendamentos: agendamentos || 0,
-        comparecimentos: comparecimentos || 0,
-        resgatados: resgatados || 0,
-        fechados: fechados || 0,
-      };
-
-      const metrics: AgentBonusMetric[] = targets.map(t => {
-        const current = currentValues[t.type] || 0;
-        const percentage = t.target > 0 ? Math.min(100, Math.round((current / t.target) * 100)) : 0;
-        return {
-          type: t.type as AgentBonusMetric['type'],
-          label: metricLabels[t.type],
-          target: t.target,
-          current,
-          percentage,
-          completed: current >= t.target,
-          bonusValue: t.bonusValue,
-        };
-      });
+      const valuesFor = await loadBonusValues(range);
+      const metrics = buildBonusMetrics(targets, valuesFor(targetAgentId));
 
       const totalBonus = metrics.reduce((sum, m) => sum + m.bonusValue, 0);
       const earnedBonus = metrics.filter(m => m.completed).reduce((sum, m) => sum + m.bonusValue, 0);
@@ -331,61 +289,11 @@ export function useAllAgentsBonus(period: 'diario' | 'semanal' | 'mensal' = 'dia
 
       if (!profiles) return [];
 
-      const agentsData: AgentBonusData[] = [];
-      
-      for (const profile of profiles) {
-        // This is a simplified version - in production, you'd optimize with batch queries
-        const getDateRange = (p: typeof period) => {
-          const now = new Date();
-          switch (p) {
-            case 'diario':
-              return { start: startOfDay(now), end: endOfDay(now) };
-            case 'semanal':
-              return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-            case 'mensal':
-              return { start: startOfMonth(now), end: endOfMonth(now) };
-          }
-        };
-
-        const { start, end } = getDateRange(period);
-
-        const { count: novosLeads } = await supabase
-          .from('leads')
-          .select('*', { count: 'exact', head: true })
-          .eq('assigned_agent_id', profile.user_id)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
-
-        const { count: agendamentos } = await supabase
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .eq('agent_id', profile.user_id)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
-
-        const targets = DEFAULT_TARGETS;
-        const metrics: AgentBonusMetric[] = [
-          {
-            type: 'novos_leads',
-            label: 'Novos Leads',
-            target: targets[0].target,
-            current: novosLeads || 0,
-            percentage: Math.min(100, Math.round(((novosLeads || 0) / targets[0].target) * 100)),
-            completed: (novosLeads || 0) >= targets[0].target,
-            bonusValue: targets[0].bonusValue,
-          },
-          {
-            type: 'agendamentos',
-            label: 'Agendamentos',
-            target: targets[1].target,
-            current: agendamentos || 0,
-            percentage: Math.min(100, Math.round(((agendamentos || 0) / targets[1].target) * 100)),
-            completed: (agendamentos || 0) >= targets[1].target,
-            bonusValue: targets[1].bonusValue,
-          },
-        ];
-
-        agentsData.push({
+      // Mesmas metas configuradas e mesmo cálculo da tela individual
+      const [targets, valuesFor] = await Promise.all([loadBonusTargets(), loadBonusValues(bonusRange(period))]);
+      const agentsData: AgentBonusData[] = profiles.map(profile => {
+        const metrics = buildBonusMetrics(targets, valuesFor(profile.user_id));
+        return {
           agent: {
             id: profile.id,
             user_id: profile.user_id,
@@ -393,12 +301,12 @@ export function useAllAgentsBonus(period: 'diario' | 'semanal' | 'mensal' = 'dia
             avatar_url: profile.avatar_url,
           },
           metrics,
-          totalBonus: targets.reduce((s, t) => s + t.bonusValue, 0),
-          earnedBonus: metrics.filter(m => m.completed).reduce((s, m) => s + m.bonusValue, 0),
+          totalBonus: metrics.reduce((sum, m) => sum + m.bonusValue, 0),
+          earnedBonus: metrics.filter(m => m.completed).reduce((sum, m) => sum + m.bonusValue, 0),
           funnelData: [],
           history: [],
-        });
-      }
+        };
+      });
 
       return agentsData;
     },

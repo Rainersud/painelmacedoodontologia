@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { cac as cacOf, fetchMetricsData, newLeads, pct, revenue, safeDiv, sales } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -134,37 +135,18 @@ export function useCACMetrics(referenceMonth?: Date) {
         distribution[c.category] = (distribution[c.category] || 0) + Number(c.amount);
       });
 
-      // Clients acquired (closed leads in period)
-      const { count: clientsAcquired } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'fechado')
-        .gte('closed_at', monthStart.toISOString())
-        .lte('closed_at', monthEnd.toISOString());
+      // Vendas, faturamento e leads pela camada única (mesmas regras do Dashboard)
+      const period = { start: monthStart, end: monthEnd };
+      const data = await fetchMetricsData(period);
+      const salesCount = sales(data.leads, period).length;
+      const totalRevenue = revenue(data.payments, period);
+      const totalLeads = newLeads(data.leads, period).length;
 
-      // Revenue from payments
-      const { data: paidPayments } = await supabase
-        .from('payments')
-        .select('net_value')
-        .eq('status', 'pago')
-        .gte('paid_at', monthStart.toISOString())
-        .lte('paid_at', monthEnd.toISOString());
-
-      const totalRevenue = (paidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
-      const salesCount = clientsAcquired || 0;
-
-      // Total leads in period
-      const { count: totalLeads } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
-
-      const cac = salesCount > 0 ? totalCosts / salesCount : 0;
-      const ticketMedio = salesCount > 0 ? totalRevenue / salesCount : 0;
+      const cac = cacOf(totalCosts, salesCount);
+      const ticketMedio = safeDiv(totalRevenue, salesCount);
       const lucroPorVenda = ticketMedio - cac;
       const isProfitable = ticketMedio > cac;
-      const conversionRate = (totalLeads || 0) > 0 ? (salesCount / (totalLeads || 1)) * 100 : 0;
+      const conversionRate = pct(salesCount, totalLeads);
 
       return {
         cac,
@@ -174,7 +156,7 @@ export function useCACMetrics(referenceMonth?: Date) {
         totalCosts,
         totalRevenue,
         salesCount,
-        totalLeads: totalLeads || 0,
+        totalLeads,
         conversionRate,
         distribution,
       };

@@ -1,5 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  ARRIVAL_SOURCE_LABELS, TRAFFIC_CATEGORY, fetchMetricsData, inRange, investment, leadOrigin, newLeads, pct,
+  revenueByAgent, roi, sales,
+} from '@/lib/metrics';
 import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 import { useDashboardKPIs } from './useDashboardKPIs';
 
@@ -50,30 +54,25 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
       const startISO = range.start.toISOString();
       const endISO = range.end.toISOString();
 
-      const [paymentsRes, leadsRes, profilesRes, costsRes] = await Promise.all([
-        supabase.from('payments').select('net_value, paid_at, lead_id, agent_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-        supabase.from('leads').select('id, name, source, status, loss_reason, treatment_value, created_at'),
+      const period = { start: range.start, end: range.end };
+      const [data, leadsRes, profilesRes] = await Promise.all([
+        fetchMetricsData(period),
+        supabase.from('leads').select('id, name, lead_arrival_source, status, loss_reason, treatment_value, created_at')
+          .gte('created_at', startISO).lte('created_at', endISO),
         supabase.from('profiles').select('user_id, full_name'),
-        supabase.from('acquisition_costs').select('amount').gte('reference_month', range.start.toISOString().split('T')[0]).lte('reference_month', range.end.toISOString().split('T')[0]),
       ]);
 
-      const payments = paymentsRes.data || [];
+      const payments = data.payments.filter(p => p.status === 'pago' && inRange(p.paid_at, period));
       const leads = leadsRes.data || [];
       const profiles = profilesRes.data || [];
-      const costs = costsRes.data || [];
 
       const profileMap = new Map(profiles.map(p => [p.user_id, p.full_name || 'Sem nome']));
 
-      // Seller ranking
-      const sellerAgg: Record<string, { vendas: Set<string>; receita: number }> = {};
-      payments.forEach(p => {
-        if (!p.agent_id) return;
-        if (!sellerAgg[p.agent_id]) sellerAgg[p.agent_id] = { vendas: new Set(), receita: 0 };
-        sellerAgg[p.agent_id].receita += p.net_value || 0;
-        if (p.lead_id) sellerAgg[p.agent_id].vendas.add(p.lead_id);
-      });
-      const sellerRanking: SellerRanking[] = Object.entries(sellerAgg)
-        .map(([id, v]) => ({ agentId: id, name: profileMap.get(id) || 'Sem nome', vendas: v.vendas.size, receita: v.receita }))
+      // Ranking de vendedores: receita do dono do lead, vendas pela data do fechamento (regra única)
+      const revByAgent = revenueByAgent(data.payments, data.leads, period);
+      const sellerRanking: SellerRanking[] = Object.entries(revByAgent)
+        .filter(([id]) => id !== 'sem_atendente')
+        .map(([id, receita]) => ({ agentId: id, name: profileMap.get(id) || 'Sem nome', vendas: sales(data.leads, period, id).length, receita }))
         .sort((a, b) => b.receita - a.receita)
         .slice(0, 10);
 
@@ -89,32 +88,26 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
       const bestHours = Object.entries(hourAgg).map(([h, c]) => ({ hour: Number(h), sales: c })).sort((a, b) => b.sales - a.sales).slice(0, 5);
       const bestDays = Object.entries(dayAgg).map(([d, c]) => ({ day: dayNames[Number(d)], sales: c })).sort((a, b) => b.sales - a.sales);
 
-      // Origins
-      const totalInvestimento = costs.reduce((s, c) => s + Number(c.amount || 0), 0);
-      const leadsByPeriod = leads.filter(l => l.created_at >= startISO && l.created_at <= endISO);
+      // Origens — campo oficial "Como o lead chegou?"; conversão = vendas ÷ novos leads
+      const leadById = new Map(data.leads.map(l => [l.id, l]));
       const originAgg: Record<string, { count: number; converted: number; receita: number }> = {};
-      const paidLeadIds = new Set(payments.map(p => p.lead_id).filter(Boolean));
-      leadsByPeriod.forEach(l => {
-        const src = l.source || 'outro';
-        if (!originAgg[src]) originAgg[src] = { count: 0, converted: 0, receita: 0 };
-        originAgg[src].count += 1;
-        if (paidLeadIds.has(l.id)) originAgg[src].converted += 1;
-      });
+      const bucket = (k: string) => (originAgg[k] ??= { count: 0, converted: 0, receita: 0 });
+      newLeads(data.leads, period).forEach(l => { bucket(leadOrigin(l)).count += 1; });
+      sales(data.leads, period).forEach(l => { bucket(leadOrigin(l)).converted += 1; });
       payments.forEach(p => {
-        const lead = leads.find(l => l.id === p.lead_id);
-        const src = lead?.source || 'outro';
-        if (!originAgg[src]) originAgg[src] = { count: 0, converted: 0, receita: 0 };
-        originAgg[src].receita += p.net_value || 0;
+        const l = leadById.get(p.lead_id);
+        bucket(l ? leadOrigin(l) : 'passou_na_frente').receita += Number(p.net_value || 0);
       });
-      const totalOrigins = Object.keys(originAgg).length || 1;
+      const trafficInv = investment(data.costs, period, data.calendar, [TRAFFIC_CATEGORY]);
+      const paidCount = ['facebook', 'instagram', 'google'].reduce((s, k) => s + (originAgg[k]?.count ?? 0), 0);
       const origins: OriginBreakdown[] = Object.entries(originAgg).map(([source, v]) => {
-        const inv = totalInvestimento / totalOrigins;
+        const inv = ['facebook', 'instagram', 'google'].includes(source) && paidCount ? trafficInv * (v.count / paidCount) : 0;
         return {
-          source,
+          source: ARRIVAL_SOURCE_LABELS[source] ?? source,
           count: v.count,
-          conversao: v.count > 0 ? Math.round((v.converted / v.count) * 100) : 0,
+          conversao: Math.round(pct(v.converted, v.count)),
           receita: v.receita,
-          roi: inv > 0 ? Math.round(((v.receita - inv) / inv) * 100) : 0,
+          roi: Math.round(roi(v.receita, inv)),
         };
       }).sort((a, b) => b.count - a.count);
 
@@ -149,7 +142,7 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
 
 
       // Forecast (linear projection of current month revenue)
-      const totalReceita = payments.reduce((s, p) => s + (p.net_value || 0), 0);
+      const totalReceita = payments.reduce((s, p) => s + Number(p.net_value || 0), 0);
       const elapsedDays = Math.max(1, Math.ceil((Date.now() - range.start.getTime()) / (1000 * 60 * 60 * 24)));
       const totalDays = Math.max(1, Math.ceil((range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60 * 24)));
       const forecast = Math.round((totalReceita / elapsedDays) * totalDays);

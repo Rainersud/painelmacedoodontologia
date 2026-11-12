@@ -19,9 +19,9 @@ import { cn } from '@/lib/utils';
 import { useMeetings, useMeetingActionPlans, useMeetingAnnotations, useMeetingTrainingLinks } from '@/hooks/useMeetings';
 import { useCACMetrics } from '@/hooks/useAcquisitionCosts';
 import { useSalesMetrics } from '@/hooks/useSalesMetrics';
-import { useGoalsProgress } from '@/hooks/useGoalsProgress';
+import { useClinicGoalsPanel } from '@/hooks/useClinicGoalsPanel';
+import { useAllAgentsBonus } from '@/hooks/useAgentBonus';
 import { useReferralDashboard } from '@/hooks/useReferrals';
-import { useIncentiveGoals } from '@/hooks/useIncentiveGoals';
 import { formatCurrency } from '@/lib/currency';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
 import { toast } from 'sonner';
@@ -79,9 +79,26 @@ export default function Reunioes() {
   // Integrated metrics
   const { data: cacMetrics } = useCACMetrics();
   const { data: salesMetrics } = useSalesMetrics();
-  const { data: goalsProgress } = useGoalsProgress();
   const { data: referralDashboard } = useReferralDashboard();
-  const { data: incentiveData } = useIncentiveGoals();
+
+  // Metas atuais (meta_settings), as mesmas de Metas da Clínica e Plano de Incentivo
+  const { data: monthPanel } = useClinicGoalsPanel('mes');
+  const { data: weekPanel } = useClinicGoalsPanel('semana');
+  const { data: teamBonus } = useAllAgentsBonus('semanal');
+  const GOAL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento', 'ticket_medio'];
+  const toColor = (st: string) => (st === 'healthy' ? 'green' : st === 'warning' ? 'yellow' : 'red');
+  const goalsProgress = (monthPanel?.metrics ?? [])
+    .filter(m => GOAL_KEYS.includes(m.key))
+    .map(m => ({ type: m.key, label: m.label, current: m.display, target: m.targetDisplay, percentage: m.percentage, status: toColor(m.status) }));
+  const weekGoals = (weekPanel?.metrics ?? []).filter(m => ['leads', 'agendamentos', 'comparecimentos', 'vendas'].includes(m.key));
+  const incentiveData = weekPanel ? {
+    goals: weekGoals.map(m => ({ bonusEarned: m.current >= m.target })),
+    weeklySummary: {
+      allGoalsMet: weekGoals.length > 0 && weekGoals.every(m => m.current >= m.target),
+      earnedBonus: (teamBonus ?? []).reduce((sum, a) => sum + a.earnedBonus, 0),
+      totalBonus: (teamBonus ?? []).reduce((sum, a) => sum + a.totalBonus, 0),
+    },
+  } : undefined;
 
   const handleCreate = () => {
     if (!newMeetingDate) return;
@@ -338,7 +355,7 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
               {goalsProgress.map((g: any, i: number) => (
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{goalTypeLabels[g.type] || g.type}</span>
+                    <span className="font-medium">{g.label || goalTypeLabels[g.type] || g.type}</span>
                     <div className="flex items-center gap-2">
                       <span>{g.current}/{g.target}</span>
                       <Badge className={cn("text-xs", g.status === 'green' && "bg-green-600", g.status === 'yellow' && "bg-yellow-600", g.status === 'red' && "bg-red-600")}>
@@ -386,9 +403,9 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
           {incentiveData ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricCard icon={Target} title="Metas Ativas" value={String(incentiveData.goals.length)} />
+                <MetricCard icon={Target} title="Metas da Semana" value={String(incentiveData.goals.length)} />
                 <MetricCard icon={CheckCircle2} title="Metas Batidas" value={String(incentiveData.goals.filter((g: any) => g.bonusEarned).length)} status={incentiveData.weeklySummary.allGoalsMet ? 'green' : 'yellow'} />
-                <MetricCard icon={DollarSign} title="Bônus Conquistado" value={formatCurrency(incentiveData.weeklySummary.earnedBonus)} />
+                <MetricCard icon={DollarSign} title="Bônus da Equipe (semana)" value={formatCurrency(incentiveData.weeklySummary.earnedBonus)} />
                 <MetricCard icon={DollarSign} title="Bônus Total Possível" value={formatCurrency(incentiveData.weeklySummary.totalBonus)} />
               </div>
             </div>

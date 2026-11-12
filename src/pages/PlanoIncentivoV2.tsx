@@ -8,6 +8,7 @@ import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useC
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMetaSettings } from '@/hooks/useMetaSettings';
+import { createBusinessCalendar, periodProportion, type HolidayRow } from '@/lib/metrics';
 import {
   startOfDay, endOfDay,
   startOfWeek, endOfWeek,
@@ -96,30 +97,16 @@ function useBusinessDaysProportion(period: Period) {
   return useQuery({
     queryKey: ['plano-incentivo-bizdays', period],
     queryFn: async () => {
-      const [{ data: bizSettings }, { data: hols }] = await Promise.all([
-        supabase.from('meta_settings').select('setting_value').eq('setting_key', 'working_days_bitmask'),
+      // Mesma proporção das outras metas: dias úteis do período ÷ base mensal (camada única)
+      const [{ data: settingsRows }, { data: hols }] = await Promise.all([
+        supabase.from('meta_settings').select('setting_key, setting_value'),
         supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
       ]);
-      const mask = Number(bizSettings?.[0]?.setting_value ?? 62);
-      const holidays = new Set<string>();
-      const recurring = new Set<string>();
-      (hols ?? []).forEach((h: any) => {
-        if (h.is_recurring) recurring.add(String(h.holiday_date).slice(5));
-        else holidays.add(String(h.holiday_date));
-      });
-      const isBiz = (d: Date) => {
-        if ((mask & (1 << getDay(d))) === 0) return false;
-        if (holidays.has(format(d, 'yyyy-MM-dd'))) return false;
-        if (recurring.has(format(d, 'MM-dd'))) return false;
-        return true;
-      };
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
-      const monthlyBiz = Math.max(1, eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(isBiz).length);
-      const { start, end } = buildPeriodRange(period);
-      const periodBiz = Math.max(1, eachDayOfInterval({ start, end }).filter(isBiz).length);
-      return { monthlyBiz, periodBiz, proportion: periodBiz / monthlyBiz };
+      const settings: Record<string, number> = {};
+      (settingsRows ?? []).forEach(r => { settings[r.setting_key] = Number(r.setting_value); });
+      const cal = createBusinessCalendar(Number(settings.working_days_bitmask ?? 62), (hols ?? []) as HolidayRow[]);
+      const range = buildPeriodRange(period);
+      return { periodBiz: cal.countBusinessDays(range.start, range.end), proportion: periodProportion(range, cal, settings) };
     },
   });
 }
@@ -176,9 +163,9 @@ export default function PlanoIncentivoV2() {
     // Indicação Pac
     const monthlyIndic = Number(metaSettings?.meta_indicacoes ?? 200);
     const proportion = bizDays?.proportion ?? 1;
-    const tgtIndic = Math.max(1, Math.round(monthlyIndic * proportion));
+    const tgtIndic = proportion === 0 ? 0 : Math.max(1, Math.round(monthlyIndic * proportion));
     const remaining = Math.max(0, tgtIndic - referralsCount);
-    const ratio = referralsCount / tgtIndic;
+    const ratio = tgtIndic ? referralsCount / tgtIndic : 1;
     const status: StatusColor = ratio >= 0.85 ? 'azul' : ratio >= 0.55 ? 'verde' : 'vermelho';
     const periodSuffix = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
     out.push({

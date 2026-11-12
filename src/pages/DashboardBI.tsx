@@ -97,7 +97,7 @@ const DashboardBI = () => {
           icon: ShoppingCart,
           color: biColors.blue,
           emoji: '🎯',
-          subtitle: 'Por paciente',
+          subtitle: 'Faturamento ÷ vendas',
         },
         {
           title: 'Média de Compras',
@@ -326,7 +326,7 @@ const DashboardBI = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">
-                💵 Comercial 1 (CAC – Primeira Compra)
+                💵 CAC por mês (investimento ÷ vendas)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -338,9 +338,9 @@ const DashboardBI = () => {
                     <BarChart data={data?.monthlyData || []}>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
-                      <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis {...chartAxis} tickFormatter={(v) => `R$ ${Math.round(v)}`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="cac" name="CAC (1ª Compra)" fill={biColors.blue} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="cac" name="CAC" fill={biColors.blue} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

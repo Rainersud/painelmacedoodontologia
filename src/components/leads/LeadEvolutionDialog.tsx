@@ -45,7 +45,7 @@ interface LeadEvolutionDialogProps {
 const statusFlow: { key: LeadStatus; label: string; color: string }[] = [
   { key: 'novo_lead', label: 'Novo Lead', color: 'bg-chart-2' },
   { key: 'em_atendimento', label: 'Em Atendimento', color: 'bg-warning' },
-  { key: 'consulta_agendada', label: 'Agendado', color: 'bg-primary' },
+  { key: 'agendou', label: 'Agendado', color: 'bg-primary' },
   { key: 'confirmado', label: 'Confirmado', color: 'bg-success' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success' },
   { key: 'resgatado', label: 'Resgatado', color: 'bg-chart-5' },

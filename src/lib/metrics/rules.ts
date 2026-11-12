@@ -21,6 +21,7 @@ export interface LeadRow {
   status?: string | null;
   created_at: string;
   closed_at?: string | null;
+  first_response_at?: string | null;
   assigned_agent_id?: string | null;
   lead_arrival_source?: string | null;
 }
@@ -32,6 +33,7 @@ export interface AppointmentRow {
   created_at: string;   // quando a consulta foi marcada
   scheduled_at: string; // quando a consulta acontece
   attended_at?: string | null;
+  confirmed_at?: string | null;
   cancelled_at?: string | null;
 }
 
@@ -321,4 +323,9 @@ export function summarize(input: MetricsInput, range: DateRange): MetricsSummary
     roi: roi(rev, inv),
     roas: roas(gross, traffic),
   };
+}
+
+/** Lead atendido: teve primeira resposta ou já saiu da etapa "novo lead". */
+export function isAttendedLead(l: LeadRow): boolean {
+  return !!l.first_response_at || (!!l.status && l.status !== 'novo_lead');
 }

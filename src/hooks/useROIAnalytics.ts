@@ -3,6 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 import { startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  TRAFFIC_CATEGORY, attendances, bookedAppointments, closingRate, fetchMetricsData, inRange, investment,
+  leadOrigin, newLeads, pct, revenue, revenueByAgent, roi, safeDiv, sales,
+} from '@/lib/metrics';
+
+/** Origens em que há investimento em anúncios. */
+const PAID_ORIGINS = ['facebook', 'instagram', 'google'];
 
 export interface ROIPoint {
   date: string;
@@ -50,100 +57,75 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
   return useQuery({
     queryKey: ['roi-analytics', range.start.toISOString(), range.end.toISOString()],
     queryFn: async (): Promise<ROIAnalytics> => {
-      const startISO = range.start.toISOString();
-      const endISO = range.end.toISOString();
       const startDate = range.start.toISOString().split('T')[0];
       const endDate = range.end.toISOString().split('T')[0];
 
-      const [paymentsRes, costsRes, leadsRes, adsRes, profilesRes, apptRes] = await Promise.all([
-        supabase.from('payments').select('net_value, paid_at, lead_id, agent_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-        supabase.from('acquisition_costs').select('amount, reference_month').gte('reference_month', startDate).lte('reference_month', endDate),
-        supabase.from('leads').select('id, source, lead_arrival_source, assigned_agent_id, status, created_at').gte('created_at', startISO).lte('created_at', endISO),
+      const period = { start: range.start, end: range.end };
+      const [data, adsRes, profilesRes] = await Promise.all([
+        fetchMetricsData(period),
         supabase.from('ad_creatives').select('name, platform, investment, revenue, sales').eq('is_active', true).gte('reference_month', startDate).lte('reference_month', endDate),
         supabase.from('profiles').select('user_id, full_name'),
-        supabase.from('appointments').select('lead_id, scheduled_at, attended_at').gte('scheduled_at', startISO).lte('scheduled_at', endISO),
       ]);
 
-      const payments = paymentsRes.data || [];
-      const costs = costsRes.data || [];
-      const leads = leadsRes.data || [];
+      const { calendar, costs } = data;
+      const payments = data.payments.filter(p => p.status === 'pago' && inRange(p.paid_at, period));
+      const leads = newLeads(data.leads, period);
       const ads = adsRes.data || [];
       const profiles = profilesRes.data || [];
-      const appts = apptRes.data || [];
 
       const days = eachDayOfInterval({ start: range.start, end: range.end });
-      const totalCosts = costs.reduce((s, c) => s + Number(c.amount || 0), 0);
-      const dailyCost = days.length > 0 ? totalCosts / days.length : 0;
+      const totalCosts = investment(costs, period, calendar);
 
       const evolution: ROIPoint[] = days.map(d => {
-        const ds = startOfDay(d).toISOString();
-        const de = endOfDay(d).toISOString();
-        const dayRev = payments.filter(p => p.paid_at && p.paid_at >= ds && p.paid_at <= de).reduce((s, p) => s + (p.net_value || 0), 0);
+        const day = { start: startOfDay(d), end: endOfDay(d) };
+        const dayRev = revenue(data.payments, day);
+        const dayCost = investment(costs, day, calendar);
         return {
           date: format(d, 'dd/MM', { locale: ptBR }),
           receita: dayRev,
-          investimento: dailyCost,
-          roi: dailyCost > 0 ? Math.round(((dayRev - dailyCost) / dailyCost) * 100) : 0,
+          investimento: dayCost,
+          roi: Math.round(roi(dayRev, dayCost)),
         };
       });
 
-      // BY ORIGIN — uses lead_arrival_source as primary dimension
-      const leadById = new Map(leads.map(l => [l.id, l]));
-      const apptByLead = new Map<string, { scheduled: boolean; attended: boolean }>();
-      appts.forEach(a => {
-        if (!a.lead_id) return;
-        const cur = apptByLead.get(a.lead_id) || { scheduled: false, attended: false };
-        cur.scheduled = true;
-        if (a.attended_at) cur.attended = true;
-        apptByLead.set(a.lead_id, cur);
-      });
-
-      const originAgg: Record<string, { receita: number; vendas: Set<string>; leads: number; agendamentos: number; comparecimentos: number }> = {};
+      // POR ORIGEM — origem oficial (lead_arrival_source). Vendas e receita pela regra única.
+      // O investimento em anúncios é dividido entre as origens pagas, na proporção dos leads.
+      const leadById = new Map(data.leads.map(l => [l.id, l]));
+      const booked = bookedAppointments(data.appointments, period);
+      const attended = attendances(data.appointments, period);
+      const originAgg: Record<string, { receita: number; vendas: number; leads: number; agendamentos: number; comparecimentos: number }> = {};
       const ensure = (k: string) => {
-        if (!originAgg[k]) originAgg[k] = { receita: 0, vendas: new Set(), leads: 0, agendamentos: 0, comparecimentos: 0 };
+        if (!originAgg[k]) originAgg[k] = { receita: 0, vendas: 0, leads: 0, agendamentos: 0, comparecimentos: 0 };
         return originAgg[k];
       };
+      const originOfLead = (id?: string | null) => {
+        const l = id ? leadById.get(id) : undefined;
+        return l ? leadOrigin(l) : 'passou_na_frente';
+      };
+      leads.forEach(l => { ensure(leadOrigin(l)).leads += 1; });
+      booked.forEach(a => { ensure(originOfLead(a.lead_id)).agendamentos += 1; });
+      attended.forEach(a => { ensure(originOfLead(a.lead_id)).comparecimentos += 1; });
+      sales(data.leads, period).forEach(l => { ensure(leadOrigin(l)).vendas += 1; });
+      payments.forEach(p => { ensure(originOfLead(p.lead_id)).receita += Number(p.net_value || 0); });
 
-      // Count leads, agendamentos & comparecimentos by arrival source
-      leads.forEach(l => {
-        const src = (l as any).lead_arrival_source || 'passou_na_frente';
-        const bucket = ensure(src);
-        bucket.leads += 1;
-        const a = apptByLead.get(l.id);
-        if (a?.scheduled) bucket.agendamentos += 1;
-        if (a?.attended) bucket.comparecimentos += 1;
-      });
-
-      // Revenue from payments → join via lead.lead_arrival_source
-      payments.forEach(p => {
-        const lead = p.lead_id ? leadById.get(p.lead_id) : null;
-        const src = (lead as any)?.lead_arrival_source || 'passou_na_frente';
-        const bucket = ensure(src);
-        bucket.receita += p.net_value || 0;
-        if (p.lead_id) bucket.vendas.add(p.lead_id);
-      });
-
-      const totalSrc = Object.keys(originAgg).length || 1;
+      const trafficCosts = investment(costs, period, calendar, [TRAFFIC_CATEGORY]);
+      const paidLeads = PAID_ORIGINS.reduce((sum, k) => sum + (originAgg[k]?.leads ?? 0), 0);
       const byOrigin: ROIByDimension[] = Object.entries(originAgg).map(([key, v]) => {
-        const inv = totalCosts / totalSrc;
-        const vendas = v.vendas.size;
-        const ticketMedio = vendas > 0 ? Math.round(v.receita / vendas) : 0;
-        const taxaFechamento = v.comparecimentos > 0 ? Math.round((vendas / v.comparecimentos) * 100) : 0;
-        const roas = inv > 0 ? parseFloat((v.receita / inv).toFixed(2)) : 0;
+        const inv = PAID_ORIGINS.includes(key) && paidLeads > 0 ? trafficCosts * (v.leads / paidLeads) : 0;
         return {
           name: ARRIVAL_LABELS[key] || key,
           receita: v.receita,
           investimento: Math.round(inv),
-          roi: inv > 0 ? Math.round(((v.receita - inv) / inv) * 100) : 0,
-          vendas,
+          roi: Math.round(roi(v.receita, inv)),
+          vendas: v.vendas,
           leads: v.leads,
           agendamentos: v.agendamentos,
           comparecimentos: v.comparecimentos,
-          ticketMedio,
-          taxaFechamento,
-          roas,
+          ticketMedio: Math.round(safeDiv(v.receita, v.vendas)),
+          taxaFechamento: Math.round(pct(v.vendas, v.comparecimentos)),
+          roas: parseFloat(safeDiv(v.receita, inv).toFixed(2)),
         };
-      }).sort((a, b) => b.roi - a.roi);
+      }).sort((a, b) => b.receita - a.receita);
 
       // BY CAMPAIGN
       const byCampaign: ROIByDimension[] = ads.map(a => {
@@ -165,33 +147,29 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
         };
       }).sort((a, b) => b.roi - a.roi);
 
-      // BY AGENT
+      // POR ATENDENTE — receita do dono do lead (regra única)
       const profileMap = new Map(profiles.map(p => [p.user_id, p.full_name]));
-      const agentAgg: Record<string, { receita: number; vendas: Set<string> }> = {};
-      payments.forEach(p => {
-        if (!p.agent_id) return;
-        if (!agentAgg[p.agent_id]) agentAgg[p.agent_id] = { receita: 0, vendas: new Set() };
-        agentAgg[p.agent_id].receita += p.net_value || 0;
-        if (p.lead_id) agentAgg[p.agent_id].vendas.add(p.lead_id);
-      });
-      const totalAgents = Object.keys(agentAgg).length || 1;
-      const byAgent: ROIByDimension[] = Object.entries(agentAgg).map(([id, v]) => {
+      const revByAgent = revenueByAgent(data.payments, data.leads, period);
+      const agentIds = Object.keys(revByAgent).filter(id => id !== 'sem_atendente');
+      const totalAgents = agentIds.length || 1;
+      const byAgent: ROIByDimension[] = agentIds.map(id => {
         const inv = totalCosts / totalAgents;
-        const vendas = v.vendas.size;
+        const receita = revByAgent[id];
+        const vendas = sales(data.leads, period, id).length;
         return {
           name: profileMap.get(id) || 'Sem nome',
-          receita: v.receita,
+          receita,
           investimento: Math.round(inv),
-          roi: inv > 0 ? Math.round(((v.receita - inv) / inv) * 100) : 0,
+          roi: Math.round(roi(receita, inv)),
           vendas,
-          leads: 0,
-          agendamentos: 0,
-          comparecimentos: 0,
-          ticketMedio: vendas > 0 ? Math.round(v.receita / vendas) : 0,
-          taxaFechamento: 0,
-          roas: inv > 0 ? parseFloat((v.receita / inv).toFixed(2)) : 0,
+          leads: newLeads(data.leads, period, id).length,
+          agendamentos: bookedAppointments(data.appointments, period, id).length,
+          comparecimentos: attendances(data.appointments, period, id).length,
+          ticketMedio: Math.round(safeDiv(receita, vendas)),
+          taxaFechamento: Math.round(closingRate(data.leads, data.appointments, period, id)),
+          roas: parseFloat(safeDiv(receita, inv).toFixed(2)),
         };
-      }).sort((a, b) => b.roi - a.roi);
+      }).sort((a, b) => b.receita - a.receita);
 
       return { evolution, byOrigin, byCampaign, byAgent };
     },

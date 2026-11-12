@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  fetchMetricsData, newLeads, sales, bookedAppointments, attendances, appointmentsInPeriod,
+  conversionRate, bookingRate, isAttendedLead, attendanceRate, closingRate, revenueByAgent,
+} from '@/lib/metrics';
 
 export interface AgentMetrics {
   agentId: string;
@@ -24,7 +28,11 @@ export interface AgentMetrics {
   closed: number;
   /** Faturamento líquido (payments pagos no período) */
   revenue: number;
+  /** Vendas ÷ novos leads (%) — regra única */
   conversionRate: number;
+  /** Agendamentos marcados ÷ novos leads (%) */
+  bookingRate: number;
+  /** Consultas do período com presença ÷ consultas do período (%) */
   attendanceRate: number;
   closingRate: number;
   avgResponseTimeSeconds: number;
@@ -47,58 +55,19 @@ async function fetchAgentMetrics(range: DateRange, agentFilter?: string): Promis
   const startISO = range.start.toISOString();
   const endISO = range.end.toISOString();
 
-  // 1) Buscar perfis ativos
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, full_name, is_active')
-    .order('full_name');
+  // Leads, consultas e pagamentos vêm da camada única de indicadores (mesmas regras do resto do painel).
+  const [data, { data: profiles }, { data: calls }, { data: refs }] = await Promise.all([
+    fetchMetricsData(range),
+    supabase.from('profiles').select('user_id, full_name, is_active').order('full_name'),
+    supabase.from('call_logs').select('id, agent_id, call_type, result, created_at')
+      .gte('created_at', startISO).lte('created_at', endISO),
+    supabase.from('referrals').select('id, referrer_lead_id, created_at')
+      .gte('created_at', startISO).lte('created_at', endISO),
+  ]);
 
-  // 2) Buscar leads do período em batch (Comercial 1 usa created_at)
-  const { data: leadsCreated } = await supabase
-    .from('leads')
-    .select('id, assigned_agent_id, status, first_response_at, closed_at, created_at')
-    .gte('created_at', startISO)
-    .lte('created_at', endISO);
-
-  // 3) Leads fechados no período (vendas)
-  const { data: leadsClosed } = await supabase
-    .from('leads')
-    .select('id, assigned_agent_id, closed_at, treatment_value')
-    .eq('status', 'fechado')
-    .not('closed_at', 'is', null)
-    .gte('closed_at', startISO)
-    .lte('closed_at', endISO);
-
-  // 4) Appointments (agendamentos + comparecimentos)
-  const { data: appts } = await supabase
-    .from('appointments')
-    .select('id, agent_id, attended_at, confirmed_at, scheduled_at, created_at, revenue')
-    .or(`and(created_at.gte.${startISO},created_at.lte.${endISO}),and(attended_at.gte.${startISO},attended_at.lte.${endISO})`);
-
-  // 5) Call logs
-  const { data: calls } = await supabase
-    .from('call_logs')
-    .select('id, agent_id, call_type, result, created_at')
-    .gte('created_at', startISO)
-    .lte('created_at', endISO);
-
-  // 6) Pagamentos pagos (receita)
-  const { data: payments } = await supabase
-    .from('payments')
-    .select('net_value, lead_id, paid_at')
-    .eq('status', 'pago')
-    .gte('paid_at', startISO)
-    .lte('paid_at', endISO);
-
-  // 7) Indicações criadas no período → pegar referrer_lead_id e mapear ao agente
-  const { data: refs } = await supabase
-    .from('referrals')
-    .select('id, referrer_lead_id, created_at')
-    .gte('created_at', startISO)
-    .lte('created_at', endISO);
-
+  // Indicação pertence ao dono do lead que indicou
   const referrerLeadIds = Array.from(new Set((refs ?? []).map(r => r.referrer_lead_id)));
-  let referrerAgentMap = new Map<string, string | null>();
+  const referrerAgentMap = new Map<string, string | null>();
   if (referrerLeadIds.length) {
     const { data: refLeads } = await supabase
       .from('leads')
@@ -107,61 +76,31 @@ async function fetchAgentMetrics(range: DateRange, agentFilter?: string): Promis
     (refLeads ?? []).forEach(l => referrerAgentMap.set(l.id, l.assigned_agent_id));
   }
 
-  // mapa lead_id → assigned_agent_id (para vincular receita ao atendente)
-  const leadAgentMap = new Map<string, string | null>();
-  (leadsCreated ?? []).forEach(l => leadAgentMap.set(l.id, l.assigned_agent_id));
-  (leadsClosed ?? []).forEach(l => leadAgentMap.set(l.id, l.assigned_agent_id));
-  // Para pagamentos cujo lead não está nos batches, buscar adicional
-  const missingLeadIds = Array.from(
-    new Set((payments ?? []).map(p => p.lead_id).filter(id => id && !leadAgentMap.has(id))),
-  ) as string[];
-  if (missingLeadIds.length) {
-    const { data: extraLeads } = await supabase
-      .from('leads')
-      .select('id, assigned_agent_id')
-      .in('id', missingLeadIds);
-    (extraLeads ?? []).forEach(l => leadAgentMap.set(l.id, l.assigned_agent_id));
-  }
+  const revenueMap = revenueByAgent(data.payments, data.leads, range);
+  const nowISO = new Date().toISOString();
 
   const metrics: AgentMetrics[] = [];
   for (const p of profiles ?? []) {
     if (agentFilter && p.user_id !== agentFilter) continue;
     const aid = p.user_id;
 
-    const myLeads = (leadsCreated ?? []).filter(l => l.assigned_agent_id === aid);
-    const leadsReceived = myLeads.length;
-    const leadsAttended = myLeads.filter(l => l.first_response_at || (l.status && l.status !== 'novo_lead')).length;
+    const leadsReceived = newLeads(data.leads, range, aid).length;
+    const leadsAttended = newLeads(data.leads, range, aid).filter(isAttendedLead).length;
 
     const myCalls = (calls ?? []).filter(c => c.agent_id === aid);
     const callsMade = myCalls.filter(c => c.call_type === 'outbound').length;
     const callsAnswered = myCalls.filter(c => c.result === 'atendida').length;
 
-    const myAppts = (appts ?? []).filter(a => a.agent_id === aid);
-    const appointmentsScheduled = myAppts.filter(
-      a => a.created_at >= startISO && a.created_at <= endISO,
-    ).length;
-    const appointmentsConfirmed = myAppts.filter(a => a.confirmed_at).length;
-    const attendedAppointments = myAppts.filter(
-      a => a.attended_at && a.attended_at >= startISO && a.attended_at <= endISO,
-    ).length;
-    const noShows = myAppts.filter(
-      a => !a.attended_at && a.scheduled_at < new Date().toISOString() && a.scheduled_at >= startISO,
-    ).length;
+    const booked = bookedAppointments(data.appointments, range, aid);
+    const appointmentsScheduled = booked.length;
+    const appointmentsConfirmed = booked.filter(a => a.confirmed_at).length;
+    const attendedAppointments = attendances(data.appointments, range, aid).length;
+    const noShows = appointmentsInPeriod(data.appointments, range, aid)
+      .filter(a => !a.attended_at && !a.cancelled_at && a.scheduled_at < nowISO).length;
 
-    const closed = (leadsClosed ?? []).filter(l => l.assigned_agent_id === aid).length;
-
-    const revenue = (payments ?? []).reduce((sum, pay) => {
-      const owner = pay.lead_id ? leadAgentMap.get(pay.lead_id) : null;
-      return owner === aid ? sum + Number(pay.net_value || 0) : sum;
-    }, 0);
-
-    const referrals = (refs ?? []).filter(
-      r => referrerAgentMap.get(r.referrer_lead_id) === aid,
-    ).length;
-
-    const conversionRate = leadsReceived > 0 ? Math.round((appointmentsScheduled / leadsReceived) * 100) : 0;
-    const attendanceRate = appointmentsScheduled > 0 ? Math.round((attendedAppointments / appointmentsScheduled) * 100) : 0;
-    const closingRate = attendedAppointments > 0 ? Math.round((closed / attendedAppointments) * 100) : 0;
+    const closed = sales(data.leads, range, aid).length;
+    const revenue = revenueMap[aid] ?? 0;
+    const referrals = (refs ?? []).filter(r => referrerAgentMap.get(r.referrer_lead_id) === aid).length;
 
     metrics.push({
       agentId: aid,
@@ -178,9 +117,10 @@ async function fetchAgentMetrics(range: DateRange, agentFilter?: string): Promis
       referrals,
       closed,
       revenue,
-      conversionRate,
-      attendanceRate,
-      closingRate,
+      conversionRate: Math.round(conversionRate(data.leads, range, aid)),
+      bookingRate: Math.round(bookingRate(data.appointments, data.leads, range, aid)),
+      attendanceRate: Math.round(attendanceRate(data.appointments, range, aid)),
+      closingRate: Math.round(closingRate(data.leads, data.appointments, range, aid)),
       avgResponseTimeSeconds: 0,
     });
   }

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cac, fetchMetricsData, investment, roi, safeDiv, sales } from '@/lib/metrics';
 
 export type BIPeriodFilter = 'mes' | 'trimestre' | 'semestre' | 'ano' | 'todos';
 
@@ -21,7 +22,11 @@ export interface MonthlyData {
   label: string;
   faturamentoReal: number;
   faturamentoFuturo: number;
+  /** CAC do mês = investimento do mês ÷ vendas do mês (regra única) */
   cac: number;
+  /** Faturamento de primeira compra (Comercial 1) */
+  primeiraCompra: number;
+  /** Faturamento de recompra (Comercial 2) */
   ltv: number;
 }
 
@@ -95,29 +100,19 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
         .from('upsell_opportunities')
         .select('lead_id, purchase_count, purchase_values, estimated_value, closed_value');
 
-      // 4. Acquisition costs
-      const { data: costsData } = await supabase
-        .from('acquisition_costs')
-        .select('amount');
-
-      // 5. Closed leads count
-      let closedQuery = supabase
-        .from('leads')
-        .select('id', { count: 'exact' })
-        .eq('status', 'fechado');
-      if (dateRange) {
-        closedQuery = closedQuery
-          .gte('closed_at', dateRange.start.toISOString())
-          .lte('closed_at', dateRange.end.toISOString());
-      }
-      const { count: closedCount } = await closedQuery;
+      // 4. Investimento e vendas pela camada única (mesmas regras do resto do painel)
+      const now = new Date();
+      const chartStart = startOfMonth(subMonths(now, 11));
+      const kpiRange = dateRange ?? { start: new Date(2000, 0, 1), end: endOfMonth(now) };
+      const span = { start: kpiRange.start < chartStart ? kpiRange.start : chartStart, end: endOfMonth(now) };
+      const metrics = await fetchMetricsData(span);
+      const totalCosts = investment(metrics.costs, kpiRange, metrics.calendar);
+      const salesCount = sales(metrics.leads, kpiRange).length;
 
       // Calculate KPIs
-      const faturamentoRecebido = (paidPayments || []).reduce((s, p) => s + (p.net_value || 0), 0);
-      const faturamentoPrevisto = (pendingPayments || []).reduce((s, p) => s + (p.net_value || 0), 0);
-      const totalCosts = (costsData || []).reduce((s, c) => s + Number(c.amount), 0);
-      const totalPacientes = closedCount || 0;
-      const cacMedio = totalPacientes > 0 ? totalCosts / totalPacientes : 0;
+      const faturamentoRecebido = (paidPayments || []).reduce((s, p) => s + Number(p.net_value || 0), 0);
+      const faturamentoPrevisto = (pendingPayments || []).reduce((s, p) => s + Number(p.net_value || 0), 0);
+      const cacMedio = cac(totalCosts, salesCount);
 
       // LTV from upsell purchase_values
       const leadLTV: Record<string, number> = {};
@@ -157,23 +152,27 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       });
 
       const uniquePacientes = allLeadIds.size || 1;
-      const ticketMedio = ltvTotal / uniquePacientes;
+      // Ticket médio pela regra única: faturamento ÷ vendas
+      const ticketMedio = safeDiv(faturamentoRecebido, salesCount);
 
       const totalPurchases = Object.values(leadPurchaseCounts).reduce((s, c) => s + c, 0);
       const mediaCompras = Object.keys(leadPurchaseCounts).length > 0 
         ? totalPurchases / Object.keys(leadPurchaseCounts).length 
         : 1;
 
-      const roiGeral = totalCosts > 0 ? ((faturamentoRecebido - totalCosts) / totalCosts) * 100 : 0;
+      const roiGeral = roi(faturamentoRecebido, totalCosts);
 
       // Monthly data for charts
-      const now = new Date();
       const monthlyMap: Record<string, MonthlyData> = {};
       for (let i = -11; i <= 0; i++) {
         const d = addMonths(now, i);
         const key = format(d, 'yyyy-MM');
         const label = format(d, 'MMM/yy', { locale: ptBR });
-        monthlyMap[key] = { month: key, label, faturamentoReal: 0, faturamentoFuturo: 0, cac: 0, ltv: 0 };
+        const mRange = { start: startOfMonth(d), end: endOfMonth(d) };
+        monthlyMap[key] = {
+          month: key, label, faturamentoReal: 0, faturamentoFuturo: 0, primeiraCompra: 0, ltv: 0,
+          cac: Math.round(cac(investment(metrics.costs, mRange, metrics.calendar), sales(metrics.leads, mRange).length)),
+        };
       }
 
       // Fill real revenue
@@ -181,11 +180,11 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
         const dateStr = p.paid_at || p.created_at;
         const key = dateStr.substring(0, 7);
         if (monthlyMap[key]) {
-          monthlyMap[key].faturamentoReal += p.net_value || 0;
+          monthlyMap[key].faturamentoReal += Number(p.net_value || 0);
           if (p.upsell_opportunity_id) {
-            monthlyMap[key].ltv += p.gross_value || 0;
+            monthlyMap[key].ltv += Number(p.gross_value || 0);
           } else {
-            monthlyMap[key].cac += p.net_value || 0;
+            monthlyMap[key].primeiraCompra += Number(p.net_value || 0);
           }
         }
       });

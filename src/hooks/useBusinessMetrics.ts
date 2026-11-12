@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { fetchMetricsData, inRange, newLeads, pct, sales, summarize } from '@/lib/metrics';
 import { differenceInDays, eachDayOfInterval, eachHourOfInterval, startOfDay, endOfDay, startOfHour, endOfHour, isSameDay } from 'date-fns';
 
 export interface BusinessTrends {
@@ -45,44 +46,36 @@ export function useBusinessMetrics() {
     queryFn: async (): Promise<BusinessMetrics> => {
       const startISO = range.start.toISOString();
       const endISO = range.end.toISOString();
+      const period = { start: range.start, end: range.end };
 
-      const [leadsRes, apptsRes, paymentsRes, costsRes, upsellRes] = await Promise.all([
+      // Números principais pela camada única; aqui só ficam LTV, recuperação e tempo de conversão.
+      const [data, leadsRes, upsellRes] = await Promise.all([
+        fetchMetricsData(period),
         supabase.from('leads').select('id, status, first_response_at, created_at, closed_at, rescued_at, loss_reason'),
-        supabase.from('appointments').select('id, attended_at, scheduled_at, lead_id').gte('scheduled_at', startISO).lte('scheduled_at', endISO),
-        supabase.from('payments').select('net_value, status, paid_at, lead_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-        supabase.from('acquisition_costs').select('amount').gte('reference_month', range.start.toISOString().split('T')[0]).lte('reference_month', range.end.toISOString().split('T')[0]),
         supabase.from('upsell_opportunities').select('lead_id, closed_value, status'),
       ]);
 
       const leadsAll = leadsRes.data || [];
-      const leadsPeriod = leadsAll.filter(l => l.created_at >= startISO && l.created_at <= endISO);
-      const appts = apptsRes.data || [];
-      const payments = paymentsRes.data || [];
-      const costs = costsRes.data || [];
       const upsells = upsellRes.data || [];
+      const summary = summarize(data, period);
+      const leadsPeriod = newLeads(data.leads, period);
+      const payments = data.payments.filter(p => p.status === 'pago' && inRange(p.paid_at, period));
 
-      const leadsGerados = leadsPeriod.length;
-      const totalInvestimento = costs.reduce((s, c) => s + Number(c.amount || 0), 0);
-      const totalReceita = payments.reduce((s, p) => s + (p.net_value || 0), 0);
-
-      const cpl = leadsGerados > 0 ? totalInvestimento / leadsGerados : 0;
+      const leadsGerados = summary.newLeads;
+      const totalInvestimento = summary.investment;
+      const totalReceita = summary.revenue;
+      const cpl = summary.cpl;
       const respondidos = leadsPeriod.filter(l => l.first_response_at).length;
-      const taxaResposta = leadsGerados > 0 ? Math.round((respondidos / leadsGerados) * 100) : 0;
-      const atendidos = leadsPeriod.filter(l => l.first_response_at || l.status !== 'novo_lead').length;
-      const consultasAgendadas = appts.length;
-      const taxaAgendamento = atendidos > 0 ? Math.round((consultasAgendadas / atendidos) * 100) : 0;
-      const compareceram = appts.filter(a => a.attended_at).length;
-      const taxaComparecimento = consultasAgendadas > 0 ? Math.round((compareceram / consultasAgendadas) * 100) : 0;
+      const taxaResposta = Math.round(pct(respondidos, leadsGerados));
+      const taxaAgendamento = Math.round(summary.bookingRate);
+      const taxaComparecimento = Math.round(summary.attendanceRate);
+      const vendasFechadas = summary.sales;
+      const taxaFechamento = Math.round(summary.closingRate);
+      const ticketMedio = summary.averageTicket;
+      const cac = summary.cac;
+      const roas = summary.roas;
 
-      const paidLeadIds = new Set(payments.map(p => p.lead_id));
-      const vendasFechadas = paidLeadIds.size;
-      const taxaFechamento = compareceram > 0 ? Math.round((vendasFechadas / compareceram) * 100) : 0;
-
-      const ticketMedio = vendasFechadas > 0 ? totalReceita / vendasFechadas : 0;
-      const cac = vendasFechadas > 0 ? totalInvestimento / vendasFechadas : 0;
-      const roas = totalInvestimento > 0 ? totalReceita / totalInvestimento : 0;
-
-      const fechadosNoPeriodo = leadsAll.filter(l => l.status === 'fechado' && l.closed_at && l.closed_at >= startISO && l.closed_at <= endISO);
+      const fechadosNoPeriodo = sales(data.leads, period);
       const temposConv = fechadosNoPeriodo.map(l => differenceInDays(new Date(l.closed_at!), new Date(l.created_at)));
       const tempoMedioConversao = temposConv.length > 0 ? Math.round(temposConv.reduce((a, b) => a + b, 0) / temposConv.length) : 0;
 
@@ -92,7 +85,7 @@ export function useBusinessMetrics() {
 
       const revenueByLead: Record<string, number> = {};
       payments.forEach(p => {
-        if (p.lead_id) revenueByLead[p.lead_id] = (revenueByLead[p.lead_id] || 0) + (p.net_value || 0);
+        if (p.lead_id) revenueByLead[p.lead_id] = (revenueByLead[p.lead_id] || 0) + Number(p.net_value || 0);
       });
       upsells.forEach(u => {
         if (u.lead_id && u.closed_value) revenueByLead[u.lead_id] = (revenueByLead[u.lead_id] || 0) + Number(u.closed_value);
@@ -106,8 +99,6 @@ export function useBusinessMetrics() {
       const buckets = isToday
         ? eachHourOfInterval({ start: range.start, end: range.end }).map(d => ({ start: startOfHour(d), end: endOfHour(d) }))
         : eachDayOfInterval({ start: range.start, end: range.end }).map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
-
-      const investPerBucket = buckets.length > 0 ? totalInvestimento / buckets.length : 0;
 
       const trends: BusinessTrends = {
         leadsGerados: [],
@@ -127,31 +118,24 @@ export function useBusinessMetrics() {
       buckets.forEach(b => {
         const sISO = b.start.toISOString();
         const eISO = b.end.toISOString();
-        const bLeads = leadsPeriod.filter(l => l.created_at >= sISO && l.created_at <= eISO);
-        const bAppts = appts.filter(a => a.scheduled_at >= sISO && a.scheduled_at <= eISO);
-        const bAtt = bAppts.filter(a => a.attended_at);
-        const bPays = payments.filter(p => p.paid_at && p.paid_at >= sISO && p.paid_at <= eISO);
-        const bRevenue = bPays.reduce((s, p) => s + (p.net_value || 0), 0);
-        const bSales = new Set(bPays.map(p => p.lead_id)).size;
-        const bResp = bLeads.filter(l => l.first_response_at).length;
-        const bAtendidos = bLeads.filter(l => l.first_response_at || l.status !== 'novo_lead').length;
+        const m = summarize(data, b);
         const bRescued = leadsAll.filter(l => l.rescued_at && l.rescued_at >= sISO && l.rescued_at <= eISO).length;
         const bLost = leadsAll.filter(l => l.loss_reason && l.created_at >= sISO && l.created_at <= eISO).length;
-        const bClosed = leadsAll.filter(l => l.status === 'fechado' && l.closed_at && l.closed_at >= sISO && l.closed_at <= eISO);
-        const bConvDays = bClosed.map(l => differenceInDays(new Date(l.closed_at!), new Date(l.created_at)));
+        const bConvDays = sales(data.leads, b).map(l => differenceInDays(new Date(l.closed_at!), new Date(l.created_at)));
+        const bResp = newLeads(data.leads, b).filter(l => l.first_response_at).length;
 
-        trends.leadsGerados.push(bLeads.length);
-        trends.cpl.push(bLeads.length > 0 ? Math.round(investPerBucket / bLeads.length) : 0);
-        trends.taxaResposta.push(bLeads.length > 0 ? Math.round((bResp / bLeads.length) * 100) : 0);
-        trends.taxaAgendamento.push(bAtendidos > 0 ? Math.round((bAppts.length / bAtendidos) * 100) : 0);
-        trends.taxaComparecimento.push(bAppts.length > 0 ? Math.round((bAtt.length / bAppts.length) * 100) : 0);
-        trends.taxaFechamento.push(bAtt.length > 0 ? Math.round((bSales / bAtt.length) * 100) : 0);
-        trends.ticketMedio.push(bSales > 0 ? Math.round(bRevenue / bSales) : 0);
-        trends.cac.push(bSales > 0 ? Math.round(investPerBucket / bSales) : 0);
-        trends.roas.push(investPerBucket > 0 ? Math.round((bRevenue / investPerBucket) * 100) / 100 : 0);
+        trends.leadsGerados.push(m.newLeads);
+        trends.cpl.push(Math.round(m.cpl));
+        trends.taxaResposta.push(Math.round(pct(bResp, m.newLeads)));
+        trends.taxaAgendamento.push(Math.round(m.bookingRate));
+        trends.taxaComparecimento.push(Math.round(m.attendanceRate));
+        trends.taxaFechamento.push(Math.round(m.closingRate));
+        trends.ticketMedio.push(Math.round(m.averageTicket));
+        trends.cac.push(Math.round(m.cac));
+        trends.roas.push(Math.round(m.roas * 100) / 100);
         trends.tempoMedioConversao.push(bConvDays.length > 0 ? Math.round(bConvDays.reduce((a, b2) => a + b2, 0) / bConvDays.length) : 0);
         trends.taxaRecuperacao.push(bLost > 0 ? Math.round((bRescued / bLost) * 100) : 0);
-        trends.ltv.push(bSales > 0 ? Math.round(bRevenue / bSales) : 0);
+        trends.ltv.push(Math.round(m.averageTicket));
       });
 
       return {

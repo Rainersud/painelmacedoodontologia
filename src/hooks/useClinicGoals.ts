@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { fetchMetricsData, goalStatus, monthlyGoal, summarize } from '@/lib/metrics';
 
 // Default healthy rates configuration (used when no DB values exist)
 // MENSAL: 300 leads, 90 comparecimentos (30%), 23 fechamentos
@@ -73,77 +74,35 @@ export function useClinicGoals() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['clinic-goals'],
     queryFn: async (): Promise<ClinicGoalsData> => {
-      // Fetch meta_settings for targets
-      const { data: settings } = await supabase
-        .from('meta_settings')
-        .select('*');
+      // Valores e metas pela camada única (mesmas regras do Plano de Incentivo e do Dashboard).
+      const month = { start: monthStart, end: monthEnd };
+      const data = await fetchMetricsData(month);
+      const m = summarize(data, month);
+      const settingsMap = data.settings;
 
-      const settingsMap: Record<string, number> = {};
-      (settings || []).forEach(s => {
-        settingsMap[s.setting_key] = s.setting_value;
-      });
+      const leadsCount = m.newLeads;
+      const agendamentosCount = m.booked;        // marcados no mês
+      const comparecimentosCount = m.attendances;
+      const fechamentosCount = m.sales;
+      const totalRevenue = m.revenue;
+      const ticketMedio = Math.round(m.averageTicket);
 
-      // Get current values from database
-      const { count: leadsCount } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
+      const leadsTarget = monthlyGoal(settingsMap, 'leads');
+      const agendamentosTarget = monthlyGoal(settingsMap, 'agendamentos');
+      const comparecimentosTarget = monthlyGoal(settingsMap, 'comparecimentos');
+      const fechamentosTarget = monthlyGoal(settingsMap, 'vendas');
+      const ticketMedioTarget = monthlyGoal(settingsMap, 'ticket_medio');
+      const faturamentoTarget = monthlyGoal(settingsMap, 'faturamento');
+      const investimentoValue = monthlyGoal(settingsMap, 'investimento');
+      const roiTarget = monthlyGoal(settingsMap, 'roi');
 
-      const { count: agendamentosCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .gte('scheduled_at', monthStart.toISOString())
-        .lte('scheduled_at', monthEnd.toISOString());
+      const agendamentosTargetRate = monthlyGoal(settingsMap, 'taxa_agendamento');
+      const comparecimentosTargetRate = monthlyGoal(settingsMap, 'taxa_comparecimento');
+      const fechamentosTargetRate = monthlyGoal(settingsMap, 'taxa_fechamento');
 
-      const { count: comparecimentosCount } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .not('attended_at', 'is', null)
-        .gte('scheduled_at', monthStart.toISOString())
-        .lte('scheduled_at', monthEnd.toISOString());
+      // ROI em "x": (faturamento − investimento) ÷ investimento, investimento real do CAC
+      const currentROI = parseFloat((m.roi / 100).toFixed(1));
 
-      const { count: fechamentosCount } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'fechado')
-        .gte('closed_at', monthStart.toISOString())
-        .lte('closed_at', monthEnd.toISOString());
-
-      // Get real received revenue from payments table (net_value of paid payments)
-      const { data: paidPayments } = await supabase
-        .from('payments')
-        .select('net_value')
-        .eq('status', 'pago')
-        .gte('paid_at', monthStart.toISOString())
-        .lte('paid_at', monthEnd.toISOString());
-
-      const paymentsRevenue = (paidPayments || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
-
-      // Single source of truth: revenue comes ONLY from payments table
-      const totalRevenue = paymentsRevenue;
-      const ticketMedio = fechamentosCount && fechamentosCount > 0 
-        ? Math.round(totalRevenue / fechamentosCount) 
-        : 0;
-
-      // Get targets from settings or use defaults
-      const leadsTarget = settingsMap['meta_leads'] || HEALTHY_RATES.leads.target;
-      const agendamentosTarget = settingsMap['meta_agendamentos'] || HEALTHY_RATES.agendamentos.target;
-      const comparecimentosTarget = settingsMap['meta_comparecimentos'] || HEALTHY_RATES.comparecimentos.target;
-      const fechamentosTarget = settingsMap['meta_fechamentos'] || HEALTHY_RATES.fechamentos.target;
-      const ticketMedioTarget = settingsMap['meta_ticket_medio'] || HEALTHY_RATES.ticketMedio.target;
-      const faturamentoTarget = settingsMap['meta_faturamento'] || HEALTHY_RATES.faturamento.target;
-      const investimentoValue = settingsMap['investimento_marketing'] || HEALTHY_RATES.investimento.target;
-      const roiTarget = settingsMap['meta_roi'] || HEALTHY_RATES.roi.target;
-
-      // Get target rates from settings or use defaults
-      const agendamentosTargetRate = settingsMap['taxa_agendamentos'] || HEALTHY_RATES.agendamentos.rate;
-      const comparecimentosTargetRate = settingsMap['taxa_comparecimentos'] || HEALTHY_RATES.comparecimentos.rate;
-      const fechamentosTargetRate = settingsMap['taxa_fechamentos'] || HEALTHY_RATES.fechamentos.rate;
-
-      const currentROI = investimentoValue > 0 ? parseFloat((totalRevenue / investimentoValue).toFixed(1)) : 0;
-
-      // Build healthy rates object from DB or defaults
       const healthyRates: HealthyRates = {
         leads: { target: leadsTarget, rate: 100 },
         agendamentos: { target: agendamentosTarget, rate: agendamentosTargetRate },
@@ -155,12 +114,7 @@ export function useClinicGoals() {
         roi: { target: roiTarget },
       };
 
-      const calculateStatus = (current: number, target: number): 'healthy' | 'warning' | 'critical' => {
-        const ratio = current / target;
-        if (ratio >= 0.8) return 'healthy';
-        if (ratio >= 0.5) return 'warning';
-        return 'critical';
-      };
+      const calculateStatus = (current: number, target: number) => goalStatus(current, target);
 
       // Revenue is already calculated from payments (net received) above
 
@@ -192,7 +146,7 @@ export function useClinicGoals() {
           label: 'Compareceu',
           target: comparecimentosTarget,
           current: comparecimentosCount || 0,
-          rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0,
+          rate: Math.round(m.attendanceRate),
           percentage: Math.min(100, Math.round(((comparecimentosCount || 0) / comparecimentosTarget) * 100)),
           status: calculateStatus(comparecimentosCount || 0, comparecimentosTarget),
           remaining: Math.max(0, comparecimentosTarget - (comparecimentosCount || 0)),
@@ -233,8 +187,8 @@ export function useClinicGoals() {
           key: 'investimento',
           label: 'Investimento',
           target: investimentoValue,
-          current: investimentoValue,
-          percentage: 100,
+          current: Math.round(m.investment),
+          percentage: Math.min(100, Math.round((m.investment / investimentoValue) * 100)),
           status: 'healthy',
           remaining: 0,
           isEditable: true,
@@ -255,7 +209,7 @@ export function useClinicGoals() {
       const funnelData = [
         { stage: 'Novos Leads', value: leadsCount || 0, rate: 100, targetRate: 100, color: 'hsl(var(--primary))', key: 'leads' },
         { stage: 'Agendado', value: agendamentosCount || 0, rate: leadsCount ? Math.round(((agendamentosCount || 0) / leadsCount) * 100) : 0, targetRate: agendamentosTargetRate, color: 'hsl(var(--chart-1))', key: 'agendamentos' },
-        { stage: 'Compareceu', value: comparecimentosCount || 0, rate: agendamentosCount ? Math.round(((comparecimentosCount || 0) / agendamentosCount) * 100) : 0, targetRate: comparecimentosTargetRate, color: 'hsl(var(--chart-2))', key: 'comparecimentos' },
+        { stage: 'Compareceu', value: comparecimentosCount || 0, rate: Math.round(m.attendanceRate), targetRate: comparecimentosTargetRate, color: 'hsl(var(--chart-2))', key: 'comparecimentos' },
         { stage: 'Venda Realizada', value: fechamentosCount || 0, rate: comparecimentosCount ? Math.round(((fechamentosCount || 0) / comparecimentosCount) * 100) : 0, targetRate: fechamentosTargetRate, color: 'hsl(var(--success))', key: 'fechamentos' },
       ];
 

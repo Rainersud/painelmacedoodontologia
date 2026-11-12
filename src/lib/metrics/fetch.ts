@@ -22,7 +22,7 @@ async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ da
 
 const between = (col: string, s: string, e: string) => `and(${col}.gte.${s},${col}.lte.${e})`;
 
-const LEAD_COLS = 'id, status, created_at, closed_at, assigned_agent_id, lead_arrival_source';
+const LEAD_COLS = 'id, status, created_at, closed_at, first_response_at, assigned_agent_id, lead_arrival_source';
 
 export interface MetricsData extends MetricsInput {
   settings: MetaSettingsMap;
@@ -40,7 +40,7 @@ export async function fetchMetricsData(span: DateRange): Promise<MetricsData> {
     fetchAll<LeadRow>((f, t) => supabase.from('leads').select(LEAD_COLS)
       .or(`${between('created_at', s, e)},${between('closed_at', s, e)}`).order('id').range(f, t)),
     fetchAll<AppointmentRow>((f, t) => supabase.from('appointments')
-      .select('id, lead_id, agent_id, created_at, scheduled_at, attended_at, cancelled_at')
+      .select('id, lead_id, agent_id, created_at, scheduled_at, attended_at, confirmed_at, cancelled_at')
       .or(`${between('created_at', s, e)},${between('scheduled_at', s, e)},${between('attended_at', s, e)}`)
       .order('id').range(f, t)),
     fetchAll<PaymentRow>((f, t) => supabase.from('payments')

@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import {
   startOfDay, endOfDay, subDays,
   startOfWeek, endOfWeek, subWeeks,
@@ -8,6 +7,18 @@ import {
   eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
+import {
+  attendances, bookedAppointments, buildPeriod, businessDaysPerMonth, fetchMetricsData, inRange, monthlyGoal,
+  newLeads, periodGoal, periodProportion, sales as salesOf, summarize, type GoalKey,
+} from '@/lib/metrics';
+
+/** Intervalo amplo para a busca (o recorte exato é feito por buildRange). */
+function buildPeriodForCalendar(period: Period, customRange?: CustomYearRange) {
+  if (period === 'ano' && customRange?.from && customRange?.to) {
+    return buildPeriod('personalizado', new Date(), customRange);
+  }
+  return buildPeriod(period, new Date());
+}
 
 export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
 
@@ -150,132 +161,75 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
   return useQuery({
     queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
-      // Calendário de dias úteis (configurável: workdays + feriados da clínica)
-      const [{ data: bizSettings }, { data: hols }, { data: settings }] = await Promise.all([
-        supabase.from('meta_settings').select('setting_value').eq('setting_key', 'working_days_bitmask'),
-        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
-        supabase.from('meta_settings').select('setting_key, setting_value'),
-      ]);
-      const mask = Number(bizSettings?.[0]?.setting_value ?? 62);
-      const holidays = new Set<string>();
-      const recurring = new Set<string>();
-      (hols ?? []).forEach((h: any) => {
-        if (h.is_recurring) recurring.add(String(h.holiday_date).slice(5));
-        else holidays.add(String(h.holiday_date));
-      });
-      const isBusinessDay = (d: Date) => {
-        if ((mask & (1 << getDay(d))) === 0) return false;
-        if (holidays.has(format(d, 'yyyy-MM-dd'))) return false;
-        if (recurring.has(format(d, 'MM-dd'))) return false;
-        return true;
-      };
-      // Dias úteis padrão de um mês de referência (mês atual)
-      const refStart = startOfMonth(new Date());
-      const refEnd = endOfMonth(new Date());
-      const monthlyBusinessDays = Math.max(1, countBiz(refStart, refEnd, { isBusinessDay, monthlyBusinessDays: 20 }));
-      const cal: CalendarCfg = { isBusinessDay, monthlyBusinessDays };
-
+      // Calendário, metas e números pela camada única de indicadores.
+      const base = buildPeriodForCalendar(period, customRange);
+      const data = await fetchMetricsData({ start: base.previous.start, end: base.end });
+      const { calendar: bizCal, settings: s } = data;
+      const cal: CalendarCfg = { isBusinessDay: bizCal.isBusinessDay, monthlyBusinessDays: businessDaysPerMonth(s) };
       const range = buildRange(period, customRange, cal);
+      const cur = { start: range.start, end: range.end };
+      const prevR = { start: range.prevStart, end: range.prevEnd };
 
-      const s: Record<string, number> = {};
-      (settings || []).forEach(r => { s[r.setting_key] = Number(r.setting_value); });
-
-      const get = (k: string, fallback: number) => (s[k] ?? fallback);
-
-      // Metas mensais oficiais
+      // Metas mensais oficiais (meta_settings) e proporção por dias úteis (base 20/mês)
       const monthly = {
-        leads: get('meta_leads', 300),
-        agendamentos: get('meta_agendamentos', 135),
-        taxaAgendamento: get('taxa_agendamentos', 45),
-        comparecimentos: get('meta_comparecimentos', 95),
-        taxaComparecimento: get('taxa_comparecimentos', 70),
-        vendas: get('meta_fechamentos', 20),
-        taxaFechamento: get('taxa_fechamentos', 21),
-        ticket: get('meta_ticket_medio', 6000),
-        faturamento: get('meta_faturamento', 120000),
-        investimento: get('investimento_marketing', 6000),
-        cpl: get('meta_cpl', 20),
-        cac: get('meta_cac', 300),
-        roi: get('meta_roi', 8),
-        roas: get('meta_roas_bruto', 20),
+        leads: monthlyGoal(s, 'leads'),
+        agendamentos: monthlyGoal(s, 'agendamentos'),
+        taxaAgendamento: monthlyGoal(s, 'taxa_agendamento'),
+        comparecimentos: monthlyGoal(s, 'comparecimentos'),
+        taxaComparecimento: monthlyGoal(s, 'taxa_comparecimento'),
+        vendas: monthlyGoal(s, 'vendas'),
+        taxaFechamento: monthlyGoal(s, 'taxa_fechamento'),
+        ticket: monthlyGoal(s, 'ticket_medio'),
+        faturamento: monthlyGoal(s, 'faturamento'),
+        investimento: monthlyGoal(s, 'investimento'),
+        cpl: monthlyGoal(s, 'cpl'),
+        cac: monthlyGoal(s, 'cac'),
+        roi: monthlyGoal(s, 'roi'),
+        roas: monthlyGoal(s, 'roas'),
       };
+      const proportion = periodProportion(cur, bizCal, s);
+      const prop = (key: GoalKey) => periodGoal(s, key, cur, bizCal);
 
-      // Proporciona meta mensal pelo período (usa dias úteis do período / dias úteis do mês de referência)
-      const proportion = range.totalBusinessDays / monthlyBusinessDays;
-      const prop = (m: number) => Math.max(1, Math.round(m * proportion));
+      const ms = summarize(data, cur);
+      const pms = summarize(data, prevR);
 
+      const leads = newLeads(data.leads, cur);
+      const appsSched = bookedAppointments(data.appointments, cur); // marcados no período
+      const appsAtt = attendances(data.appointments, cur);
+      const sales = salesOf(data.leads, cur);
+      const payments = data.payments.filter(p => p.status === 'pago' && inRange(p.paid_at, cur));
 
-      // Buscas paralelas
-      const [
-        leadsRes,
-        appsScheduledRes, appsAttendedRes,
-        salesRes, paymentsRes,
-        prevLeadsListRes,
-        prevAppsScheduledRes, prevAppsAttendedRes,
-        prevSalesRes, prevPaymentsRes,
-      ] = await Promise.all([
-        supabase.from('leads').select('id, created_at, first_response_at')
-          .gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString()),
-        supabase.from('appointments').select('id, scheduled_at')
-          .gte('scheduled_at', range.start.toISOString()).lte('scheduled_at', range.end.toISOString()),
-        supabase.from('appointments').select('id, attended_at').not('attended_at', 'is', null)
-          .gte('attended_at', range.start.toISOString()).lte('attended_at', range.end.toISOString()),
-        supabase.from('leads').select('id, closed_at, treatment_value').eq('status', 'fechado')
-          .gte('closed_at', range.start.toISOString()).lte('closed_at', range.end.toISOString()),
-        supabase.from('payments').select('net_value, gross_value, paid_at').eq('status', 'pago')
-          .gte('paid_at', range.start.toISOString()).lte('paid_at', range.end.toISOString()),
-        supabase.from('leads').select('id, created_at, first_response_at')
-          .gte('created_at', range.prevStart.toISOString()).lte('created_at', range.prevEnd.toISOString()),
-        supabase.from('appointments').select('id', { count: 'exact', head: true })
-          .gte('scheduled_at', range.prevStart.toISOString()).lte('scheduled_at', range.prevEnd.toISOString()),
-        supabase.from('appointments').select('id', { count: 'exact', head: true }).not('attended_at', 'is', null)
-          .gte('attended_at', range.prevStart.toISOString()).lte('attended_at', range.prevEnd.toISOString()),
-        supabase.from('leads').select('id, treatment_value').eq('status', 'fechado')
-          .gte('closed_at', range.prevStart.toISOString()).lte('closed_at', range.prevEnd.toISOString()),
-        supabase.from('payments').select('net_value, gross_value').eq('status', 'pago')
-          .gte('paid_at', range.prevStart.toISOString()).lte('paid_at', range.prevEnd.toISOString()),
-      ]);
+      const leadsCount = ms.newLeads;
+      const agendCount = ms.booked;
+      const compCount = ms.attendances;
+      const salesCount = ms.sales;
+      const revenue = ms.revenue;
 
-      const leads = leadsRes.data || [];
-      const appsSched = appsScheduledRes.data || [];
-      const appsAtt = appsAttendedRes.data || [];
-      const sales = salesRes.data || [];
-      const payments = paymentsRes.data || [];
+      // Investimento real (tabela do CAC), distribuído pelos dias úteis do período
+      const investmentProp = ms.investment;
 
-      const leadsCount = leads.length;
-      const agendCount = appsSched.length;
-      const compCount = appsAtt.length;
-      const salesCount = sales.length;
-      const revenue = payments.reduce((sum, p) => sum + Number(p.net_value || 0), 0);
-      const grossRevenue = payments.reduce((sum, p) => sum + Number(p.gross_value || p.net_value || 0), 0);
-
-      // Investimento proporcional
-      const investmentProp = monthly.investimento * proportion;
-
-      const taxaAgendamento = leadsCount ? (agendCount / leadsCount) * 100 : 0;
-      const taxaComparecimento = agendCount ? (compCount / agendCount) * 100 : 0;
-      const taxaFechamento = compCount ? (salesCount / compCount) * 100 : 0;
-      const ticketMedio = salesCount ? revenue / salesCount : 0;
-      const cpl = leadsCount ? investmentProp / leadsCount : 0;
-      const cac = salesCount ? investmentProp / salesCount : 0;
-      const roi = investmentProp ? revenue / investmentProp : 0;
-      const roas = investmentProp ? grossRevenue / investmentProp : 0;
+      const taxaAgendamento = ms.bookingRate;
+      const taxaComparecimento = ms.attendanceRate;
+      const taxaFechamento = ms.closingRate;
+      const ticketMedio = ms.averageTicket;
+      const cpl = ms.cpl;
+      const cac = ms.cac;
+      // ROI e ROAS em "x": ROI = (faturamento − investimento) ÷ investimento
+      const roi = ms.roi / 100;
+      const roas = ms.roas;
 
       // Período anterior
-      const prevLeadsList = prevLeadsListRes.data || [];
-      const prevLeads = prevLeadsList.length;
-      const prevAgend = prevAppsScheduledRes.count || 0;
-      const prevComp = prevAppsAttendedRes.count || 0;
-      const prevSalesList = prevSalesRes.data || [];
-      const prevSales = prevSalesList.length;
-      const prevPayments = prevPaymentsRes.data || [];
-      const prevRevenue = prevPayments.reduce((sum, p) => sum + Number(p.net_value || 0), 0);
-      const prevGrossRevenue = prevPayments.reduce((sum, p) => sum + Number(p.gross_value || p.net_value || 0), 0);
-      const prevTicket = prevSales > 0 ? prevRevenue / prevSales : 0;
-      const prevCpl = prevLeads > 0 ? investmentProp / prevLeads : 0;
-      const prevCac = prevSales > 0 ? investmentProp / prevSales : 0;
-      const prevRoi = investmentProp ? prevRevenue / investmentProp : 0;
-      const prevRoas = investmentProp ? prevGrossRevenue / investmentProp : 0;
+      const prevLeadsList = newLeads(data.leads, prevR);
+      const prevLeads = pms.newLeads;
+      const prevAgend = pms.booked;
+      const prevComp = pms.attendances;
+      const prevSales = pms.sales;
+      const prevRevenue = pms.revenue;
+      const prevTicket = pms.averageTicket;
+      const prevCpl = pms.cpl;
+      const prevCac = pms.cac;
+      const prevRoi = pms.roi / 100;
+      const prevRoas = pms.roas;
       const prevResponded = prevLeadsList.filter((l: any) => l.first_response_at);
       const prevResponseTimes = prevResponded.map((l: any) =>
         (new Date(l.first_response_at).getTime() - new Date(l.created_at).getTime()) / 60000
@@ -297,7 +251,7 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       ) => range.buckets.map(b => rows.filter(r => inBucket((r as any)[field] || null, b)).length);
 
       const trendLeads = trendOf(leads as any[], 'created_at');
-      const trendAgend = trendOf(appsSched as any[], 'scheduled_at');
+      const trendAgend = trendOf(appsSched as any[], 'created_at');
       const trendComp = trendOf(appsAtt as any[], 'attended_at');
       const trendSales = trendOf(sales as any[], 'closed_at');
       const trendRevenue = range.buckets.map(b =>
@@ -354,11 +308,11 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         return remaining > 0 ? `${head} · falta ${fmtBRL(remaining)}` : `${head} · meta atingida`;
       };
 
-      const tgtLeads = prop(monthly.leads);
-      const tgtAgend = prop(monthly.agendamentos);
-      const tgtComp = prop(monthly.comparecimentos);
-      const tgtVendas = prop(monthly.vendas);
-      const tgtFat = Math.round(monthly.faturamento * proportion);
+      const tgtLeads = prop('leads');
+      const tgtAgend = prop('agendamentos');
+      const tgtComp = prop('comparecimentos');
+      const tgtVendas = prop('vendas');
+      const tgtFat = prop('faturamento');
 
       const metrics: PanelMetric[] = [
         {

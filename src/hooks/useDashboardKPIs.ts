@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchMetricsData, isAttendedLead, newLeads, percentChange, summarize, type MetricsSummary } from '@/lib/metrics';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 
 export interface KPIValue {
@@ -19,51 +19,17 @@ export interface DashboardKPIs {
   investimento: KPIValue;
 }
 
-function calcChange(curr: number, prev: number): number {
-  if (prev === 0) return curr > 0 ? 100 : 0;
-  return Math.round(((curr - prev) / prev) * 100);
-}
-
-async function fetchPeriodData(start: Date, end: Date) {
-  const startISO = start.toISOString();
-  const endISO = end.toISOString();
-
-  const [leadsRes, apptsRes, paymentsRes, costsRes] = await Promise.all([
-    supabase.from('leads').select('id, status, first_response_at, created_at, closed_at').gte('created_at', startISO).lte('created_at', endISO),
-    supabase.from('appointments').select('id, attended_at, scheduled_at').gte('scheduled_at', startISO).lte('scheduled_at', endISO),
-    supabase.from('payments').select('net_value, status, paid_at, lead_id').eq('status', 'pago').gte('paid_at', startISO).lte('paid_at', endISO),
-    supabase.from('acquisition_costs').select('amount').gte('reference_month', start.toISOString().split('T')[0]).lte('reference_month', end.toISOString().split('T')[0]),
-  ]);
-
-  const leads = leadsRes.data || [];
-  const appts = apptsRes.data || [];
-  const payments = paymentsRes.data || [];
-  const costs = costsRes.data || [];
-
-  const leadsRecebidos = leads.length;
-  const leadsAtendidos = leads.filter(l => l.first_response_at || (l.status && l.status !== 'novo_lead')).length;
-  const consultasAgendadas = appts.length;
-  const compareceram = appts.filter(a => a.attended_at).length;
-  const taxaComparecimento = consultasAgendadas > 0 ? Math.round((compareceram / consultasAgendadas) * 100) : 0;
-
-  // Conversão = vendas pagas / compareceram
-  const paidLeadIds = new Set(payments.map(p => p.lead_id));
-  const vendasRealizadas = paidLeadIds.size;
-  const taxaConversao = compareceram > 0 ? Math.round((vendasRealizadas / compareceram) * 100) : 0;
-
-  const receita = payments.reduce((s, p) => s + (p.net_value || 0), 0);
-  const investimento = costs.reduce((s, c) => s + Number(c.amount || 0), 0);
-  const roi = investimento > 0 ? Math.round(((receita - investimento) / investimento) * 100) : 0;
-
+// Todos os números vêm da camada única (src/lib/metrics), as mesmas regras das outras telas.
+function toKPIs(m: MetricsSummary, leadsAtendidos: number) {
   return {
-    leadsRecebidos,
+    leadsRecebidos: m.newLeads,
     leadsAtendidos,
-    consultasAgendadas,
-    taxaComparecimento,
-    taxaConversao,
-    receita,
-    investimento,
-    roi,
+    consultasAgendadas: m.booked,
+    taxaComparecimento: Math.round(m.attendanceRate),
+    taxaConversao: Math.round(m.conversionRate),
+    receita: m.revenue,
+    investimento: m.investment,
+    roi: Math.round(m.roi),
   };
 }
 
@@ -73,15 +39,17 @@ export function useDashboardKPIs() {
   return useQuery({
     queryKey: ['dashboard-kpis', range.start.toISOString(), range.end.toISOString()],
     queryFn: async (): Promise<DashboardKPIs> => {
-      const [curr, prev] = await Promise.all([
-        fetchPeriodData(range.start, range.end),
-        fetchPeriodData(range.prevStart, range.prevEnd),
-      ]);
+      const current = { start: range.start, end: range.end };
+      const previous = { start: range.prevStart, end: range.prevEnd };
+      const data = await fetchMetricsData({ start: range.prevStart, end: range.end });
+      const attended = (r: typeof current) => newLeads(data.leads, r).filter(isAttendedLead).length;
+      const curr = toKPIs(summarize(data, current), attended(current));
+      const prev = toKPIs(summarize(data, previous), attended(previous));
 
       const wrap = (k: keyof typeof curr): KPIValue => ({
         value: curr[k],
         prev: prev[k],
-        change: calcChange(curr[k], prev[k]),
+        change: percentChange(curr[k], prev[k]),
       });
 
       return {

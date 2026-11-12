@@ -34,3 +34,16 @@ export function intlDateBR(input: Date | string | number, opts: Intl.DateTimeFor
 export function intlTimeBR(input: Date | string | number, opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }): string {
   return toDate(input).toLocaleTimeString('pt-BR', { timeZone: BR_TZ, ...opts });
 }
+
+/**
+ * Valor para <input type="datetime-local"> no horário LOCAL (Brasília).
+ * Não use toISOString().slice(0,16): ele dá o horário UTC (3h a mais) e,
+ * ao salvar de novo, a data anda 3 horas.
+ */
+export function toLocalInputValue(value: string | Date | null | undefined): string {
+  if (!value) return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

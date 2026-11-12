@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { describeError } from '@/lib/errors';
 import {
   Dialog,
   DialogContent,
@@ -141,7 +142,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
           updated[index] = { ...updated[index], converted_lead_id: 'converted' };
           setReferralEntries(updated);
         },
-        onError: () => toast.error('Erro ao converter indicação em lead'),
+        onError: (e) => toast.error(`Não foi possível converter indicação em lead. ${describeError(e)}`),
       }
     );
   };
@@ -174,7 +175,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             failed.forEach(f => toast.error(`${f.name}: ${f.error}`));
           }
         },
-        onError: () => toast.error('Erro ao vincular indicações'),
+        onError: (e) => toast.error(`Não foi possível vincular indicações. ${describeError(e)}`),
       }
     );
   };
@@ -206,7 +207,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
   const handleMarkCompleted = () => {
     markCompleted.mutate(lead.id, {
       onSuccess: () => toast.success('Triagem marcada como concluída!'),
-      onError: () => toast.error('Erro ao concluir triagem'),
+      onError: (e) => toast.error(`Não foi possível concluir triagem. ${describeError(e)}`),
     });
   };
 

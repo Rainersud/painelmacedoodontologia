@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toLocalInputValue } from '@/lib/datetime';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +51,7 @@ export function RescheduleDialog({ open, onOpenChange, taskId, taskTitle }: Resc
               type="datetime-local"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={toLocalInputValue(new Date())}
             />
           </div>
           <div className="space-y-2">

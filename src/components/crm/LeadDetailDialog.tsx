@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toLocalInputValue } from '@/lib/datetime';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -124,9 +125,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         notes: lead.notes || '',
         attendance_discount_status: (lead.attendance_discount_status || 'elegivel') as 'elegivel' | 'liberado' | 'cancelado',
         discount_percentage: String(lead.discount_percentage ?? 5),
-        scheduled_appointment_at: lead.scheduled_appointment_at 
-          ? new Date(lead.scheduled_appointment_at).toISOString().slice(0, 16) 
-          : '',
+        scheduled_appointment_at: toLocalInputValue(lead.scheduled_appointment_at),
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
         loss_reason: (lead as any).loss_reason || '',
         lead_arrival_source: (lead as any).lead_arrival_source || '',
@@ -134,12 +133,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
       setStatusNotes('');
-      // Load existing friendly_patient from upsell data if lead is already fechado
-      if (lead.status === 'fechado' && friendlyData) {
-        setFriendlyPatient(friendlyData.friendly_patient);
-      } else {
-        setFriendlyPatient(null);
-      }
+      setFriendlyPatient(null);
       setScheduledAt('');
       setContactAttempts(lead.contact_attempts ?? 0);
       setNoShowCount(lead.no_show_count ?? 0);
@@ -147,7 +141,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       setTaskData({ title: '', task_type: 'ligacao', scheduled_at: '', description: '' });
       setActiveTab('info');
     }
-  }, [lead, friendlyData]);
+    // Só reinicia o formulário ao abrir a janela ou trocar de lead.
+    // Antes reiniciava a cada atualização da tela (ex.: ao salvar o orçamento ou quando
+    // outra pessoa mexia no funil) e apagava o status escolhido e o que estava sendo digitado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.id, open]);
+
+  // "Paciente amigo" chega depois (vem do Comercial 2); preenche sem mexer no resto do formulário
+  useEffect(() => {
+    if (lead?.status === 'fechado' && friendlyData) {
+      setFriendlyPatient(prev => (prev === null ? friendlyData.friendly_patient : prev));
+    }
+  }, [lead?.status, friendlyData]);
 
   // Auto-switch to triage tab when lead reaches 'compareceu'
   useEffect(() => {
@@ -188,6 +193,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       discount_percentage: formData.attendance_discount_status === 'cancelado' ? 0 : parseFloat(formData.discount_percentage) || 5,
       sale_type: formData.sale_type || null,
       no_show_count: noShowCount,
+      budget_value: budgetValue,
     };
     if (formData.lead_arrival_source) {
       (updates as any).lead_arrival_source = formData.lead_arrival_source;
@@ -196,7 +202,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
     try {
-      await updateLead.mutateAsync({ leadId: lead.id, updates });
+      await updateLead.mutateAsync({ leadId: lead.id, updates, silent: true });
       return true;
     } catch {
       return false;
@@ -243,12 +249,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
     const additionalData: Partial<Lead> = {};
     if (targetStatus === 'agendou' || targetStatus === 'consulta_agendada') {
-      const scheduledValue = scheduledAt
-        ? new Date(scheduledAt).toISOString()
-        : new Date().toISOString();
-      additionalData.scheduled_appointment_at = scheduledValue;
-      setScheduledAt(scheduledValue.slice(0, 16));
-      setFormData(prev => ({ ...prev, scheduled_appointment_at: scheduledValue.slice(0, 16) }));
+      const chosen = scheduledAt || formData.scheduled_appointment_at;
+      if (!chosen) {
+        toast.error('Informe a data e o horário da consulta antes de salvar como Agendado.');
+        return false;
+      }
+      additionalData.scheduled_appointment_at = new Date(chosen).toISOString();
     }
     if (targetStatus === 'nao_cliente' && formData.loss_reason.trim()) {
       (additionalData as any).loss_reason = formData.loss_reason.trim();
@@ -262,14 +268,20 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         leadId: lead.id,
         newStatus: targetStatus,
         additionalData,
+        silent: !closeAfterSave,
       });
 
       if (targetStatus === 'fechado' && friendlyOverride !== null) {
-        await new Promise(r => setTimeout(r, 500));
-        await supabase
-          .from('upsell_opportunities')
-          .update({ friendly_patient: friendlyOverride })
-          .eq('lead_id', lead.id);
+        // A oportunidade do Comercial 2 é criada pelo banco ao fechar; tenta algumas vezes
+        for (let i = 0; i < 4; i++) {
+          await new Promise(r => setTimeout(r, 400 * (i + 1)));
+          const { data: upd } = await supabase
+            .from('upsell_opportunities')
+            .update({ friendly_patient: friendlyOverride })
+            .eq('lead_id', lead.id)
+            .select('id');
+          if (upd && upd.length) break;
+        }
       }
 
       if (closeAfterSave) onOpenChange(false);
@@ -537,11 +549,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   onValueChange={(v) => {
                     const target = v as LeadStatus;
                     setNewStatus(target);
-                    // Auto-salvar imediatamente, exceto status que exigem dados extras
-                    const needsExtraInput = ['nao_cliente', 'fechado'].includes(target);
+                    // Auto-salvar imediatamente, exceto status que exigem dados extras.
+                    // "Agendado" espera a data da consulta: salvar na hora criava a consulta com a data de agora.
+                    const needsExtraInput = ['nao_cliente', 'fechado', 'agendou', 'consulta_agendada'].includes(target);
                     if (!needsExtraInput && target !== lead.status) {
                       handleChangeStatus(target).then((ok) => {
-                        if (ok) toast.success('Status salvo automaticamente');
+                        if (ok) toast.success('Status salvo');
                       });
                     }
                   }}
@@ -739,7 +752,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         onChange={(value) => setBudgetValue(value)}
                         onBlur={() => {
                           if (budgetValue !== (lead.budget_value || 0)) {
-                            updateLead.mutate({ leadId: lead.id, updates: { budget_value: budgetValue } });
+                            updateLead.mutate(
+                              { leadId: lead.id, updates: { budget_value: budgetValue }, silent: true },
+                              { onSuccess: () => toast.success('Orçamento salvo') },
+                            );
                           }
                         }}
                       />
@@ -1207,13 +1223,13 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 const saved = await handleChangeStatus();
                 if (!saved) return;
               }
-              toast.success('Evolução salva!');
+              toast.success(newStatus && newStatus !== lead.status ? 'Evolução e status salvos' : 'Evolução salva');
               onOpenChange(false);
             }}
             disabled={updateLead.isPending || updateStatus.isPending}
           >
             <Save className="h-4 w-4 mr-2" />
-            {updateLead.isPending || updateStatus.isPending ? 'Salvando...' : 'Salvar Evolução'}
+            {updateLead.isPending || updateStatus.isPending ? 'Salvando evolução...' : 'Salvar evolução'}
           </Button>
         </div>
 
@@ -1222,7 +1238,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           onOpenChange={setPaymentOpen}
           leadId={lead.id}
           leadName={lead.name}
-          budgetValue={lead.treatment_value || lead.budget_value || 0}
+          // o valor digitado no orçamento (mesmo antes de salvar) é o que vai para o pagamento
+          budgetValue={budgetValue || lead.budget_value || lead.treatment_value || 0}
         />
       </DialogContent>
     </Dialog>

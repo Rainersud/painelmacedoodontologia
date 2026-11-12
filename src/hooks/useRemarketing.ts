@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -94,7 +95,7 @@ export function useEnterRemarketing() {
         toast.success('Lead enviado para Remarketing');
       }
     },
-    onError: () => toast.error('Erro ao enviar para Remarketing'),
+    onError: (e) => toast.error(`Não foi possível enviar para Remarketing. ${describeError(e)}`),
   });
 }
 
@@ -193,7 +194,7 @@ export function useMoveRmktStage() {
       queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
       toast.success('Lead movido');
     },
-    onError: () => toast.error('Erro ao mover lead'),
+    onError: (e) => toast.error(`Não foi possível mover lead. ${describeError(e)}`),
   });
 }
 
@@ -235,7 +236,7 @@ export function useReturnToComercial() {
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
       toast.success('Lead retornado ao Comercial 1');
     },
-    onError: () => toast.error('Erro ao retornar lead'),
+    onError: (e) => toast.error(`Não foi possível retornar lead. ${describeError(e)}`),
   });
 }
 
@@ -264,6 +265,6 @@ export function useExitRemarketing() {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       toast.success('Lead removido do Remarketing');
     },
-    onError: () => toast.error('Erro ao remover do Remarketing'),
+    onError: (e) => toast.error(`Não foi possível remover do Remarketing. ${describeError(e)}`),
   });
 }

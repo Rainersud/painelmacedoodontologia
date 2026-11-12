@@ -5,6 +5,10 @@ import { toast } from 'sonner';
 import type { Lead, LeadStatus, LeadSource } from '@/types/crm';
 import { recordStageTransition } from './useStageHistory';
 import { getNextRmktStage, getRmktPhase } from '@/types/remarketing';
+import { describeError } from '@/lib/errors';
+import type { Database } from '@/integrations/supabase/types';
+import { refreshBusinessData } from '@/lib/refresh';
+import { isSoldStatus } from '@/lib/metrics/stages';
 
 export function useCRMLeads() {
   const { user } = useAuth();
@@ -12,14 +16,21 @@ export function useCRMLeads() {
   return useQuery({
     queryKey: ['crm-leads'],
     queryFn: async (): Promise<Lead[]> => {
-      // Fetch all leads without the default 1000-row limit
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('updated_at', { ascending: false })
-        .limit(5000);
-
-      if (error) throw error;
+      // Todos os leads, em páginas de 1.000 (o banco corta cada consulta em 1.000 linhas;
+      // o .limit(5000) antigo não passava desse teto e o funil escondia leads antigos).
+      const PAGE = 1000;
+      const data: Database['public']['Tables']['leads']['Row'][] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data: page, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('updated_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        data.push(...(page ?? []));
+        if (!page || page.length < PAGE) break;
+      }
 
       // Fetch agent names
       const agentIds = [...new Set(data?.map(l => l.assigned_agent_id).filter(Boolean))];
@@ -29,30 +40,26 @@ export function useCRMLeads() {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, full_name')
-          .in('user_id', agentIds as string[]);
+          .in('user_id', agentIds as string[]); // poucos atendentes: cabe na URL
         
         if (profiles) {
           agentMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
         }
       }
 
-      // Fetch tasks for leads
-      const leadIds = data?.map(l => l.id) || [];
-      let taskMap: Record<string, boolean> = {};
-      
-      if (leadIds.length > 0) {
-        const { data: tasks } = await supabase
+      // Retornos pendentes: busca pelos status (e não por milhares de IDs na URL,
+      // que estourava o tamanho do endereço e falhava sem aviso)
+      const taskMap: Record<string, boolean> = {};
+      for (let from = 0; ; from += PAGE) {
+        const { data: tasks, error: taskError } = await supabase
           .from('tasks')
           .select('lead_id')
-          .in('lead_id', leadIds)
-          .in('status', ['pendente', 'reagendado']);
-
-        
-        if (tasks) {
-          tasks.forEach(t => {
-            if (t.lead_id) taskMap[t.lead_id] = true;
-          });
-        }
+          .in('status', ['pendente', 'reagendado'])
+          .not('lead_id', 'is', null)
+          .range(from, from + PAGE - 1);
+        if (taskError) { console.warn('Retornos pendentes não carregaram:', taskError); break; }
+        (tasks ?? []).forEach(t => { if (t.lead_id) taskMap[t.lead_id] = true; });
+        if (!tasks || tasks.length < PAGE) break;
       }
 
       return (data || []).map(lead => ({
@@ -80,21 +87,29 @@ export function useUpdateLeadStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      leadId, 
+    mutationFn: async ({
+      leadId,
       newStatus,
       additionalData,
-    }: { 
-      leadId: string; 
+    }: {
+      leadId: string;
       newStatus: LeadStatus;
       additionalData?: Partial<Lead>;
+      /** sem mensagem de sucesso (quem chamou mostra a sua) */
+      silent?: boolean;
     }) => {
-      // Get old status for logging
-      const { data: oldLead } = await supabase
+      // Status anterior (para histórico) — se a leitura falhar, não dá para continuar com segurança
+      const { data: oldLead, error: oldLeadError } = await supabase
         .from('leads')
-        .select('status, name')
+        .select('status, name, closed_at, no_show_count')
         .eq('id', leadId)
         .maybeSingle();
+      if (oldLeadError) throw oldLeadError;
+      if (!oldLead) throw new Error('Lead não encontrado. Ele pode ter sido excluído.');
+
+      // Efeitos que só rodam DEPOIS de o lead ser salvo (evita agendamento/alerta duplicado
+      // quando o salvamento falha e a pessoa tenta de novo).
+      const afterSave: Array<() => PromiseLike<unknown>> = [];
 
       const updates: Record<string, unknown> = { 
         status: newStatus,
@@ -112,7 +127,10 @@ export function useUpdateLeadStatus() {
       if (effectiveStatus === 'resgatado') {
         updates.rescued_at = new Date().toISOString();
       } else if (effectiveStatus === 'fechado') {
-        updates.closed_at = new Date().toISOString();
+        // A data da venda é a do primeiro fechamento; mexer depois não muda o mês da venda
+        if (!(oldLead as { closed_at?: string | null }).closed_at || !isSoldStatus(oldLead.status)) {
+          updates.closed_at = new Date().toISOString();
+        }
         updates.completed_at = new Date().toISOString();
       } else if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         if (!additionalData?.scheduled_appointment_at) {
@@ -124,105 +142,99 @@ export function useUpdateLeadStatus() {
       if (newStatus === 'compareceu') {
         updates.attendance_discount_status = 'liberado';
 
-        // Also handle referral-specific discount
-        const { data: refData } = await supabase
-          .from('referrals')
-          .update({ attendance_discount_applied: true })
-          .eq('referred_lead_id', leadId)
-          .eq('attendance_discount_eligible', true)
-          .select('referrer_lead_id');
-
-        if (refData?.length ) {
-          const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
-          await supabase.from('alerts').insert({
-            type: 'indicacao_compareceu' as any,
-            title: 'Indicação compareceu!',
-            message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'você'}) compareceu à consulta. Desconto de 5% aplicado!`,
-            user_id: null,
-            lead_id: leadId,
-          });
-        }
+        // Desconto da indicação (depois de salvar o lead)
+        afterSave.push(async () => {
+          const { data: refData } = await supabase
+            .from('referrals')
+            .update({ attendance_discount_applied: true })
+            .eq('referred_lead_id', leadId)
+            .eq('attendance_discount_eligible', true)
+            .select('referrer_lead_id');
+          if (refData?.length) {
+            const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', refData[0].referrer_lead_id).maybeSingle();
+            await supabase.from('alerts').insert({
+              type: 'indicacao_compareceu' as any,
+              title: 'Indicação compareceu!',
+              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'você'}) compareceu à consulta. Desconto de 5% aplicado!`,
+              user_id: null,
+              lead_id: leadId,
+            });
+          }
+        });
       } else if (newStatus === 'faltou') {
         updates.attendance_discount_status = 'cancelado';
         updates.discount_percentage = 0;
 
-        // Increment no_show_count
-        const { data: currentLead } = await supabase
-          .from('leads')
-          .select('no_show_count')
-          .eq('id', leadId)
-          .maybeSingle();
-        updates.no_show_count = ((currentLead as any)?.no_show_count || 0) + 1;
+        // Conta mais uma falta (só se ainda não estava em "faltou")
+        updates.no_show_count = ((oldLead as { no_show_count?: number }).no_show_count || 0) + (oldLead.status === 'faltou' ? 0 : 1);
 
-        await supabase
+        afterSave.push(() => supabase
           .from('referrals')
           .update({ attendance_discount_eligible: false, attendance_discount_applied: false })
-          .eq('referred_lead_id', leadId);
+          .eq('referred_lead_id', leadId));
       }
 
-      // Auto-trigger bonificação when referred lead reaches tratamento_andamento, fechado or concluido
-      if (newStatus === 'tratamento_andamento' || newStatus === 'fechado' || newStatus === 'concluido') {
-        const { data: refConvert } = await supabase
-          .from('referrals')
-          .select('id, referrer_lead_id, reward_type, reward_value')
-          .eq('referred_lead_id', leadId);
+      // Bonificação de indicação (depois de salvar o lead)
+      afterSave.push(async () => {
+        if (newStatus === 'tratamento_andamento' || newStatus === 'fechado' || newStatus === 'concluido') {
+          const { data: refConvert } = await supabase
+            .from('referrals')
+            .select('id, referrer_lead_id, reward_type, reward_value')
+            .eq('referred_lead_id', leadId);
         
-        if (refConvert?.length ) {
-          const ref = refConvert[0];
-          const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
+          if (refConvert?.length ) {
+            const ref = refConvert[0];
+            const { data: referrerLead } = await supabase.from('leads').select('name').eq('id', ref.referrer_lead_id).maybeSingle();
           
-          if (newStatus === 'fechado' || newStatus === 'concluido') {
-            const rewardText = ref.reward_type === 'dinheiro' 
-              ? `R$${ref.reward_value} em dinheiro` 
-              : `R$${ref.reward_value} em crédito`;
-            await supabase.from('alerts').insert({
-              type: 'indicacao_converteu' as any,
-              title: 'Indicação convertida!',
-              message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou tratamento!\n\nBonificação disponível para pagamento\nValor: ${rewardText}`,
-              user_id: null,
-              lead_id: leadId,
-            });
-          }
+            if (newStatus === 'fechado' || newStatus === 'concluido') {
+              const rewardText = ref.reward_type === 'dinheiro' 
+                ? `R$${ref.reward_value} em dinheiro` 
+                : `R$${ref.reward_value} em crédito`;
+              await supabase.from('alerts').insert({
+                type: 'indicacao_converteu' as any,
+                title: 'Indicação convertida!',
+                message: `${oldLead?.name || 'Paciente'} (indicado por ${referrerLead?.name || 'indicador'}) fechou tratamento!\n\nBonificação disponível para pagamento\nValor: ${rewardText}`,
+                user_id: null,
+                lead_id: leadId,
+              });
+            }
 
-          if (newStatus === 'tratamento_andamento') {
-            const rewardText = ref.reward_type === 'dinheiro' 
-              ? `R$${ref.reward_value} em dinheiro` 
-              : `R$${ref.reward_value} em crédito`;
-            await supabase.from('alerts').insert({
-              type: 'indicacao_converteu' as any,
-              title: 'Bonificação liberada!',
-              message: `${oldLead?.name || 'Paciente'} iniciou tratamento. Bonificação de ${rewardText} liberada para ${referrerLead?.name || 'indicador'}.`,
-              user_id: null,
-              lead_id: leadId,
-            });
+            if (newStatus === 'tratamento_andamento') {
+              const rewardText = ref.reward_type === 'dinheiro' 
+                ? `R$${ref.reward_value} em dinheiro` 
+                : `R$${ref.reward_value} em crédito`;
+              await supabase.from('alerts').insert({
+                type: 'indicacao_converteu' as any,
+                title: 'Bonificação liberada!',
+                message: `${oldLead?.name || 'Paciente'} iniciou tratamento. Bonificação de ${rewardText} liberada para ${referrerLead?.name || 'indicador'}.`,
+                user_id: null,
+                lead_id: leadId,
+              });
+            }
           }
         }
-      }
+      });
 
       // Touch interaction timestamp at the last follow-up
       if (newStatus === 'followup_14') {
-        supabase.from('leads').update({
-          last_interaction_at: new Date().toISOString(),
-        }).eq('id', leadId).then(() => {});
+        updates.last_interaction_at = new Date().toISOString();
       }
 
       // If lead was in RMKT and gets scheduled (agendou), exit RMKT
       if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
-        supabase.from('remarketing_entries')
+        afterSave.push(() => supabase.from('remarketing_entries')
           .update({ is_active: false })
           .eq('lead_id', leadId)
-          .eq('is_active', true)
-          .then(() => {});
+          .eq('is_active', true));
         updates.rmkt_status = 'inativo';
       }
 
       // If lead reaches fechado, exit RMKT definitively
       if (effectiveStatus === 'fechado') {
-        supabase.from('remarketing_entries')
+        afterSave.push(() => supabase.from('remarketing_entries')
           .update({ is_active: false })
           .eq('lead_id', leadId)
-          .eq('is_active', true)
-          .then(() => {});
+          .eq('is_active', true));
         updates.rmkt_status = 'inativo';
       }
 
@@ -237,35 +249,51 @@ export function useUpdateLeadStatus() {
           .maybeSingle();
 
         if (lastRmkt) {
-          await supabase.from('remarketing_entries').insert({
+          afterSave.push(() => supabase.from('remarketing_entries').insert({
             lead_id: leadId,
             current_stage: lastRmkt.current_stage,
             phase: getRmktPhase(lastRmkt.current_stage),
             origin_status: newStatus,
             is_active: true,
-          });
+          }));
           updates.rmkt_status = 'ativo';
           updates.rmkt_last_stage = lastRmkt.current_stage;
         }
       }
 
       // Auto-create appointment when moving to agendou
-      if ((newStatus === 'agendou' || newStatus === 'consulta_agendada') ) {
+      if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
         const scheduledAt = (additionalData?.scheduled_appointment_at as string) || new Date().toISOString();
-        await supabase.from('appointments').insert({
+        afterSave.push(() => supabase.from('appointments').insert({
           lead_id: leadId,
           agent_id: user?.id ?? null,
           scheduled_at: scheduledAt,
           notes: `Agendamento criado automaticamente via funil`,
-        });
+        }));
       }
 
+      // 1) Salva o lead. Se falhar, nada mais é feito.
       const { error } = await supabase
         .from('leads')
         .update(updates)
         .eq('id', leadId);
 
       if (error) throw error;
+
+      // 2) Efeitos ligados à nova etapa. Uma falha aqui não desfaz o status já salvo,
+      //    mas é avisada para a pessoa conferir.
+      const sideErrors: string[] = [];
+      for (const run of afterSave) {
+        try {
+          const res = await run() as { error?: unknown } | undefined;
+          if (res && res.error) sideErrors.push(describeError(res.error));
+        } catch (e) {
+          sideErrors.push(describeError(e));
+        }
+      }
+      if (sideErrors.length) {
+        toast.warning(`Status salvo, mas uma etapa automática falhou: ${sideErrors[0]}`);
+      }
 
       // Record stage history
       if (oldLead && oldLead.status !== newStatus) {
@@ -328,30 +356,15 @@ export function useUpdateLeadStatus() {
 
       return { previousLeads };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['referrals'] });
-      queryClient.invalidateQueries({ queryKey: ['referral-tags'] });
-      queryClient.invalidateQueries({ queryKey: ['referral-tags-enhanced'] });
-      queryClient.invalidateQueries({ queryKey: ['referral-ranking'] });
-      queryClient.invalidateQueries({ queryKey: ['referral-dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['stage-history'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
-      queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['loss-analysis'] });
-      queryClient.invalidateQueries({ queryKey: ['remarketing-entries'] });
-      toast.success('Lead atualizado!');
+    onSuccess: (_data, variables) => {
+      void refreshBusinessData(queryClient);
+      if (!variables.silent) toast.success('Status salvo');
     },
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       if (context?.previousLeads) {
         queryClient.setQueryData(['crm-leads'], context.previousLeads);
       }
-      toast.error('Erro ao atualizar lead');
+      toast.error(`O status não foi salvo. ${describeError(error)}`);
     },
   });
 }
@@ -386,12 +399,14 @@ export function useUpdateLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      leadId, 
-      updates 
-    }: { 
-      leadId: string; 
+    mutationFn: async ({
+      leadId,
+      updates,
+    }: {
+      leadId: string;
       updates: Partial<Lead>;
+      /** sem mensagem de sucesso (quem chamou mostra a sua) */
+      silent?: boolean;
     }) => {
       const { error } = await supabase
         .from('leads')
@@ -431,21 +446,18 @@ export function useUpdateLead() {
 
       return { previousLeads };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       // Rollback on error
       if (context?.previousLeads) {
         queryClient.setQueryData(['crm-leads'], context.previousLeads);
       }
-      toast.error('Erro ao atualizar lead');
+      toast.error(`As alterações não foram salvas. ${describeError(err)}`);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
-      queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['activity-logs'] });
+      void refreshBusinessData(queryClient);
     },
-    onSuccess: () => {
-      toast.success('Lead atualizado!');
+    onSuccess: (_data, variables) => {
+      if (!variables.silent) toast.success('Alterações salvas');
     },
   });
 }
@@ -468,8 +480,8 @@ export function useDeleteLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       toast.success('Lead excluído com sucesso!');
     },
-    onError: () => {
-      toast.error('Erro ao excluir lead');
+    onError: (e) => {
+      toast.error(`Não foi possível excluir lead. ${describeError(e)}`);
     },
   });
 }

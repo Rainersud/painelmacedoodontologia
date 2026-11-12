@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { describeError } from '@/lib/errors';
 import { Copy, Check, MessageSquare, Mic, Save, RotateCcw, Image as ImageIcon, Download, Trash2, Upload } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,7 @@ export function FollowUpCopyPopover({ stageKey }: FollowUpCopyPopoverProps) {
       toast.success('Imagem removida');
       queryClient.invalidateQueries({ queryKey: ['copy-attachments', stageKey] });
     } catch (e: any) {
-      toast.error('Erro ao remover');
+      toast.error(`Não foi possível remover. ${describeError(e)}`);
     }
   };
 

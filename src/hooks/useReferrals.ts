@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -116,7 +117,7 @@ export function useUpdateReferral() {
       queryClient.invalidateQueries({ queryKey: ['goals-progress'] });
       toast.success('Indicação atualizada!');
     },
-    onError: () => { toast.error('Erro ao atualizar indicação'); },
+    onError: (e) => { toast.error(`Não foi possível atualizar indicação. ${describeError(e)}`); },
   });
 }
 

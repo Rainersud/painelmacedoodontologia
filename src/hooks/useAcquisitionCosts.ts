@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { cac as cacOf, fetchMetricsData, newLeads, pct, revenue, safeDiv, sales } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,7 +60,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['acquisition-costs'] });
       toast.success('Despesa adicionada');
     },
-    onError: () => toast.error('Erro ao adicionar despesa'),
+    onError: (e) => toast.error(`Não foi possível adicionar despesa. ${describeError(e)}`),
   });
 
   const updateCost = useMutation({
@@ -74,7 +75,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['acquisition-costs'] });
       toast.success('Despesa atualizada');
     },
-    onError: () => toast.error('Erro ao atualizar despesa'),
+    onError: (e) => toast.error(`Não foi possível atualizar despesa. ${describeError(e)}`),
   });
 
   const deleteCost = useMutation({
@@ -89,7 +90,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
       queryClient.invalidateQueries({ queryKey: ['acquisition-costs'] });
       toast.success('Despesa removida');
     },
-    onError: () => toast.error('Erro ao remover despesa'),
+    onError: (e) => toast.error(`Não foi possível remover despesa. ${describeError(e)}`),
   });
 
   // Calculate totals by category

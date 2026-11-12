@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -190,6 +191,12 @@ export default function Alertas() {
             </Button>
           )}
         </div>
+
+        {/* Alertas calculados do funil (os mesmos do Comercial 1) */}
+        <SmartAlertsWidget />
+
+        {/* Alertas registrados */}
+        <h3 className="text-sm font-semibold text-muted-foreground">Alertas registrados</h3>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">

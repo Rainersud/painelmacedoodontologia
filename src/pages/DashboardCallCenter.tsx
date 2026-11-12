@@ -1,12 +1,9 @@
 import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAgentMetricsRange, useAgentRankingsRange, AgentMetrics } from '@/hooks/useAgentMetrics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,16 +11,13 @@ import { useBusinessCalendar } from '@/hooks/useBusinessCalendar';
 import {
   startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
 } from 'date-fns';
-import {
-  Users, Phone, Calendar, TrendingUp, DollarSign, UserCheck, Trophy,
-  Share2, Target, Flame, Crown, Medal, Settings, ArrowRight,
-} from 'lucide-react';
+import { ChevronRight, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
 type Period = 'hoje' | 'semana' | 'mes';
 
-const periodLabels: Record<Period, string> = { hoje: 'Hoje', semana: 'Esta Semana', mes: 'Este Mês' };
+const periodLabels: Record<Period, string> = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
 
 function getRange(period: Period) {
   const now = new Date();
@@ -34,123 +28,99 @@ function getRange(period: Period) {
   }
 }
 
+/** Etapas do funil do atendente, na ordem. Indicações ficam à parte. */
 const kpiCards = [
-  { key: 'leadsReceived', label: 'Novos Leads', icon: Users, color: 'primary' },
-  { key: 'appointmentsScheduled', label: 'Agendamentos', icon: Calendar, color: 'chart-2' },
-  { key: 'attendedAppointments', label: 'Comparecimentos', icon: UserCheck, color: 'success' },
-  { key: 'closed', label: 'Venda Realizada', icon: DollarSign, color: 'chart-5' },
-  { key: 'referrals', label: 'Indicações', icon: Share2, color: 'warning' },
+  { key: 'leadsReceived', label: 'Novos leads' },
+  { key: 'appointmentsScheduled', label: 'Agendamentos' },
+  { key: 'attendedAppointments', label: 'Comparecimentos' },
+  { key: 'closed', label: 'Vendas realizadas' },
+  { key: 'referrals', label: 'Indicações' },
 ] as const;
 
-function MedalIcon({ rank }: { rank: number }) {
-  if (rank === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
-  if (rank === 2) return <Medal className="h-4 w-4 text-zinc-400" />;
-  if (rank === 3) return <Medal className="h-4 w-4 text-amber-700" />;
-  return <span className="text-xs font-bold text-muted-foreground">{rank}</span>;
-}
+/** Séries de gráfico em ordem fixa (paleta validada para daltonismo). */
+const SERIES = ['bg-chart-1', 'bg-chart-2', 'bg-chart-3', 'bg-chart-4', 'bg-chart-6'];
 
-function AgentCard({ agent, isLeader }: { agent: AgentMetrics; isLeader?: boolean }) {
-  const initials = agent.agentName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+/** Partes do faturamento por atendente: barra empilhada + legenda com valores. */
+function RevenueShare({ agents }: { agents: AgentMetrics[] }) {
+  const sorted = [...agents].filter(a => a.revenue > 0).sort((a, b) => b.revenue - a.revenue);
+  const top = sorted.slice(0, 4).map(a => ({ name: a.agentName, value: a.revenue }));
+  const rest = sorted.slice(4).reduce((s, a) => s + a.revenue, 0);
+  const parts = rest > 0 ? [...top, { name: 'Outros', value: rest }] : top;
+  const total = parts.reduce((s, p) => s + p.value, 0);
+  if (!total) return null;
   return (
-    <Card className={cn('border-0 shadow-sm relative overflow-hidden', isLeader && 'ring-2 ring-yellow-500/40')}>
-      {isLeader && (
-        <div className="absolute top-0 right-0 bg-yellow-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1">
-          <Crown className="h-3 w-3" /> TOP
-        </div>
-      )}
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-            <AvatarFallback className="bg-primary text-primary-foreground font-bold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <h3 className="font-semibold truncate">{agent.agentName}</h3>
-            <p className="text-xs text-muted-foreground">{agent.isActive ? 'Ativo' : 'Inativo'}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-          <div><p className="text-lg font-bold">{agent.conversionRate}%</p><p className="text-[10px] text-muted-foreground">Conv.</p></div>
-          <div><p className="text-lg font-bold">{agent.attendanceRate}%</p><p className="text-[10px] text-muted-foreground">Compar.</p></div>
-          <div><p className="text-lg font-bold">{agent.closingRate}%</p><p className="text-[10px] text-muted-foreground">Fechto.</p></div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex justify-between"><span className="text-muted-foreground">Leads</span><b>{agent.leadsReceived}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Agend.</span><b>{agent.appointmentsScheduled}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Compar.</span><b>{agent.attendedAppointments}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Venda Real.</span><b>{agent.closed}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Indic.</span><b>{agent.referrals}</b></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Faturam.</span><b>R$ {(agent.revenue / 1000).toFixed(1)}k</b></div>
-          <div className="flex justify-between col-span-2 pt-1 border-t"><span className="text-muted-foreground">Ticket Médio</span><b className="text-primary">R$ {agent.closed > 0 ? Math.round(agent.revenue / agent.closed).toLocaleString('pt-BR') : '0'}</b></div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="mt-4 space-y-3">
+      <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-sm" role="img"
+        aria-label={parts.map(p => `${p.name}: ${Math.round((p.value / total) * 100)}%`).join(', ')}>
+        {parts.map((p, i) => (
+          <div key={p.name} className={cn('h-full first:rounded-l-sm last:rounded-r-sm', SERIES[i])}
+            style={{ width: `${(p.value / total) * 100}%` }} title={`${p.name}: ${brl(p.value)}`} />
+        ))}
+      </div>
+      <ul className="space-y-1.5 text-sm">
+        {parts.map((p, i) => (
+          <li key={p.name} className="flex items-center gap-2">
+            <span className={cn('h-2.5 w-2.5 rounded-sm shrink-0', SERIES[i])} aria-hidden />
+            <span className="truncate">{p.name}</span>
+            <span className="ml-auto font-medium">{brl(p.value)}</span>
+            <span className="w-10 text-right text-muted-foreground">{Math.round((p.value / total) * 100)}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
-function RankingTable({ rankings, formatter }: { rankings: any[]; formatter: (v: number) => string }) {
+const brl = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
+
+function RankingTable({ rankings, formatter }: { rankings: { agentId: string; agentName: string; rank: number; value: number }[]; formatter: (v: number) => string }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-14">#</TableHead>
+          <TableHead className="w-14">Posição</TableHead>
           <TableHead>Atendente</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
+          <TableHead className="text-right">Resultado</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rankings.slice(0, 8).map(item => (
-          <TableRow key={item.agentId}>
-            <TableCell>
-              <div className="h-7 w-7 rounded-full flex items-center justify-center bg-muted">
-                <MedalIcon rank={item.rank} />
-              </div>
-            </TableCell>
+          <TableRow key={item.agentId} className={cn(item.rank === 1 && item.value > 0 && 'bg-accent/60 hover:bg-accent/60')}>
+            <TableCell className="font-semibold text-muted-foreground">{item.rank}º</TableCell>
             <TableCell className="font-medium">{item.agentName}</TableCell>
             <TableCell className="text-right font-semibold">{formatter(item.value)}</TableCell>
           </TableRow>
         ))}
         {rankings.length === 0 && (
-          <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">Sem dados</TableCell></TableRow>
+          <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">Ainda não há resultados neste período.</TableCell></TableRow>
         )}
       </TableBody>
     </Table>
   );
 }
 
-
-function HighlightsBar({ rankings }: { rankings: ReturnType<typeof useAgentRankingsRange> }) {
+function Highlights({ rankings }: { rankings: ReturnType<typeof useAgentRankingsRange> }) {
   const items = [
-    { label: 'Maior Faturamento', icon: DollarSign, leader: rankings.byRevenue[0], format: (v: number) => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` },
-    { label: 'Maior Fechamento', icon: Target, leader: rankings.byClosed[0], format: (v: number) => `${v} vendas` },
-    { label: 'Mais Indicações', icon: Share2, leader: rankings.byReferrals[0], format: (v: number) => `${v} indic.` },
-    { label: 'Mais Comparec.', icon: UserCheck, leader: rankings.byAttended[0], format: (v: number) => `${v} compar.` },
-    { label: 'Maior Conversão', icon: Flame, leader: rankings.byConversion[0], format: (v: number) => `${v}%` },
+    { label: 'Maior faturamento', leader: rankings.byRevenue[0], format: brl },
+    { label: 'Mais vendas', leader: rankings.byClosed[0], format: (v: number) => `${v} ${v === 1 ? 'venda' : 'vendas'}` },
+    { label: 'Mais comparecimentos', leader: rankings.byAttended[0], format: (v: number) => `${v}` },
+    { label: 'Maior conversão', leader: rankings.byConversion[0], format: (v: number) => `${v}%` },
+    { label: 'Mais indicações', leader: rankings.byReferrals[0], format: (v: number) => `${v}` },
   ];
   return (
-    <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+    <dl className="divide-y divide-border">
       {items.map(it => {
-        const Icon = it.icon;
-        const hasData = it.leader && it.leader.value > 0;
+        const has = it.leader && it.leader.value > 0;
         return (
-          <Card key={it.label} className="border-0 shadow-sm bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{it.label}</span>
-              </div>
-              {hasData ? (
-                <>
-                  <p className="text-sm font-bold truncate">{it.leader.agentName}</p>
-                  <p className="text-xs text-primary font-semibold">{it.format(it.leader.value)}</p>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">—</p>
-              )}
-            </CardContent>
-          </Card>
+          <div key={it.label} className="flex items-baseline justify-between gap-3 py-2.5 text-sm">
+            <dt className="text-muted-foreground">{it.label}</dt>
+            <dd className="text-right">
+              {has ? <><span className="font-medium">{it.leader.agentName}</span> <span className="font-semibold">{it.format(it.leader.value)}</span></> : <span className="text-muted-foreground">Sem resultado ainda</span>}
+            </dd>
+          </div>
         );
       })}
-    </div>
+    </dl>
   );
 }
 
@@ -193,24 +163,27 @@ export default function DashboardCallCenter() {
       .map((item, idx) => ({ ...item, rank: idx + 1 }));
   }, [metrics]);
 
+  const funnelKeys = kpiCards.slice(0, 4);
+  const teamRevenue = activeMetrics.reduce((s, m) => s + m.revenue, 0);
+  const shownAgents = [...activeMetrics].sort((a, b) => b.revenue - a.revenue);
+
   return (
     <AppLayout title="Call Center">
-      <div className="space-y-6">
-        {/* Header + filtros */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="space-y-4">
+        {/* Cabeçalho + filtros */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              {isAdmin ? 'Visão Geral do Call Center' : `Olá, ${fullName?.split(' ')[0]}`}
+            <h2 className="text-lg font-semibold">
+              {isAdmin ? 'Equipe do call center' : `Olá, ${fullName?.split(' ')[0]}`}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {periodLabels[period]} · {businessDays} {businessDays === 1 ? 'dia útil' : 'dias úteis'} · sincronizado com Dashboard / Comercial 1
+              {periodLabels[period]}, {businessDays} {businessDays === 1 ? 'dia útil' : 'dias úteis'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {isAdmin && (
               <Select value={selectedAgent || 'all'} onValueChange={(v) => setSelectedAgent(v === 'all' ? undefined : v)}>
-                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Todos os atendentes" /></SelectTrigger>
+                <SelectTrigger className="w-[200px]" aria-label="Atendente"><SelectValue placeholder="Todos os atendentes" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os atendentes</SelectItem>
                   {(metrics ?? []).map(m => (
@@ -229,126 +202,126 @@ export default function DashboardCallCenter() {
               </TabsList>
             </Tabs>
             {isAdmin && (
-              <Button asChild variant="outline" size="sm" className="gap-2">
-                <Link to="/configuracoes"><Settings className="h-4 w-4" /> Atendentes</Link>
+              <Button asChild variant="outline" size="sm" className="gap-2 h-10">
+                <Link to="/configuracoes"><Settings className="h-4 w-4" aria-hidden /> Gerenciar atendentes</Link>
               </Button>
             )}
           </div>
         </div>
 
-        {/* KPI cards */}
-        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {kpiCards.map(metric => {
-            const Icon = metric.icon;
-            const value = totals[metric.key] ?? 0;
-            return (
-              <Card key={metric.key} className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-xl bg-${metric.color}/10 flex items-center justify-center`}>
-                      <Icon className={`h-5 w-5 text-${metric.color}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-2xl font-bold leading-tight">{value}</p>
-                      <p className="text-[11px] text-muted-foreground">{metric.label}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Faturamento + indicadores inteligentes */}
-        {showTeam && (
-          <>
-            <Card className="border-0 shadow-sm bg-gradient-to-r from-success/10 via-success/5 to-transparent">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Faturamento do Call Center</p>
-                  <p className="text-3xl font-bold text-success">
-                    R$ {activeMetrics.reduce((s, m) => s + m.revenue, 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{periodLabels[period]} · {activeMetrics.length} atendentes ativos</p>
-                </div>
-                <TrendingUp className="h-12 w-12 text-success/30" />
-              </CardContent>
-            </Card>
-
-            <HighlightsBar rankings={rankings} />
-          </>
-        )}
-
-        {/* Ranking */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-warning" /> Ranking de Desempenho
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="revenue">
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
-                <TabsTrigger value="revenue">Faturamento</TabsTrigger>
-                <TabsTrigger value="closed">Venda Realizada</TabsTrigger>
-                <TabsTrigger value="ticket">Ticket Médio</TabsTrigger>
-                <TabsTrigger value="attended">Comparec.</TabsTrigger>
-                <TabsTrigger value="appointments">Agendam.</TabsTrigger>
-                <TabsTrigger value="conversion">Conversão</TabsTrigger>
-                <TabsTrigger value="referrals">Indicações</TabsTrigger>
-              </TabsList>
-              <TabsContent value="revenue" className="mt-4">
-                <RankingTable rankings={rankings.byRevenue} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-              </TabsContent>
-              <TabsContent value="closed" className="mt-4">
-                <RankingTable rankings={rankings.byClosed} formatter={v => `${v} vendas`} />
-              </TabsContent>
-              <TabsContent value="ticket" className="mt-4">
-                <RankingTable rankings={ticketRanking} formatter={v => `R$ ${v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`} />
-              </TabsContent>
-              <TabsContent value="attended" className="mt-4">
-                <RankingTable rankings={rankings.byAttended} formatter={v => `${v}`} />
-              </TabsContent>
-              <TabsContent value="appointments" className="mt-4">
-                <RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} />
-              </TabsContent>
-              <TabsContent value="conversion" className="mt-4">
-                <RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} />
-              </TabsContent>
-              <TabsContent value="referrals" className="mt-4">
-                <RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
+        {/* Funil do período + indicações */}
+        <Card className="monday-card overflow-hidden">
+          <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-y lg:divide-y-0 divide-border">
+            {funnelKeys.map((k, i) => (
+              <div key={k.key} className="relative p-4">
+                <p className="text-sm text-muted-foreground">{k.label}</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">{isLoading ? '–' : totals[k.key] ?? 0}</p>
+                {i < funnelKeys.length - 1 && (
+                  <ChevronRight className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10" aria-hidden />
+                )}
+              </div>
+            ))}
+            <div className="p-4 bg-muted/40">
+              <p className="text-sm text-muted-foreground">Indicações</p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">{isLoading ? '–' : totals.referrals ?? 0}</p>
+            </div>
+          </div>
         </Card>
 
-
-        {/* Cards individuais (visão de equipe) */}
         {showTeam && (
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3 flex-row flex items-center justify-between">
-              <CardTitle className="text-base font-semibold">Desempenho por Atendente</CardTitle>
-              {isAdmin && (
-                <Button variant="ghost" size="sm" asChild className="gap-1">
-                  <Link to="/configuracoes">Gerenciar <ArrowRight className="h-3.5 w-3.5" /></Link>
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="monday-card lg:col-span-1">
+              <CardContent className="p-5">
+                <p className="text-sm text-muted-foreground">Faturamento do call center</p>
+                <p className="mt-1 text-4xl font-bold tracking-tight">{brl(teamRevenue)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {activeMetrics.length} {activeMetrics.length === 1 ? 'atendente ativo' : 'atendentes ativos'}. Receita dos leads de cada atendente.
+                </p>
+                <RevenueShare agents={activeMetrics} />
+              </CardContent>
+            </Card>
+            <Card className="monday-card lg:col-span-2">
+              <CardContent className="px-5 py-3">
+                <h3 className="text-sm font-semibold pt-1 pb-1">Destaques do período</h3>
+                <Highlights rankings={rankings} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Desempenho por atendente: tabela para comparar lado a lado */}
+        {showTeam && (
+          <Card className="monday-card">
+            <CardContent className="p-0">
+              <h3 className="px-5 pt-4 pb-2 text-sm font-semibold">Desempenho por atendente</h3>
               {isLoading ? (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map(i => <div key={i} className="h-44 rounded-xl bg-muted animate-pulse" />)}
-                </div>
-              ) : activeMetrics.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">Nenhum atendente ativo</p>
+                <div className="h-40 m-5 rounded-md bg-muted/60 animate-pulse" />
+              ) : shownAgents.length === 0 ? (
+                <p className="px-5 pb-6 text-sm text-muted-foreground">Nenhum atendente ativo. Cadastre a equipe em Gerenciar atendentes.</p>
               ) : (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {activeMetrics.map(a => <AgentCard key={a.agentId} agent={a} isLeader={a.agentId === topAgentId} />)}
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[820px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="pl-5 sticky left-0 bg-card">Atendente</TableHead>
+                        <TableHead className="text-right">Leads</TableHead>
+                        <TableHead className="text-right">Agend.</TableHead>
+                        <TableHead className="text-right">Compar.</TableHead>
+                        <TableHead className="text-right">Vendas</TableHead>
+                        <TableHead className="text-right">Conversão</TableHead>
+                        <TableHead className="text-right">Comparec. (%)</TableHead>
+                        <TableHead className="text-right">Fechamento</TableHead>
+                        <TableHead className="text-right">Faturamento</TableHead>
+                        <TableHead className="text-right pr-5">Ticket médio</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shownAgents.map(a => (
+                        <TableRow key={a.agentId} className={cn(a.agentId === topAgentId && a.revenue > 0 && 'bg-accent/60 hover:bg-accent/60')}>
+                          <TableCell className="pl-5 font-medium sticky left-0 bg-card">{a.agentName}</TableCell>
+                          <TableCell className="text-right">{a.leadsReceived}</TableCell>
+                          <TableCell className="text-right">{a.appointmentsScheduled}</TableCell>
+                          <TableCell className="text-right">{a.attendedAppointments}</TableCell>
+                          <TableCell className="text-right">{a.closed}</TableCell>
+                          <TableCell className="text-right">{a.conversionRate}%</TableCell>
+                          <TableCell className="text-right">{a.attendanceRate}%</TableCell>
+                          <TableCell className="text-right">{a.closingRate}%</TableCell>
+                          <TableCell className="text-right font-semibold">{brl(a.revenue)}</TableCell>
+                          <TableCell className="text-right pr-5">{a.closed > 0 ? brl(a.revenue / a.closed) : '–'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>
           </Card>
         )}
+
+        {/* Ranking */}
+        <Card className="monday-card">
+          <CardContent className="p-5">
+            <h3 className="text-sm font-semibold mb-3">Ranking</h3>
+            <Tabs defaultValue="revenue">
+              <TabsList className="flex flex-wrap h-auto justify-start">
+                <TabsTrigger value="revenue">Faturamento</TabsTrigger>
+                <TabsTrigger value="closed">Vendas</TabsTrigger>
+                <TabsTrigger value="ticket">Ticket médio</TabsTrigger>
+                <TabsTrigger value="attended">Comparecimentos</TabsTrigger>
+                <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
+                <TabsTrigger value="conversion">Conversão</TabsTrigger>
+                <TabsTrigger value="referrals">Indicações</TabsTrigger>
+              </TabsList>
+              <TabsContent value="revenue" className="mt-4"><RankingTable rankings={rankings.byRevenue} formatter={brl} /></TabsContent>
+              <TabsContent value="closed" className="mt-4"><RankingTable rankings={rankings.byClosed} formatter={v => `${v}`} /></TabsContent>
+              <TabsContent value="ticket" className="mt-4"><RankingTable rankings={ticketRanking} formatter={brl} /></TabsContent>
+              <TabsContent value="attended" className="mt-4"><RankingTable rankings={rankings.byAttended} formatter={v => `${v}`} /></TabsContent>
+              <TabsContent value="appointments" className="mt-4"><RankingTable rankings={rankings.byAppointments} formatter={v => `${v}`} /></TabsContent>
+              <TabsContent value="conversion" className="mt-4"><RankingTable rankings={rankings.byConversion} formatter={v => `${v}%`} /></TabsContent>
+              <TabsContent value="referrals" className="mt-4"><RankingTable rankings={rankings.byReferrals} formatter={v => `${v}`} /></TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

@@ -63,7 +63,7 @@ function CollapsibleGroup({
   return (
     <Collapsible open={open} onOpenChange={onToggle}>
       <SidebarGroup className={className}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
           <span>{label}</span>
           <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')} />
         </CollapsibleTrigger>
@@ -168,11 +168,11 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-6 py-5">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-sidebar-primary flex items-center justify-center shadow-lg">
-            <span className="text-base font-bold text-sidebar-primary-foreground">DC</span>
+            <span className="text-base font-bold text-sidebar-primary-foreground">M</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sidebar-foreground text-base">Dental CRM</span>
-            <span className="text-xs text-sidebar-muted">Call Center</span>
+            <span className="font-semibold text-sidebar-foreground text-base">Macedo Odontologia</span>
+            <span className="text-xs text-sidebar-muted">Painel comercial</span>
           </div>
         </div>
       </SidebarHeader>

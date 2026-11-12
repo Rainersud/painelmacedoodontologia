@@ -115,3 +115,11 @@ export function expectedPace(range: DateRange, now: Date = new Date()): number {
   const elapsed = Math.min(total, Math.max(0, now.getTime() - range.start.getTime()));
   return (elapsed / total) * 100;
 }
+
+/**
+ * Situação pela régua de ritmo: compara o realizado com o que já deveria
+ * estar feito até agora (meta × fração do período decorrida).
+ */
+export function paceStatus(current: number, target: number, elapsedFraction: number): GoalStatus {
+  return goalStatus(current, target * Math.max(elapsedFraction, 0.01));
+}

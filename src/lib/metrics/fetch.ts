@@ -24,7 +24,7 @@ async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ da
 
 const between = (col: string, s: string, e: string) => `and(${col}.gte.${s},${col}.lte.${e})`;
 
-const LEAD_COLS = 'id, status, created_at, closed_at, first_response_at, assigned_agent_id, lead_arrival_source';
+const LEAD_COLS = 'id, status, created_at, closed_at, first_response_at, assigned_agent_id, lead_arrival_source, campaign';
 
 export interface MetricsData extends MetricsInput {
   settings: MetaSettingsMap;

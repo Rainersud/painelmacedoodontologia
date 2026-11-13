@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 
 import { LeadTemperature } from './LeadTemperature';
+import { CampaignInput } from './CampaignInput';
 import { PaymentSummary } from './PaymentSummary';
 import { IndicacaoBadge } from './IndicacaoBadge';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
@@ -96,6 +97,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     sale_type: '' as '' | '1_etapa' | '2_etapas',
     loss_reason: '',
     lead_arrival_source: '' as string,
+    campaign: '',
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -131,6 +133,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         sale_type: (lead.sale_type || '') as '' | '1_etapa' | '2_etapas',
         loss_reason: (lead as any).loss_reason || '',
         lead_arrival_source: (lead as any).lead_arrival_source || '',
+        campaign: lead.campaign || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -266,6 +269,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     if (formData.lead_arrival_source) {
       (updates as any).lead_arrival_source = formData.lead_arrival_source;
     }
+    updates.campaign = formData.campaign.trim() || null;
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
@@ -622,6 +626,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               </div>
 
+              <CampaignInput
+                value={formData.campaign}
+                onChange={(v) => setFormData(prev => ({ ...prev, campaign: v }))}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>

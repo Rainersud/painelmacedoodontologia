@@ -196,10 +196,11 @@ describe('resumo do período', () => {
 });
 
 describe('metas', () => {
-  const settings = { meta_leads: 250, meta_vendas_mes: 25, meta_fechamentos: 0, meta_dias_uteis_mes: 20 };
-  it('lê a chave editada primeiro e a semeada como reserva', () => {
+  const settings = { meta_leads: 250, meta_fechamentos: 0, meta_dias_uteis_mes: 20 };
+  it('lê a chave que a tela de metas grava; sem valor válido, usa o padrão', () => {
     expect(monthlyGoal(settings, 'leads')).toBe(250);
-    expect(monthlyGoal(settings, 'vendas')).toBe(25); // meta_fechamentos=0 é ignorada
+    expect(monthlyGoal(settings, 'vendas')).toBe(20); // meta_fechamentos=0 é ignorada → padrão
+    expect(monthlyGoal({ meta_vendas_mes: 99 }, 'vendas')).toBe(20); // chave antiga não é mais lida
     expect(monthlyGoal({}, 'faturamento')).toBe(120000);
   });
   it('mês inteiro = meta mensal exata', () => {

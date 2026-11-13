@@ -24,6 +24,8 @@ export interface LeadRow {
   first_response_at?: string | null;
   assigned_agent_id?: string | null;
   lead_arrival_source?: string | null;
+  /** Campanha de origem (texto livre, casado com o Funil de Tráfego pelo nome). */
+  campaign?: string | null;
 }
 
 export interface AppointmentRow {

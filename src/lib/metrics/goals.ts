@@ -1,10 +1,8 @@
 // Metas: uma fonte (meta_settings), proporcional aos dias úteis do período.
 //
-// Hoje existem duas famílias de chaves em meta_settings:
-//   - as que a tela de edição de metas grava (meta_leads, meta_agendamentos, ...);
-//   - as "oficiais" semeadas pela migração de 24/05 (meta_novos_leads_mes, ...), que nenhuma tela lê.
-// Até a Fase 2 unificar as chaves no banco, cada meta lê a chave editada primeiro e,
-// se não existir, a chave semeada, e por fim o valor padrão.
+// Cada meta tem UMA chave em meta_settings: a mesma que a tela "Metas da Clínica" grava
+// (useClinicGoals). As cópias antigas (meta_*_mes, meta_taxa_*, meta_roi_liquido...) foram
+// removidas do banco em 13/11/2026. Sem valor configurado, vale o padrão (fallback).
 import type { BusinessCalendar } from './calendar';
 import type { DateRange } from './period';
 import { safeDiv } from './rules';
@@ -16,7 +14,7 @@ export type GoalKey =
   | 'cpl' | 'cac' | 'roi' | 'roas';
 
 interface GoalDef {
-  /** chaves em meta_settings, em ordem de prioridade */
+  /** chave em meta_settings (a que a tela de metas grava) */
   keys: string[];
   fallback: number;
   /** metas de volume são divididas pelos dias úteis; taxas e médias não. */
@@ -24,19 +22,19 @@ interface GoalDef {
 }
 
 export const GOAL_DEFS: Record<GoalKey, GoalDef> = {
-  leads:               { keys: ['meta_leads', 'meta_novos_leads_mes'], fallback: 300, proportional: true },
-  agendamentos:        { keys: ['meta_agendamentos', 'meta_agendamentos_mes'], fallback: 135, proportional: true },
-  comparecimentos:     { keys: ['meta_comparecimentos', 'meta_comparecimentos_mes'], fallback: 95, proportional: true },
-  vendas:              { keys: ['meta_fechamentos', 'meta_vendas_mes'], fallback: 20, proportional: true },
-  faturamento:         { keys: ['meta_faturamento', 'meta_faturamento_mes'], fallback: 120000, proportional: true },
-  investimento:        { keys: ['investimento_marketing', 'meta_investimento_trafego_mes'], fallback: 6000, proportional: true },
+  leads:               { keys: ['meta_leads'], fallback: 300, proportional: true },
+  agendamentos:        { keys: ['meta_agendamentos'], fallback: 135, proportional: true },
+  comparecimentos:     { keys: ['meta_comparecimentos'], fallback: 95, proportional: true },
+  vendas:              { keys: ['meta_fechamentos'], fallback: 20, proportional: true },
+  faturamento:         { keys: ['meta_faturamento'], fallback: 120000, proportional: true },
+  investimento:        { keys: ['investimento_marketing'], fallback: 6000, proportional: true },
   ticket_medio:        { keys: ['meta_ticket_medio'], fallback: 6000, proportional: false },
-  taxa_agendamento:    { keys: ['taxa_agendamentos', 'meta_taxa_agendamento'], fallback: 45, proportional: false },
-  taxa_comparecimento: { keys: ['taxa_comparecimentos', 'meta_taxa_comparecimento'], fallback: 70, proportional: false },
-  taxa_fechamento:     { keys: ['taxa_fechamentos', 'meta_taxa_fechamento'], fallback: 21, proportional: false },
+  taxa_agendamento:    { keys: ['taxa_agendamentos'], fallback: 45, proportional: false },
+  taxa_comparecimento: { keys: ['taxa_comparecimentos'], fallback: 70, proportional: false },
+  taxa_fechamento:     { keys: ['taxa_fechamentos'], fallback: 21, proportional: false },
   cpl:                 { keys: ['meta_cpl'], fallback: 20, proportional: false },
   cac:                 { keys: ['meta_cac'], fallback: 300, proportional: false },
-  roi:                 { keys: ['meta_roi', 'meta_roi_liquido'], fallback: 8, proportional: false },
+  roi:                 { keys: ['meta_roi'], fallback: 8, proportional: false },
   roas:                { keys: ['meta_roas_bruto'], fallback: 20, proportional: false },
 };
 

@@ -90,6 +90,7 @@ export interface Lead {
   lead_score?: number;
   score_category?: 'frio' | 'morno' | 'quente';
   contact_attempts?: number;
+  prontuario_url?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data

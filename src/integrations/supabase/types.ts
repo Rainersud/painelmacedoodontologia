@@ -406,6 +406,97 @@ export type Database = {
         }
         Relationships: []
       }
+      crc_cards: {
+        Row: {
+          archived_at: string | null
+          board: string
+          created_at: string
+          id: string
+          lead_id: string
+          manual: boolean
+          stage: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          board: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          manual?: boolean
+          stage: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          board?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          manual?: boolean
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crc_cards_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crc_entries: {
+        Row: {
+          body: string | null
+          board: string
+          created_at: string
+          created_by: string | null
+          file_name: string | null
+          file_path: string | null
+          id: string
+          kind: string
+          lead_id: string
+          mime_type: string | null
+        }
+        Insert: {
+          body?: string | null
+          board: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          kind: string
+          lead_id: string
+          mime_type?: string | null
+        }
+        Update: {
+          body?: string | null
+          board?: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          kind?: string
+          lead_id?: string
+          mime_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crc_entries_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           created_at: string
@@ -618,6 +709,7 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           phone: string
+          prontuario_url: string | null
           rescued_at: string | null
           rmkt_entered_at: string | null
           rmkt_last_stage: string | null
@@ -658,6 +750,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           phone: string
+          prontuario_url?: string | null
           rescued_at?: string | null
           rmkt_entered_at?: string | null
           rmkt_last_stage?: string | null
@@ -698,6 +791,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           phone?: string
+          prontuario_url?: string | null
           rescued_at?: string | null
           rmkt_entered_at?: string | null
           rmkt_last_stage?: string | null

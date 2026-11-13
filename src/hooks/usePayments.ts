@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -47,7 +48,7 @@ export function usePayments(leadId?: string, upsellOpportunityId?: string) {
         query = query.eq('upsell_opportunity_id', upsellOpportunityId);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await allPages(query.order('id'));
       if (error) throw error;
 
       // Fetch lead names

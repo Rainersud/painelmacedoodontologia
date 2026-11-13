@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshAfterSettingsChange } from '@/lib/refresh';
+import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -40,11 +42,11 @@ export function useUpdateMetaSetting() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meta-settings'] });
-      toast.success('Meta atualizada!');
+      void refreshAfterSettingsChange(queryClient);
+      toast.success('Meta salva');
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar meta');
+      toast.error(`A meta não foi salva. ${describeError(error)}`);
     },
   });
 }

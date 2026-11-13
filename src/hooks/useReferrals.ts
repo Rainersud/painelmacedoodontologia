@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -128,7 +129,7 @@ export function useReferralDashboard() {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const { data: allReferrals, error } = await supabase.from('referrals').select('*');
+      const { data: allReferrals, error } = await allPages(supabase.from('referrals').select('*').order('id'));
       if (error) throw error;
 
       const monthReferrals = (allReferrals || []).filter(r => new Date(r.created_at) >= new Date(startOfMonth));
@@ -218,7 +219,7 @@ export function useReferralRanking(periodDays?: number) {
         query = query.gte('created_at', since.toISOString());
       }
 
-      const { data: referrals, error } = await query;
+      const { data: referrals, error } = await allPages(query.order('id'));
       if (error) throw error;
       if (!referrals?.length) return [];
 
@@ -282,10 +283,11 @@ export function usePendingBonuses() {
   return useQuery({
     queryKey: ['pending-bonuses'],
     queryFn: async (): Promise<PendingBonus[]> => {
-      const { data: refs, error } = await supabase
+      const { data: refs, error } = await allPages(supabase
         .from('referrals')
         .select('*')
-        .neq('bonus_status', 'pago');
+        .neq('bonus_status', 'pago')
+        .order('id'));
       if (error) throw error;
       if (!refs?.length) return [];
 

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -84,10 +85,11 @@ export function useUpsellOpportunities() {
   return useQuery({
     queryKey: ['upsell-opportunities'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await allPages(supabase
         .from('upsell_opportunities')
         .select('*, lead:leads(name, phone, interest_product, treatment_value, closed_at, sale_type)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .order('id'));
       if (error) throw error;
       return data as unknown as UpsellOpportunity[];
     },

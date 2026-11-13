@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { allPages } from '@/lib/paging';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,12 +60,13 @@ export function useSmartAlerts() {
   const { data: leads } = useQuery({
     queryKey: ['smart-alerts-leads'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await allPages(supabase
         .from('leads')
         .select(
           'id, name, phone, status, stage_entered_at, treatment_value, budget_value, last_interaction_at',
         )
-        .not('status', 'in', '(concluido,pos_venda,descartados,sem_interesse,fechado)');
+        .not('status', 'in', '(concluido,pos_venda,descartados,sem_interesse,fechado)')
+        .order('id'));
       if (error) throw error;
       return data || [];
     },

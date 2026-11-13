@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,7 +72,8 @@ export default function Alertas() {
           *,
           leads:lead_id (name, phone)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000); // os 1.000 alertas mais recentes; os antigos ficam no banco
       
       if (error) throw error;
       return data;

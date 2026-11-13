@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { refreshAfterSettingsChange } from '@/lib/refresh';
+import { describeError } from '@/lib/errors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -65,18 +67,16 @@ export function BusinessCalendarPanel() {
 
   const toggleDay = async (i: number) => {
     const newMask = mask ^ (1 << i);
-    if (maskRow?.id) {
-      await supabase.from('meta_settings').update({ setting_value: newMask }).eq('id', maskRow.id);
-    } else {
-      await supabase.from('meta_settings').insert({
-        setting_key: 'working_days_bitmask',
-        setting_value: newMask,
-        description: 'Dias úteis da semana',
-      });
-    }
-    qc.invalidateQueries({ queryKey: ['working-days-mask'] });
-    qc.invalidateQueries({ queryKey: ['business-calendar'] });
-    qc.invalidateQueries({ queryKey: ['clinic-goals-panel'] });
+    const { error } = maskRow?.id
+      ? await supabase.from('meta_settings').update({ setting_value: newMask }).eq('id', maskRow.id)
+      : await supabase.from('meta_settings').insert({
+          setting_key: 'working_days_bitmask',
+          setting_value: newMask,
+          description: 'Dias úteis da semana',
+        });
+    if (error) { toast.error(`Os dias úteis não foram salvos. ${describeError(error)}`); return; }
+    // metas proporcionais e régua de ritmo de todas as telas mudam
+    void refreshAfterSettingsChange(qc);
     toast.success('Dias úteis atualizados');
   };
 
@@ -91,23 +91,20 @@ export function BusinessCalendarPanel() {
       is_recurring: newRecurring,
     });
     if (error) {
-      toast.error(error.message);
+      toast.error(`O feriado não foi salvo. ${describeError(error)}`);
       return;
     }
     setNewDate('');
     setNewDesc('');
     setNewRecurring(false);
-    qc.invalidateQueries({ queryKey: ['clinic-holidays'] });
-    qc.invalidateQueries({ queryKey: ['business-calendar'] });
-    qc.invalidateQueries({ queryKey: ['clinic-goals-panel'] });
+    void refreshAfterSettingsChange(qc);
     toast.success('Feriado adicionado');
   };
 
   const removeHoliday = async (id: string) => {
-    await supabase.from('clinic_holidays').delete().eq('id', id);
-    qc.invalidateQueries({ queryKey: ['clinic-holidays'] });
-    qc.invalidateQueries({ queryKey: ['business-calendar'] });
-    qc.invalidateQueries({ queryKey: ['clinic-goals-panel'] });
+    const { error } = await supabase.from('clinic_holidays').delete().eq('id', id);
+    if (error) { toast.error(`O feriado não foi removido. ${describeError(error)}`); return; }
+    void refreshAfterSettingsChange(qc);
     toast.success('Feriado removido');
   };
 

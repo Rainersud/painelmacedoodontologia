@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -38,7 +39,7 @@ export function useTasks(filters?: {
         query = query.eq('lead_id', filters.leadId);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await allPages(query.order('id'));
       if (error) throw error;
 
       // Fetch lead names separately

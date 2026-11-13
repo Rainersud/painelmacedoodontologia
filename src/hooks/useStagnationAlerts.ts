@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { allPages } from '@/lib/paging';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,10 +16,11 @@ export function useStagnationAlerts() {
   const { data: leads } = useQuery({
     queryKey: ['stagnation-check-leads'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await allPages(supabase
         .from('leads')
         .select('id, name, status, stage_entered_at')
-        .not('status', 'in', '(fechado,concluido,pos_venda,descartados,sem_interesse)');
+        .not('status', 'in', '(fechado,concluido,pos_venda,descartados,sem_interesse)')
+        .order('id'));
       if (error) throw error;
       return data || [];
     },
@@ -81,9 +83,10 @@ export function useAppointmentMetrics() {
   return useQuery({
     queryKey: ['appointment-metrics'],
     queryFn: async () => {
-      const { data: appointments, error } = await supabase
+      const { data: appointments, error } = await allPages(supabase
         .from('appointments')
-        .select('*');
+        .select('*')
+        .order('id'));
 
       if (error) throw error;
 

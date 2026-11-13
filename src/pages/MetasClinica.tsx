@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useClinicGoals, HEALTHY_RATES } from '@/hooks/useClinicGoals';
+import { useMetaSettings } from '@/hooks/useMetaSettings';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
 import { toast } from 'sonner';
 
 export default function MetasClinica() {
   const { data, isLoading, updateGoal, isAdmin } = useClinicGoals();
+  const { data: metaSettings } = useMetaSettings();
   const [editingGoal, setEditingGoal] = useState<{ key: string; value: number; rate?: number } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -63,6 +65,8 @@ export default function MetasClinica() {
     { key: 'faturamento', label: 'Faturamento', value: healthyRates.faturamento.target, rate: undefined, rateLabel: '' },
     { key: 'investimento', label: 'Investimento em tráfego', value: healthyRates.investimento.target, rate: undefined, rateLabel: '' },
     { key: 'roi', label: 'ROI', value: healthyRates.roi.target, rate: undefined, rateLabel: '' },
+    // antes fixa em 200 no código, sem lugar para editar (usada no Plano de Incentivo)
+    { key: 'indicacoes', label: 'Indicações de pacientes', value: Number(metaSettings?.meta_indicacoes ?? 200), rate: undefined, rateLabel: '' },
   ];
 
   return (

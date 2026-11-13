@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,10 +26,11 @@ export function useLTVFinancial() {
     queryKey: ['ltv-financial-panel'],
     queryFn: async (): Promise<LTVFinancialData> => {
       // 1. All LTV payments (with upsell_opportunity_id)
-      const { data: ltvPays } = await supabase
+      const { data: ltvPays } = await allPages(supabase
         .from('payments')
         .select('id, net_value, gross_value, status, paid_at, due_date, created_at, lead_id, agent_id, upsell_opportunity_id')
-        .not('upsell_opportunity_id', 'is', null);
+        .not('upsell_opportunity_id', 'is', null)
+        .order('id'));
 
       const all = ltvPays || [];
       const paid = all.filter(p => p.status === 'pago');

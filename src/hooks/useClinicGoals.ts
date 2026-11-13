@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -231,6 +232,7 @@ export function useClinicGoals() {
         faturamento: 'meta_faturamento',
         investimento: 'investimento_marketing',
         roi: 'meta_roi',
+        indicacoes: 'meta_indicacoes',
       };
       
       const settingKey = keyMap[key] || `meta_${key}`;
@@ -289,7 +291,8 @@ export function useClinicGoals() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      // Dashboard, Plano de Incentivo, Reuniões e Call Center usam as mesmas metas
+      void refreshAfterSettingsChange(queryClient);
     },
   });
 
@@ -322,7 +325,8 @@ export function useClinicGoals() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clinic-goals'] });
+      // Dashboard, Plano de Incentivo, Reuniões e Call Center usam as mesmas metas
+      void refreshAfterSettingsChange(queryClient);
     },
   });
 

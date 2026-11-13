@@ -1,7 +1,9 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { describeError } from "@/lib/errors";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -35,16 +37,34 @@ const Remarketing = lazy(() => import("./pages/Remarketing"));
 const DashboardBI = lazy(() => import("./pages/DashboardBI"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Quando uma busca de dados falha, avisa com o motivo (antes a tela mostrava 0 sem explicar).
+// Mensagens iguais em sequência aparecem uma vez só a cada 30 segundos.
+let lastLoadError = { text: '', at: 0 };
+const queryCache = new QueryCache({
+  onError: (error, query) => {
+    if (query.state.data !== undefined) return; // já há dados na tela; tenta de novo sozinho
+    const text = describeError(error);
+    const now = Date.now();
+    if (text === lastLoadError.text && now - lastLoadError.at < 30_000) return;
+    lastLoadError = { text, at: now };
+    toast.error(`Alguns dados não carregaram. ${text}`, { id: 'load-error' });
+  },
+});
+
 const queryClient = new QueryClient({
+  queryCache,
   defaultOptions: {
     queries: {
       retry: 1,
       staleTime: 5 * 60 * 1000,
       gcTime: 15 * 60 * 1000,
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-structuralSharing: true,
+      // Ao abrir uma tela, recarrega só o que ficou velho (por exemplo, depois de salvar
+      // um lead ou pagamento). Com "false", a tela mostrava números antigos.
+      refetchOnMount: true,
+      // Voltou a internet: atualiza o que estiver na tela
+      refetchOnReconnect: true,
+      structuralSharing: true,
     },
     mutations: { retry: 0 },
   },

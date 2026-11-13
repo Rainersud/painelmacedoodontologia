@@ -232,3 +232,14 @@ describe('metas', () => {
     expect(paceStatus(20, 135, 9 / 21)).toBe('critical');
   });
 });
+
+describe('projectByBusinessDays', () => {
+  it('projeta pelo ritmo de dias úteis (seg–sex)', async () => {
+    const { projectByBusinessDays } = await import('./goals');
+    const { createBusinessCalendar } = await import('./calendar');
+    const cal = createBusinessCalendar(62, []);
+    const range = { start: new Date(2026, 10, 1), end: new Date(2026, 10, 30, 23, 59, 59) };
+    // 13/11/2026: 10 dias úteis decorridos de 21 no mês
+    expect(projectByBusinessDays(1000, range, cal, new Date(2026, 10, 13, 15))).toBe(2100);
+  });
+});

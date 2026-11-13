@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ARRIVAL_SOURCE_LABELS, TRAFFIC_CATEGORY, fetchMetricsData, inRange, investment, leadOrigin, newLeads, pct,
-  revenueByAgent, roi, sales,
+  projectByBusinessDays, revenueByAgent, roi, sales,
 } from '@/lib/metrics';
 import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/PeriodFilterContext';
 import { useDashboardKPIs } from './useDashboardKPIs';
@@ -141,11 +141,9 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
         .sort((a, b) => b.count - a.count);
 
 
-      // Forecast (linear projection of current month revenue)
+      // Previsão: mesma régua de dias úteis das Metas da clínica ("no ritmo atual, o mês fecha em")
       const totalReceita = payments.reduce((s, p) => s + Number(p.net_value || 0), 0);
-      const elapsedDays = Math.max(1, Math.ceil((Date.now() - range.start.getTime()) / (1000 * 60 * 60 * 24)));
-      const totalDays = Math.max(1, Math.ceil((range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60 * 24)));
-      const forecast = Math.round((totalReceita / elapsedDays) * totalDays);
+      const forecast = projectByBusinessDays(totalReceita, period, data.calendar);
 
       // Auto insights
       const insights: string[] = [];
@@ -160,7 +158,7 @@ export function useStrategicInsights(rangeOverride?: PeriodRange) {
       }
       const profitableCampaigns = origins.filter(o => o.roi > 0).sort((a, b) => b.roi - a.roi);
       if (profitableCampaigns.length > 0) insights.push(`"${profitableCampaigns[0].source}" tem o melhor ROI (${profitableCampaigns[0].roi}%) atualmente.`);
-      if (losses.length > 0) insights.push(`Principal motivo de perda: "${losses[0].reason}" (${losses[0].pct}% das perdas).`);
+      if (losses.length > 0 && losses[0].count > 0) insights.push(`Principal motivo de perda: "${losses[0].reason}" (${losses[0].pct}% das perdas).`);
 
       return { sellerRanking, bestHours, bestDays, origins, losses, forecast, insights };
     },

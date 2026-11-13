@@ -22,6 +22,7 @@ import {
   Wallet,
   LineChart,
   HeartHandshake,
+  Headphones,
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -106,9 +107,10 @@ type NavItemDef = { title: string; url: string; icon: LucideIcon; module: string
 // Comercial / Vendas: o dia a dia do atendimento
 const mainNavItems: NavItemDef[] = [
   { title: 'Comercial 1', url: '/funil', icon: Filter, module: 'funil' },
+  { title: 'CRC', url: '/crc', icon: Headphones, module: 'funil' },
   { title: 'Follow Up', url: '/follow-up', icon: Repeat, module: 'funil' },
-  { title: 'Retorno', url: '/tarefas', icon: PhoneCall, module: 'tarefas' },
   { title: 'Remarketing', url: '/remarketing', icon: Zap, module: 'remarketing' },
+  { title: 'Retorno', url: '/tarefas', icon: PhoneCall, module: 'tarefas' },
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: HeartHandshake, module: 'comercial_2' },
   { title: 'Indicações', url: '/indicacoes', icon: Gift, module: 'indicacoes' },
   { title: 'Crédito Liberado', url: '/credito-liberado', icon: CreditCard, module: 'credito_liberado' },

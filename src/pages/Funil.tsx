@@ -27,7 +27,6 @@ import { PaymentDialog } from '@/components/crm/PaymentDialog';
 import { FUNNEL_STAGES, type Lead, type LeadStatus } from '@/types/crm';
 import { FollowUpCopyPopover } from '@/components/crm/FollowUpCopyPopover';
 import { cn } from '@/lib/utils';
-import { FollowUpTabs } from '@/components/crc/FollowUpTabs';
 import { formatCurrency } from '@/lib/currency';
 import { normalize, fuzzyMatch } from '@/lib/searchUtils';
 
@@ -593,10 +592,6 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
             <TodayTasksWidget onlyToday />
             <SmartAlertsWidget />
           </div>
-        )}
-
-        {isFollowUpMode && (
-          <div className="shrink-0 mb-3"><FollowUpTabs active="funil" /></div>
         )}
 
         {/* Fixed header area — never scrolls */}

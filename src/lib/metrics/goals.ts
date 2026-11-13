@@ -108,6 +108,19 @@ export function goalStatus(current: number, target: number, lowerIsBetter = fals
   return 'critical';
 }
 
+/**
+ * Projeção do fim do período no ritmo atual, por DIAS ÚTEIS (a mesma régua das metas):
+ * realizado ÷ dias úteis já decorridos × dias úteis do período.
+ */
+export function projectByBusinessDays(
+  current: number, range: DateRange, calendar: BusinessCalendar, now: Date = new Date(),
+): number {
+  const total = calendar.countBusinessDays(range.start, range.end);
+  const elapsed = calendar.countBusinessDays(range.start, now > range.end ? range.end : now);
+  if (total <= 0) return Math.round(current);
+  return Math.round((current / Math.max(1, elapsed)) * total);
+}
+
 /** Ritmo esperado: % do período já decorrido (para "no ritmo" / "atrasado"). */
 export function expectedPace(range: DateRange, now: Date = new Date()): number {
   const total = range.end.getTime() - range.start.getTime();

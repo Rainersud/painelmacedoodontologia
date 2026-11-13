@@ -1,18 +1,14 @@
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import Funil from './Funil';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { CRCView } from '@/components/crc/CRCView';
-import { FollowUpTabs } from '@/components/crc/FollowUpTabs';
 
 const FollowUp = () => {
   const [params] = useSearchParams();
-  if (params.get('aba') !== 'crc') return <Funil mode="followup" />;
-  return (
-    <AppLayout title="Follow Up — CRC">
-      <div className="mb-4"><FollowUpTabs active="crc" /></div>
-      <CRCView />
-    </AppLayout>
-  );
+  // Endereço antigo do CRC (era uma aba do Follow Up)
+  if (params.get('aba') === 'crc') {
+    const quadro = params.get('quadro');
+    return <Navigate to={quadro ? `/crc?quadro=${quadro}` : '/crc'} replace />;
+  }
+  return <Funil mode="followup" />;
 };
 
 export default FollowUp;

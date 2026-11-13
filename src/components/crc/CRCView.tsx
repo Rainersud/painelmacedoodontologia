@@ -61,8 +61,8 @@ export function CRCView() {
         <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning-strong" />
           <p>
-            Os quadros já mostram os pacientes, mas mover entre colunas, anotar e anexar só funcionam depois que a
-            atualização do banco do CRC for aplicada.
+            Os quadros já mostram os pacientes, mas mover entre colunas, anotar e anexar só vão salvar depois que a
+            atualização do banco do CRC for aplicada no Lovable.
           </p>
         </div>
       )}

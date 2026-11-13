@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -86,19 +87,21 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
           .gte('paid_at', dateRange.start.toISOString())
           .lte('paid_at', dateRange.end.toISOString());
       }
-      const { data: paidPayments } = await paidQuery;
+      const { data: paidPayments } = await allPages(paidQuery.order('id'));
 
       // 2. Pending payments (faturamento futuro)
-      const { data: pendingPayments } = await supabase
+      const { data: pendingPayments } = await allPages(supabase
         .from('payments')
         .select('net_value, due_date, lead_id')
         .eq('status', 'pendente')
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true })
+        .order('id'));
 
       // 3. Upsell opportunities for LTV funnel
-      const { data: upsellOpps } = await supabase
+      const { data: upsellOpps } = await allPages(supabase
         .from('upsell_opportunities')
-        .select('lead_id, purchase_count, purchase_values, estimated_value, closed_value');
+        .select('lead_id, purchase_count, purchase_values, estimated_value, closed_value')
+        .order('id'));
 
       // 4. Investimento e vendas pela camada única (mesmas regras do resto do painel)
       const now = new Date();

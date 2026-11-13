@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { supabase } from '@/integrations/supabase/client';
 import { attendances, bookedAppointments, buildPeriod, fetchMetricsData, newLeads, sales } from '@/lib/metrics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -262,8 +263,8 @@ export function useAgentBonus(
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bonus-targets'] });
-      queryClient.invalidateQueries({ queryKey: ['agent-bonus'] });
+      // visão individual, visão da equipe e card de bônus das Reuniões
+      void refreshAfterSettingsChange(queryClient);
     },
   });
 

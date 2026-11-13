@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { describeError } from '@/lib/errors';
+import { refreshAfterSettingsChange } from '@/lib/refresh';
 
 export interface RewardTier {
   count: 5 | 10 | 15;
@@ -84,7 +85,7 @@ export function useSaveReferralPrize() {
       if (error) throw error;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['referral-prizes'] });
+      void refreshAfterSettingsChange(qc);
       toast.success('Prêmio salvo');
     },
     onError: (e) => toast.error(`O prêmio não foi salvo. ${describeError(e)}`),

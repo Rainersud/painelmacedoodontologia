@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths } from 'date-fns';
 
@@ -78,10 +79,10 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
       }
 
       // Get all upsell opportunities with lead data
-      const { data: opps } = await supabase
+      const { data: opps } = await allPages(supabase
         .from('upsell_opportunities')
         .select('lead_id, purchase_count, estimated_value, closed_value, status, purchase_values')
-        .order('lead_id');
+        .order('lead_id').order('id'));
 
       // Get paid payments
       let paymentsQuery = supabase
@@ -94,7 +95,7 @@ export function useLTVMetrics(period: PeriodFilter = 'todos', saleType: SaleType
           .gte('paid_at', dateRange.start.toISOString())
           .lte('paid_at', dateRange.end.toISOString());
       }
-      const { data: payments } = await paymentsQuery;
+      const { data: payments } = await allPages(paymentsQuery.order('id'));
 
       // Get acquisition costs
       const now = new Date();

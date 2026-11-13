@@ -1,6 +1,8 @@
 // Busca as linhas que a camada de indicadores precisa, para um intervalo de datas.
 // Paginada: o Supabase devolve no máximo 1000 linhas por consulta.
 import { supabase } from '@/integrations/supabase/client';
+import { describeError } from '@/lib/errors';
+import { registerMetricsCacheClear } from '@/lib/refresh';
 import { createBusinessCalendar, DEFAULT_WORKING_DAYS_MASK, type HolidayRow } from './calendar';
 import type { DateRange } from './period';
 import type { AcquisitionCostRow, AppointmentRow, LeadRow, MetricsInput, PaymentRow } from './rules';
@@ -28,8 +30,29 @@ export interface MetricsData extends MetricsInput {
   settings: MetaSettingsMap;
 }
 
+// ---- Cache curto: várias partes da mesma tela pedem os mesmos dados ao mesmo tempo ----
+// (o Dashboard tinha 4 a 5 buscas iguais a cada minuto). Uma busca que COBRE o período
+// pedido é reaproveitada por até 20 segundos; salvar qualquer coisa limpa o cache.
+const CACHE_MS = 20_000;
+const cache: { span: DateRange; at: number; promise: Promise<MetricsData> }[] = [];
+
+export function clearMetricsCache() { cache.length = 0; }
+registerMetricsCacheClear(clearMetricsCache);
+
 /** Tudo que é preciso para calcular os indicadores de qualquer período dentro de `span`. */
-export async function fetchMetricsData(span: DateRange): Promise<MetricsData> {
+export function fetchMetricsData(span: DateRange): Promise<MetricsData> {
+  const now = Date.now();
+  for (let i = cache.length - 1; i >= 0; i--) if (now - cache[i].at > CACHE_MS) cache.splice(i, 1);
+  const hit = cache.find(c => c.span.start <= span.start && c.span.end >= span.end);
+  if (hit) return hit.promise;
+  const promise = loadMetricsData(span);
+  const entry = { span, at: now, promise };
+  cache.push(entry);
+  promise.catch(() => { const i = cache.indexOf(entry); if (i >= 0) cache.splice(i, 1); });
+  return promise;
+}
+
+async function loadMetricsData(span: DateRange): Promise<MetricsData> {
   const s = span.start.toISOString();
   const e = span.end.toISOString();
   const sDay = s.slice(0, 10);
@@ -63,6 +86,10 @@ export async function fetchMetricsData(span: DateRange): Promise<MetricsData> {
     if (error) throw error;
     leads.push(...((data ?? []) as LeadRow[]));
   }
+
+  // Sem metas ou sem feriados os números sairiam com valores padrão — melhor avisar
+  if (settingsRows.error) throw new Error(`As metas não carregaram: ${describeError(settingsRows.error)}`);
+  if (holidays.error) throw new Error(`O calendário de feriados não carregou: ${describeError(holidays.error)}`);
 
   const settings: MetaSettingsMap = {};
   for (const r of settingsRows.data ?? []) settings[r.setting_key] = Number(r.setting_value);

@@ -10,7 +10,7 @@ const SECTIONS: HubSection[] = [
   { key: 'metas', title: 'Metas da clínica', icon: Target, module: 'metas_clinica', Component: MetasClinica,
     description: 'Objetivo central (faturamento + ticket), escada de metas, funil, eficiência, origens, ROI e perdas.' },
   { key: 'bonus', title: 'Bônus por metas', icon: Award, module: 'bonus_metas', Component: BonusMetas,
-    description: 'Metas individuais da equipe e bônus ganho no dia, na semana e no mês.' },
+    description: 'R$ 100 por semana com todas as metas batidas, bônus dobrado no mês. Ariane (atendimento) e Lidiane (indicações).' },
   { key: 'incentivo', title: 'Plano de incentivo', icon: TrendingUp, module: 'plano_incentivo', Component: PlanoIncentivoV2,
     description: 'Progresso da equipe nas metas do período, com o que falta para cada uma.' },
 ];

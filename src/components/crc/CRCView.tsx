@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Info, Loader2,
+  ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Loader2,
   Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { describeError } from '@/lib/errors';
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCrcBoards, useMoveCrcCard } from '@/hooks/useCRC';
 import { CRCPatientSheet } from './CRCPatientSheet';
+import { HubCard } from './HubCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import type { Lead } from '@/types/crm';
 
@@ -35,7 +35,8 @@ const ICONS: Record<CrcBoardKey, typeof Cake> = {
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export function CRCView() {
+/** `header`: conteúdo mostrado acima dos quadros na tela inicial (as demais telas do CRC). */
+export function CRCView({ header }: { header?: ReactNode } = {}) {
   const [params, setParams] = useSearchParams();
   const boardKey = params.get('quadro') as CrcBoardKey | null;
   const board = boardKey && CRC_BOARD_MAP[boardKey] ? CRC_BOARD_MAP[boardKey] : null;
@@ -73,47 +74,29 @@ export function CRCView() {
       {board ? (
         <CRCBoardView board={board.key} items={boards[board.key]} leads={leads} onBack={() => openBoard(null)} />
       ) : (
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          {CRC_BOARDS.map(b => {
-            const Icon = ICONS[b.key];
-            const items = boards[b.key];
-            const open = openCount(b.key, items);
-            return (
-              <button
-                key={b.key}
-                type="button"
-                onClick={() => openBoard(b.key)}
-                className="monday-card group relative flex flex-col justify-start text-left p-4 transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <div className="flex items-start justify-between">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        role="img"
-                        aria-label={`Quem entra em ${b.label}`}
-                        onClick={e => e.stopPropagation()}
-                        className="text-muted-foreground hover:text-foreground p-0.5"
-                      >
-                        <Info className="h-4 w-4" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-64">{b.rule}</TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className="mt-3 font-semibold leading-snug">{b.label}</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-2xl font-bold tabular-nums">{open}</span>
-                  <span className="text-xs text-muted-foreground">
-                    a tratar{items.length !== open ? ` · ${items.length} no total` : ''}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {header}
+          <section aria-labelledby="crc-quadros" className="space-y-2">
+            <h2 id="crc-quadros" className="text-sm font-semibold text-muted-foreground">Quadros de relacionamento</h2>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+              {CRC_BOARDS.map(b => {
+                const items = boards[b.key];
+                const open = openCount(b.key, items);
+                return (
+                  <HubCard
+                    key={b.key}
+                    icon={ICONS[b.key]}
+                    label={b.label}
+                    rule={b.rule}
+                    count={open}
+                    caption={`a tratar${items.length !== open ? ` · ${items.length} no total` : ''}`}
+                    onClick={() => openBoard(b.key)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
@@ -165,7 +148,7 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Quadros
+          <ArrowLeft className="h-4 w-4 mr-1" /> CRC
         </Button>
         <div className="min-w-0">
           <h2 className="text-lg font-semibold leading-tight">{def.label}</h2>

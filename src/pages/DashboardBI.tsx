@@ -63,7 +63,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [period, setPeriod] = useState<BIPeriodFilter>('todos');
+  const [period, setPeriod] = useState<BIPeriodFilter>('mes');
   const { data, isLoading } = useBIDashboard(period);
 
   const kpiCards = data

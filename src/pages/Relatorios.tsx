@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +21,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
   FileText, 
@@ -41,18 +41,21 @@ import {
 
 
 export default function Relatorios({ embedded = false }: { embedded?: boolean } = {}) {
-  const [period, setPeriod] = useState('30');
+  return (
+    <PeriodFilterProvider>
+      <RelatoriosContent embedded={embedded} />
+    </PeriodFilterProvider>
+  );
+}
 
-  const startDate = period === 'month' 
-    ? startOfMonth(new Date()) 
-    : subDays(new Date(), parseInt(period));
-  const endDate = period === 'month' ? endOfMonth(new Date()) : new Date();
-
-  const range = { start: startDate, end: endDate };
+function RelatoriosContent({ embedded }: { embedded: boolean }) {
+  // Mesmo filtro (Dia / Semana / Mês / Ano) e mesmas regras do Funil de vendas e de Metas da clínica
+  const { range: periodRange } = usePeriodFilter();
+  const range = { start: periodRange.start, end: periodRange.end };
 
   // Todos os números pela camada única (as mesmas regras do Dashboard e do BI)
   const { data: metrics } = useQuery({
-    queryKey: ['report-metrics', period],
+    queryKey: ['report-metrics', range.start.toISOString(), range.end.toISOString()],
     queryFn: () => fetchMetricsData(range),
   });
 
@@ -168,18 +171,10 @@ export default function Relatorios({ embedded = false }: { embedded?: boolean } 
               </p>
             </div>
           </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="15">Últimos 15 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="month">Este mês</SelectItem>
-            </SelectContent>
-          </Select>
+
         </div>
+
+        <MasterPeriodFilter />
 
         {/* KPI Summary */}
         <div className="grid gap-4 md:grid-cols-5">

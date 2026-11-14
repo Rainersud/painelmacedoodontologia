@@ -9,7 +9,7 @@ import { WidgetPeriodTabs } from './WidgetPeriodTabs';
  * Filtro único da tela (Dia / Semana / Mês / Ano) e a comparação: período anterior ou
  * o mesmo período de anos anteriores. Todos os blocos da tela seguem este filtro.
  */
-export function MasterPeriodFilter() {
+export function MasterPeriodFilter({ inline = false }: { inline?: boolean } = {}) {
   const { period, setPeriod, range, customRange, setCustomRange, compareYears, setCompareYears } = usePeriodFilter();
   const year = range.start.getFullYear();
 
@@ -17,6 +17,33 @@ export function MasterPeriodFilter() {
     `${format(range.start, "dd 'de' MMM", { locale: ptBR })} – ${format(range.end, "dd 'de' MMM yyyy", { locale: ptBR })}`;
   const prevSubtitle =
     `${format(range.prevStart, "dd/MM/yy", { locale: ptBR })} – ${format(range.prevEnd, "dd/MM/yy", { locale: ptBR })}`;
+
+  const controls = (
+    <div className="flex flex-wrap items-center gap-2">
+      <WidgetPeriodTabs
+        master
+        value={period}
+        onChange={setPeriod}
+        size="sm"
+        customRange={customRange}
+        onCustomRangeChange={setCustomRange}
+      />
+      <Select value={String(compareYears)} onValueChange={v => setCompareYears(Number(v) as CompareYears)}>
+        <SelectTrigger className="h-8 w-auto min-w-[230px] text-xs" aria-label="Comparar com">
+          <span className="text-muted-foreground mr-1">Comparar com:</span>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="0">Período anterior</SelectItem>
+          <SelectItem value="1">Mesmo período de {year - 1}</SelectItem>
+          <SelectItem value="2">Mesmo período de {year - 2}</SelectItem>
+          <SelectItem value="3">Mesmo período de {year - 3}</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+  // dentro de outro quadro (ex.: Funil de vendas): só os controles
+  if (inline) return controls;
 
   return (
     <div className="rounded-xl border bg-card px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sticky top-0 z-20 shadow-sm">
@@ -31,28 +58,7 @@ export function MasterPeriodFilter() {
           </p>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <WidgetPeriodTabs
-          master
-          value={period}
-          onChange={setPeriod}
-          size="sm"
-          customRange={customRange}
-          onCustomRangeChange={setCustomRange}
-        />
-        <Select value={String(compareYears)} onValueChange={v => setCompareYears(Number(v) as CompareYears)}>
-          <SelectTrigger className="h-8 w-[210px] text-xs" aria-label="Comparar com">
-            <span className="text-muted-foreground mr-1">Comparar com:</span>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">Período anterior</SelectItem>
-            <SelectItem value="1">Mesmo período de {year - 1}</SelectItem>
-            <SelectItem value="2">Mesmo período de {year - 2}</SelectItem>
-            <SelectItem value="3">Mesmo período de {year - 3}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {controls}
     </div>
   );
 }

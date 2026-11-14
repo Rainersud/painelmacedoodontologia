@@ -1,11 +1,13 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Gift, Loader2, Megaphone, RotateCcw, Wallet, Workflow, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Clock, Gift, Loader2, Megaphone, RotateCcw, Sparkles, Wallet, Workflow, type LucideIcon } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { CRCView } from '@/components/crc/CRCView';
 import { HubCard } from '@/components/crc/HubCard';
+import { ALERT_LEVELS, CRCAlertsView } from '@/components/crc/CRCAlertsView';
+import { useSmartAlerts, type SmartAlertLevel } from '@/hooks/useSmartAlerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
@@ -80,12 +82,14 @@ const SECTIONS: CrcSection[] = [
   },
 ];
 
+const ALERT_ICONS: Record<SmartAlertLevel, LucideIcon> = { critical: AlertTriangle, attention: Clock, opportunity: Sparkles };
+
 const Spinner = () => (
   <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
 );
 
 const CRC = () => {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { canView } = usePermissions();
@@ -93,6 +97,7 @@ const CRC = () => {
   const followUp = useFollowUpCount();
   const remarketing = useRemarketingEntries();
   const returns = useDueReturns();
+  const smart = useSmartAlerts();
 
   const sections = SECTIONS.filter(s => isAdmin || canView(s.module));
   const showBoards = isAdmin || canView('funil');
@@ -105,6 +110,19 @@ const CRC = () => {
     indicacoes: counts['/indicacoes'] ?? null,
     credito: counts['/credito-liberado'] ?? null,
   };
+
+  const alertLevel = ALERT_LEVELS.find(l => l.key === params.get('alerta'))?.key ?? null;
+  if (alertLevel && showBoards) {
+    return (
+      <AppLayout title="CRC — Alertas inteligentes">
+        <CRCAlertsView
+          level={alertLevel}
+          onLevel={l => setParams({ alerta: l }, { replace: true })}
+          onBack={() => navigate('/crc')}
+        />
+      </AppLayout>
+    );
+  }
 
   if (active) {
     return (
@@ -122,6 +140,25 @@ const CRC = () => {
       </AppLayout>
     );
   }
+
+  const alertCards = showBoards && (
+    <section aria-labelledby="crc-alertas" className="space-y-2">
+      <h2 id="crc-alertas" className="text-sm font-semibold text-muted-foreground">Alertas inteligentes</h2>
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        {ALERT_LEVELS.map(l => (
+          <HubCard
+            key={l.key}
+            icon={ALERT_ICONS[l.key]}
+            label={l.label}
+            rule={l.rule}
+            count={smart.counts[l.key]}
+            caption={l.caption}
+            onClick={() => navigate(`/crc?alerta=${l.key}`)}
+          />
+        ))}
+      </div>
+    </section>
+  );
 
   const sectionCards = sections.length > 0 && (
     <section aria-labelledby="crc-acompanhamento" className="space-y-2">
@@ -145,7 +182,7 @@ const CRC = () => {
   return (
     <AppLayout title="CRC — Central de Relacionamento">
       {showBoards ? (
-        <CRCView footer={sectionCards} />
+        <CRCView footer={<>{alertCards}{sectionCards}</>} />
       ) : sections.length > 0 ? (
         <div className="space-y-4">{sectionCards}</div>
       ) : (

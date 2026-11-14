@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+import { useOpenLead } from '@/contexts/LeadDetailContext';
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +27,7 @@ interface LTVStageLeadsDialogProps {
 }
 
 export function LTVStageLeadsDialog({ open, onOpenChange, stageLabel, leads, onLeadClick }: LTVStageLeadsDialogProps) {
+  const openLead = useOpenLead();
   const totalLTV = useMemo(() => leads.reduce((sum, l) => sum + l.ltv, 0), [leads]);
 
   return (
@@ -48,13 +51,13 @@ export function LTVStageLeadsDialog({ open, onOpenChange, stageLabel, leads, onL
           ) : (
             <div className="space-y-2 pr-3">
               {leads.map((lead) => (
-                <button
+                <div
                   key={lead.id}
-                  onClick={() => {
-                    onLeadClick(lead.id);
-                    onOpenChange(false);
-                  }}
-                  className="w-full text-left p-3 rounded-lg border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openLead(lead.leadId)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLead(lead.leadId); } }}
+                  className="w-full text-left p-3 rounded-lg border hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -73,9 +76,16 @@ export function LTVStageLeadsDialog({ open, onOpenChange, stageLabel, leads, onL
                         )}
                       </div>
                     </div>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 ml-2" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 shrink-0 ml-2"
+                      onClick={e => { e.stopPropagation(); onLeadClick(lead.id); onOpenChange(false); }}
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" /> Oportunidade
+                    </Button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}

@@ -9,7 +9,7 @@ import {
   trafficInvestmentCheck, summarize, percentChange,
   type LeadRow, type AppointmentRow, type PaymentRow, type AcquisitionCostRow,
 } from './rules';
-import { monthlyGoal, periodGoal, periodProportion, goalStatus, expectedPace, paceStatus } from './goals';
+import { monthlyGoal, periodGoal, periodProportion, goalStatus, expectedPace, paceStatus, deriveGoalLadder, volumeFactor } from './goals';
 
 // Datas locais fixas: novembro/2026 (seg 02/11 … seg 30/11).
 const d = (y: number, m: number, day: number, h = 10) => new Date(y, m - 1, day, h).toISOString();
@@ -196,23 +196,41 @@ describe('resumo do período', () => {
 });
 
 describe('metas', () => {
-  const settings = { meta_leads: 250, meta_fechamentos: 0, meta_dias_uteis_mes: 20 };
-  it('lê a chave que a tela de metas grava; sem valor válido, usa o padrão', () => {
-    expect(monthlyGoal(settings, 'leads')).toBe(250);
-    expect(monthlyGoal(settings, 'vendas')).toBe(20); // meta_fechamentos=0 é ignorada → padrão
-    expect(monthlyGoal({ meta_vendas_mes: 99 }, 'vendas')).toBe(20); // chave antiga não é mais lida
-    expect(monthlyGoal({}, 'faturamento')).toBe(120000);
+  // Objetivo central: R$ 100 mil com ticket de R$ 4.000; taxas 50% / 40% / 30%
+  const settings = {
+    meta_faturamento: 100000, meta_ticket_medio: 4000, meta_leads: 999, meta_dias_uteis_mes: 20,
+    taxa_agendamentos: 50, taxa_comparecimentos: 40, taxa_fechamentos: 30, meta_cpl: 20,
+  };
+  it('metas de volume saem do faturamento + ticket (a meta digitada de leads é ignorada)', () => {
+    expect(monthlyGoal(settings, 'vendas')).toBe(25);           // 100.000 ÷ 4.000
+    expect(monthlyGoal(settings, 'comparecimentos')).toBe(84);  // 25 ÷ 30%
+    expect(monthlyGoal(settings, 'agendamentos')).toBe(210);    // 84 ÷ 40%
+    expect(monthlyGoal(settings, 'leads')).toBe(420);           // 210 ÷ 50%
+    expect(monthlyGoal(settings, 'investimento')).toBe(8400);   // 420 × CPL 20
+    expect(monthlyGoal({}, 'faturamento')).toBe(100000);
+    expect(monthlyGoal({ meta_vendas_mes: 99 }, 'vendas')).toBe(17); // padrão: 100.000 ÷ 6.000
+  });
+  it('subir o faturamento sobe tudo na mesma proporção; baixar, baixa', () => {
+    const dobro = { ...settings, meta_faturamento: 200000 };
+    expect(monthlyGoal(dobro, 'vendas')).toBe(50);
+    expect(monthlyGoal(dobro, 'leads')).toBe(836); // 50 → 167 → 418 → 836
+    expect(volumeFactor(settings, dobro)).toBe(2);
+    const metade = { ...settings, meta_faturamento: 50000 };
+    expect(volumeFactor(settings, metade)).toBeCloseTo(13 / 25);
+    const ladder = deriveGoalLadder(settings);
+    expect(ladder.taxaComparecimento).toBe(40);
   });
   it('mês inteiro = meta mensal exata', () => {
     expect(periodProportion(nov, cal, settings)).toBe(1);
-    expect(periodGoal(settings, 'leads', nov, cal)).toBe(250);
+    expect(periodGoal(settings, 'leads', nov, cal)).toBe(420);
   });
   it('dia e semana são proporcionais a 20 dias úteis', () => {
     const day = buildPeriod('hoje', NOW);
     const week = buildPeriod('semana', NOW);
-    expect(periodGoal(settings, 'leads', day, cal)).toBe(13);   // 250/20 = 12,5
-    expect(periodGoal(settings, 'leads', week, cal)).toBe(63);  // 250×5/20 = 62,5
-    expect(periodGoal(settings, 'taxa_comparecimento', week, cal)).toBe(70);
+    expect(periodGoal(settings, 'leads', day, cal)).toBe(21);    // 420/20
+    expect(periodGoal(settings, 'leads', week, cal)).toBe(105);  // 420×5/20
+    expect(periodGoal(settings, 'agendamentos', week, cal)).toBe(53); // ~55/semana como no plano
+    expect(periodGoal(settings, 'taxa_comparecimento', week, cal)).toBe(40);
   });
   it('dia sem expediente não tem meta de volume', () => {
     const sunday = buildPeriod('hoje', new Date(2026, 10, 15, 9));

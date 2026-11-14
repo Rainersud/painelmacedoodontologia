@@ -85,3 +85,26 @@ export function StrategicInsightsWidget() {
     </div>
   );
 }
+
+/** Só a previsão de faturamento do mês (usada em Metas da Clínica). */
+export function RevenueForecastWidget() {
+  const { data, isLoading } = useStrategicInsights();
+  return (
+    <Card className="monday-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-success" />
+          Previsão de Faturamento
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? <Skeleton className="h-[80px] w-full" /> : (
+          <div>
+            <p className="text-xs text-muted-foreground">Projeção do mês no ritmo atual (por dias úteis)</p>
+            <p className="text-3xl font-bold text-success mt-2 tabular-nums">{formatCurrency(data?.forecast || 0)}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

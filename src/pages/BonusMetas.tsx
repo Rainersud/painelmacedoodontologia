@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { describeError } from '@/lib/errors';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ const metricConfig: Record<string, { icon: React.ElementType; color: string }> =
   fechados: { icon: DollarSign, color: mondayColors.pink },
 };
 
-export default function BonusMetas() {
+export default function BonusMetas({ embedded = false }: { embedded?: boolean } = {}) {
   const { isAdmin } = useAuth();
   const [period, setPeriod] = useState<Period>('diario');
   const { agentData, bonusTargets, isLoading, updateBonusTarget } = useAgentBonus(undefined, period);
@@ -70,7 +70,7 @@ export default function BonusMetas() {
   };
 
   return (
-    <AppLayout title="Bônus por Metas">
+    <PageShell embedded={embedded} title="Bônus por Metas">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -354,6 +354,6 @@ export default function BonusMetas() {
           </Card>
         )}
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

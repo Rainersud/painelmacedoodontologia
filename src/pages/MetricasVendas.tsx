@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,17 @@ import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
-const MetricasVendas = () => {
+const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [month, setMonth] = useState(new Date());
   const { data, isLoading } = useSalesMetrics(month);
 
   if (isLoading) {
     return (
-      <AppLayout title="Métricas de Vendas">
+      <PageShell embedded={embedded} title="Métricas de Vendas">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </PageShell>
     );
   }
 
@@ -63,7 +63,7 @@ const MetricasVendas = () => {
   }
 
   return (
-    <AppLayout title="Métricas de Vendas">
+    <PageShell embedded={embedded} title="Métricas de Vendas">
       <div className="space-y-6 pb-8">
         {/* Month selector */}
         <div className="flex items-center justify-between">
@@ -177,7 +177,7 @@ const MetricasVendas = () => {
           </Card>
         </div>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 };
 

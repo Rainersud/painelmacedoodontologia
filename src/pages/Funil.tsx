@@ -18,7 +18,6 @@ import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { ReturnColumn } from '@/components/crm/ReturnColumn';
-import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { LossAnalysisPanel } from '@/components/crm/LossAnalysisPanel';
 import { ScheduleAppointmentDialog } from '@/components/crm/ScheduleAppointmentDialog';
@@ -613,13 +612,6 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     <PageShell embedded={embedded} title={pageTitle}>
       {/* The entire funnel page */}
       <div className="flex flex-col min-h-0 flex-1">
-        {/* Operational command center — above search, below page title */}
-        {!isFollowUpMode && (
-          <div className="shrink-0 space-y-4 mb-4">
-            <SmartAlertsWidget />
-          </div>
-        )}
-
         {/* Fixed header area — never scrolls */}
         <div className="shrink-0 flex flex-col gap-3 mb-3">
           <div className="flex items-center justify-between">

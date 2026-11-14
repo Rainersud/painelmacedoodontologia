@@ -1,3 +1,4 @@
+import { LTV_STAGES } from '@/lib/ltv';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,13 +66,15 @@ export interface ContactHistory {
   created_at: string;
 }
 
-export const UPSELL_STAGES = [
-  { key: 'comprou_1', label: 'Comprou 1 vez', color: 'bg-chart-2', bgColor: 'bg-chart-2/10', locked: false },
-  { key: 'comprou_2', label: 'Comprou 2 vezes', color: 'bg-chart-1', bgColor: 'bg-chart-1/10', locked: false },
-  { key: 'comprou_3', label: 'Comprou 3 vezes', color: 'bg-chart-3', bgColor: 'bg-chart-3/10', locked: false },
-  { key: 'comprou_4', label: 'Comprou 4 vezes', color: 'bg-chart-4', bgColor: 'bg-chart-4/10', locked: false },
-  { key: 'comprou_5', label: 'Comprou 5 vezes', color: 'bg-chart-5', bgColor: 'bg-chart-5/10', locked: false },
-];
+// Etapas do LTV: "Comprou no front" e depois cada recompra no LTV (rótulos em lib/ltv)
+const STAGE_COLORS = ['bg-chart-2', 'bg-chart-1', 'bg-chart-3', 'bg-chart-4', 'bg-chart-5', 'bg-primary'];
+export const UPSELL_STAGES = LTV_STAGES.map((s, i) => ({
+  key: s.key as string,
+  label: s.label as string,
+  color: STAGE_COLORS[i],
+  bgColor: `${STAGE_COLORS[i]}/10`,
+  locked: false,
+}));
 
 export const CONTACT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   nao_contatado: { label: 'Não Contatado', color: 'bg-muted text-muted-foreground' },

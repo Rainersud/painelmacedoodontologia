@@ -19,6 +19,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
+import { defaultReturnDate, summarize } from '@/lib/ltv';
+import { useLTVData } from '@/hooks/useLTVData';
 import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
 
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
@@ -357,9 +359,13 @@ function EditableDetailContent({
       closed_value: totalPaidStage,
     };
 
+    // Cada evolução salva = uma compra no LTV: conta a compra e marca o próximo retorno
+    // para 6 meses depois (a data continua editável no topo do card).
+    updateData.purchase_count = (opp.purchase_count || 1) + 1;
+    updateData.next_return_date = defaultReturnDate(new Date());
+    updateData.return_scheduled = false;
     if (nextStage) {
       updateData.status = nextStage;
-      updateData.purchase_count = (opp.purchase_count || 1) + 1;
     }
 
     updateOpp.mutate(updateData as { id: string; [key: string]: unknown }, {
@@ -426,6 +432,77 @@ function EditableDetailContent({
         Etapa atual: {currentStageLabel}
       </Badge>
 
+      {/* ===== RETORNO E CONTATO (topo do card) ===== */}
+      <div className="rounded-lg border-2 border-chart-2/30 p-3 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-bold text-chart-2 flex items-center gap-1.5">
+            <RotateCcw className="h-3.5 w-3.5" /> Controle de Retorno
+          </p>
+          {opp.return_scheduled ? (
+            <Badge className="text-[10px] bg-success/10 text-success border-success/30 gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Retorno agendado
+            </Badge>
+          ) : (() => {
+            const rs = getReturnStatus(opp);
+            if (!rs) return null;
+            const tone = { success: 'bg-success/10 text-success border-success/30', warning: 'bg-warning/10 text-warning-strong border-warning/30', destructive: 'bg-destructive/10 text-destructive border-destructive/30' }[rs.color];
+            return <Badge className={cn('text-[10px] gap-1', tone)}><Timer className="h-3 w-3" />{rs.label}</Badge>;
+          })()}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Data do retorno</Label>
+            <Input
+              type="date"
+              value={opp.next_return_date || ''}
+              onChange={(e) => updateOpp.mutate({
+                id: opp.id,
+                next_return_date: e.target.value || null,
+              })}
+              className="h-9 text-sm mt-1"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {opp.lead?.closed_at
+                ? `Automático: 6 meses após a venda (${format(new Date(opp.lead.closed_at), 'dd/MM/yyyy')}). Pode alterar.`
+                : 'Automático: 6 meses após a venda. Pode alterar.'}
+            </p>
+          </div>
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Status do contato</Label>
+            <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>
+              <SelectTrigger className="h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(CONTACT_STATUS_CONFIG).map(([key, cfg]) => (
+                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {opp.next_return_date && (
+          <Button
+            size="sm"
+            variant={opp.return_scheduled ? 'ghost' : 'default'}
+            className="w-full gap-1.5 text-xs"
+            onClick={() => updateOpp.mutate(
+              { id: opp.id, return_scheduled: !opp.return_scheduled },
+              { onSuccess: () => toast.success(opp.return_scheduled ? 'Retorno desmarcado' : 'Retorno marcado como agendado') },
+            )}
+          >
+            <CalendarIcon className="h-3.5 w-3.5" />
+            {opp.return_scheduled ? 'Desmarcar retorno agendado' : 'Marcar retorno como agendado'}
+          </Button>
+        )}
+
+        {opp.last_stage_change_at && (
+          <p className="text-[10px] text-muted-foreground">
+            Última movimentação: {format(new Date(opp.last_stage_change_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+          </p>
+        )}
+      </div>
+
       {/* ===== SUGESTÃO DE TRATAMENTO ===== */}
       {treatmentSuggestions.length > 0 && (
         <div className="rounded-md border border-chart-5/30 bg-chart-5/5 p-2.5 space-y-2">
@@ -466,21 +543,11 @@ function EditableDetailContent({
           {localPurchases.map((entry, i) => {
             const isEditable = !entry.locked || stageEditing[i];
             const showDate = needsDateField(entry.treatment);
-            const today = new Date().toISOString().split('T')[0];
-            const isUpsellPending = entry.upsell_date && entry.upsell_date <= today && entry.payment_status !== 'pago';
             return (
               <div key={i} className={cn(
                 "rounded-md border p-2.5 space-y-1.5",
-                isUpsellPending ? "border-warning/50 bg-warning/5" :
                 entry.locked && !stageEditing[i] ? "border-success/30 bg-success/5" : "border-border"
               )}>
-                {/* Upsell pending alert */}
-                {isUpsellPending && (
-                  <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-warning/10 border border-warning/30 text-warning-strong text-[10px] font-semibold">
-                    <AlertTriangle className="h-3 w-3" />
-                    Upsell pendente — agendado para {format(new Date(entry.upsell_date + 'T12:00:00'), 'dd/MM/yyyy')}
-                  </div>
-                )}
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-chart-5">{entry.treatment || `Tratamento ${i + 1}`}</p>
                   <div className="flex items-center gap-1">
@@ -520,11 +587,6 @@ function EditableDetailContent({
                     </div>
                   )}
                 </div>
-                {/* Data do Upsell */}
-                <div>
-                  <Label className="text-[9px] text-muted-foreground">Data do Upsell</Label>
-                  <Input type="date" value={entry.upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
-                </div>
                 {/* Status do Pagamento */}
                 <div className="flex items-center gap-3 mt-1.5">
                   <Label className="text-[9px] text-muted-foreground whitespace-nowrap">Status:</Label>
@@ -549,13 +611,6 @@ function EditableDetailContent({
                     </div>
                   </div>
                 </div>
-                {/* Agendar novo Upsell after payment */}
-                {entry.payment_status === 'pago' && (
-                  <div className="rounded-md bg-primary/5 border border-primary/20 p-2 mt-1">
-                    <Label className="text-[9px] text-primary font-semibold">Agendar Novo Upsell</Label>
-                    <Input type="date" value={entry.next_upsell_date || ''} onChange={(e) => handlePurchaseFieldChange(i, 'next_upsell_date', e.target.value)} className="h-7 text-xs mt-0.5" />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -872,121 +927,6 @@ function EditableDetailContent({
       </div>
 
       <div>
-        <p className="text-xs font-bold text-chart-5 mb-1.5">Status do Contato</p>
-        <Select value={opp.contact_status} onValueChange={handleUpdateContactStatus}>
-          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(CONTACT_STATUS_CONFIG).map(([key, cfg]) => (
-              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* ===== CONTROLE DE RETORNO PERIÓDICO ===== */}
-      <div className="rounded-lg border-2 border-chart-2/30 p-3 space-y-3">
-        <p className="text-xs font-bold text-chart-2 flex items-center gap-1.5">
-          <RotateCcw className="h-3.5 w-3.5" /> Controle de Retorno (6 meses)
-        </p>
-        
-        {(() => {
-          const rs = getReturnStatus(opp);
-          if (rs) {
-            const colorMap = {
-              success: 'border-success/30 bg-success/5 text-success',
-              warning: 'border-warning/30 bg-warning/5 text-warning-strong',
-              destructive: 'border-destructive/30 bg-destructive/5 text-destructive',
-            };
-            return (
-              <div className={cn("p-2.5 rounded-md border", colorMap[rs.color])}>
-                <div className="flex items-center gap-2">
-                  <Timer className="h-4 w-4" />
-                  <span className="text-sm font-semibold">{rs.label}</span>
-                </div>
-                {opp.next_return_date && (
-                  <p className="text-[10px] mt-1 opacity-75">
-                    Data prevista: {format(new Date(opp.next_return_date + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                  </p>
-                )}
-              </div>
-            );
-          }
-          return (
-            <div className="p-2.5 rounded-md border border-muted bg-muted/30 text-muted-foreground text-xs">
-              Nenhum retorno configurado. Defina a data abaixo.
-            </div>
-          );
-        })()}
-
-        {/* Return scheduling */}
-        <div className="space-y-2">
-          <div>
-            <Label className="text-[10px] text-muted-foreground">Data do Próximo Retorno</Label>
-            <Input
-              type="date"
-              value={opp.next_return_date || ''}
-              onChange={(e) => updateOpp.mutate({
-                id: opp.id,
-                next_return_date: e.target.value || null,
-                return_scheduled: !!e.target.value,
-              })}
-              className="h-8 text-xs mt-0.5"
-            />
-          </div>
-          
-          {!opp.return_scheduled && opp.next_return_date && (
-            <Button
-              size="sm"
-              className="w-full gap-1.5 text-xs"
-              onClick={() => updateOpp.mutate({
-                id: opp.id,
-                return_scheduled: true,
-              }, {
-                onSuccess: () => toast.success('Retorno marcado como agendado!'),
-              })}
-            >
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Marcar Retorno como Agendado
-            </Button>
-          )}
-
-          {opp.return_scheduled && (
-            <div className="flex items-center gap-2 p-2 rounded-md border border-success/30 bg-success/5">
-              <CheckCircle2 className="h-4 w-4 text-success" />
-              <span className="text-xs font-medium text-success">Retorno agendado</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="ml-auto h-6 text-[9px] text-muted-foreground"
-                onClick={() => updateOpp.mutate({ id: opp.id, return_scheduled: false })}
-              >
-                Desmarcar
-              </Button>
-            </div>
-          )}
-
-          {(() => {
-            const rs = getReturnStatus(opp);
-            if (rs?.urgent && !opp.return_scheduled) {
-              return (
-                <div className="flex items-center gap-2 p-2 rounded-md border border-destructive/30 bg-destructive/5 text-destructive text-xs font-semibold animate-pulse">
-                  <AlertTriangle className="h-4 w-4" />
-                  URGENTE: retorno em atraso — agende agora!
-                </div>
-              );
-            }
-            return null;
-          })()}
-        </div>
-
-        {opp.last_stage_change_at && (
-          <p className="text-[9px] text-muted-foreground">
-            Última movimentação: {format(new Date(opp.last_stage_change_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-          </p>
-        )}
-      </div>
-
-      <div>
         <p className="text-xs font-bold text-chart-5 mb-1.5">Observações</p>
         <Textarea value={opp.notes || ''} onChange={(e) => updateOpp.mutate({ id: opp.id, notes: e.target.value })} placeholder="Adicione observações..." className="text-sm min-h-[60px]" />
       </div>
@@ -1011,6 +951,8 @@ const Comercial2 = () => {
   const { data: opportunities, isLoading } = useUpsellOpportunities();
   const { data: suggestions } = useTreatmentSuggestions();
   const metrics = useUpsellMetrics();
+  const ltvData = useLTVData();
+  const ltv = useMemo(() => summarize(ltvData.patients), [ltvData.patients]);
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
   const createUpsell = useCreateUpsellOpportunity();
@@ -1149,7 +1091,7 @@ const Comercial2 = () => {
                       <Users className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-[10px] text-muted-foreground">Pacientes</p>
-                        <p className="text-lg font-bold">{metrics.uniquePatients}</p>
+                        <p className="text-lg font-bold">{ltv.patients}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1159,8 +1101,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-chart-5" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Oportunidades</p>
-                        <p className="text-lg font-bold">{metrics.total}</p>
+                        <p className="text-[10px] text-muted-foreground">Recompraram</p>
+                        <p className="text-lg font-bold">{ltv.repeatPatients}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1170,8 +1112,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Conversão</p>
-                        <p className="text-lg font-bold">{metrics.conversionRate}%</p>
+                        <p className="text-[10px] text-muted-foreground">Taxa de recompra</p>
+                        <p className="text-lg font-bold">{Math.round(ltv.repurchaseRate)}%</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1181,8 +1123,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Faturamento</p>
-                        <p className="text-lg font-bold">{formatCurrency(metrics.totalRevenue)}</p>
+                        <p className="text-[10px] text-muted-foreground">Vendido no LTV</p>
+                        <p className="text-lg font-bold">{formatCurrency(ltv.ltvRevenue)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1192,8 +1134,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-warning-strong" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Ticket Médio</p>
-                        <p className="text-lg font-bold">{formatCurrency(metrics.avgTicket)}</p>
+                        <p className="text-[10px] text-muted-foreground">Ticket médio LTV</p>
+                        <p className="text-lg font-bold">{formatCurrency(ltv.ltvTicket)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1203,8 +1145,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-chart-2" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">LTV/Paciente</p>
-                        <p className="text-lg font-bold">{formatCurrency(metrics.ltvPerPatient)}</p>
+                        <p className="text-[10px] text-muted-foreground">LTV médio</p>
+                        <p className="text-lg font-bold">{formatCurrency(ltv.avgLtv)}</p>
                       </div>
                     </div>
                   </CardContent>

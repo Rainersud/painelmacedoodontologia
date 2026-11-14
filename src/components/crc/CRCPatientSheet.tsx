@@ -15,7 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { CRC_BOARD_MAP, type CrcItem } from '@/lib/crc';
 import {
-  openCrcFile, useAddCrcEntry, useArchiveCrcCard, useCrcEntries, useDeleteCrcEntry, useMoveCrcCard,
+  openCrcFile, useAddCrcEntry, useArchiveCrcCard, useCrcEntries, useDeleteCrcEntry,
   useSaveProntuario, type CrcEntry, type CrcEntryKind,
 } from '@/hooks/useCRC';
 
@@ -33,13 +33,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenLead: () => void;
+  /** Mudar de coluna (quem chama decide se pede confirmação, ex.: Fim de ciclo). */
+  onMove: (to: string) => void;
 }
 
-export function CRCPatientSheet({ item, prontuarioUrl, open, onOpenChange, onOpenLead }: Props) {
+export function CRCPatientSheet({ item, prontuarioUrl, open, onOpenChange, onOpenLead, onMove }: Props) {
   const leadId = item?.lead.id ?? null;
   const board = item ? CRC_BOARD_MAP[item.board] : null;
   const { data, isLoading } = useCrcEntries(open ? leadId : null);
-  const move = useMoveCrcCard();
   const archive = useArchiveCrcCard();
   const add = useAddCrcEntry();
   const del = useDeleteCrcEntry();
@@ -114,7 +115,7 @@ export function CRCPatientSheet({ item, prontuarioUrl, open, onOpenChange, onOpe
             <div className="flex gap-2">
               <Select
                 value={item.stage}
-                onValueChange={(to) => to !== item.stage && move.mutate({ board: item.board, leadId: item.lead.id, from: item.stage, to, manual: item.manual })}
+                onValueChange={(to) => to !== item.stage && onMove(to)}
               >
                 <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                 <SelectContent>

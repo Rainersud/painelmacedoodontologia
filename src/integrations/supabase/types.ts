@@ -701,6 +701,8 @@ export type Database = {
           closed_at: string | null
           completed_at: string | null
           contact_attempts: number
+          contact_opt_out_at: string | null
+          contact_opt_out_reason: string | null
           converted_at: string | null
           created_at: string
           discount_percentage: number
@@ -743,6 +745,8 @@ export type Database = {
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number
+          contact_opt_out_at?: string | null
+          contact_opt_out_reason?: string | null
           converted_at?: string | null
           created_at?: string
           discount_percentage?: number
@@ -785,6 +789,8 @@ export type Database = {
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number
+          contact_opt_out_at?: string | null
+          contact_opt_out_reason?: string | null
           converted_at?: string | null
           created_at?: string
           discount_percentage?: number

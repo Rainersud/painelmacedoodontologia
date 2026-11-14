@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { cn } from "@/lib/utils";
 
 interface CustomScrollbarProps {
@@ -8,112 +8,113 @@ interface CustomScrollbarProps {
   thumbClassName?: string;
 }
 
-export function CustomScrollbar({ 
-  children, 
+/**
+ * Barra vertical fina, no mesmo padrão da barra horizontal do quadro.
+ * A posição é atualizada direto no elemento, uma vez por quadro de animação.
+ */
+export function CustomScrollbar({
+  children,
   className,
   trackClassName,
-  thumbClassName
+  thumbClassName,
 }: CustomScrollbarProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const [thumbHeight, setThumbHeight] = useState(0);
-  const [thumbTop, setThumbTop] = useState(0);
-  const [visible, setVisible] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(0);
-  const dragStartScrollTop = useRef(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  const frame = useRef(0);
 
-  const updateThumb = useCallback(() => {
+  const paint = useCallback(() => {
+    frame.current = 0;
     const el = contentRef.current;
-    if (!el) return;
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    if (!el || !track || !thumb) return;
     const { clientHeight, scrollHeight, scrollTop } = el;
-    const hasOverflow = scrollHeight > clientHeight;
-    setVisible(hasOverflow);
-    if (!hasOverflow) {
-      setThumbHeight(0);
-      setThumbTop(0);
-      return;
-    }
-    const ratio = clientHeight / scrollHeight;
-    const height = Math.max(ratio * clientHeight, 40);
     const maxScroll = scrollHeight - clientHeight;
-    const maxThumb = clientHeight - height;
-    const top = maxScroll > 0 ? (scrollTop / maxScroll) * maxThumb : 0;
-    setThumbHeight(height);
-    setThumbTop(top);
+    track.style.display = maxScroll > 1 ? '' : 'none';
+    if (maxScroll <= 1) return;
+    const height = Math.max(32, clientHeight * (clientHeight / scrollHeight));
+    const top = (scrollTop / maxScroll) * (clientHeight - height);
+    thumb.style.height = `${height}px`;
+    thumb.style.transform = `translate3d(0,${top}px,0)`;
   }, []);
+
+  const schedule = useCallback(() => {
+    if (!frame.current) frame.current = requestAnimationFrame(paint);
+  }, [paint]);
 
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    updateThumb();
-    el.addEventListener('scroll', updateThumb, { passive: true });
-    const ro = new ResizeObserver(updateThumb);
+    paint();
+    el.addEventListener('scroll', schedule, { passive: true });
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
     return () => {
-      el.removeEventListener('scroll', updateThumb);
+      el.removeEventListener('scroll', schedule);
       ro.disconnect();
+      if (frame.current) cancelAnimationFrame(frame.current);
     };
-  }, [updateThumb]);
+  }, [paint, schedule]);
 
-  const handleThumbMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleThumbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
-    dragStartY.current = e.clientY;
     const el = contentRef.current;
-    dragStartScrollTop.current = el?.scrollTop || 0;
+    if (!el) return;
+    const thumb = e.currentTarget;
+    thumb.setPointerCapture(e.pointerId);
+    thumb.dataset.dragging = 'true';
+    const startY = e.clientY;
+    const startTop = el.scrollTop;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    const usable = Math.max(1, el.clientHeight - thumb.offsetHeight);
+    let pending = 0;
+    let next = startTop;
+    const onMove = (ev: PointerEvent) => {
+      next = Math.max(0, Math.min(maxScroll, startTop + ((ev.clientY - startY) / usable) * maxScroll));
+      if (!pending) pending = requestAnimationFrame(() => { pending = 0; el.scrollTop = next; });
+    };
+    const onUp = () => {
+      delete thumb.dataset.dragging;
+      thumb.removeEventListener('pointermove', onMove);
+      thumb.removeEventListener('pointerup', onUp);
+      thumb.removeEventListener('pointercancel', onUp);
+    };
+    thumb.addEventListener('pointermove', onMove);
+    thumb.addEventListener('pointerup', onUp);
+    thumb.addEventListener('pointercancel', onUp);
   }, []);
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const el = contentRef.current;
-      if (!el) return;
-      const deltaY = e.clientY - dragStartY.current;
-      const { clientHeight, scrollHeight } = el;
-      const maxScroll = scrollHeight - clientHeight;
-      const maxThumb = clientHeight - thumbHeight;
-      if (maxThumb <= 0) return;
-      const newScroll = dragStartScrollTop.current + (deltaY / maxThumb) * maxScroll;
-      el.scrollTop = Math.max(0, Math.min(maxScroll, newScroll));
-    };
-    const handleMouseUp = () => setIsDragging(false);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, thumbHeight]);
 
   return (
     <div className={cn("relative flex flex-col min-h-0 h-full", className)}>
       <div
         ref={contentRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide overscroll-contain"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide overscroll-contain pr-3"
         style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
         {children}
       </div>
-      {visible && (
+      <div
+        ref={trackRef}
+        data-testid="custom-scrollbar-track"
+        className={cn(
+          "pointer-events-none absolute right-0 top-0 bottom-0 w-2 rounded-full bg-muted z-10 hidden md:block",
+          trackClassName,
+        )}
+        style={{ display: 'none' }}
+      >
         <div
-          data-testid="custom-scrollbar-track"
+          ref={thumbRef}
+          data-testid="custom-scrollbar-thumb"
           className={cn(
-            "pointer-events-none absolute right-0 top-0 bottom-0 w-5 rounded-full bg-muted/60 z-10 hidden md:block",
-            trackClassName
+            "pointer-events-auto absolute left-0 top-0 w-full rounded-full bg-primary/45 hover:bg-primary/70 data-[dragging=true]:bg-primary/80 cursor-grab data-[dragging=true]:cursor-grabbing will-change-transform",
+            thumbClassName,
           )}
-        >
-          <div
-            data-testid="custom-scrollbar-thumb"
-            className={cn(
-              "pointer-events-auto absolute right-1 w-3 rounded-full bg-primary shadow-sm hover:bg-primary/90 cursor-grab active:cursor-grabbing transition-colors",
-              thumbClassName
-            )}
-            style={{ height: thumbHeight, top: thumbTop }}
-            onMouseDown={handleThumbMouseDown}
-          />
-        </div>
-      )}
+          onPointerDown={handleThumbPointerDown}
+        />
+      </div>
     </div>
   );
 }

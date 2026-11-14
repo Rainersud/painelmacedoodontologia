@@ -87,7 +87,7 @@ const App = () => (
                 <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
                 <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
                 <Route path="/dados" element={<ProtectedRoute><DadosMetricas /></ProtectedRoute>} />
-                <Route path="/call-center" element={<MovedTo path="/dados" tab="call-center" />} />
+                <Route path="/call-center" element={<MovedTo path="/dados" tab="funil" />} />
                 <Route path="/crm" element={<Navigate to="/" replace />} />
                 <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
                 <Route path="/indicacoes" element={<MovedToCRC tab="indicacoes" />} />

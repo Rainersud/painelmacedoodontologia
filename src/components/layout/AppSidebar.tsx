@@ -92,7 +92,7 @@ const mainNavItems: NavItemDef[] = [
 // Gestão: tudo o que o Comercial alimenta (metas, dados e reuniões)
 const managementNavItems: NavItemDef[] = [
   { title: 'Metas / Objetivos', url: '/objetivos', icon: Target, module: 'metas_clinica', modules: ['metas_clinica', 'bonus_metas', 'plano_incentivo'] },
-  { title: 'Dados / Métricas', url: '/dados', icon: BarChart3, module: 'cac', modules: ['central_funis', 'funil_trafego', 'cac', 'metricas_vendas', 'relatorios', 'bi', 'call_center'] },
+  { title: 'Dados / Métricas', url: '/dados', icon: BarChart3, module: 'cac', modules: ['central_funis', 'funil_trafego', 'cac', 'metricas_vendas', 'relatorios', 'bi'] },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
 ];
 

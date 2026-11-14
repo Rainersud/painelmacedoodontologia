@@ -20,7 +20,7 @@ import { useMeetings, useMeetingActionPlans, useMeetingAnnotations, useMeetingTr
 import { useCACMetrics } from '@/hooks/useAcquisitionCosts';
 import { useSalesMetrics } from '@/hooks/useSalesMetrics';
 import { useClinicGoalsPanel } from '@/hooks/useClinicGoalsPanel';
-import { useAllAgentsBonus } from '@/hooks/useAgentBonus';
+import { useWeeklyBonus } from '@/hooks/useWeeklyBonus';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { formatCurrency } from '@/lib/currency';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
@@ -84,7 +84,11 @@ export default function Reunioes() {
   // Metas atuais (meta_settings), as mesmas de Metas da Clínica e Plano de Incentivo
   const { data: monthPanel } = useClinicGoalsPanel('mes');
   const { data: weekPanel } = useClinicGoalsPanel('semana');
-  const { data: teamBonus } = useAllAgentsBonus('semanal');
+  const [bonusMonth] = useState(() => new Date());
+  const { data: teamBonus } = useWeeklyBonus(bonusMonth);
+  // semana corrente de cada grupo (Ariane / Lidiane): R$ por semana batida
+  const now = Date.now();
+  const thisWeek = (teamBonus?.groups ?? []).map(g => g.weeks.find(w => w.week.start.getTime() <= now && now <= w.week.end.getTime()));
   const GOAL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento', 'ticket_medio'];
   const toColor = (st: string) => (st === 'healthy' ? 'green' : st === 'warning' ? 'yellow' : 'red');
   const goalsProgress = (monthPanel?.metrics ?? [])
@@ -95,8 +99,8 @@ export default function Reunioes() {
     goals: weekGoals.map(m => ({ bonusEarned: m.current >= m.target })),
     weeklySummary: {
       allGoalsMet: weekGoals.length > 0 && weekGoals.every(m => m.current >= m.target),
-      earnedBonus: (teamBonus ?? []).reduce((sum, a) => sum + a.earnedBonus, 0),
-      totalBonus: (teamBonus ?? []).reduce((sum, a) => sum + a.totalBonus, 0),
+      earnedBonus: thisWeek.reduce((sum, w) => sum + (w?.earned ?? 0), 0),
+      totalBonus: (teamBonus?.settings.weeklyValue ?? 0) * (teamBonus?.groups.length ?? 0),
     },
   } : undefined;
 

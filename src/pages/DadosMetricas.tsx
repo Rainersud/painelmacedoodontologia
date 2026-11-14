@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { BarChart3, FileText, Filter, Headset, LineChart, Megaphone, Wallet } from 'lucide-react';
+import { BarChart3, FileText, Filter, LineChart, Megaphone, Wallet } from 'lucide-react';
 import { HubPage, type HubSection } from '@/components/layout/HubPage';
 
 const FunilVendas = lazy(() => import('./FunilVendas'));
@@ -8,7 +8,6 @@ const CACDashboard = lazy(() => import('./CACDashboard'));
 const MetricasVendas = lazy(() => import('./MetricasVendas'));
 const Relatorios = lazy(() => import('./Relatorios'));
 const DashboardBI = lazy(() => import('./DashboardBI'));
-const DashboardCallCenter = lazy(() => import('./DashboardCallCenter'));
 
 const SECTIONS: HubSection[] = [
   { key: 'funil', title: 'Funil de vendas', icon: Filter, module: 'central_funis', Component: FunilVendas,
@@ -23,8 +22,6 @@ const SECTIONS: HubSection[] = [
     description: 'Relatórios do período para exportar e compartilhar.' },
   { key: 'bi', title: 'Dashboard BI', icon: BarChart3, module: 'bi', Component: DashboardBI,
     description: 'Visão 360° de receita, LTV, CAC e projeções.' },
-  { key: 'call-center', title: 'Call Center', icon: Headset, module: 'call_center', Component: DashboardCallCenter,
-    description: 'Ligações, contatos e produtividade da equipe de atendimento.' },
 ];
 
 export default function DadosMetricas() {

@@ -19,8 +19,8 @@ const NUM = (v: number) => Math.round(v).toLocaleString('pt-BR');
 
 /** Alvos que acompanham o objetivo central (bônus por metas e indicações). */
 const SCALED_KEYS = [
-  'bonus_novos_leads_target', 'bonus_agendamentos_target', 'bonus_comparecimentos_target',
-  'bonus_resgatados_target', 'bonus_fechados_target', 'meta_indicacoes',
+  // valor do bônus semanal e metas semanais de resgate/indicação acompanham o objetivo
+  'bonus_semana_valor', 'bonus_resgatados_semana', 'bonus_indicacoes_semana', 'meta_indicacoes',
   'meta_origem_indicacao_pac_dia', 'meta_origem_prospeccao_ativa_dia',
   'meta_origem_indicacao_parceria_dia', 'meta_origem_social_selling_dia',
 ];

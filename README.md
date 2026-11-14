@@ -311,3 +311,7 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Versão em uso
+
+Enquanto as publicações em produção do Netlify estiverem pausadas, o painel em uso é a prévia do PR "Painel em uso" (branch `painel`). Toda alteração entra nesse branch e a prévia atualiza no mesmo endereço.

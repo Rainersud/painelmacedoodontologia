@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { allPages } from '@/lib/paging';
 import { getDaysInStage, FUNNEL_STAGES, type Lead } from '@/types/crm';
 import type { SmartAlertLevel, SmartAlertType } from './useSmartAlerts';
 
@@ -16,40 +17,41 @@ function getStageLabel(status: string): string {
 }
 
 /**
+ * Quem tem pagamento e quem tem retorno atrasado, para todos os leads numa única busca
+ * (antes cada card fazia duas buscas próprias, o que travava o funil).
+ */
+function useAlertSignals() {
+  return useQuery({
+    queryKey: ['lead-alerts-signals'],
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+    queryFn: async () => {
+      const [pays, tasks] = await Promise.all([
+        allPages<{ lead_id: string }>(
+          supabase.from('payments').select('lead_id').in('status', ['confirmado', 'pendente']).order('id'),
+        ),
+        allPages<{ lead_id: string | null }>(
+          supabase.from('tasks').select('lead_id').eq('status', 'pendente').lt('scheduled_at', new Date().toISOString()).order('id'),
+        ),
+      ]);
+      if (pays.error) throw pays.error;
+      if (tasks.error) throw tasks.error;
+      return {
+        paid: new Set(pays.data.map(p => p.lead_id)),
+        overdue: new Set(tasks.data.map(t => t.lead_id).filter(Boolean) as string[]),
+      };
+    },
+  });
+}
+
+/**
  * Lightweight per-lead alert detection. 
  * Accepts lead data directly to avoid extra queries for cards.
  */
 export function useLeadAlerts(lead: Lead | null) {
-  const { data: payments } = useQuery({
-    queryKey: ['lead-alerts-payments', lead?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('payments')
-        .select('id')
-        .eq('lead_id', lead!.id)
-        .in('status', ['confirmado', 'pendente'])
-        .limit(1);
-      return data || [];
-    },
-    enabled: !!lead?.id,
-    staleTime: 60000,
-  });
-
-  const { data: overdueTasks } = useQuery({
-    queryKey: ['lead-alerts-tasks', lead?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tasks')
-        .select('id')
-        .eq('lead_id', lead!.id)
-        .eq('status', 'pendente')
-        .lt('scheduled_at', new Date().toISOString())
-        .limit(1);
-      return data || [];
-    },
-    enabled: !!lead?.id,
-    staleTime: 60000,
-  });
+  const { data: bulk } = useAlertSignals();
+  const payments = lead && bulk?.paid.has(lead.id) ? [lead.id] : [];
+  const overdueTasks = lead && bulk?.overdue.has(lead.id) ? [lead.id] : [];
 
   return useMemo<LeadAlert[]>(() => {
     if (!lead) return [];
@@ -70,7 +72,7 @@ export function useLeadAlerts(lead: Lead | null) {
 
     // No-show not rescued
     if (lead.status === 'faltou' && !lead.rescued_at) {
-      alerts.push({ type: 'no_show_not_rescued', level: days >= 3 ? 'critical': 'attention', title: 'Faltou e não foi recuperado', shortLabel: 'Resgatar'});
+      alerts.push({ type: 'no_show_not_rescued', level: days >= 3 ? 'critical': 'attention', title: 'Não compareceu e não foi recuperado', shortLabel: 'Resgatar'});
     }
 
     // Follow-up stalled

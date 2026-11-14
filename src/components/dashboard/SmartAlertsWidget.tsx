@@ -65,7 +65,7 @@ const reasonByType: Record<string, string> = {
   ready_to_close: 'Pronto para fechamento',
   credit_liberado: 'Crédito aprovado na triagem',
   no_payment_after_attendance: 'Compareceu e não fechou',
-  no_show_not_rescued: 'Faltou e não foi resgatado',
+  no_show_not_rescued: 'Não compareceu e não foi resgatado',
   followup_stalled: 'Follow-up sem retorno',
   task_overdue: 'Tarefa atrasada',
   no_response: 'Sem resposta do lead',

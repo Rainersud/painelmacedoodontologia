@@ -9,14 +9,16 @@ export type CrcBoardKey =
   | 'aniversariantes'
   | 'nao_compareceu'
   | 'inadimplencia'
-  | 'orcamentos'
-  | 'tratamento_sem_agendamento';
+  | 'orcamentos';
+
 
 export interface CrcStage {
   key: string;
   label: string;
   /** Coluna de desfecho (o caso está resolvido). */
   done?: boolean;
+  /** Ainda não é hora de agir (não conta como "a tratar"). */
+  waiting?: boolean;
 }
 
 export interface CrcBoard {
@@ -31,31 +33,22 @@ export const CRC_BOARDS: CrcBoard[] = [
   {
     key: 'sem_confirmacao',
     label: 'Agendamento sem confirmação',
-    rule: 'Consultas dos próximos 7 dias que ainda não foram confirmadas.',
+    rule: 'Todo lead com status Agendado. Ele anda sozinho pelas confirmações conforme a data e hora da consulta: 24 horas, 2 horas e 10 minutos antes. Se a data passar sem registro, vai para Data passou.',
     stages: [
-      { key: 'a_confirmar', label: 'A confirmar' },
-      { key: 'tentativa_1', label: 'Tentativa 1' },
-      { key: 'tentativa_2', label: 'Tentativa 2' },
+      { key: 'agendado', label: 'Agendado (mais de 24h)', waiting: true },
+      { key: 'confirmacao_1', label: 'Confirmação 1 · 24h antes' },
+      { key: 'confirmacao_2', label: 'Confirmação 2 · 2h antes' },
+      { key: 'confirmacao_3', label: 'Confirmação 3 · 10 min antes' },
+      { key: 'data_passou', label: 'Data passou · registrar presença' },
       { key: 'confirmado', label: 'Confirmado', done: true },
       { key: 'desmarcou', label: 'Desmarcou', done: true },
       { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
     ],
   },
   {
-    key: 'tratamento_sem_agendamento',
-    label: 'Tratamento sem agendamento',
-    rule: 'Pacientes que fecharam tratamento, ainda não concluíram e estão sem próxima consulta marcada.',
-    stages: [
-      { key: 'sem_agenda', label: 'Sem agenda' },
-      { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'agendado', label: 'Agendado', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
     key: 'nao_compareceu',
     label: 'Não compareceu / Reagendar',
-    rule: 'Quem desmarcou nos últimos 90 dias, faltou à 1ª consulta ou faltou durante o tratamento, e está sem nova consulta marcada.',
+    rule: 'Todo lead com status Não compareceu, mais quem desmarcou nos últimos 90 dias ou faltou durante o tratamento e está sem nova consulta marcada.',
     stages: [
       { key: 'a_reagendar', label: 'A reagendar' },
       { key: 'tentativa_1', label: 'Tentativa 1' },
@@ -68,7 +61,7 @@ export const CRC_BOARDS: CrcBoard[] = [
   {
     key: 'orcamentos',
     label: 'Orçamentos em aberto',
-    rule: 'Leads em "Orçamentos abertos", ou que compareceram com orçamento e ainda não fecharam.',
+    rule: 'Todo lead que compareceu. Sai daqui só quando a venda é realizada.',
     stages: [
       { key: 'orcamento_entregue', label: 'Orçamento entregue' },
       { key: 'retorno_1', label: 'Retorno 1' },
@@ -186,7 +179,6 @@ const DAY = 86_400_000;
 const FIRST_NO_SHOW = new Set(['faltou', 'nao_compareceu']);
 const SCHEDULED = new Set(['agendou', 'consulta_agendada']);
 const LOST = new Set(['sem_interesse', 'descartados']);
-const IN_TREATMENT = new Set(['fechado', 'tratamento_andamento']);
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -209,6 +201,8 @@ interface Occurrence {
   /** A coluna salva só vale se foi mexida depois disso (um caso novo recomeça na 1ª coluna). */
   since?: string;
   amount?: number;
+  /** Coluna definida pela regra (ex.: confirmações pela hora da consulta). */
+  stage?: string;
 }
 
 type Rule = (lead: CrcLead, ctx: Ctx) => Occurrence | null;
@@ -257,39 +251,47 @@ const NO_SHOW_RULES: Record<'desmarcacoes' | 'faltas' | 'faltas_primeira', Rule>
     if (!missed) return null;
     const cameLater = ctx.appts.some(a => a.attended_at && ms(a.scheduled_at) > ms(missed.scheduled_at));
     if (cameLater || hasFutureAppointment(lead, ctx)) return null;
-    return { reason: `Faltou em ${fmtDate(missed.scheduled_at)}`, eventAt: missed.scheduled_at, since: missed.scheduled_at };
+    return { reason: `Não compareceu em ${fmtDate(missed.scheduled_at)}`, eventAt: missed.scheduled_at, since: missed.scheduled_at };
   },
 
   faltas_primeira(lead) {
     if (!FIRST_NO_SHOW.has(lead.status)) return null;
     const at = lead.stage_entered_at || lead.scheduled_appointment_at || lead.updated_at;
     const when = lead.scheduled_appointment_at ? ` de ${fmtDate(lead.scheduled_appointment_at)}` : '';
-    return { reason: `Faltou à 1ª consulta${when}`, eventAt: at, since: lead.stage_entered_at ?? undefined };
+    return { reason: `Não compareceu à consulta${when}`, eventAt: at, since: lead.stage_entered_at ?? undefined };
   },
 
 };
 
+/** Em qual confirmação o agendamento está, pela distância até a consulta. */
+export function confirmationStage(when: string, nowMs: number): string {
+  const left = ms(when) - nowMs;
+  if (left <= 10 * 60_000) return 'confirmacao_3';
+  if (left <= 2 * 3_600_000) return 'confirmacao_2';
+  if (left <= DAY) return 'confirmacao_1';
+  return 'agendado';
+}
+
 const RULES: Record<CrcBoardKey, Rule> = {
   sem_confirmacao(lead, ctx) {
-    if (lead.status === 'confirmado' || LOST.has(lead.status)) return null;
+    if (!SCHEDULED.has(lead.status) && lead.status !== 'confirmado') return null;
     const nowMs = ctx.now.getTime();
-    const limit = nowMs + 7 * DAY;
-    const inWindow = (iso?: string | null) => {
-      if (!iso) return false;
-      const t = new Date(iso).getTime();
-      return t >= nowMs && t <= limit;
-    };
     const next = ctx.appts
-      .filter(a => isActive(a) && !a.confirmed_at && inWindow(a.scheduled_at))
+      .filter(a => isActive(a) && ms(a.scheduled_at) >= nowMs)
       .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
-    if (next) return { reason: `Consulta ${fmtDateTime(next.scheduled_at)}`, eventAt: next.scheduled_at, since: next.created_at ?? undefined };
-    if (SCHEDULED.has(lead.status) && inWindow(lead.scheduled_appointment_at)) {
-      // Consulta marcada no lead, sem registro de agenda (ou já confirmada lá).
-      const confirmedThere = ctx.appts.some(a => a.confirmed_at && ms(a.scheduled_at) === ms(lead.scheduled_appointment_at!));
-      if (confirmedThere) return null;
-      return { reason: `Consulta ${fmtDateTime(lead.scheduled_appointment_at!)}`, eventAt: lead.scheduled_appointment_at!, since: lead.stage_entered_at ?? undefined };
+    const when = next?.scheduled_at
+      ?? (lead.scheduled_appointment_at && ms(lead.scheduled_appointment_at) >= nowMs ? lead.scheduled_appointment_at : null);
+    if (!when) {
+      if (lead.status === 'confirmado') return null;
+      // A data passou e ninguém registrou se veio: fica aqui para marcar Compareceu ou Não compareceu
+      const past = lead.scheduled_appointment_at;
+      if (past) return { reason: `Consulta era ${fmtDateTime(past)} · registrar presença`, eventAt: past, stage: 'data_passou' };
+      return { reason: 'Agendado sem data marcada', eventAt: lead.stage_entered_at || lead.updated_at, stage: 'agendado' };
     }
-    return null;
+    const confirmed = lead.status === 'confirmado' || !!next?.confirmed_at
+      || ctx.appts.some(a => a.confirmed_at && ms(a.scheduled_at) === ms(when));
+    const since = next?.created_at ?? lead.stage_entered_at ?? undefined;
+    return { reason: `Consulta ${fmtDateTime(when)}`, eventAt: when, since, stage: confirmed ? 'confirmado' : confirmationStage(when, nowMs) };
   },
 
   aniversariantes(_lead, ctx) {
@@ -327,24 +329,19 @@ const RULES: Record<CrcBoardKey, Rule> = {
     };
   },
 
-  orcamentos(lead) {
-    if (isSoldStatus(lead.status) || LOST.has(lead.status)) return null;
+  orcamentos(lead, ctx) {
+    if (isSoldStatus(lead.status)) return null;
     const budget = Number(lead.budget_value || 0);
-    const open = lead.status === 'orcamentos_abertos' || (lead.status === 'compareceu' && budget > 0);
+    const attended = ctx.appts.filter(a => a.attended_at).sort((a, b) => b.attended_at!.localeCompare(a.attended_at!))[0];
+    const open = lead.status === 'compareceu' || lead.status === 'orcamentos_abertos' || !!attended;
     if (!open) return null;
     return {
-      reason: budget > 0 ? `Orçamento de ${money(budget)}` : 'Orçamento sem valor registrado',
-      eventAt: lead.stage_entered_at || lead.updated_at,
+      reason: budget > 0 ? `Orçamento de ${money(budget)}` : 'Compareceu · orçamento sem valor registrado',
+      eventAt: attended?.attended_at || lead.stage_entered_at || lead.updated_at,
       amount: budget || undefined,
     };
   },
 
-  tratamento_sem_agendamento(lead, ctx) {
-    if (!IN_TREATMENT.has(lead.status) || lead.completed_at) return null;
-    if (hasFutureAppointment(lead, ctx)) return null;
-    const at = lead.closed_at || lead.updated_at;
-    return { reason: `Fechou em ${fmtDate(at)} · sem próxima consulta`, eventAt: at, since: lead.closed_at ?? undefined };
-  },
 };
 
 /** Monta todos os quadros. Cada lead pode estar em mais de um quadro. */
@@ -374,7 +371,9 @@ export function buildCrcBoards(input: CrcInput): Record<CrcBoardKey, CrcItem[]> 
       // Tirado do quadro: só volta se acontecer um caso novo depois disso.
       if (card?.archived_at && !(occ.since && ms(occ.since) > ms(card.archived_at))) continue;
       const fresh = card && !card.archived_at && (!occ.since || ms(card.updated_at) >= ms(occ.since));
-      const stage = fresh && valid.has(card.stage) ? card.stage : first;
+      const saved = fresh && valid.has(card.stage) ? card.stage : null;
+      // Regra com coluna própria (confirmações): manda a regra, menos quando alguém já deu desfecho
+      const stage = occ.stage ? (saved && doneStages.has(saved) && occ.stage !== 'confirmado' ? saved : occ.stage) : saved ?? first;
       out[board.key].push({ board: board.key, lead, stage, reason: occ.reason, eventAt: occ.eventAt, amount: occ.amount, manual: false });
       seen.add(lead.id);
     }
@@ -433,6 +432,6 @@ function groupBy<T>(rows: T[], key: (r: T) => string) {
 
 /** Quantos estão "em aberto" (fora das colunas de desfecho). */
 export function openCount(board: CrcBoardKey, items: CrcItem[]) {
-  const done = new Set(CRC_BOARD_MAP[board].stages.filter(s => s.done).map(s => s.key));
+  const done = new Set(CRC_BOARD_MAP[board].stages.filter(s => s.done || s.waiting).map(s => s.key));
   return items.filter(i => !done.has(i.stage)).length;
 }

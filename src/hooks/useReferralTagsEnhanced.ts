@@ -1,84 +1,86 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useLeadReferralTagsEnhanced(leadId: string | undefined) {
+export interface ReferralTags {
+  isReferred: boolean;
+  isReferrer: boolean;
+  hasDiscount: boolean;
+  referralCount: number;
+  convertedCount: number;
+  referrerName: string | undefined;
+  discountValue: number;
+  discountType: string;
+  rewardValue: number;
+  rewardType: string;
+  attendanceDiscountApplied: boolean;
+  pendingBonuses: { referredName: string; rewardValue: number; referralId: string }[];
+}
+
+const EMPTY_TAGS: ReferralTags = {
+  isReferred: false, isReferrer: false, hasDiscount: false,
+  referralCount: 0, convertedCount: 0, referrerName: undefined,
+  discountValue: 0, discountType: 'percentual',
+  rewardValue: 0, rewardType: 'dinheiro',
+  attendanceDiscountApplied: false,
+  pendingBonuses: [],
+};
+
+const CONVERTED = new Set(['fechado', 'tratamento_andamento', 'concluido']);
+
+/**
+ * Etiquetas de indicação de todos os leads numa única busca. Antes cada card do funil
+ * fazia 2 a 4 buscas próprias (milhares de uma vez), o que travava a tela.
+ */
+function useAllReferralTags() {
   return useQuery({
-    queryKey: ['referral-tags-enhanced', leadId],
+    queryKey: ['referral-tags-enhanced', 'all'],
+    staleTime: 60_000,
     queryFn: async () => {
-      if (!leadId) return {
-        isReferred: false, isReferrer: false, hasDiscount: false,
-        referralCount: 0, convertedCount: 0, referrerName: undefined,
-        discountValue: 0, discountType: 'percentual',
-        rewardValue: 0, rewardType: 'dinheiro',
-        attendanceDiscountApplied: false,
-        pendingBonuses: [] as { referredName: string; rewardValue: number; referralId: string }[],
-      };
-
-      const [{ data: asReferred }, { data: asReferrer }] = await Promise.all([
-        supabase.from('referrals')
-          .select('id, discount_value, discount_type, attendance_discount_applied, referrer_lead_id')
-          .eq('referred_lead_id', leadId).maybeSingle(),
-        supabase.from('referrals')
-          .select('id, reward_value, reward_type, bonus_status, referred_lead_id')
-          .eq('referrer_lead_id', leadId),
-      ]);
-
-      let referrerName: string | undefined;
-      if (asReferred) {
-        const { data: referrerLead } = await supabase
-          .from('leads').select('name').eq('id', asReferred.referrer_lead_id).maybeSingle();
-        referrerName = referrerLead?.name;
+      const { data: refs, error } = await supabase
+        .from('referrals')
+        .select('id, referrer_lead_id, referred_lead_id, discount_value, discount_type, attendance_discount_applied, reward_value, reward_type, bonus_status');
+      if (error) throw error;
+      const rows = refs || [];
+      const ids = [...new Set(rows.flatMap(r => [r.referrer_lead_id, r.referred_lead_id]))];
+      const people = new Map<string, { name: string; status: string }>();
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data } = await supabase.from('leads').select('id, name, status').in('id', ids.slice(i, i + 200));
+        for (const l of data || []) people.set(l.id, { name: l.name, status: l.status });
       }
-
-      const totalRewardValue = (asReferrer || []).reduce((sum, r) => sum + Number(r.reward_value || 0), 0);
-      const rewardType = (asReferrer || [])[0]?.reward_type || 'dinheiro';
-
-      // Get pending bonuses with referred lead names
-      const pendingRefs = (asReferrer || []).filter(r => r.bonus_status !== 'pago' && Number(r.reward_value) > 0);
-      let pendingBonuses: { referredName: string; rewardValue: number; referralId: string }[] = [];
-      let convertedCount = 0;
-
-      if ((asReferrer || []).length > 0) {
-        const allReferredIds = (asReferrer || []).map(r => r.referred_lead_id);
-        const { data: referredLeads } = await supabase
-          .from('leads').select('id, name, status')
-          .in('id', allReferredIds);
-
-        const leadMap = Object.fromEntries((referredLeads || []).map(l => [l.id, l]));
-
-        // Count converted
-        convertedCount = (referredLeads || []).filter(l =>
-          l.status === 'fechado' || l.status === 'tratamento_andamento' || l.status === 'concluido'
-        ).length;
-
-        // Pending bonuses
-        pendingBonuses = pendingRefs
-          .filter(r => {
-            const lead = leadMap[r.referred_lead_id];
-            return lead && (lead.status === 'fechado' || lead.status === 'tratamento_andamento' || lead.status === 'concluido');
-          })
-          .map(r => ({
-            referredName: leadMap[r.referred_lead_id]?.name || 'Desconhecido',
-            rewardValue: Number(r.reward_value),
-            referralId: r.id,
-          }));
-      }
-
-      return {
-        isReferred: !!asReferred,
-        hasDiscount: asReferred ? (Number(asReferred.discount_value) > 0) : false,
-        discountValue: asReferred ? Number(asReferred.discount_value) : 0,
-        discountType: asReferred?.discount_type || 'percentual',
-        attendanceDiscountApplied: asReferred?.attendance_discount_applied || false,
-        isReferrer: (asReferrer || []).length > 0,
-        referralCount: (asReferrer || []).length,
-        convertedCount,
-        referrerName,
-        rewardValue: totalRewardValue,
-        rewardType,
-        pendingBonuses,
+      const map = new Map<string, ReferralTags>();
+      const get = (id: string) => {
+        let t = map.get(id);
+        if (!t) { t = { ...EMPTY_TAGS, pendingBonuses: [] }; map.set(id, t); }
+        return t;
       };
+      for (const r of rows) {
+        const referred = get(r.referred_lead_id);
+        referred.isReferred = true;
+        referred.discountValue = Number(r.discount_value) || 0;
+        referred.hasDiscount = referred.discountValue > 0;
+        referred.discountType = r.discount_type || 'percentual';
+        referred.attendanceDiscountApplied = !!r.attendance_discount_applied;
+        referred.referrerName = people.get(r.referrer_lead_id)?.name;
+
+        const referrer = get(r.referrer_lead_id);
+        if (!referrer.isReferrer) referrer.rewardType = r.reward_type || 'dinheiro';
+        referrer.isReferrer = true;
+        referrer.referralCount += 1;
+        referrer.rewardValue += Number(r.reward_value || 0);
+        const target = people.get(r.referred_lead_id);
+        if (target && CONVERTED.has(target.status)) {
+          referrer.convertedCount += 1;
+          if (r.bonus_status !== 'pago' && Number(r.reward_value) > 0) {
+            referrer.pendingBonuses.push({ referredName: target.name || 'Desconhecido', rewardValue: Number(r.reward_value), referralId: r.id });
+          }
+        }
+      }
+      return map;
     },
-    enabled: !!leadId,
   });
+}
+
+export function useLeadReferralTagsEnhanced(leadId: string | undefined) {
+  const q = useAllReferralTags();
+  return { ...q, data: q.data ? (leadId && q.data.get(leadId)) || EMPTY_TAGS : undefined };
 }

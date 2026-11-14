@@ -4,7 +4,7 @@ import { useOpenReferrals } from '@/hooks/useMenuCounts';
 import { FUNNEL_STAGES } from '@/types/crm';
 
 const STAGE_LABEL = new Map(FUNNEL_STAGES.map(s => [s.key as string, s.label]));
-const LABEL_FIX: Record<string, string> = { potencial: 'Potencial', compareceu: 'Compareceu', faltou: 'Faltou', agendou: 'Agendou' };
+const LABEL_FIX: Record<string, string> = { potencial: 'Potencial', compareceu: 'Compareceu', faltou: 'Não compareceu', agendou: 'Agendou' };
 
 /** Indicações em aberto: as mesmas pessoas contadas no card e no balãozinho. */
 export function OpenReferralsList({ onOpenLead }: { onOpenLead: (leadId: string) => void }) {

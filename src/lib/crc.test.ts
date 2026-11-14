@@ -15,26 +15,33 @@ function build(partial: Partial<CrcInput>) {
 const ids = (items: { lead: { id: string } }[]) => items.map(i => i.lead.id);
 
 describe('CRC — quem entra em cada quadro', () => {
-  it('tem os 6 quadros, cada um com colunas', () => {
-    expect(CRC_BOARDS).toHaveLength(6);
+  it('tem os 5 quadros, cada um com colunas', () => {
+    expect(CRC_BOARDS).toHaveLength(5);
     CRC_BOARDS.forEach(b => expect(b.stages.length).toBeGreaterThan(1));
   });
 
-  it('agendamento sem confirmação: só os próximos 7 dias, não confirmados', () => {
+  it('agendamento sem confirmação: todo Agendado entra, na confirmação certa pela hora', () => {
+    const H = 3_600_000;
+    const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
     const r = build({
       leads: [
-        lead('agendado', 'agendou', { scheduled_appointment_at: iso(2) }),
         lead('longe', 'agendou', { scheduled_appointment_at: iso(20) }),
+        lead('amanha', 'agendou', { scheduled_appointment_at: at(20 * H) }),
+        lead('duasHoras', 'agendou', { scheduled_appointment_at: at(1.5 * H) }),
+        lead('agora', 'agendou', { scheduled_appointment_at: at(5 * 60_000) }),
         lead('confirmado', 'confirmado', { scheduled_appointment_at: iso(1) }),
-        lead('agenda', 'fechado'),
-        lead('agendaConfirmada', 'fechado'),
+        lead('passou', 'agendou', { scheduled_appointment_at: iso(-1) }),
+        lead('outro', 'fechado'),
       ],
-      appointments: [
-        { lead_id: 'agenda', scheduled_at: iso(3) },
-        { lead_id: 'agendaConfirmada', scheduled_at: iso(3), confirmed_at: iso(-1) },
-      ],
+      appointments: [{ lead_id: 'outro', scheduled_at: iso(3) }],
     });
-    expect(ids(r.sem_confirmacao).sort()).toEqual(['agenda', 'agendado']);
+    const stage = Object.fromEntries(r.sem_confirmacao.map(i => [i.lead.id, i.stage]));
+    expect(stage).toEqual({
+      longe: 'agendado', amanha: 'confirmacao_1', duasHoras: 'confirmacao_2', agora: 'confirmacao_3', confirmado: 'confirmado',
+      passou: 'data_passou',
+    });
+    // As 3 confirmações e a data que passou contam como "a tratar"
+    expect(openCount('sem_confirmacao', r.sem_confirmacao)).toBe(4);
   });
 
   it('aniversariantes do mês, com idade', () => {
@@ -86,29 +93,21 @@ describe('CRC — quem entra em cada quadro', () => {
     expect(r.inadimplencia[0].reason).toContain('2 parcelas');
   });
 
-  it('orçamentos em aberto: não entra quem fechou', () => {
+  it('orçamentos em aberto: todo mundo que compareceu, até a venda', () => {
     const r = build({
       leads: [
         lead('o1', 'orcamentos_abertos'),
         lead('o2', 'compareceu', { budget_value: 5000 }),
         lead('o3', 'compareceu'),
         lead('o4', 'fechado', { budget_value: 5000 }),
+        lead('o5', 'sem_interesse'),
+        lead('o6', 'novo_lead'),
       ],
+      appointments: [{ lead_id: 'o5', scheduled_at: iso(-3), attended_at: iso(-3) }],
     });
-    expect(ids(r.orcamentos).sort()).toEqual(['o1', 'o2']);
+    expect(ids(r.orcamentos).sort()).toEqual(['o1', 'o2', 'o3', 'o5']);
   });
 
-  it('tratamento sem agendamento: fechou, não concluiu, sem próxima consulta', () => {
-    const r = build({
-      leads: [
-        lead('s1', 'fechado'),
-        lead('s2', 'fechado'),
-        lead('s3', 'fechado', { completed_at: iso(-2) }),
-      ],
-      appointments: [{ lead_id: 's2', scheduled_at: iso(5) }],
-    });
-    expect(ids(r.tratamento_sem_agendamento)).toEqual(['s1']);
-  });
 });
 
 describe('CRC — Não compareceu / Reagendar', () => {
@@ -125,7 +124,7 @@ describe('CRC — Não compareceu / Reagendar', () => {
 
   it('a ordem dos quadros segue a rotina da clínica', () => {
     expect(CRC_BOARDS.map(b => b.key)).toEqual([
-      'sem_confirmacao', 'tratamento_sem_agendamento', 'nao_compareceu', 'orcamentos', 'inadimplencia', 'aniversariantes',
+      'sem_confirmacao', 'nao_compareceu', 'orcamentos', 'inadimplencia', 'aniversariantes',
     ]);
   });
 });

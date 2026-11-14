@@ -211,7 +211,7 @@ export function ReferralPopover({ lead, refTags }: ReferralPopoverProps) {
                     })}
                   >
                     {attendanceStatus === 'compareceu'&& 'Compareceu'}
-                    {attendanceStatus === 'faltou'&& 'Faltou — desconto removido'}
+                    {attendanceStatus === 'faltou'&& 'Não compareceu — desconto removido'}
                     {attendanceStatus === 'aguardando'&& 'Aguardando comparecimento'}
                   </Badge>
                 </div>

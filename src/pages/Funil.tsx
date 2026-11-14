@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isSameDay, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -334,9 +334,11 @@ function KanbanBoard({
 
 interface FunilProps {
   mode?: 'comercial1' | 'followup';
+  /** Dentro de outra tela (aba do CRC): sem menu e cabeçalho próprios. */
+  embedded?: boolean;
 }
 
-const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
+const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   const isFollowUpMode = mode === 'followup';
   const pageTitle = isFollowUpMode ? 'Follow Up — D1 a D7' : 'Comercial 1 – Aquisição';
   const boardStages = useMemo(
@@ -579,16 +581,16 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
 
   if (isLoading) {
     return (
-      <AppLayout title={pageTitle}>
+      <PageShell embedded={embedded} title={pageTitle}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </PageShell>
     );
   }
 
   return (
-    <AppLayout title={pageTitle}>
+    <PageShell embedded={embedded} title={pageTitle}>
       {/* The entire funnel page */}
       <div className="flex flex-col min-h-0 flex-1">
         {/* Operational command center — above search, below page title */}
@@ -788,7 +790,7 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
         leadName={paymentLead?.name || ''}
         budgetValue={paymentLead?.treatment_value || 0}
       />
-    </AppLayout>
+    </PageShell>
   );
 };
 

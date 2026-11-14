@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -178,7 +178,7 @@ function CopyEditor({ stageKey, suggestedCopy, customCopy, onSave }: {
   );
 }
 
-export default function Remarketing() {
+export default function Remarketing({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: entries = [], isLoading } = useRemarketingEntries();
   const { data: copyTemplates = [] } = useRmktCopyTemplates();
   const advanceMutation = useAdvanceRmktStage();
@@ -242,7 +242,7 @@ export default function Remarketing() {
   }, [filteredStages]);
 
   return (
-    <AppLayout title="Follow Up / Remarketing">
+    <PageShell embedded={embedded} title="Remarketing">
       <div className="space-y-4 p-4 min-h-0 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between shrink-0">
@@ -399,6 +399,6 @@ export default function Remarketing() {
           onOpenChange={(open) => { if (!open) setSelectedLead(null); }}
         />
       )}
-    </AppLayout>
+    </PageShell>
   );
 }

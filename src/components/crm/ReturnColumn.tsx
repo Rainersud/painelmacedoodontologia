@@ -57,7 +57,7 @@ export function ReturnColumn({ leadsById, onOpen }: Props) {
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">
           {late > 0 ? `${late} atrasado${late > 1 ? 's' : ''} · ` : ''}
-          <Link to="/tarefas" className="text-primary hover:underline">ver todos</Link>
+          <Link to="/crc?aba=retorno" className="text-primary hover:underline">ver todos</Link>
         </p>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-1.5">

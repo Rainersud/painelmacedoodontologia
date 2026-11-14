@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Info, Loader2,
-  Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle, PhoneCall, Repeat, Zap, Gift, CreditCard,
+  Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,11 +31,6 @@ const ICONS: Record<CrcBoardKey, typeof Cake> = {
   inadimplencia: CircleDollarSign,
   orcamentos: FileSpreadsheet,
   tratamento_sem_agendamento: Stethoscope,
-  retorno: PhoneCall,
-  follow_up: Repeat,
-  remarketing: Zap,
-  indicacao: Gift,
-  credito_liberado: CreditCard,
 };
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

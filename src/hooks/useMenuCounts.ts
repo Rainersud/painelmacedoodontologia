@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { allPages } from '@/lib/paging';
 import { isSoldStatus } from '@/lib/metrics/stages';
 import { useCreditApprovedPatients } from '@/hooks/useCreditApprovedPatients';
+import { useDueReturns } from '@/components/crm/ReturnColumn';
 
 const LOST = new Set(['sem_interesse', 'descartados']);
 const REFERRAL_ORIGINS = new Set(['indicacao_pac', 'indicacao_parceria']);
@@ -41,8 +42,14 @@ export function useOpenReferralsCount() {
 export function useMenuCounts(): Record<string, number> {
   const referrals = useOpenReferralsCount();
   const credit = useCreditApprovedPatients();
+  const { due } = useDueReturns();
+  const indicacoes = referrals.data ?? 0;
+  const credito = credit.data?.length ?? 0;
   return {
-    '/indicacoes': referrals.data ?? 0,
-    '/credito-liberado': credit.data?.length ?? 0,
+    '/indicacoes': indicacoes,
+    '/credito-liberado': credito,
+    '/retorno': due.length,
+    // Retorno, Indicações e Crédito Liberado ficam dentro do CRC: o balão do menu soma os três
+    '/crc': due.length + indicacoes + credito,
   };
 }

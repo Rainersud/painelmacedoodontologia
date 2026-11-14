@@ -1,4 +1,4 @@
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Users, Building2 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/currency';
 
-const CreditoLiberado = () => {
+const CreditoLiberado = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const { data: patients, isLoading } = useCreditApprovedPatients();
 
   const getStageLabel = (status: string) => {
@@ -25,7 +25,7 @@ const CreditoLiberado = () => {
   };
 
   return (
-    <AppLayout title="Pacientes com Crédito Liberado">
+    <PageShell embedded={embedded} title="Pacientes com Crédito Liberado">
       <div className="space-y-6">
         {/* Resumo: pacientes e total liberado por empresa */}
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
@@ -130,7 +130,7 @@ const CreditoLiberado = () => {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 };
 

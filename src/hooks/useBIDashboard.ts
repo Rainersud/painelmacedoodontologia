@@ -1,3 +1,4 @@
+import { buildPatients, summarize, type LtvOppRow, type LtvPaymentRow } from '@/lib/ltv';
 import { useQuery } from '@tanstack/react-query';
 import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
@@ -100,8 +101,18 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       // 3. Upsell opportunities for LTV funnel
       const { data: upsellOpps } = await allPages(supabase
         .from('upsell_opportunities')
-        .select('lead_id, purchase_count, purchase_values, estimated_value, closed_value')
+        .select('id, lead_id, status, purchase_count, next_return_date, return_scheduled, contact_status, lead:leads(name, treatment_value, closed_at, sale_type)')
         .order('id'));
+      const { data: ltvPays } = await allPages(supabase
+        .from('payments')
+        .select('lead_id, upsell_opportunity_id, status, gross_value, net_value, paid_at, due_date, created_at')
+        .not('upsell_opportunity_id', 'is', null)
+        .order('id'));
+      // LTV pela definição única (lib/ltv): a mesma do Comercial 2 e das metas
+      const ltvSummary = summarize(buildPatients(
+        (upsellOpps || []) as unknown as LtvOppRow[],
+        (ltvPays || []) as LtvPaymentRow[],
+      ));
 
       // 4. Investimento e vendas pela camada única (mesmas regras do resto do painel)
       const now = new Date();
@@ -117,51 +128,12 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       const faturamentoPrevisto = (pendingPayments || []).reduce((s, p) => s + Number(p.net_value || 0), 0);
       const cacMedio = cac(totalCosts, salesCount);
 
-      // LTV from upsell purchase_values
-      const leadLTV: Record<string, number> = {};
-      const leadPurchaseCounts: Record<string, number> = {};
-      (upsellOpps || []).forEach(o => {
-        const count = Math.max(o.purchase_count || 1, 1);
-        leadPurchaseCounts[o.lead_id] = Math.max(leadPurchaseCounts[o.lead_id] || 0, count);
-        
-        let ltvVal = 0;
-        if (o.purchase_values) {
-          try {
-            const parsed = JSON.parse(o.purchase_values);
-            if (Array.isArray(parsed)) {
-              ltvVal = parsed
-                .filter((p: any) => (p.value || 0) > 0 && p.payment_status === 'pago')
-                .reduce((s: number, p: any) => s + (p.value || 0), 0);
-            }
-          } catch {
-            const nums = o.purchase_values.split(';').map((v: string) => parseFloat(v.trim())).filter((v: number) => !isNaN(v) && v > 0);
-            ltvVal = nums.reduce((s: number, v: number) => s + v, 0);
-          }
-        }
-        leadLTV[o.lead_id] = (leadLTV[o.lead_id] || 0) + ltvVal;
-      });
-
-      // Also add paid payments from leads without upsell (first sale)
-      const paymentsByLead: Record<string, number> = {};
-      (paidPayments || []).forEach(p => {
-        paymentsByLead[p.lead_id] = (paymentsByLead[p.lead_id] || 0) + (p.net_value || 0);
-      });
-
-      // Total LTV: max between upsell-tracked and payment-tracked per lead
-      const allLeadIds = new Set([...Object.keys(leadLTV), ...Object.keys(paymentsByLead)]);
-      let ltvTotal = 0;
-      allLeadIds.forEach(id => {
-        ltvTotal += Math.max(leadLTV[id] || 0, paymentsByLead[id] || 0);
-      });
-
-      const uniquePacientes = allLeadIds.size || 1;
+      const uniquePacientes = ltvSummary.patients;
+      const ltvTotal = ltvSummary.totalRevenue;
       // Ticket médio pela regra única: faturamento ÷ vendas
       const ticketMedio = safeDiv(faturamentoRecebido, salesCount);
 
-      const totalPurchases = Object.values(leadPurchaseCounts).reduce((s, c) => s + c, 0);
-      const mediaCompras = Object.keys(leadPurchaseCounts).length > 0 
-        ? totalPurchases / Object.keys(leadPurchaseCounts).length 
-        : 1;
+      const mediaCompras = ltvSummary.purchasesPerPatient || 1;
 
       const roiGeral = roi(faturamentoRecebido, totalCosts);
 
@@ -204,32 +176,13 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
 
       const monthlyData = Object.values(monthlyMap).sort((a, b) => a.month.localeCompare(b.month));
 
-      // LTV Funnel
-      const stages = [
-        { label: 'Comprou no front', min: 1, max: 1 },
-        { label: 'LTV 1 vez', min: 2, max: 2 },
-        { label: 'LTV 2 vezes', min: 3, max: 3 },
-        { label: 'LTV 3 vezes', min: 4, max: 4 },
-        { label: 'LTV 4+ vezes', min: 5, max: null },
-      ];
-
-      const ltvFunnel: LTVFunnelStage[] = stages.map((stage, idx) => {
-        const count = Object.values(leadPurchaseCounts).filter(c => {
-          if (stage.max === null) return c >= stage.min;
-          return c >= stage.min && c <= stage.max;
-        }).length;
-        const totalInFunnel = Object.keys(leadPurchaseCounts).length || 1;
-        const prevCount = idx === 0 ? totalInFunnel : 
-          Object.values(leadPurchaseCounts).filter(c => c >= stages[idx - 1].min).length;
-        const progressionRate = prevCount > 0 ? (count / prevCount) * 100 : 0;
-        
-        return {
-          label: stage.label,
-          count,
-          percent: (count / totalInFunnel) * 100,
-          progressionRate: idx === 0 ? 100 : progressionRate,
-        };
-      });
+      // Funil de LTV: front → LTV 1x … 5+ (mesmos grupos do LTV Inteligente)
+      const ltvFunnel: LTVFunnelStage[] = ltvSummary.groups.map(g => ({
+        label: g.label,
+        count: g.patients,
+        percent: g.share,
+        progressionRate: g.stepConversion ?? 100,
+      }));
 
       // Projections
       const projection30 = (pendingPayments || []).filter(p => {
@@ -250,17 +203,8 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
         return d >= now && d <= addMonths(now, 3);
       }).reduce((s, p) => s + (p.net_value || 0), 0);
 
-      // LTV evolution by purchase stage
-      const ltvEvolution = stages.map(stage => {
-        const leadsInStage = Object.entries(leadPurchaseCounts).filter(([, c]) => {
-          if (stage.max === null) return c >= stage.min;
-          return c >= stage.min && c <= stage.max;
-        });
-        const avgValue = leadsInStage.length > 0
-          ? leadsInStage.reduce((s, [id]) => s + Math.max(leadLTV[id] || 0, paymentsByLead[id] || 0), 0) / leadsInStage.length
-          : 0;
-        return { stage: stage.label, value: avgValue };
-      });
+      // LTV médio por etapa (front + LTV vendido ÷ pacientes da etapa)
+      const ltvEvolution = ltvSummary.groups.map(g => ({ stage: g.short, value: g.avgLtv }));
 
       // Smart Alerts
       const alerts: BIAlert[] = [];
@@ -284,10 +228,10 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       }
 
       // Low repurchase
-      const singleBuyers = Object.values(leadPurchaseCounts).filter(c => c === 1).length;
-      const totalBuyers = Object.keys(leadPurchaseCounts).length;
+      const singleBuyers = ltvSummary.groups[0]?.patients ?? 0;
+      const totalBuyers = ltvSummary.patients;
       if (totalBuyers > 0 && (singleBuyers / totalBuyers) > 0.7) {
-        alerts.push({ type: 'warning', icon: '', message: `${Math.round((singleBuyers / totalBuyers) * 100)}% dos pacientes compraram apenas 1 vez - ação de recompra necessária`});
+        alerts.push({ type: 'warning', icon: '', message: `${Math.round((singleBuyers / totalBuyers) * 100)}% dos pacientes ainda não compraram no LTV - ação de recompra necessária`});
       }
 
       // Low LTV

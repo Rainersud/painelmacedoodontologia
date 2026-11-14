@@ -405,8 +405,11 @@ function EditableDetailContent({
     updateOpp.mutate({ id: opp.id, contact_status: newStatus });
   };
 
-  // LTV = soma dos tratamentos marcados como PAGO (valor total do tratamento, não parcelas)
-  const calculatedLTV = useMemo(() => localPurchases.filter(p => p.payment_status === 'pago').reduce((sum, p) => sum + p.value, 0), [localPurchases]);
+  // Vendido no LTV = pagamentos registrados nesta etapa (bruto, pagos e a receber): a mesma
+  // regra do LTV Inteligente e do Financeiro (lib/ltv)
+  const calculatedLTV = useMemo(() => (stagePayments || [])
+    .filter(p => !['cancelado', 'estornado'].includes(String(p.status)))
+    .reduce((sum, p) => sum + Number(p.gross_value ?? p.net_value ?? 0), 0), [stagePayments]);
   const totalOrcamento = useMemo(() => localPurchases.reduce((sum, p) => sum + p.value, 0), [localPurchases]);
   const filledPurchases = localPurchases.filter(p => p.value > 0);
   const calculatedTicket = useMemo(() => filledPurchases.length > 0 ? totalOrcamento / filledPurchases.length : 0, [filledPurchases, totalOrcamento]);
@@ -789,9 +792,9 @@ function EditableDetailContent({
             </div>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-md bg-success/5 border border-success/20 p-2">
-                <p className="text-[9px] text-muted-foreground">LTV (Pagos)</p>
+                <p className="text-[9px] text-muted-foreground">Vendido no LTV</p>
                 <p className="text-sm font-bold text-success">{formatCurrency(calculatedLTV)}</p>
-                <p className="text-[8px] text-muted-foreground">Valor total dos tratamentos pagos</p>
+                <p className="text-[8px] text-muted-foreground">Pagamentos registrados (pagos e a receber)</p>
               </div>
               <div className="rounded-md bg-chart-5/5 border border-chart-5/20 p-2">
                 <p className="text-[9px] text-muted-foreground">Faturamento (Caixa)</p>
@@ -953,6 +956,7 @@ const Comercial2 = () => {
   const metrics = useUpsellMetrics();
   const ltvData = useLTVData();
   const ltv = useMemo(() => summarize(ltvData.patients), [ltvData.patients]);
+  const patientByOpp = useMemo(() => new Map(ltvData.patients.map(p => [p.oppId, p])), [ltvData.patients]);
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
   const createUpsell = useCreateUpsellOpportunity();
@@ -1113,7 +1117,7 @@ const Comercial2 = () => {
                       <TrendingUp className="h-4 w-4 text-success" />
                       <div>
                         <p className="text-[10px] text-muted-foreground">Taxa de recompra</p>
-                        <p className="text-lg font-bold">{Math.round(ltv.repurchaseRate)}%</p>
+                        <p className="text-lg font-bold">{ltv.repurchaseRate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1243,7 +1247,11 @@ const Comercial2 = () => {
                 {(searchQuery.trim() ? UPSELL_STAGES.filter(s => getOppsByStatus(s.key).length > 0) : UPSELL_STAGES).map((stage) => {
                   const stageOpps = getOppsByStatus(stage.key);
                   const isDropping = dropTarget === stage.key && draggedId !== null;
-                  const totalValue = stageOpps.reduce((sum, o) => sum + (o.estimated_value || 0), 0);
+                  // Mesma conta da Jornada de recompra: front + vendido no LTV dos pacientes da coluna
+                  const totalValue = stageOpps.reduce((sum, o) => {
+                    const pt = patientByOpp.get(o.id);
+                    return sum + (pt ? pt.frontValue + pt.ltvSold : 0);
+                  }, 0);
                   const isLocked = stage.locked;
 
                   return (
@@ -1316,28 +1324,35 @@ const Comercial2 = () => {
                                           </div>
                                         )}
                                         <div className="flex items-center gap-1.5">
-                                          <Badge className="text-[9px] bg-chart-2/10 text-chart-2 border-chart-2/30">
-                                            {opp.purchase_count || 1}x
-                                          </Badge>
                                           {(() => {
-                                            const entries = parsePurchaseEntries(opp.purchase_values);
-                                            const ltv = entries.reduce((s, p) => s + p.value, 0);
-                                            return ltv > 0 ? (
-                                              <Badge className="text-[9px] bg-success/10 text-success border-success/30">
-                                                {formatCurrency(ltv)}
-                                              </Badge>
-                                            ) : null;
+                                            const pt = patientByOpp.get(opp.id);
+                                            if (!pt) return null;
+                                            return (
+                                              <>
+                                                <Badge className="text-[9px] bg-muted text-foreground border-border" title="Venda do Comercial 1">
+                                                  Front {formatCurrency(pt.frontValue)}
+                                                </Badge>
+                                                {pt.ltvSold > 0 && (
+                                                  <Badge className="text-[9px] bg-success/10 text-success border-success/30" title="Pagamentos registrados no LTV">
+                                                    LTV {formatCurrency(pt.ltvSold)}
+                                                  </Badge>
+                                                )}
+                                              </>
+                                            );
                                           })()}
                                         </div>
                                         <div className="flex items-center justify-between">
                                           <Badge className={cn('text-[9px]', contactCfg.color)}>
                                             {contactCfg.label}
                                           </Badge>
-                                          {!isLocked && opp.estimated_value > 0 && (
-                                            <span className="text-[10px] font-bold text-success">
-                                              {formatCurrency(opp.estimated_value)}
-                                            </span>
-                                          )}
+                                          {(() => {
+                                            const pt = patientByOpp.get(opp.id);
+                                            return pt ? (
+                                              <span className="text-[10px] font-bold text-success" title="Valor total do paciente (front + LTV)">
+                                                {formatCurrency(pt.frontValue + pt.ltvSold)}
+                                              </span>
+                                            ) : null;
+                                          })()}
                                         </div>
                                         {opp.attempt_count > 0 && (
                                           <p className="text-[10px] text-muted-foreground">

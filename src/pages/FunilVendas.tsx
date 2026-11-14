@@ -77,6 +77,64 @@ function Kpi({ n, label, value, sub, meta, progress }: { n: string; label: strin
   );
 }
 
+interface FunnelStage { label: string; value: number; sub: string; target: number; rate?: number; meta?: number; rateLabel?: string }
+
+/** Cores das faixas, de cima (mais largo) para baixo; a venda fica em destaque. */
+const BAND_COLORS = ['#3d8c6f', '#33795f', '#29664f', '#10b981'];
+const STEP = 9; // quanto cada faixa estreita de cada lado (%)
+
+/** Desenho do funil: faixas que estreitam etapa a etapa, com a passagem e a meta ao lado. */
+function FunnelDrawing({ stages }: { stages: FunnelStage[] }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(120px,190px)] gap-x-3 sm:gap-x-5" role="list" aria-label="Funil de conversão">
+      {stages.map((st, i) => {
+        const top = i * STEP;
+        const bottom = (i + 1) * STEP;
+        const ok = st.rate === undefined || st.rate >= (st.meta ?? 0);
+        const progress = st.target > 0 ? Math.min(100, (st.value / st.target) * 100) : 0;
+        return (
+          <div key={st.label} className="contents" role="listitem">
+            {i > 0 && st.rate !== undefined && (
+              <>
+                <div className="flex justify-center py-1" aria-hidden>
+                  <span className="text-[11px] text-emerald-100/60">▼</span>
+                </div>
+                <div className="flex items-center py-1">
+                  <span className={cn(
+                    'inline-flex items-baseline gap-1.5 rounded-full border px-2.5 py-0.5',
+                    ok ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' : 'border-amber-300/40 bg-amber-300/10 text-amber-200',
+                  )}>
+                    <b className="text-sm tabular-nums">{pct(st.rate)}</b>
+                    <span className="text-[10px] text-emerald-100/80">{st.rateLabel} · meta {st.meta}%</span>
+                  </span>
+                </div>
+              </>
+            )}
+            <div
+              className="relative h-[92px] flex flex-col items-center justify-center text-center text-white"
+              style={{
+                background: BAND_COLORS[i] ?? BAND_COLORS[BAND_COLORS.length - 1],
+                clipPath: `polygon(${top}% 0, ${100 - top}% 0, ${100 - bottom}% 100%, ${bottom}% 100%)`,
+              }}
+            >
+              <p className="text-[11px] font-semibold tracking-wide text-white/85">{st.label}</p>
+              <p className="text-3xl sm:text-4xl font-bold tabular-nums leading-tight">{st.value}</p>
+              <p className="text-[11px] text-white/75">{st.sub}</p>
+            </div>
+            <div className="flex flex-col justify-center gap-1.5 text-xs text-emerald-100/80">
+              <p>Meta <b className="text-white tabular-nums">{st.target}</b></p>
+              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden" role="progressbar" aria-label={`${st.label}: progresso da meta`} aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+                <div className={cn('h-full rounded-full', progress >= 100 ? 'bg-emerald-400' : 'bg-emerald-400/60')} style={{ width: `${progress}%` }} />
+              </div>
+              <p className="tabular-nums">{Math.round(progress)}% da meta</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const TONE: Record<InsightTone, { icon: typeof XCircle; cls: string; label: string }> = {
   critical: { icon: XCircle, cls: 'border-destructive/30 bg-destructive/5 text-destructive', label: 'Crítico' },
   warning: { icon: AlertTriangle, cls: 'border-warning/40 bg-warning/10 text-warning-strong', label: 'Atenção' },
@@ -108,7 +166,6 @@ function FunnelContent() {
     { label: 'Comparecimentos', value: a.comparecimentos, sub: 'vieram à clínica', rate: r.comparecimento, meta: tr.comparecimento, rateLabel: 'compareceram' },
     { label: 'Vendas realizadas', value: a.vendas, sub: brl(a.faturamento), rate: r.fechamento, meta: tr.fechamento, rateLabel: 'fecharam' },
   ];
-  const maxV = Math.max(1, a.leads);
 
   return (
     <div className="space-y-6">
@@ -134,41 +191,7 @@ function FunnelContent() {
           <p className="text-sm text-emerald-100/80">{range.label}</p>
         </div>
         <p className="mt-2 mb-5 text-sm text-emerald-100/80">Leads → agendados → compareceram → vendas, com a taxa de passagem entre cada etapa e a meta.</p>
-        <div className="flex flex-col lg:flex-row items-stretch gap-2">
-          {stages.map((st, i) => {
-            const h = 45 + 55 * (st.value / maxV);
-            const ok = st.rate === undefined || st.rate >= (st.meta ?? 0);
-            return (
-              <div key={st.label} className="contents">
-                {i > 0 && st.rate !== undefined && (
-                  <div className="flex lg:flex-col items-center justify-center gap-1 py-1 lg:px-1 shrink-0">
-                    <div className={cn(
-                      'rounded-lg border px-3 py-2 text-center',
-                      ok ? 'border-emerald-400/40 bg-emerald-400/10' : 'border-amber-300/40 bg-amber-300/10',
-                    )}>
-                      <p className={cn('text-lg font-bold tabular-nums leading-none', ok ? 'text-emerald-300' : 'text-amber-200')}>{pct(st.rate)}</p>
-                      <p className="text-[10px] font-medium tracking-wide text-emerald-100/80 mt-1">{st.rateLabel}</p>
-                      <p className="text-[10px] text-emerald-100/60">meta {st.meta}%</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex-1 flex items-center min-w-0">
-                  <div
-                    className={cn(
-                      'w-full rounded-xl border p-4 flex flex-col justify-center',
-                      i === stages.length - 1 ? 'border-emerald-400/50 bg-emerald-400/15' : 'border-white/10 bg-white/[0.05]',
-                    )}
-                    style={{ minHeight: `${Math.round(h * 1.6)}px` }}
-                  >
-                    <p className="text-[11px] font-semibold tracking-wide text-emerald-100/80">{st.label}</p>
-                    <p className="text-4xl font-bold tabular-nums text-white leading-tight">{st.value}</p>
-                    <p className="text-xs text-emerald-100/70">{st.sub}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <FunnelDrawing stages={stages.map((st, i) => ({ ...st, target: [t.leads, t.agendamentos, t.comparecimentos, t.vendas][i] }))} />
       </section>
 
       <section aria-labelledby="funil-insights" className="rounded-2xl border bg-card p-5 sm:p-6">

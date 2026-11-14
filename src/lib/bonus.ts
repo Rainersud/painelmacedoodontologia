@@ -1,22 +1,26 @@
-// Bônus por metas (regra de 14/11/2026)
+// Plano de Incentivo Inteligente (regra de 14/11/2026)
 //
-// Dois grupos, cada um com uma responsável — os resultados não se misturam:
+// Três responsáveis, cada uma com suas metas — os resultados não se misturam:
+//   - Comercial (Rainer): novos leads e vendas realizadas
 //   - Atendimento (Ariane): agendamentos, comparecimentos e resgates
 //   - Coleta de indicações (Lidiane): indicações registradas em qualquer lugar do painel
-// Semana (segunda a domingo) em que TODAS as metas do grupo são batidas = R$ 100.
+// Todas as metas saem do objetivo central (faturamento ÷ ticket médio → escada).
+// Semana (segunda a domingo) com TODAS as metas da responsável batidas = R$ 100.
 // Todas as semanas do mês batidas = bônus dobrado (recebe de novo o total das semanas).
-// As metas semanais de agendamento e comparecimento saem do objetivo central (escada);
-// resgates, indicações e o valor por semana ficam em meta_settings e acompanham o objetivo.
+// 6 meses seguidos com todas as metas MENSAIS batidas = bônus de viagem de R$ 5.000.
 import { addDays, endOfDay, endOfMonth, startOfMonth, startOfWeek } from 'date-fns';
 
-export type BonusGroup = 'atendimento' | 'indicacoes';
+export type BonusGroup = 'comercial' | 'atendimento' | 'indicacoes';
 
 export const BONUS_GROUPS: { key: BonusGroup; label: string; defaultOwner: string; goals: string[] }[] = [
+  { key: 'comercial', label: 'Comercial', defaultOwner: 'Rainer', goals: ['leads', 'vendas'] },
   { key: 'atendimento', label: 'Atendimento', defaultOwner: 'Ariane', goals: ['agendamentos', 'comparecimentos', 'resgates'] },
   { key: 'indicacoes', label: 'Coleta de indicações', defaultOwner: 'Lidiane', goals: ['indicacoes'] },
 ];
 
 export const GOAL_LABELS: Record<string, string> = {
+  leads: 'Novos leads',
+  vendas: 'Vendas realizadas',
   agendamentos: 'Agendamentos',
   comparecimentos: 'Comparecimentos',
   resgates: 'Resgates',
@@ -25,8 +29,8 @@ export const GOAL_LABELS: Record<string, string> = {
 
 export const BONUS_SETTINGS = {
   weeklyValue: { key: 'bonus_semana_valor', fallback: 100 },
-  resgatesPerWeek: { key: 'bonus_resgatados_semana', fallback: 3 },
-  indicacoesPerWeek: { key: 'bonus_indicacoes_semana', fallback: 10 },
+  tripValue: { key: 'bonus_viagem_valor', fallback: 5000 },
+  tripMonths: { key: 'bonus_viagem_meses', fallback: 6 },
 } as const;
 
 export interface Week { start: Date; end: Date }
@@ -134,4 +138,22 @@ export function referralEvents(src: ReferralSources): { id: string; at: Date }[]
 
 export function countIn(events: { at: Date }[], w: Week): number {
   return events.filter(e => e.at >= w.start && e.at <= w.end).length;
+}
+
+// ---------- Meses seguidos (bônus de viagem) ----------
+
+export interface MonthHit { month: Date; hit: boolean; complete: boolean }
+
+/**
+ * Meses seguidos com todas as metas mensais batidas, contando para trás a partir do mês
+ * mais recente. O mês ainda em andamento só entra se já tiver batido tudo; se não, a
+ * contagem começa no mês anterior (ele ainda pode ser batido).
+ */
+export function monthStreak(months: MonthHit[]): number {
+  const list = [...months];
+  const last = list[list.length - 1];
+  if (last && !last.complete && !last.hit) list.pop();
+  let streak = 0;
+  for (let i = list.length - 1; i >= 0 && list[i].hit; i--) streak++;
+  return streak;
 }

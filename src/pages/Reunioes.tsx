@@ -20,7 +20,7 @@ import { useMeetings, useMeetingActionPlans, useMeetingAnnotations, useMeetingTr
 import { useCACMetrics } from '@/hooks/useAcquisitionCosts';
 import { useSalesMetrics } from '@/hooks/useSalesMetrics';
 import { useClinicGoalsPanel } from '@/hooks/useClinicGoalsPanel';
-import { useWeeklyBonus } from '@/hooks/useWeeklyBonus';
+import { usePlanoIncentivo } from '@/hooks/usePlanoIncentivo';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { formatCurrency } from '@/lib/currency';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
@@ -29,8 +29,7 @@ import { toast } from 'sonner';
 const METRIC_OPTIONS = [
   { value: 'indicacoes', label: 'Indicações' },
   { value: 'metas', label: 'Metas da Clínica' },
-  { value: 'bonus', label: 'Bônus por Metas' },
-  { value: 'incentivo', label: 'Plano de Incentivo' },
+  { value: 'incentivo', label: 'Plano de Incentivo Inteligente' },
   { value: 'cac', label: 'CAC & Financeiro' },
   { value: 'vendas', label: 'Métricas de Vendas' },
   { value: 'financeiro', label: 'Financeiro Geral' },
@@ -85,8 +84,8 @@ export default function Reunioes() {
   const { data: monthPanel } = useClinicGoalsPanel('mes');
   const { data: weekPanel } = useClinicGoalsPanel('semana');
   const [bonusMonth] = useState(() => new Date());
-  const { data: teamBonus } = useWeeklyBonus(bonusMonth);
-  // semana corrente de cada grupo (Ariane / Lidiane): R$ por semana batida
+  const { data: teamBonus } = usePlanoIncentivo(bonusMonth);
+  // semana corrente de cada responsável (Rainer / Ariane / Lidiane): R$ por semana batida
   const now = Date.now();
   const thisWeek = (teamBonus?.groups ?? []).map(g => g.weeks.find(w => w.week.start.getTime() <= now && now <= w.week.end.getTime()));
   const GOAL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento', 'ticket_medio'];

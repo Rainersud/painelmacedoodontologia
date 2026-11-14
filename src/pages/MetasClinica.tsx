@@ -3,7 +3,6 @@ import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext
 import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { GoalLadderCard } from '@/components/clinic-goals/GoalLadderCard';
-import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
 import { RevenueForecastWidget } from '@/components/dashboard/StrategicInsightsWidget';
@@ -26,7 +25,6 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
           <MasterPeriodFilter />
           <GoalLadderCard />
           <ClinicGoalsPanel />
-          <StrategicOriginsWidget />
           <ROIAnalyticsWidget />
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />

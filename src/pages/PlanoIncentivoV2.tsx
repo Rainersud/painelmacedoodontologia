@@ -1,352 +1,277 @@
-import { useMemo, useState } from 'react';
-import { PageShell } from '@/components/layout/PageShell';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Sparkline } from '@/components/dashboard/Sparkline';
-import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useMetaSettings } from '@/hooks/useMetaSettings';
-import { createBusinessCalendar, periodProportion, type HolidayRow } from '@/lib/metrics';
+import { useState } from 'react';
+import { addMonths, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  startOfDay, endOfDay,
-  startOfWeek, endOfWeek,
-  startOfMonth, endOfMonth,
-  eachDayOfInterval, format, getDay,
-} from 'date-fns';
-import {
-  Users, CalendarCheck, UserCheck, Trophy, Heart, Zap, TrendingUp, Target,
+  CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Plane, Settings, Trophy, XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { PageShell } from '@/components/layout/PageShell';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import { BONUS_GROUPS, BONUS_SETTINGS, type BonusGroup, type WeekResult, type WeekState } from '@/lib/bonus';
+import { usePlanoIncentivo, type IncentiveGroup, type PlanoIncentivoData } from '@/hooks/usePlanoIncentivo';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
-type StatusColor = 'azul' | 'verde' | 'vermelho';
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const dm = (d: Date) => format(d, 'dd/MM');
 
-const statusToColor = (s: PanelMetric['status']): StatusColor =>
-  s === 'healthy' ? 'azul' : s === 'warning' ? 'verde' : 'vermelho';
-
-const colorClasses: Record<StatusColor, { bar: string; text: string; bg: string; ring: string; label: string }> = {
-  // mesmas cores de status do painel inteiro (src/components/metrics/status.ts)
-  azul:     { bar: 'bg-success',     text: 'text-success',        bg: 'bg-success/10',     ring: 'ring-success/30',     label: 'Saudável' },
-  verde:    { bar: 'bg-warning',     text: 'text-warning-strong', bg: 'bg-warning/15',     ring: 'ring-warning/30',     label: 'Atenção' },
-  vermelho: { bar: 'bg-destructive', text: 'text-destructive',    bg: 'bg-destructive/10', ring: 'ring-destructive/30', label: 'Crítico' },
+const STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
+  batida: { label: 'Batida', cls: 'bg-success/10 text-success border-success/30', Icon: CheckCircle2 },
+  nao_batida: { label: 'Não batida', cls: 'bg-destructive/10 text-destructive border-destructive/30', Icon: XCircle },
+  em_andamento: { label: 'Em andamento', cls: 'bg-warning/15 text-warning-strong border-warning/30', Icon: Clock },
+  futura: { label: 'A começar', cls: 'bg-muted text-muted-foreground border-border', Icon: Circle },
 };
 
-interface DisplayGoal {
-  key: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  current: number;
-  target: number;
-  remaining: number;
-  percentage: number;
-  status: StatusColor;
-  primaryDisplay: string;
-  metaSaudavel: string;
-  rateInfo?: string;
-  trend: number[];
+function WeekRow({ w, index }: { w: WeekResult; index: number }) {
+  const st = STATE[w.state];
+  return (
+    <div className="rounded-lg border p-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm">
+          <span className="font-medium">Semana {index + 1}</span>
+          <span className="text-xs text-muted-foreground"> · {dm(w.week.start)} a {dm(w.week.end)}</span>
+        </p>
+        <div className="flex items-center gap-2">
+          <span className={cn('text-sm font-semibold tabular-nums', w.earned > 0 ? 'text-success' : 'text-muted-foreground')}>
+            {w.earned > 0 ? brl(w.earned) : '—'}
+          </span>
+          <Badge variant="outline" className={cn('gap-1 text-[11px]', st.cls)}><st.Icon className="h-3 w-3" />{st.label}</Badge>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {w.goals.map(g => (
+          <span
+            key={g.key}
+            className={cn('inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px]',
+              g.hit ? 'border-success/30 bg-success/5' : 'border-border')}
+          >
+            {g.hit ? <CheckCircle2 className="h-3 w-3 text-success" /> : <Circle className="h-3 w-3 text-muted-foreground" />}
+            {g.label} <strong className="tabular-nums">{g.current}/{g.target}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-function buildPeriodRange(period: Period) {
-  const now = new Date();
-  if (period === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
-  if (period === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-  return { start: startOfMonth(now), end: endOfMonth(now) };
+function PersonCard({ g, data }: { g: IncentiveGroup; data: PlanoIncentivoData }) {
+  const n = g.weeks.length;
+  const { tripMonths, tripValue, weeklyValue } = data.settings;
+  const role = BONUS_GROUPS.find(b => b.key === g.group)?.label ?? g.label;
+  return (
+    <Card className="monday-card flex flex-col">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-lg">{g.owner}</CardTitle>
+            <p className="text-sm text-muted-foreground">{role}: {g.monthGoals.map(m => m.label.toLowerCase()).join(', ')}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Bônus do mês</p>
+            <p className="text-2xl font-bold tabular-nums">{brl(g.total)}</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 flex-1">
+        <div className="space-y-2.5">
+          <p className="text-xs font-medium text-muted-foreground">Metas do mês</p>
+          {g.monthGoals.map(m => {
+            const pct = m.target > 0 ? Math.min(100, Math.round((m.current / m.target) * 100)) : 0;
+            return (
+              <div key={m.key} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>{m.label}</span>
+                  <span className="tabular-nums"><strong>{m.current}</strong> / {m.target}</span>
+                </div>
+                <Progress value={pct} className="h-1.5" />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Semanas ({brl(weeklyValue)} cada com todas as metas batidas)</p>
+          {g.weeks.map((w, i) => <WeekRow key={i} w={w} index={i} />)}
+        </div>
+
+        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1.5">
+          <div className="flex justify-between gap-2"><span>Semanas batidas</span><strong className="tabular-nums">{g.weeksHit} de {n} · {brl(g.weeklyTotal)}</strong></div>
+          <div className="flex justify-between gap-2">
+            <span>Bônus dobrado</span>
+            <strong className={cn('tabular-nums text-right', g.doubleBonus > 0 && 'text-success')}>
+              {g.doubleBonus > 0 ? `+ ${brl(g.doubleBonus)}` : g.doubleStillPossible ? `possível: + ${brl(weeklyValue * n)}` : 'perdido neste mês'}
+            </strong>
+          </div>
+        </div>
+
+        <div className={cn('rounded-lg border p-3 space-y-2', g.tripEarned ? 'border-success/40 bg-success/5' : '')}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-sm font-medium"><Plane className="h-4 w-4 text-primary" /> Viagem de {brl(tripValue)}</span>
+            <span className="text-sm tabular-nums font-semibold">{Math.min(g.streak, tripMonths)}/{tripMonths} meses</span>
+          </div>
+          <div className="flex gap-1" aria-label={`${g.streak} meses seguidos com as metas mensais batidas`}>
+            {g.months.map(m => (
+              <div key={m.month.toISOString()} className="flex-1 text-center">
+                <div className={cn('h-2 rounded-full', m.hit ? 'bg-success' : m.complete ? 'bg-destructive/40' : 'bg-muted')} />
+                <span className="text-[10px] text-muted-foreground capitalize">{format(m.month, 'MMM', { locale: ptBR })}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {g.tripEarned
+              ? 'Viagem conquistada: 6 meses seguidos com todas as metas mensais batidas.'
+              : `Faltam ${tripMonths - g.streak} ${tripMonths - g.streak === 1 ? 'mês' : 'meses'} seguidos com todas as metas mensais batidas.`}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
-function useReferralsCount(period: Period) {
-  const { start, end } = buildPeriodRange(period);
-  return useQuery({
-    queryKey: ['plano-incentivo-referrals', period],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('referrals')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-      return count ?? 0;
-    },
-    refetchInterval: 60_000,
+async function saveSetting(key: string, value: number) {
+  const { data: existing } = await supabase.from('meta_settings').select('id').eq('setting_key', key).maybeSingle();
+  const { error } = existing
+    ? await supabase.from('meta_settings').update({ setting_value: value, updated_at: new Date().toISOString() }).eq('id', existing.id)
+    : await supabase.from('meta_settings').insert({ setting_key: key, setting_value: value });
+  if (error) throw error;
+}
+
+function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange: (o: boolean) => void; data: PlanoIncentivoData }) {
+  const qc = useQueryClient();
+  const ownerOf = (k: BonusGroup) => data.groups.find(g => g.group === k)?.owner ?? '';
+  const [form, setForm] = useState<Record<string, string>>({
+    weeklyValue: String(data.settings.weeklyValue),
+    tripValue: String(data.settings.tripValue),
+    tripMonths: String(data.settings.tripMonths),
+    comercial: ownerOf('comercial'),
+    atendimento: ownerOf('atendimento'),
+    indicacoes: ownerOf('indicacoes'),
   });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      for (const k of ['weeklyValue', 'tripValue', 'tripMonths'] as const) {
+        const v = Number(form[k]);
+        if (!Number.isFinite(v) || v <= 0) throw new Error('Use números maiores que zero.');
+        await saveSetting(BONUS_SETTINGS[k].key, v);
+      }
+      for (const def of BONUS_GROUPS) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
+        const { error } = await (supabase as any).from('bonus_responsaveis')
+          .upsert({ grupo: def.key, nome: form[def.key].trim() || def.defaultOwner, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+      await qc.invalidateQueries({ queryKey: ['plano-incentivo'] });
+      toast.success('Regras salvas');
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(`As regras não foram salvas. ${describeError(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const field = (k: string, label: string, type = 'number') => (
+    <div className="space-y-1.5">
+      <Label htmlFor={`regra-${k}`} className="text-xs">{label}</Label>
+      <Input id={`regra-${k}`} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+    </div>
+  );
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Regras do plano de incentivo</DialogTitle>
+          <DialogDescription>
+            As metas de cada responsável vêm do objetivo central (faturamento + ticket médio) em Metas da clínica.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {field('weeklyValue', 'Bônus por semana (R$)')}
+          {field('tripValue', 'Viagem (R$)')}
+          {field('tripMonths', 'Meses seguidos')}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {field('comercial', 'Leads e vendas', 'text')}
+          {field('atendimento', 'Agend., comp. e resgates', 'text')}
+          {field('indicacoes', 'Indicações', 'text')}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar regras'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
-
-function useReferralsTrend(period: Period) {
-  const { start, end } = buildPeriodRange(period);
-  return useQuery({
-    queryKey: ['plano-incentivo-referrals-trend', period],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('referrals')
-        .select('created_at')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-      const days = eachDayOfInterval({ start, end });
-      return days.map(d => {
-        const dStart = startOfDay(d).getTime();
-        const dEnd = endOfDay(d).getTime();
-        return (data ?? []).filter((r: any) => {
-          const t = new Date(r.created_at).getTime();
-          return t >= dStart && t <= dEnd;
-        }).length;
-      });
-    },
-    refetchInterval: 60_000,
-  });
-}
-
-function useBusinessDaysProportion(period: Period) {
-  return useQuery({
-    queryKey: ['plano-incentivo-bizdays', period],
-    queryFn: async () => {
-      // Mesma proporção das outras metas: dias úteis do período ÷ base mensal (camada única)
-      const [{ data: settingsRows }, { data: hols }] = await Promise.all([
-        supabase.from('meta_settings').select('setting_key, setting_value'),
-        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
-      ]);
-      const settings: Record<string, number> = {};
-      (settingsRows ?? []).forEach(r => { settings[r.setting_key] = Number(r.setting_value); });
-      const cal = createBusinessCalendar(Number(settings.working_days_bitmask ?? 62), (hols ?? []) as HolidayRow[]);
-      const range = buildPeriodRange(period);
-      return { periodBiz: cal.countBusinessDays(range.start, range.end), proportion: periodProportion(range, cal, settings) };
-    },
-  });
-}
-
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: 'hoje', label: 'Hoje' },
-  { value: 'semana', label: 'Semana' },
-  { value: 'mes', label: 'Mês' },
-];
 
 export default function PlanoIncentivoV2({ embedded = false }: { embedded?: boolean } = {}) {
-  const [period, setPeriod] = useState<Period>('mes');
-  const { data: panel, isLoading } = useClinicGoalsPanel(period);
-  const { data: referralsCount = 0 } = useReferralsCount(period);
-  const { data: referralsTrend = [] } = useReferralsTrend(period);
-  const { data: bizDays } = useBusinessDaysProportion(period);
-  const { data: metaSettings } = useMetaSettings();
-
-  const goals = useMemo<DisplayGoal[]>(() => {
-    if (!panel) return [];
-    const find = (k: string) => panel.metrics.find(m => m.key === k);
-    const leads = find('leads');
-    const agend = find('agendamentos');
-    const comp = find('comparecimentos');
-    const vendas = find('vendas');
-
-    const buildBase = (m: PanelMetric, icon: any, primaryDisplay?: string, rateInfo?: string): DisplayGoal => ({
-      key: m.key,
-      label: m.label,
-      icon,
-      current: m.current,
-      target: m.target,
-      remaining: Math.max(0, m.target - m.current),
-      percentage: m.percentage,
-      status: statusToColor(m.status),
-      primaryDisplay: primaryDisplay ?? m.display,
-      metaSaudavel: m.healthyGoal,
-      rateInfo,
-      trend: m.trend ?? [],
-    });
-
-    const out: DisplayGoal[] = [];
-    if (leads) out.push(buildBase(leads, Users));
-    if (agend) out.push(buildBase(agend, CalendarCheck,
-      `${agend.current} agendamentos`,
-      agend.rate ? `Taxa atual ${agend.rate.display} · meta ${agend.rate.targetDisplay}` : undefined));
-    if (comp) out.push(buildBase(comp, UserCheck,
-      `${comp.current} comparecimentos`,
-      comp.rate ? `Taxa atual ${comp.rate.display} · meta ${comp.rate.targetDisplay}` : undefined));
-    if (vendas) out.push(buildBase(vendas, Trophy,
-      `${vendas.current} vendas`,
-      vendas.rate ? `Taxa atual ${vendas.rate.display} · meta ${vendas.rate.targetDisplay}` : undefined));
-
-    // Indicação Pac
-    const monthlyIndic = Number(metaSettings?.meta_indicacoes ?? 200);
-    const proportion = bizDays?.proportion ?? 1;
-    const tgtIndic = proportion === 0 ? 0 : Math.max(1, Math.round(monthlyIndic * proportion));
-    const remaining = Math.max(0, tgtIndic - referralsCount);
-    const ratio = tgtIndic ? referralsCount / tgtIndic : 1;
-    const status: StatusColor = ratio >= 0.85 ? 'azul' : ratio >= 0.55 ? 'verde' : 'vermelho';
-    const periodSuffix = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
-    out.push({
-      key: 'indicacoes',
-      label: 'Indicação Pac',
-      icon: Heart,
-      current: referralsCount,
-      target: tgtIndic,
-      remaining,
-      percentage: Math.min(100, Math.round(ratio * 100)),
-      status,
-      primaryDisplay: `${referralsCount} indicações`,
-      metaSaudavel: remaining > 0
-        ? `${tgtIndic} indicações${periodSuffix} · faltam ${remaining}`
-        : `${tgtIndic} indicações${periodSuffix} · meta atingida`,
-      trend: referralsTrend,
-    });
-
-    return out;
-  }, [panel, referralsCount, referralsTrend, bizDays, metaSettings, period]);
-
-  const totalGoals = goals.length;
-  const goalsHealthy = goals.filter(g => g.status === 'azul').length;
-  const goalsHit = goals.filter(g => g.current >= g.target).length;
-  const overallProgress = totalGoals
-    ? Math.round(goals.reduce((s, g) => s + g.percentage, 0) / totalGoals)
-    : 0;
+  useLiveRefresh();
+  const { isAdmin } = useAuth();
+  const [month, setMonth] = useState(() => new Date());
+  const [editing, setEditing] = useState(false);
+  const { data, isLoading } = usePlanoIncentivo(month);
+  const total = (data?.groups ?? []).reduce((sum, g) => sum + g.total, 0);
 
   return (
     <PageShell embedded={embedded} title="Plano de Incentivo Inteligente">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Plano de Incentivo Inteligente</h2>
-            <p className="text-muted-foreground text-sm">
-              Metas oficiais da clínica · sincronizado com o Comercial 1 · proporcional aos dias úteis
+            <p className="text-sm text-muted-foreground max-w-3xl">
+              Bateu todas as suas metas na semana: {brl(data?.settings.weeklyValue ?? 100)}. Todas as semanas do mês: bônus dobrado.{' '}
+              {data?.settings.tripMonths ?? 6} meses seguidos com as metas mensais batidas: viagem de {brl(data?.settings.tripValue ?? 5000)}.
+              As metas acompanham o faturamento e o ticket médio do objetivo central.
             </p>
           </div>
-          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
-            {PERIOD_OPTIONS.map(opt => (
-              <Button
-                key={opt.value}
-                size="sm"
-                variant={period === opt.value ? 'default' : 'ghost'}
-                onClick={() => setPeriod(opt.value)}
-                className="h-8"
-              >
-                {opt.label}
-              </Button>
-            ))}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" aria-label="Mês anterior" onClick={() => setMonth(m => addMonths(m, -1))}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="min-w-[130px] text-center text-sm font-medium capitalize">{format(month, 'MMMM yyyy', { locale: ptBR })}</span>
+            <Button variant="outline" size="icon" aria-label="Próximo mês" onClick={() => setMonth(m => addMonths(m, 1))}><ChevronRight className="h-4 w-4" /></Button>
+            {isAdmin && data && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}><Settings className="h-4 w-4" />Regras</Button>
+            )}
           </div>
         </div>
 
-        {/* Resumo */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
+        {isLoading || !data ? (
+          <div className="grid gap-6 xl:grid-cols-3">{[1, 2, 3].map(i => <div key={i} className="h-[520px] rounded-xl bg-muted/50 animate-pulse" />)}</div>
+        ) : (
+          <>
+            <Card className="monday-card">
+              <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-3 p-4">
+                <div className="flex items-center gap-3">
+                  <Trophy className="h-7 w-7 text-primary" />
+                  <div><p className="text-xs text-muted-foreground">Bônus da equipe no mês</p><p className="text-2xl font-bold tabular-nums">{brl(total)}</p></div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Progresso geral</p>
-                  <p className="text-2xl font-bold">{overallProgress}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Metas saudáveis</p>
-                  <p className="text-2xl font-bold">{goalsHealthy}/{totalGoals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Metas atingidas</p>
-                  <p className="text-2xl font-bold">{goalsHit}/{totalGoals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                  <CalendarCheck className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Dias úteis ({PERIOD_OPTIONS.find(p=>p.value===period)?.label})</p>
-                  <p className="text-2xl font-bold">{bizDays?.periodBiz ?? '—'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Cards de metas */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {isLoading
-            ? [1, 2, 3, 4, 5].map(i => <div key={i} className="h-56 rounded-xl bg-muted/50 animate-pulse" />)
-            : goals.map(g => {
-                const cls = colorClasses[g.status];
-                const Icon = g.icon;
-                return (
-                  <Card key={g.key} className={cn('overflow-hidden ring-1', cls.ring)}>
-                    <div className={cn('h-1.5 w-full', cls.bar)} />
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={cn('h-11 w-11 rounded-xl flex items-center justify-center', cls.bg)}>
-                            <Icon className={cn('h-5 w-5', cls.text)} />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Meta saudável</p>
-                            <p className="font-semibold">{g.label}</p>
-                          </div>
-                        </div>
-                        <span className={cn('text-xs font-semibold px-2 py-1 rounded-full', cls.bg, cls.text)}>
-                          {cls.label}
-                        </span>
-                      </div>
-
-                      <div>
-                        <p className="text-3xl font-bold">{g.primaryDisplay}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{g.metaSaudavel}</p>
-                        {g.rateInfo && (
-                          <p className="text-xs text-muted-foreground mt-1">{g.rateInfo}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Progress value={g.percentage} className="h-2" />
-                        <div className="flex justify-between text-xs">
-                          <span className={cn('font-semibold', cls.text)}>{g.percentage}% atingido</span>
-                          {g.remaining > 0 ? (
-                            <span className="text-muted-foreground">faltam {g.remaining}</span>
-                          ) : (
-                            <span className="text-success font-semibold">meta atingida </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {g.trend.length > 1 && (
-                        <div className="pt-2 border-t">
-                          <p className="text-[10px] text-muted-foreground mb-1">Evolução</p>
-                          <Sparkline data={g.trend} />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-        </div>
-
-        {/* Insights */}
-        {panel && panel.insights.length > 0 && (
-          <Card className="monday-card">
-            <CardContent className="p-5 space-y-2">
-              <p className="text-sm font-semibold">Insights inteligentes</p>
-              <ul className="space-y-1.5">
-                {panel.insights.map((it, idx) => (
-                  <li key={idx} className="text-sm text-muted-foreground">{it}</li>
+                {data.groups.map(g => (
+                  <div key={g.group}>
+                    <p className="text-xs text-muted-foreground">{g.owner}</p>
+                    <p className="text-lg font-semibold tabular-nums">{brl(g.total)}</p>
+                  </div>
                 ))}
-              </ul>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            <div className="grid gap-6 xl:grid-cols-3">
+              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} />)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira. Metas da semana proporcionais aos dias úteis.
+              Indicações contam tudo que foi apontado no Comercial 1, CRC e Comercial 2 (cada pessoa indicada conta uma vez).
+            </p>
+            {editing && <RulesDialog open={editing} onOpenChange={setEditing} data={data} />}
+          </>
         )}
       </div>
     </PageShell>

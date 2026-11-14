@@ -96,7 +96,7 @@ const App = () => (
                 <Route path="/credito-liberado" element={<MovedToCRC tab="credito" />} />
                 <Route path="/metas" element={<MovedTo path="/objetivos" tab="metas" />} />
                 <Route path="/metas-clinica" element={<MovedTo path="/objetivos" tab="metas" />} />
-                <Route path="/bonus-metas" element={<MovedTo path="/objetivos" tab="bonus" />} />
+                <Route path="/bonus-metas" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/plano-incentivo" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/incentivos" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/alertas" element={<MovedTo path="/objetivos" tab="metas" />} />

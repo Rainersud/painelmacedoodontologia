@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Loader2,
   Plus, Search, AlertTriangle,
+  NotebookPen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,8 @@ import {
 import { useCrcBoards, useMoveCrcCard } from '@/hooks/useCRC';
 import { CRCPatientSheet } from './CRCPatientSheet';
 import { HubCard } from './HubCard';
-import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import { useOpenLead } from '@/contexts/LeadDetailContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Lead } from '@/types/crm';
 
 const ICONS: Record<CrcBoardKey, typeof Cake> = {
@@ -120,7 +122,7 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [leadOpen, setLeadOpen] = useState(false);
+  const openLead = useOpenLead();
 
   const shown = useMemo(() => {
     const q = norm(query.trim());
@@ -187,26 +189,43 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
                   <p className="px-1 py-4 text-center text-xs text-muted-foreground">Arraste um paciente para cá</p>
                 )}
                 {col.map(item => (
-                  <button
+                  <div
                     key={item.lead.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     draggable
                     onDragStart={() => setDragging(item.lead.id)}
                     onDragEnd={() => { setDragging(null); setOverStage(null); }}
-                    onClick={() => setSelectedId(item.lead.id)}
+                    onClick={() => openLead(item.lead.id)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLead(item.lead.id); } }}
                     className={cn(
-                      'w-full text-left rounded-lg border bg-background px-2.5 py-2 shadow-sm transition hover:border-primary/50',
+                      'group/card relative w-full text-left rounded-lg border bg-background px-2.5 py-2 shadow-sm transition hover:border-primary/50 cursor-pointer',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                       dragging === item.lead.id && 'opacity-50',
                     )}
                   >
-                    <p className="text-sm font-medium truncate">{item.lead.name}</p>
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="text-sm font-medium truncate">{item.lead.name}</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); setSelectedId(item.lead.id); }}
+                            aria-label={`Acompanhamento do CRC de ${item.lead.name}`}
+                            className="shrink-0 -mr-1 -mt-0.5 rounded p-1 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          >
+                            <NotebookPen className="h-3.5 w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Acompanhamento do CRC: etapa, anotações e anexos</TooltipContent>
+                      </Tooltip>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.reason}</p>
                     <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                       <span className="truncate">{item.lead.phone}</span>
                       {item.manual && <span className="shrink-0">manual</span>}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -217,9 +236,9 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
       <CRCPatientSheet
         item={selected}
         prontuarioUrl={selectedLead?.prontuario_url}
-        open={!!selected && !leadOpen}
+        open={!!selected}
         onOpenChange={o => { if (!o) setSelectedId(null); }}
-        onOpenLead={() => setLeadOpen(true)}
+        onOpenLead={() => selected && openLead(selected.lead.id)}
         onMove={(to) => selected && requestMove(selected, to)}
       />
       <AlertDialog open={!!pendingEnd} onOpenChange={(o) => { if (!o) setPendingEnd(null); }}>
@@ -245,7 +264,6 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <LeadDetailDialog lead={selectedLead} open={leadOpen} onOpenChange={setLeadOpen} />
     </div>
   );
 }

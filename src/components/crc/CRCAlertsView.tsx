@@ -7,8 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { useSmartAlerts, type SmartAlert, type SmartAlertLevel } from '@/hooks/useSmartAlerts';
-import { useCRMLeads } from '@/hooks/useCRMLeads';
-import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
+import { useOpenLead } from '@/contexts/LeadDetailContext';
 import { FUNNEL_STAGES } from '@/types/crm';
 
 export const ALERT_LEVELS: { key: SmartAlertLevel; label: string; rule: string; caption: string }[] = [
@@ -39,12 +38,11 @@ function since(d: Date | null) {
 /** Alertas Inteligentes dentro do CRC: uma coluna por etapa do funil, no visual dos quadros. */
 export function CRCAlertsView({ level, onLevel, onBack }: { level: SmartAlertLevel; onLevel: (l: SmartAlertLevel) => void; onBack: () => void }) {
   const { alerts, counts } = useSmartAlerts();
-  const { data: leads = [] } = useCRMLeads();
+  const openLeadCard = useOpenLead();
   const [query, setQuery] = useState('');
   const [stage, setStage] = useState('todas');
   const [sort, setSort] = useState<Sort>('dias');
   const [visible, setVisible] = useState<Record<string, number>>({});
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const def = ALERT_LEVELS.find(l => l.key === level)!;
   const ofLevel = useMemo(() => alerts.filter(a => a.level === level), [alerts, level]);
@@ -73,7 +71,6 @@ export function CRCAlertsView({ level, onLevel, onBack }: { level: SmartAlertLev
 
   const columns = stages.filter(s => stage === 'todas' || s.key === stage);
   const totalValue = shown.reduce((s, a) => s + a.potentialValue, 0);
-  const openLead = leads.find(l => l.id === openId) ?? null;
 
   return (
     <div className="space-y-3">
@@ -161,8 +158,8 @@ export function CRCAlertsView({ level, onLevel, onBack }: { level: SmartAlertLev
                       key={a.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => setOpenId(a.leadId)}
-                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenId(a.leadId); } }}
+                      onClick={() => openLeadCard(a.leadId)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLeadCard(a.leadId); } }}
                       className={cn(
                         'w-full text-left rounded-lg border border-l-2 bg-background px-2.5 py-2 shadow-sm cursor-pointer transition hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                         LEVEL_TONE[a.level],
@@ -214,7 +211,6 @@ export function CRCAlertsView({ level, onLevel, onBack }: { level: SmartAlertLev
         </div>
       )}
 
-      <LeadDetailDialog lead={openLead} open={!!openLead} onOpenChange={o => { if (!o) setOpenId(null); }} />
     </div>
   );
 }

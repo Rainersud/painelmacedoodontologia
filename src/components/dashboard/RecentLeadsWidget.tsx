@@ -1,3 +1,4 @@
+import { useOpenLead } from '@/contexts/LeadDetailContext';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 export function RecentLeadsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('hoje');
   const { data: leads, isLoading } = useCRMLeads();
-  const navigate = useNavigate();
+  const openLead = useOpenLead();
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -55,7 +56,7 @@ export function RecentLeadsWidget() {
               return (
                 <div key={lead.id} className="flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/30 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{lead.name}</p>
+                    <button type="button" onClick={() => openLead(lead.id)} className="text-sm font-medium truncate hover:underline underline-offset-2 text-left max-w-full">{lead.name}</button>
                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                       {src && <Badge variant="outline" className={`text-[10px] ${src.color} border-0`}>{src.label}</Badge>}
                       {stage && <Badge variant="outline" className="text-[10px]">{stage.label}</Badge>}
@@ -67,7 +68,7 @@ export function RecentLeadsWidget() {
                       )}
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate('/funil')}>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openLead(lead.id)}>
                     Abrir <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </div>

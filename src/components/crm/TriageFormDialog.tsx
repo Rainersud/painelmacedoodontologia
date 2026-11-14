@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { Save, Printer, CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { formatCurrency } from '@/lib/currency';
-import { usePatientTriage, useSavePatientTriage, useMarkTriageCompleted, formatBirthDateBR, type PatientTriageData } from '@/hooks/usePatientTriage';
+import { usePatientTriage, useSavePatientTriage, formatBirthDateBR, type PatientTriageData } from '@/hooks/usePatientTriage';
 import { useTriageReferrals, useSaveTriageReferrals, useConvertReferralToLead, useBulkLinkReferrals } from '@/hooks/useTriageReferrals';
 import { TriageReferralSection } from '@/components/crm/TriageReferralSection';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,7 +115,6 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
   const saveReferrals = useSaveTriageReferrals();
   const convertToLead = useConvertReferralToLead();
   const bulkLink = useBulkLinkReferrals();
-  const markCompleted = useMarkTriageCompleted();
   const printRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<Partial<PatientTriageData>>({});
@@ -227,35 +226,37 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
     );
   };
 
-  const handleSave = () => {
+  /** Salva a ficha; com `complete`, conclui no MESMO salvamento (antes eram duas gravações
+   *  simultâneas e a do formulário, com triage_completed=false, desfazia a conclusão). */
+  const handleSave = async (complete = false): Promise<boolean> => {
     const totalCredit = form.credit_status === 'negado' ? 0 :
       (form.credit_pagmais_value || 0) + (form.credit_maioral_value || 0);
-    
-    saveTriage.mutate(
-      { ...form, lead_id: lead.id, credit_approved_value: totalCredit } as PatientTriageData,
-      {
-        onSuccess: (data) => {
-          toast.success('Ficha de triagem salva com sucesso!');
-          // Save referrals after triage is saved
-          const triageId = existingTriage?.id || (data as any)?.id;
-          if (triageId && referralEntries.length > 0) {
-            saveReferrals.mutate({
-              leadId: lead.id,
-              triageId,
-              referrals: referralEntries.filter(r => r.referral_name.trim()).map(r => ({ ...r, lead_id: lead.id })),
-            });
-          }
-        },
-        onError: (err: unknown) => toast.error(`Erro ao salvar ficha: ${(err as Error)?.message || 'tente novamente'}`),
-      }
-    );
-  };
+    const now = new Date().toISOString();
+    const payload = {
+      ...form,
+      lead_id: lead.id,
+      credit_approved_value: totalCredit,
+      ...(complete
+        ? { triage_completed: true, completed_at: existingTriage?.completed_at || now }
+        : {}),
+    } as PatientTriageData;
 
-  const handleMarkCompleted = () => {
-    markCompleted.mutate(lead.id, {
-      onSuccess: () => toast.success('Triagem marcada como concluída!'),
-      onError: (e) => toast.error(`Não foi possível concluir triagem. ${describeError(e)}`),
-    });
+    try {
+      const data = await saveTriage.mutateAsync(payload);
+      toast.success(complete ? 'Triagem concluída e salva!' : 'Ficha de triagem salva com sucesso!');
+      const triageId = existingTriage?.id || (data as { id?: string } | null)?.id;
+      if (triageId && referralEntries.length > 0) {
+        saveReferrals.mutate({
+          leadId: lead.id,
+          triageId,
+          referrals: referralEntries.filter(r => r.referral_name.trim()).map(r => ({ ...r, lead_id: lead.id })),
+        });
+      }
+      return true;
+    } catch (err) {
+      toast.error(`Não foi possível salvar a triagem. ${describeError(err)}`);
+      return false;
+    }
   };
 
   const handlePrint = () => {
@@ -635,15 +636,14 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
             <Printer className="h-4 w-4" />
           </Button>
           <Button
-            onClick={() => {
-              handleSave();
-              if (!isCompleted) handleMarkCompleted();
-              if (!inline) onOpenChange?.(false);
+            onClick={async () => {
+              const ok = await handleSave(true);
+              if (ok && !inline) onOpenChange?.(false);
             }}
-            disabled={saveTriage.isPending || markCompleted.isPending}
+            disabled={saveTriage.isPending}
             className="flex-1"
           >
-            {(saveTriage.isPending || markCompleted.isPending) ? (
+            {saveTriage.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />

@@ -92,7 +92,7 @@ export function useAppointmentMetrics() {
 
       const total = appointments?.length || 0;
       const attended = appointments?.filter(a => a.attended_at).length || 0;
-      const noShows = appointments?.filter(a => a.cancelled_at && !a.attended_at).length || 0;
+      const noShows = appointments?.filter(a => a.no_show_at && !a.attended_at).length || 0;
       const attendanceRate = total > 0 ? Math.round((attended / total) * 100) : 0;
 
       // Get leads with most rescheduling

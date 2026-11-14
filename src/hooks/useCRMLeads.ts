@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { syncAppointmentWithStatus } from '@/lib/appointments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Lead, LeadStatus, LeadSource } from '@/types/crm';
@@ -261,14 +262,14 @@ export function useUpdateLeadStatus() {
         }
       }
 
-      // Auto-create appointment when moving to agendou
-      if (newStatus === 'agendou' || newStatus === 'consulta_agendada') {
-        const scheduledAt = (additionalData?.scheduled_appointment_at as string) || new Date().toISOString();
-        afterSave.push(() => supabase.from('appointments').insert({
-          lead_id: leadId,
-          agent_id: user?.id ?? null,
-          scheduled_at: scheduledAt,
-          notes: `Agendamento criado automaticamente via funil`,
+      // A consulta acompanha a etapa: agenda, confirma, marca presença ou falta
+      if (oldLead.status !== effectiveStatus) {
+        afterSave.push(() => syncAppointmentWithStatus({
+          leadId,
+          oldStatus: oldLead.status,
+          newStatus: effectiveStatus,
+          agentId: user?.id ?? null,
+          scheduledAt: (additionalData?.scheduled_appointment_at as string) || null,
         }));
       }
 

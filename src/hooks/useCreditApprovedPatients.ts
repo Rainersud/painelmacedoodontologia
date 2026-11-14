@@ -56,7 +56,7 @@ export function useCreditApprovedPatients() {
           const companies: CreditCompanyEntry[] = [
             { name: 'PAGMAIS', value: Number(t.credit_pagmais_value) || 0 },
             { name: 'MAIORAL', value: Number(t.credit_maioral_value) || 0 },
-          ].filter(c => c.value > 0);
+          ]; // as duas sempre aparecem, separadas (valor 0 = não liberado nessa empresa)
 
           return {
             id: t.id,

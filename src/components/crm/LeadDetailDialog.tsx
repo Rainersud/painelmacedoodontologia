@@ -5,11 +5,12 @@ import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { LeadTemperature } from './LeadTemperature';
 import { CampaignInput } from './CampaignInput';
+import { rescheduleAppointment } from '@/lib/appointments';
 import { PaymentSummary } from './PaymentSummary';
 import { IndicacaoBadge } from './IndicacaoBadge';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
@@ -40,6 +42,7 @@ import { useUpdateLead, useUpdateLeadStatus, useUpdateLeadRating, useDeleteLead 
 import { useCreateTask } from '@/hooks/useTasks';
 import { useAppointmentHistory } from '@/hooks/useAppointmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { FUNNEL_STAGES, FOLLOWUP_COPY_TEMPLATES, type Lead, type LeadStatus } from '@/types/crm';
 import { EditableFollowUpCopy } from './EditableFollowUpCopy';
 import { ReferralSection } from './ReferralSection';
@@ -73,6 +76,7 @@ interface LeadDetailDialogProps {
 
 export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogProps) {
   const { user, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
   const updateRating = useUpdateLeadRating();
@@ -222,7 +226,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     } else if (lead.status === 'faltou' && scheduledAt && validDate(scheduledAt)) {
       // Faltou: a nova data de reagendamento também salva sozinha
       key = `${lead.id}|reagendar|${scheduledAt}`;
-      run = () => rescheduleRef.current?.(new Date(scheduledAt).toISOString(), false);
+      run = () => rescheduleRef.current?.(new Date(scheduledAt).toISOString(), true);
     } else if (
       (lead.status === 'agendou' || lead.status === 'consulta_agendada') &&
       formData.scheduled_appointment_at &&
@@ -370,20 +374,10 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       {
         onSuccess: async () => {
           if (moveAppointment) {
-            // move a consulta em aberto mais recente deste lead para a nova data
-            const { data: appt } = await supabase
-              .from('appointments')
-              .select('id')
-              .eq('lead_id', lead.id)
-              .is('attended_at', null)
-              .is('cancelled_at', null)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (appt) {
-              const { error } = await supabase.from('appointments').update({ scheduled_at: isoDate }).eq('id', appt.id);
-              if (error) { toast.error(`A data do lead foi salva, mas a consulta não foi movida. ${describeError(error)}`); return; }
-            }
+            // a data antiga fica no histórico como "Reagendada" e entra a nova
+            const res = await rescheduleAppointment(lead.id, isoDate, user?.id ?? null);
+            if (res?.error) { toast.error(`A data do lead foi salva, mas o reagendamento não foi registrado. ${describeError(res.error)}`); return; }
+            queryClient.invalidateQueries({ queryKey: ['appointment-history', lead.id] });
           }
           toast.success('Nova data da consulta salva');
         },
@@ -414,12 +408,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-[750px] max-h-[95vh] flex flex-col p-0 overflow-hidden"
+    // Ficha abre no painel lateral, como no CRC
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-[720px] flex flex-col gap-0 p-0 overflow-hidden"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-          <DialogTitle className="flex items-start sm:items-center gap-3">
+        <SheetHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 text-left space-y-0 pr-12">
+          <SheetDescription className="sr-only">Ficha do lead: dados, status, triagem, indicação, retorno e histórico</SheetDescription>
+          <SheetTitle className="flex items-start sm:items-center gap-3">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <span className="text-sm sm:text-base font-semibold text-primary">
                 {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -481,8 +477,8 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </AlertDialog>
             )}
           </div>
-        </DialogTitle>
-      </DialogHeader>
+        </SheetTitle>
+      </SheetHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4 sm:px-6">
           {(() => {
@@ -826,8 +822,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   </h4>
                   <div className="space-y-1">
                     {appointmentHistory.map((apt, idx) => {
-                      const status = apt.cancelled_at ? 'Cancelado' : apt.attended_at ? 'Compareceu' : apt.confirmed_at ? 'Confirmado' : 'Agendado';
-                      const statusColor = apt.cancelled_at ? 'text-destructive' : apt.attended_at ? 'text-success' : 'text-primary';
+                      const status = apt.attended_at ? 'Compareceu'
+                        : apt.no_show_at ? 'Faltou'
+                        : apt.rescheduled_at ? 'Reagendado'
+                        : apt.cancelled_at ? 'Desmarcou'
+                        : apt.confirmed_at ? 'Confirmado' : 'Agendado';
+                      const statusColor = apt.attended_at ? 'text-success'
+                        : apt.no_show_at || apt.cancelled_at ? 'text-destructive'
+                        : apt.rescheduled_at ? 'text-muted-foreground' : 'text-primary';
                       return (
                         <div key={apt.id} className="flex items-center justify-between text-xs py-1 border-b last:border-0">
                           <span className="text-muted-foreground">{idx + 1}º agendamento</span>
@@ -1353,7 +1355,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
           // o valor digitado no orçamento (mesmo antes de salvar) é o que vai para o pagamento
           budgetValue={budgetValue || lead.budget_value || lead.treatment_value || 0}
         />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

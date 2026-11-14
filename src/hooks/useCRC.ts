@@ -60,7 +60,7 @@ function useCrcSources() {
       const [appts, pays, triage, cards] = await Promise.all([
         allPages<CrcAppointment>(
           supabase.from('appointments')
-            .select('lead_id, scheduled_at, created_at, confirmed_at, attended_at, cancelled_at')
+            .select('lead_id, scheduled_at, created_at, confirmed_at, attended_at, cancelled_at, rescheduled_at, no_show_at')
             .or(`scheduled_at.gte.${since},cancelled_at.gte.${since}`)
             .order('id'),
         ),
@@ -169,7 +169,7 @@ export function useMoveCrcCard() {
         await supabase.from('appointments')
           .update({ confirmed_at: now })
           .eq('lead_id', p.leadId)
-          .is('confirmed_at', null).is('cancelled_at', null).is('attended_at', null)
+          .is('confirmed_at', null).is('cancelled_at', null).is('attended_at', null).is('rescheduled_at', null).is('no_show_at', null)
           .gte('scheduled_at', now);
         const { data: lead } = await supabase.from('leads').select('status').eq('id', p.leadId).maybeSingle();
         if (lead && (lead.status === 'agendou' || lead.status === 'consulta_agendada')) {

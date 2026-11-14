@@ -63,13 +63,13 @@ export function useLeadTimeline(leadId: string) {
       // 3. Appointments
       const { data: appointments } = await supabase
         .from('appointments')
-        .select('id, scheduled_at, confirmed_at, attended_at, cancelled_at, treatment_type, notes, created_at, agent_id')
+        .select('id, scheduled_at, confirmed_at, attended_at, cancelled_at, rescheduled_at, no_show_at, treatment_type, notes, created_at, agent_id')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false });
 
       appointments?.forEach((apt) => {
         if (apt.agent_id) agentIds.add(apt.agent_id);
-        const status = apt.attended_at ? 'compareceu' : apt.cancelled_at ? 'cancelado' : apt.confirmed_at ? 'confirmado' : 'agendado';
+        const status = apt.attended_at ? 'compareceu' : apt.no_show_at ? 'faltou' : apt.rescheduled_at ? 'reagendado' : apt.cancelled_at ? 'cancelado' : apt.confirmed_at ? 'confirmado' : 'agendado';
         events.push({
           id: `apt-${apt.id}`,
           type: 'appointment',

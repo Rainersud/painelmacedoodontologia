@@ -63,7 +63,7 @@ async function loadMetricsData(span: DateRange): Promise<MetricsData> {
     fetchAll<LeadRow>((f, t) => supabase.from('leads').select(LEAD_COLS)
       .or(`${between('created_at', s, e)},${between('closed_at', s, e)}`).order('id').range(f, t)),
     fetchAll<AppointmentRow>((f, t) => supabase.from('appointments')
-      .select('id, lead_id, agent_id, created_at, scheduled_at, attended_at, confirmed_at, cancelled_at')
+      .select('id, lead_id, agent_id, created_at, scheduled_at, attended_at, confirmed_at, cancelled_at, rescheduled_at, rescheduled_from_id, no_show_at')
       .or(`${between('created_at', s, e)},${between('scheduled_at', s, e)},${between('attended_at', s, e)}`)
       .order('id').range(f, t)),
     fetchAll<PaymentRow>((f, t) => supabase.from('payments')

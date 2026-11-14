@@ -1,3 +1,4 @@
+import { LeadName } from '@/components/crm/LeadName';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { describeError } from '@/lib/errors';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
@@ -1355,7 +1356,7 @@ const Comercial2 = () => {
                                       <CardContent className="p-3 space-y-2">
                                         <div className="flex items-start justify-between">
                                           <p className="text-sm font-semibold truncate flex-1">
-                                            {opp.lead?.name || 'Paciente'}
+                                            <LeadName leadId={opp.lead_id}>{opp.lead?.name || 'Paciente'}</LeadName>
                                           </p>
                                           {isLocked ? <Lock className="h-3.5 w-3.5 text-warning-strong shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                                         </div>
@@ -1466,7 +1467,7 @@ const Comercial2 = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                {selectedOpp?.lead?.name || 'Detalhes'}
+                <LeadName leadId={selectedOpp?.lead_id}>{selectedOpp?.lead?.name || 'Detalhes'}</LeadName>
                 {selectedOpp && isLockedColumn(selectedOpp.status) && (
                   <Badge className="text-[9px] bg-warning/10 text-warning-strong border-warning/30 ml-2">
                     <Lock className="h-3 w-3 mr-1" /> Somente leitura

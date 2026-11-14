@@ -1,3 +1,4 @@
+import { LeadName } from '@/components/crm/LeadName';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ export function PendingTasksBanner() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{task.title}</p>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    {task.lead && <span className="text-primary font-medium">{task.lead.name}</span>}
+                    {task.lead && <LeadName leadId={task.lead_id} className="text-primary font-medium">{task.lead.name}</LeadName>}
                     <span className="flex items-center gap-0.5">
                       <Clock className="h-2.5 w-2.5" />
                       {format(new Date(task.scheduled_at), 'HH:mm')}

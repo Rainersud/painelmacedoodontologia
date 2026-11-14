@@ -1,3 +1,4 @@
+import { useOpenLead } from '@/contexts/LeadDetailContext';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -177,6 +178,7 @@ function Column({
 export function SmartAlertsWidget() {
   const { alerts, counts } = useSmartAlerts();
   const navigate = useNavigate();
+  const openLead = useOpenLead();
   const [period, setPeriod] = useState<Period>('mes');
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -218,9 +220,7 @@ export function SmartAlertsWidget() {
     [filtered],
   );
 
-  const handleViewLead = (leadId: string) => {
-    navigate(`/funil?leadId=${leadId}`);
-  };
+  const handleViewLead = (leadId: string) => openLead(leadId);
 
   if (alerts.length === 0) {
     return (

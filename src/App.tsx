@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { describeError } from "@/lib/errors";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LeadDetailProvider } from "@/contexts/LeadDetailContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -86,6 +87,7 @@ const App = () => (
         <RealtimeProvider>
         <ErrorBoundary>
           <TooltipProvider>
+          <LeadDetailProvider>
             <Toaster />
             <Sonner />
             <Suspense fallback={<PageLoader />}>
@@ -121,6 +123,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+          </LeadDetailProvider>
           </TooltipProvider>
         </ErrorBoundary>
         </RealtimeProvider>

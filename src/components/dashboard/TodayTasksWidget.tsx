@@ -1,3 +1,4 @@
+import { LeadName } from '@/components/crm/LeadName';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -91,7 +92,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
             <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
               {task.lead && (
                 <span className="text-primary font-medium flex items-center gap-0.5">
-                  <User className="h-3 w-3" />{task.lead.name}
+                  <User className="h-3 w-3" /><LeadName leadId={task.lead_id}>{task.lead.name}</LeadName>
                   {!!task.lead.budget_value && task.lead.budget_value > 0 && (
                     <span className="ml-1 text-warning-strong">
                       (Orçamento: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(task.lead.budget_value)})
@@ -249,7 +250,7 @@ export function TodayTasksWidget({ onlyToday = false }: TodayTasksWidgetProps) {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate line-through text-muted-foreground">{task.title}</p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {task.lead && <span>{task.lead.name}</span>}
+                              {task.lead && <LeadName leadId={task.lead_id}>{task.lead.name}</LeadName>}
                             </div>
                             {task.response && (
                               <div className="mt-1 p-1.5 rounded bg-success/5 border border-success/10">

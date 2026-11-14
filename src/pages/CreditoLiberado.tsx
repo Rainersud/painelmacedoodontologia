@@ -1,3 +1,4 @@
+import { useOpenLead } from '@/contexts/LeadDetailContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/currency';
 
 const CreditoLiberado = ({ embedded = false }: { embedded?: boolean } = {}) => {
+  const openLead = useOpenLead();
   const { data: patients, isLoading } = useCreditApprovedPatients();
 
   const getStageLabel = (status: string) => {
@@ -79,7 +81,11 @@ const CreditoLiberado = ({ embedded = false }: { embedded?: boolean } = {}) => {
                 {patients.map(patient => (
                   <div
                     key={patient.id}
-                    className="p-4 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openLead(patient.lead_id)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLead(patient.lead_id); } }}
+                    className="p-4 rounded-lg border bg-card hover:bg-muted/30 hover:border-primary/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">

@@ -125,7 +125,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">LTV Inteligente</h2>
-          <p className="text-sm text-muted-foreground">Quanto cada paciente vale ao longo do tempo: a venda do front mais as recompras no LTV.</p>
+          <p className="text-sm text-muted-foreground">O que cada paciente gera no LTV (Comercial 2) depois da venda do front. A venda do front aparece só para comparação.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={saleType} onValueChange={setSaleType}>

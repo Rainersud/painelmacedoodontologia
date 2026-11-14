@@ -5,24 +5,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { LTV_STAGES, summarize, type LtvPatient } from '@/lib/ltv';
+import { ENTRY_TREATMENT_LABELS, LTV_STAGES, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { ARRIVAL_SOURCE_LABELS } from '@/lib/metrics/stages';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useGlobalCAC } from '@/hooks/useRevenueProjection';
 import { LTVStageLeadsDialog, type LeadEntry } from './LTVStageLeadsDialog';
 
 type Period = 'todos' | '12m' | '6m' | 'ano' | 'mes';
+// Coorte: o grupo de pacientes é definido pela data da venda do front
 const PERIODS: { value: Period; label: string }[] = [
-  { value: 'todos', label: 'Todas as vendas' },
-  { value: '12m', label: 'Vendas dos últimos 12 meses' },
-  { value: '6m', label: 'Vendas dos últimos 6 meses' },
-  { value: 'ano', label: 'Vendas deste ano' },
-  { value: 'mes', label: 'Vendas deste mês' },
+  { value: 'todos', label: 'Todos os pacientes' },
+  { value: '12m', label: 'Front nos últimos 12 meses' },
+  { value: '6m', label: 'Front nos últimos 6 meses' },
+  { value: 'ano', label: 'Front neste ano' },
+  { value: 'mes', label: 'Front neste mês' },
 ];
-const SALE_TYPES = [
-  { value: 'todos', label: 'Todos os tipos' },
-  { value: '1_etapa', label: 'Venda em 1 etapa' },
-  { value: '2_etapas', label: 'Venda em 2 etapas' },
-];
+type SegmentDim = 'tratamento' | 'origem';
 
 function periodStart(p: Period, now = new Date()): Date | null {
   if (p === '12m') return startOfMonth(subMonths(now, 11));
@@ -65,17 +63,21 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
   const { patients: all, isLoading } = useLTVData();
   const { data: cacData } = useGlobalCAC();
   const [period, setPeriod] = useState<Period>('todos');
-  const [saleType, setSaleType] = useState('todos');
+  const [segmentDim, setSegmentDim] = useState<SegmentDim>('tratamento');
   const [openStage, setOpenStage] = useState<string | null>(null);
 
   const patients = useMemo(() => {
     const start = periodStart(period);
-    return all.filter(p =>
-      (!start || (p.soldAt && p.soldAt >= start))
-      && (saleType === 'todos' || p.saleType === saleType));
-  }, [all, period, saleType]);
+    return all.filter(p => !start || (p.soldAt && p.soldAt >= start));
+  }, [all, period]);
 
   const s = useMemo(() => summarize(patients), [patients]);
+  const segments = useMemo(
+    () => segmentBy(patients, p => (segmentDim === 'tratamento' ? p.entryTreatment : p.origin)),
+    [patients, segmentDim],
+  );
+  const segmentLabel = (k: string) =>
+    segmentDim === 'tratamento' ? ENTRY_TREATMENT_LABELS[k] ?? k : ARRIVAL_SOURCE_LABELS[k] ?? k;
   const cac = cacData?.cac ?? 0;
   // Valor total do paciente (front + LTV) ÷ CAC: quanto volta de cada real investido para trazê-lo
   const ltvCac = cac > 0 ? s.avgPatientValue / cac : null;
@@ -128,10 +130,6 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           <p className="text-sm text-muted-foreground">O que cada paciente gera no LTV (Comercial 2) depois da venda do front. A venda do front aparece só para comparação.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select value={saleType} onValueChange={setSaleType}>
-            <SelectTrigger className="h-9 w-44 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>{SALE_TYPES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-          </Select>
           <Select value={period} onValueChange={v => setPeriod(v as Period)}>
             <SelectTrigger className="h-9 w-56 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{PERIODS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
@@ -247,6 +245,56 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           </section>
         </div>
       </div>
+
+      <section className="rounded-xl border bg-card p-4" aria-labelledby="ltv-segmentos">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 id="ltv-segmentos" className="text-sm font-semibold">LTV por perfil de paciente</h3>
+            <p className="text-[11px] text-muted-foreground">Quem recompra mais: compare pelo tratamento que o paciente fez no front ou pela origem do lead.</p>
+          </div>
+          <div className="inline-flex rounded-lg bg-muted p-1" role="tablist" aria-label="Comparar por">
+            {([['tratamento', 'Tratamento de entrada'], ['origem', 'Origem do lead']] as const).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={segmentDim === k}
+                onClick={() => setSegmentDim(k)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  segmentDim === k ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[11px] text-muted-foreground text-left border-b">
+                <th className="font-medium py-2 pr-3">{segmentDim === 'tratamento' ? 'Tratamento de entrada' : 'Origem'}</th>
+                <th className="font-medium py-2 pr-3 text-right">Pacientes</th>
+                <th className="font-medium py-2 pr-3 text-right">Taxa de recompra</th>
+                <th className="font-medium py-2 pr-3 text-right">Vendido no LTV</th>
+                <th className="font-medium py-2 text-right">LTV médio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {segments.map(g => (
+                <tr key={g.key} className="border-b last:border-0">
+                  <td className="py-2.5 pr-3 font-medium">{segmentLabel(g.key)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{g.patients}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{pct(g.repurchaseRate)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatCurrency(g.ltvRevenue)}</td>
+                  <td className="py-2.5 text-right tabular-nums font-medium">{formatCurrency(g.avgLtv)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {insights.length > 0 && (
         <section className="rounded-xl border bg-card p-4" aria-labelledby="ltv-leitura">

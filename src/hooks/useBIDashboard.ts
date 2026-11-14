@@ -101,7 +101,7 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       // 3. Upsell opportunities for LTV funnel
       const { data: upsellOpps } = await allPages(supabase
         .from('upsell_opportunities')
-        .select('id, lead_id, status, purchase_count, next_return_date, return_scheduled, contact_status, lead:leads(name, treatment_value, closed_at, sale_type)')
+        .select('id, lead_id, status, purchase_count, next_return_date, return_scheduled, contact_status, lead:leads(name, treatment_value, closed_at, sale_type, interest_product, lead_arrival_source)')
         .order('id'));
       const { data: ltvPays } = await allPages(supabase
         .from('payments')

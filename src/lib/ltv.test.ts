@@ -99,3 +99,21 @@ describe('LTV — pacientes e resumo', () => {
     expect(defaultReturnDate('2026-11-14T12:00:00')).toBe('2027-05-14');
   });
 });
+
+describe('LTV — segmentação', () => {
+  it('quebra por tratamento de entrada, só com valores do LTV', async () => {
+    const { segmentBy } = await import('./ltv');
+    const opps: LtvOppRow[] = [
+      { id: 'a', lead_id: 'La', status: 'comprou_1', lead: { treatment_value: 5000, interest_product: 'implante' } },
+      { id: 'b', lead_id: 'Lb', status: 'comprou_2', lead: { treatment_value: 3000, interest_product: 'implante' } },
+      { id: 'c', lead_id: 'Lc', status: 'comprou_1', lead: { treatment_value: 2000, interest_product: 'protese_total' } },
+    ];
+    const pays: LtvPaymentRow[] = [{ lead_id: 'Lb', upsell_opportunity_id: 'b', status: 'pago', gross_value: 800, net_value: 760 }];
+    const seg = segmentBy(buildPatients(opps, pays), p => p.entryTreatment);
+    const imp = seg.find(s => s.key === 'implante')!;
+    expect(imp.patients).toBe(2);
+    expect(imp.repurchaseRate).toBe(50);
+    expect(imp.avgLtv).toBe(400);
+    expect(seg.find(s => s.key === 'protese_total')!.avgLtv).toBe(0);
+  });
+});

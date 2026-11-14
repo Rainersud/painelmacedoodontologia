@@ -117,3 +117,45 @@ describe('LTV — segmentação', () => {
     expect(seg.find(s => s.key === 'protese_total')!.avgLtv).toBe(0);
   });
 });
+
+describe('LTV — filtro Dia / Semana / Mês', () => {
+  it('períodos: dia, semana (segunda a domingo) e mês, com o anterior', async () => {
+    const { ltvPeriodRange } = await import('./ltv');
+    const now = new Date('2026-11-14T15:00:00'); // sábado
+    const d = ltvPeriodRange('dia', now);
+    expect(d.start.getDate()).toBe(14);
+    expect(d.prevStart.getDate()).toBe(13);
+    const w = ltvPeriodRange('semana', now);
+    expect(w.start.getDate()).toBe(9); // segunda
+    expect(w.end.getDate()).toBe(15); // domingo
+    expect(w.prevStart.getDate()).toBe(2);
+    const m = ltvPeriodRange('mes', now);
+    expect(m.start.getDate()).toBe(1);
+    expect(m.prevStart.getMonth()).toBe(9);
+  });
+
+  it('atividade do período: vendido, recebido, quem comprou, novos e retornos', async () => {
+    const { ltvActivity, ltvPeriodRange } = await import('./ltv');
+    const now = new Date('2026-11-14T15:00:00');
+    const opps: LtvOppRow[] = [
+      { id: 'a', lead_id: 'La', status: 'comprou_2', lead: { treatment_value: 3000, closed_at: '2026-11-10T12:00:00' }, next_return_date: '2026-11-20' },
+      { id: 'b', lead_id: 'Lb', status: 'comprou_1', lead: { treatment_value: 2000, closed_at: '2026-10-01T12:00:00' }, next_return_date: '2026-12-20' },
+    ];
+    const pays: LtvPaymentRow[] = [
+      { lead_id: 'La', upsell_opportunity_id: 'a', status: 'pago', gross_value: 1000, net_value: 950, created_at: '2026-11-12T10:00:00', paid_at: '2026-11-12T10:00:00' },
+      { lead_id: 'La', upsell_opportunity_id: 'a', status: 'pendente', gross_value: 500, net_value: 480, created_at: '2026-11-12T10:00:00', due_date: '2026-12-12' },
+      { lead_id: 'Lb', upsell_opportunity_id: null, status: 'pago', gross_value: 2000, net_value: 1900, created_at: '2026-11-12T10:00:00', paid_at: '2026-11-12T10:00:00' },
+    ];
+    const pts = buildPatients(opps, pays);
+    const w = ltvPeriodRange('semana', now);
+    const a = ltvActivity(pts, pays, w.start, w.end);
+    expect(a.sold).toBe(1500);
+    expect(a.received).toBe(950);
+    expect(a.buyers).toBe(1);
+    expect(a.ticket).toBe(1500);
+    expect(a.newPatients).toBe(1);
+    expect(a.returnsDue).toBe(0);
+    const m = ltvPeriodRange('mes', now);
+    expect(ltvActivity(pts, pays, m.start, m.end).returnsDue).toBe(1);
+  });
+});

@@ -1,34 +1,15 @@
 import { useMemo, useState } from 'react';
-import { startOfMonth, startOfYear, subMonths } from 'date-fns';
 import { CalendarClock, Info, Loader2, Repeat, TrendingUp, Users, Wallet } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { ENTRY_TREATMENT_LABELS, LTV_STAGES, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { ENTRY_TREATMENT_LABELS, LTV_PERIODS, LTV_STAGES, ltvActivity, ltvPeriodRange, segmentBy, summarize, type LtvPatient, type LtvPeriod } from '@/lib/ltv';
 import { ARRIVAL_SOURCE_LABELS } from '@/lib/metrics/stages';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useGlobalCAC } from '@/hooks/useRevenueProjection';
 import { LTVStageLeadsDialog, type LeadEntry } from './LTVStageLeadsDialog';
 
-type Period = 'todos' | '12m' | '6m' | 'ano' | 'mes';
-// Coorte: o grupo de pacientes é definido pela data da venda do front
-const PERIODS: { value: Period; label: string }[] = [
-  { value: 'todos', label: 'Todos os pacientes' },
-  { value: '12m', label: 'Front nos últimos 12 meses' },
-  { value: '6m', label: 'Front nos últimos 6 meses' },
-  { value: 'ano', label: 'Front neste ano' },
-  { value: 'mes', label: 'Front neste mês' },
-];
 type SegmentDim = 'tratamento' | 'origem';
-
-function periodStart(p: Period, now = new Date()): Date | null {
-  if (p === '12m') return startOfMonth(subMonths(now, 11));
-  if (p === '6m') return startOfMonth(subMonths(now, 5));
-  if (p === 'ano') return startOfYear(now);
-  if (p === 'mes') return startOfMonth(now);
-  return null;
-}
 
 const pct = (v: number) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
@@ -54,22 +35,28 @@ function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; labe
 }
 
 interface LTVRecurrencePanelProps {
+  /** Filtro Dia / Semana / Mês do topo do Comercial 2 */
+  period: LtvPeriod;
   /** Abre a oportunidade do LTV (id do card do Comercial 2). */
   onOpenLead?: (oppId: string) => void;
 }
 
 /** LTV Inteligente: quanto cada paciente vale ao longo do tempo e como a recompra evolui. */
-export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
-  const { patients: all, isLoading } = useLTVData();
+export function LTVRecurrencePanel({ period, onOpenLead }: LTVRecurrencePanelProps) {
+  const { patients, payments, isLoading } = useLTVData();
   const { data: cacData } = useGlobalCAC();
-  const [period, setPeriod] = useState<Period>('todos');
   const [segmentDim, setSegmentDim] = useState<SegmentDim>('tratamento');
   const [openStage, setOpenStage] = useState<string | null>(null);
 
-  const patients = useMemo(() => {
-    const start = periodStart(period);
-    return all.filter(p => !start || (p.soldAt && p.soldAt >= start));
-  }, [all, period]);
+  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
+  const { now: act, prev: prevAct } = useMemo(() => {
+    const r = ltvPeriodRange(period);
+    return {
+      now: ltvActivity(patients, payments, r.start, r.end),
+      prev: ltvActivity(patients, payments, r.prevStart, r.prevEnd),
+    };
+  }, [period, patients, payments]);
+  const vsPrev = (cur: number, before: number) => (before > 0 ? `${cur >= before ? '+' : ''}${Math.round(((cur - before) / before) * 100)}% vs ${periodDef.previous}` : `${periodDef.previous}: ${formatCurrency(before)}`);
 
   const s = useMemo(() => summarize(patients), [patients]);
   const segments = useMemo(
@@ -129,14 +116,27 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           <h2 className="text-lg font-semibold">LTV Inteligente</h2>
           <p className="text-sm text-muted-foreground">O que cada paciente gera no LTV (Comercial 2) depois da venda do front. A venda do front aparece só para comparação.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={period} onValueChange={v => setPeriod(v as Period)}>
-            <SelectTrigger className="h-9 w-56 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>{PERIODS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
       </div>
 
+      <section aria-labelledby="ltv-periodo" className="space-y-2">
+        <h3 id="ltv-periodo" className="text-sm font-semibold text-muted-foreground">Movimento {periodDef.current}</h3>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <Kpi icon={Wallet} label="Vendido no LTV" value={formatCurrency(act.sold)} sub={vsPrev(act.sold, prevAct.sold)}
+            help="Pagamentos registrados nos cards do LTV no período (bruto, pagos e a receber)." />
+          <Kpi icon={Wallet} label="Recebido no LTV" value={formatCurrency(act.received)} sub={vsPrev(act.received, prevAct.received)}
+            help="Pagamentos do LTV pagos no período, valor líquido. É o que entra no faturamento da meta." />
+          <Kpi icon={Repeat} label="Compraram no LTV" value={String(act.buyers)} sub={`${periodDef.previous}: ${prevAct.buyers}`}
+            help="Pacientes com pagamento registrado no LTV no período." />
+          <Kpi icon={TrendingUp} label="Ticket médio no LTV" value={formatCurrency(act.ticket)} sub={`${periodDef.previous}: ${formatCurrency(prevAct.ticket)}`}
+            help="Vendido no LTV no período ÷ pacientes que compraram no LTV no período." />
+          <Kpi icon={Users} label="Entraram no LTV" value={String(act.newPatients)} sub={`${periodDef.previous}: ${prevAct.newPatients}`}
+            help="Pacientes com venda realizada no front no período: entram sozinhos no Comercial 2." />
+          <Kpi icon={CalendarClock} label="Retornos" value={String(act.returnsDue)} sub="com data no período, sem agendamento"
+            help="Pacientes com data de retorno dentro do período que ainda não foram marcados como agendados." />
+        </div>
+      </section>
+
+      <h3 className="text-sm font-semibold text-muted-foreground pt-1">Acumulado de toda a base</h3>
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Kpi icon={TrendingUp} label="LTV médio por paciente" value={formatCurrency(s.avgLtv)}
           sub={`recebido ${formatCurrency(s.avgLtvReceived)} · quem recomprou ${formatCurrency(s.avgLtvRepeat)}`}

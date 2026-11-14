@@ -93,6 +93,9 @@ export interface Lead {
   prontuario_url?: string | null;
   /** Campanha de origem (casa com o Funil de Tráfego pelo nome) */
   campaign?: string | null;
+  /** Fim de ciclo: não quer mais receber contato */
+  contact_opt_out_at?: string | null;
+  contact_opt_out_reason?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data

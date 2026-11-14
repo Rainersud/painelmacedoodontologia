@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Info, Loader2,
-  Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle,
+  Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle, PhoneCall, Repeat, Zap, Gift, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { describeError } from '@/lib/errors';
-import { CRC_BOARDS, CRC_BOARD_MAP, openCount, type CrcBoardKey, type CrcItem } from '@/lib/crc';
+import { CRC_BOARDS, CRC_BOARD_MAP, END_OF_CYCLE, openCount, type CrcBoardKey, type CrcItem } from '@/lib/crc';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useCrcBoards, useMoveCrcCard } from '@/hooks/useCRC';
 import { CRCPatientSheet } from './CRCPatientSheet';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -27,6 +31,11 @@ const ICONS: Record<CrcBoardKey, typeof Cake> = {
   inadimplencia: CircleDollarSign,
   orcamentos: FileSpreadsheet,
   tratamento_sem_agendamento: Stethoscope,
+  retorno: PhoneCall,
+  follow_up: Repeat,
+  remarketing: Zap,
+  indicacao: Gift,
+  credito_liberado: CreditCard,
 };
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -125,6 +134,13 @@ interface BoardProps {
 function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
   const def = CRC_BOARD_MAP[board];
   const move = useMoveCrcCard();
+  const [pendingEnd, setPendingEnd] = useState<CrcItem | null>(null);
+  /** Fim de ciclo pede confirmação: tira o lead de todos os contatos. */
+  const requestMove = (item: CrcItem, to: string) => {
+    if (item.stage === to) return;
+    if (to === END_OF_CYCLE) { setPendingEnd(item); return; }
+    move.mutate({ board, leadId: item.lead.id, from: item.stage, to, manual: item.manual });
+  };
   const [query, setQuery] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<string | null>(null);
@@ -147,7 +163,7 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
     const item = items.find(i => i.lead.id === dragging);
     setDragging(null);
     if (!item || item.stage === stage) return;
-    move.mutate({ board, leadId: item.lead.id, from: item.stage, to: stage, manual: item.manual });
+    requestMove(item, stage);
   };
 
   return (
@@ -229,7 +245,31 @@ function CRCBoardView({ board, items, leads, onBack }: BoardProps) {
         open={!!selected && !leadOpen}
         onOpenChange={o => { if (!o) setSelectedId(null); }}
         onOpenLead={() => setLeadOpen(true)}
+        onMove={(to) => selected && requestMove(selected, to)}
       />
+      <AlertDialog open={!!pendingEnd} onOpenChange={(o) => { if (!o) setPendingEnd(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fim de ciclo para {pendingEnd?.lead.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Use quando a pessoa não quer mais receber contato. Ela sai de todos os quadros do CRC (menos
+              Inadimplência), os retornos em aberto são cancelados, sai do remarketing e, se ainda não for
+              paciente, vai para "Sem interesse".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingEnd) move.mutate({ board, leadId: pendingEnd.lead.id, from: pendingEnd.stage, to: END_OF_CYCLE, manual: pendingEnd.manual });
+                setPendingEnd(null);
+              }}
+            >
+              Registrar fim de ciclo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <LeadDetailDialog lead={selectedLead} open={leadOpen} onOpenChange={setLeadOpen} />
     </div>
   );

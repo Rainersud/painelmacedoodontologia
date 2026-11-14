@@ -33,12 +33,13 @@ export const CRC_BOARDS: CrcBoard[] = [
   {
     key: 'sem_confirmacao',
     label: 'Agendamento sem confirmação',
-    rule: 'Todo lead com status Agendado e consulta marcada. Ele anda sozinho pelas confirmações conforme a data e hora da consulta: 24 horas, 2 horas e 10 minutos antes.',
+    rule: 'Todo lead com status Agendado. Ele anda sozinho pelas confirmações conforme a data e hora da consulta: 24 horas, 2 horas e 10 minutos antes. Se a data passar sem registro, vai para Data passou.',
     stages: [
       { key: 'agendado', label: 'Agendado (mais de 24h)', waiting: true },
       { key: 'confirmacao_1', label: 'Confirmação 1 · 24h antes' },
       { key: 'confirmacao_2', label: 'Confirmação 2 · 2h antes' },
       { key: 'confirmacao_3', label: 'Confirmação 3 · 10 min antes' },
+      { key: 'data_passou', label: 'Data passou · registrar presença' },
       { key: 'confirmado', label: 'Confirmado', done: true },
       { key: 'desmarcou', label: 'Desmarcou', done: true },
       { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
@@ -281,8 +282,10 @@ const RULES: Record<CrcBoardKey, Rule> = {
     const when = next?.scheduled_at
       ?? (lead.scheduled_appointment_at && ms(lead.scheduled_appointment_at) >= nowMs ? lead.scheduled_appointment_at : null);
     if (!when) {
-      // Agendado sem data no futuro: fica visível para alguém marcar a data
-      if (lead.status === 'confirmado' || lead.scheduled_appointment_at) return null;
+      if (lead.status === 'confirmado') return null;
+      // A data passou e ninguém registrou se veio: fica aqui para marcar Compareceu ou Não compareceu
+      const past = lead.scheduled_appointment_at;
+      if (past) return { reason: `Consulta era ${fmtDateTime(past)} · registrar presença`, eventAt: past, stage: 'data_passou' };
       return { reason: 'Agendado sem data marcada', eventAt: lead.stage_entered_at || lead.updated_at, stage: 'agendado' };
     }
     const confirmed = lead.status === 'confirmado' || !!next?.confirmed_at

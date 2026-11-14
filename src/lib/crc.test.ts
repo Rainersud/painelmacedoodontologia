@@ -38,9 +38,10 @@ describe('CRC — quem entra em cada quadro', () => {
     const stage = Object.fromEntries(r.sem_confirmacao.map(i => [i.lead.id, i.stage]));
     expect(stage).toEqual({
       longe: 'agendado', amanha: 'confirmacao_1', duasHoras: 'confirmacao_2', agora: 'confirmacao_3', confirmado: 'confirmado',
+      passou: 'data_passou',
     });
-    // Só as 3 confirmações contam como "a tratar"
-    expect(openCount('sem_confirmacao', r.sem_confirmacao)).toBe(3);
+    // As 3 confirmações e a data que passou contam como "a tratar"
+    expect(openCount('sem_confirmacao', r.sem_confirmacao)).toBe(4);
   });
 
   it('aniversariantes do mês, com idade', () => {

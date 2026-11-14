@@ -15,8 +15,8 @@ function build(partial: Partial<CrcInput>) {
 const ids = (items: { lead: { id: string } }[]) => items.map(i => i.lead.id);
 
 describe('CRC — quem entra em cada quadro', () => {
-  it('tem os 8 quadros do print, cada um com colunas', () => {
-    expect(CRC_BOARDS).toHaveLength(8);
+  it('tem os 6 quadros, cada um com colunas', () => {
+    expect(CRC_BOARDS).toHaveLength(6);
     CRC_BOARDS.forEach(b => expect(b.stages.length).toBeGreaterThan(1));
   });
 
@@ -55,7 +55,7 @@ describe('CRC — quem entra em cada quadro', () => {
         { lead_id: 'd2', scheduled_at: iso(4) },
       ],
     });
-    expect(ids(r.desmarcacoes)).toEqual(['d1']);
+    expect(ids(r.nao_compareceu)).toEqual(['d1']);
   });
 
   it('faltas: paciente em tratamento com consulta passada sem presença', () => {
@@ -66,12 +66,12 @@ describe('CRC — quem entra em cada quadro', () => {
         { lead_id: 't2', scheduled_at: iso(-10), attended_at: iso(-10) },
       ],
     });
-    expect(ids(r.faltas)).toEqual(['t1']);
+    expect(ids(r.nao_compareceu)).toEqual(['t1']);
   });
 
   it('faltas da 1ª consulta: status Faltou (e o nome antigo nao_compareceu)', () => {
     const r = build({ leads: [lead('f1', 'faltou'), lead('f2', 'nao_compareceu'), lead('x', 'compareceu')] });
-    expect(ids(r.faltas_primeira).sort()).toEqual(['f1', 'f2']);
+    expect(ids(r.nao_compareceu).sort()).toEqual(['f1', 'f2']);
   });
 
   it('inadimplência soma as parcelas vencidas do paciente', () => {
@@ -111,41 +111,60 @@ describe('CRC — quem entra em cada quadro', () => {
   });
 });
 
+describe('CRC — Não compareceu / Reagendar', () => {
+  it('junta desmarcação, falta no tratamento e falta na 1ª consulta', () => {
+    const r = build({
+      leads: [lead('d1', 'agendou'), lead('t1', 'fechado', { closed_at: iso(-30) }), lead('f1', 'faltou')],
+      appointments: [
+        { lead_id: 'd1', scheduled_at: iso(-5), cancelled_at: iso(-6) },
+        { lead_id: 't1', scheduled_at: iso(-10) },
+      ],
+    });
+    expect(ids(r.nao_compareceu).sort()).toEqual(['d1', 'f1', 't1']);
+  });
+
+  it('a ordem dos quadros segue a rotina da clínica', () => {
+    expect(CRC_BOARDS.map(b => b.key)).toEqual([
+      'sem_confirmacao', 'tratamento_sem_agendamento', 'nao_compareceu', 'orcamentos', 'inadimplencia', 'aniversariantes',
+    ]);
+  });
+});
+
 describe('CRC — colunas salvas', () => {
   it('usa a coluna salva e conta só os em aberto', () => {
     const r = build({
       leads: [lead('f1', 'faltou', { stage_entered_at: iso(-3) }), lead('f2', 'faltou', { stage_entered_at: iso(-3) })],
-      cards: [{ board: 'faltas_primeira', lead_id: 'f1', stage: 'reagendado', updated_at: iso(-1) }],
+      cards: [{ board: 'nao_compareceu', lead_id: 'f1', stage: 'reagendado', updated_at: iso(-1) }],
     });
-    expect(r.faltas_primeira.find(i => i.lead.id === 'f1')!.stage).toBe('reagendado');
-    expect(openCount('faltas_primeira', r.faltas_primeira)).toBe(1);
+    expect(r.nao_compareceu.find(i => i.lead.id === 'f1')!.stage).toBe('reagendado');
+    expect(openCount('nao_compareceu', r.nao_compareceu)).toBe(1);
   });
 
   it('caso novo recomeça na 1ª coluna', () => {
     const r = build({
       leads: [lead('f1', 'faltou', { stage_entered_at: iso(-1) })],
-      cards: [{ board: 'faltas_primeira', lead_id: 'f1', stage: 'perdido', updated_at: iso(-40) }],
+      cards: [{ board: 'nao_compareceu', lead_id: 'f1', stage: 'sem_interesse', updated_at: iso(-40) }],
     });
-    expect(r.faltas_primeira[0].stage).toBe('faltou');
+    expect(r.nao_compareceu[0].stage).toBe('a_reagendar');
   });
 
   it('tirado do quadro não volta, a não ser que aconteça de novo', () => {
     const base = { leads: [lead('f1', 'faltou', { stage_entered_at: iso(-10) })] };
-    const hidden = build({ ...base, cards: [{ board: 'faltas_primeira', lead_id: 'f1', stage: 'faltou', archived_at: iso(-2), updated_at: iso(-2) }] });
-    expect(hidden.faltas_primeira).toHaveLength(0);
+    const hidden = build({ ...base, cards: [{ board: 'nao_compareceu', lead_id: 'f1', stage: 'a_reagendar', archived_at: iso(-2), updated_at: iso(-2) }] });
+    expect(hidden.nao_compareceu).toHaveLength(0);
     const again = build({
       leads: [lead('f1', 'faltou', { stage_entered_at: iso(-1) })],
-      cards: [{ board: 'faltas_primeira', lead_id: 'f1', stage: 'faltou', archived_at: iso(-2), updated_at: iso(-2) }],
+      cards: [{ board: 'nao_compareceu', lead_id: 'f1', stage: 'a_reagendar', archived_at: iso(-2), updated_at: iso(-2) }],
     });
-    expect(again.faltas_primeira).toHaveLength(1);
+    expect(again.nao_compareceu).toHaveLength(1);
   });
 
   it('paciente colocado à mão aparece mesmo fora da regra', () => {
     const r = build({
       leads: [lead('m1', 'fechado')],
-      cards: [{ board: 'desmarcacoes', lead_id: 'm1', stage: 'tentando_reagendar', manual: true, updated_at: iso(-1) }],
+      cards: [{ board: 'nao_compareceu', lead_id: 'm1', stage: 'tentativa_1', manual: true, updated_at: iso(-1) }],
     });
-    expect(r.desmarcacoes[0]).toMatchObject({ manual: true, stage: 'tentando_reagendar' });
+    expect(r.nao_compareceu[0]).toMatchObject({ manual: true, stage: 'tentativa_1' });
   });
 });
 
@@ -155,7 +174,7 @@ describe('CRC — Fim de ciclo', () => {
       leads: [lead('x', 'faltou', { contact_opt_out_at: iso(-1) })],
       overduePayments: [{ lead_id: 'x', due_date: '2026-10-01', gross_value: 100 }],
     });
-    expect(r.faltas_primeira).toHaveLength(0);
+    expect(r.nao_compareceu).toHaveLength(0);
     expect(r.inadimplencia).toHaveLength(1);
   });
 
@@ -163,10 +182,10 @@ describe('CRC — Fim de ciclo', () => {
     const r = build({
       leads: [lead('x', 'sem_interesse', { contact_opt_out_at: iso(-1) }), lead('y', 'sem_interesse')],
       cards: [
-        { board: 'faltas_primeira', lead_id: 'x', stage: 'fim_de_ciclo', updated_at: iso(-1) },
-        { board: 'faltas_primeira', lead_id: 'y', stage: 'perdido', updated_at: iso(-10) },
+        { board: 'nao_compareceu', lead_id: 'x', stage: 'fim_de_ciclo', updated_at: iso(-1) },
+        { board: 'nao_compareceu', lead_id: 'y', stage: 'sem_interesse', updated_at: iso(-10) },
       ],
     });
-    expect(r.faltas_primeira.map(i => [i.lead.id, i.stage])).toEqual([['x', 'fim_de_ciclo']]);
+    expect(r.nao_compareceu.map(i => [i.lead.id, i.stage])).toEqual([['x', 'fim_de_ciclo']]);
   });
 });

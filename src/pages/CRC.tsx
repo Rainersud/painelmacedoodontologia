@@ -9,6 +9,7 @@ import { HubCard } from '@/components/crc/HubCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
+import { useDueReturns } from '@/components/crm/ReturnColumn';
 import { useRemarketingEntries } from '@/hooks/useRemarketing';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,8 +64,8 @@ const SECTIONS: CrcSection[] = [
     Component: () => <Remarketing embedded />,
   },
   {
-    key: 'retorno', label: 'Retorno', icon: RotateCcw, module: 'tarefas', caption: 'para hoje',
-    rule: 'Retornos e tarefas de contato com vencimento até hoje.',
+    key: 'retorno', label: 'Retorno', icon: RotateCcw, module: 'tarefas', caption: '',
+    rule: 'Retornos pendentes do dia e os em atraso de dias anteriores.',
     Component: () => <Tarefas embedded />,
   },
   {
@@ -91,6 +92,7 @@ const CRC = () => {
   const counts = useMenuCounts();
   const followUp = useFollowUpCount();
   const remarketing = useRemarketingEntries();
+  const returns = useDueReturns();
 
   const sections = SECTIONS.filter(s => isAdmin || canView(s.module));
   const showBoards = isAdmin || canView('funil');
@@ -99,7 +101,7 @@ const CRC = () => {
   const count: Record<string, number | null> = {
     'follow-up': followUp.data ?? null,
     remarketing: remarketing.data ? remarketing.data.length : null,
-    retorno: counts['/retorno'] ?? null,
+    retorno: returns.isLoading ? null : returns.due.length,
     indicacoes: counts['/indicacoes'] ?? null,
     credito: counts['/credito-liberado'] ?? null,
   };
@@ -132,7 +134,7 @@ const CRC = () => {
             label={s.label}
             rule={s.rule}
             count={count[s.key]}
-            caption={s.caption}
+            caption={s.key === 'retorno' ? `${returns.today} do dia · ${returns.late} em atraso` : s.caption}
             onClick={() => navigate(`/crc?aba=${s.key}`)}
           />
         ))}
@@ -143,7 +145,7 @@ const CRC = () => {
   return (
     <AppLayout title="CRC — Central de Relacionamento">
       {showBoards ? (
-        <CRCView header={sectionCards} />
+        <CRCView footer={sectionCards} />
       ) : sections.length > 0 ? (
         <div className="space-y-4">{sectionCards}</div>
       ) : (

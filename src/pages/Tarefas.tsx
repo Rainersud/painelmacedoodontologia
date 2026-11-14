@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -171,7 +171,7 @@ function TaskItem({
 
           <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
-            <span>{format(new Date(task.scheduled_at), "HH:mm", { locale: ptBR })}</span>
+            <span>{format(new Date(task.scheduled_at), isSameDay(new Date(task.scheduled_at), new Date()) ? "HH:mm" : "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
             {isPast && !isCompleted && (
               <Badge variant="destructive" className="text-[10px]">Atrasada</Badge>
             )}
@@ -390,7 +390,17 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
     });
   }, [allTasks, selectedDate, viewMode]);
 
-  const pendingTasks = filteredTasks.filter(t => t.status === 'pendente');
+  // No dia de hoje, os retornos em atraso de dias anteriores aparecem junto com os do dia
+  const showingToday = viewMode === 'day' && isSameDay(selectedDate, new Date());
+  const overdueTasks = useMemo(() => {
+    if (!allTasks || !showingToday) return [];
+    const today = startOfDay(new Date()).getTime();
+    return allTasks
+      .filter(t => t.status === 'pendente' && new Date(t.scheduled_at).getTime() < today)
+      .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+  }, [allTasks, showingToday]);
+  const todayPending = filteredTasks.filter(t => t.status === 'pendente');
+  const pendingTasks = [...overdueTasks, ...todayPending];
   const completedTasks = filteredTasks.filter(t => t.status === 'concluido');
   const rescheduledTasks = filteredTasks.filter(t => t.status === 'reagendado');
 
@@ -548,7 +558,13 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
                           <p className="text-sm">Nenhum retorno pendente</p>
                         </div>
                       ) : (
-                        pendingTasks.map((task) => (
+                        pendingTasks.map((task, i) => (
+                          <Fragment key={task.id}>
+                          {showingToday && overdueTasks.length > 0 && (i === 0 || i === overdueTasks.length) && (
+                            <p className={cn('text-xs font-semibold pt-1', i === 0 ? 'text-destructive' : 'text-muted-foreground pt-3')}>
+                              {i === 0 ? `Em atraso (${overdueTasks.length})` : `Hoje (${todayPending.length})`}
+                            </p>
+                          )}
                           <TaskItem
                             key={task.id}
                             task={task}
@@ -559,6 +575,7 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
                             onDelete={() => deleteTask.mutate(task.id)}
                             onViewLead={() => openLead(task.lead_id)}
                           />
+                          </Fragment>
                         ))
                       )}
                     </TabsContent>

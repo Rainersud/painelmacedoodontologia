@@ -7,9 +7,7 @@ import { isSoldStatus } from '@/lib/metrics/stages';
 export type CrcBoardKey =
   | 'sem_confirmacao'
   | 'aniversariantes'
-  | 'desmarcacoes'
-  | 'faltas'
-  | 'faltas_primeira'
+  | 'nao_compareceu'
   | 'inadimplencia'
   | 'orcamentos'
   | 'tratamento_sem_agendamento';
@@ -44,61 +42,27 @@ export const CRC_BOARDS: CrcBoard[] = [
     ],
   },
   {
-    key: 'aniversariantes',
-    label: 'Aniversariantes',
-    rule: 'Pacientes com data de nascimento na ficha de triagem que fazem aniversário neste mês.',
+    key: 'tratamento_sem_agendamento',
+    label: 'Tratamento sem agendamento',
+    rule: 'Pacientes que fecharam tratamento, ainda não concluíram e estão sem próxima consulta marcada.',
     stages: [
-      { key: 'a_parabenizar', label: 'A parabenizar' },
-      { key: 'mensagem_enviada', label: 'Mensagem enviada' },
-      { key: 'respondeu', label: 'Respondeu', done: true },
-    ],
-  },
-  {
-    key: 'desmarcacoes',
-    label: 'Desmarcações',
-    rule: 'Consultas canceladas nos últimos 90 dias, sem nova consulta marcada.',
-    stages: [
-      { key: 'desmarcou', label: 'Desmarcou' },
-      { key: 'tentando_reagendar', label: 'Tentando reagendar' },
-      { key: 'reagendado', label: 'Reagendado', done: true },
-      { key: 'sem_interesse', label: 'Sem interesse', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'faltas',
-    label: 'Faltas',
-    rule: 'Pacientes em tratamento que faltaram a uma consulta nos últimos 90 dias, sem nova consulta marcada.',
-    stages: [
-      { key: 'faltou', label: 'Faltou' },
+      { key: 'sem_agenda', label: 'Sem agenda' },
       { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'reagendado', label: 'Reagendado', done: true },
-      { key: 'sem_retorno', label: 'Sem retorno', done: true },
+      { key: 'agendado', label: 'Agendado', done: true },
       { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
     ],
   },
   {
-    key: 'faltas_primeira',
-    label: 'Faltas 1ª consulta',
-    rule: 'Leads no status "Faltou": não vieram à primeira consulta.',
+    key: 'nao_compareceu',
+    label: 'Não compareceu / Reagendar',
+    rule: 'Quem desmarcou nos últimos 90 dias, faltou à 1ª consulta ou faltou durante o tratamento, e está sem nova consulta marcada.',
     stages: [
-      { key: 'faltou', label: 'Faltou' },
+      { key: 'a_reagendar', label: 'A reagendar' },
       { key: 'tentativa_1', label: 'Tentativa 1' },
       { key: 'tentativa_2', label: 'Tentativa 2' },
       { key: 'reagendado', label: 'Reagendado', done: true },
-      { key: 'perdido', label: 'Perdido', done: true },
+      { key: 'sem_interesse', label: 'Sem interesse', done: true },
       { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'inadimplencia',
-    label: 'Inadimplência',
-    rule: 'Pacientes com parcela pendente e vencida.',
-    stages: [
-      { key: 'vencida', label: 'Vencida' },
-      { key: 'cobranca_enviada', label: 'Cobrança enviada' },
-      { key: 'negociando', label: 'Negociando' },
-      { key: 'acordo_feito', label: 'Acordo feito', done: true },
     ],
   },
   {
@@ -115,14 +79,24 @@ export const CRC_BOARDS: CrcBoard[] = [
     ],
   },
   {
-    key: 'tratamento_sem_agendamento',
-    label: 'Tratamento sem agendamento',
-    rule: 'Pacientes que fecharam tratamento, ainda não concluíram e estão sem próxima consulta marcada.',
+    key: 'inadimplencia',
+    label: 'Inadimplência',
+    rule: 'Pacientes com parcela pendente e vencida.',
     stages: [
-      { key: 'sem_agenda', label: 'Sem agenda' },
-      { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'agendado', label: 'Agendado', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
+      { key: 'vencida', label: 'Vencida' },
+      { key: 'cobranca_enviada', label: 'Cobrança enviada' },
+      { key: 'negociando', label: 'Negociando' },
+      { key: 'acordo_feito', label: 'Acordo feito', done: true },
+    ],
+  },
+  {
+    key: 'aniversariantes',
+    label: 'Aniversariantes',
+    rule: 'Pacientes com data de nascimento na ficha de triagem que fazem aniversário neste mês.',
+    stages: [
+      { key: 'a_parabenizar', label: 'A parabenizar' },
+      { key: 'mensagem_enviada', label: 'Mensagem enviada' },
+      { key: 'respondeu', label: 'Respondeu', done: true },
     ],
   },
 ];
@@ -254,6 +228,47 @@ function hasFutureAppointment(lead: CrcLead, ctx: Ctx): boolean {
   return ctx.appts.some(a => isActive(a) && new Date(a.scheduled_at).getTime() >= nowMs);
 }
 
+// Casos que viram "Não compareceu / Reagendar" (o mais recente vale)
+const NO_SHOW_RULES: Record<'desmarcacoes' | 'faltas' | 'faltas_primeira', Rule> = {
+  desmarcacoes(lead, ctx) {
+    if (LOST.has(lead.status)) return null;
+    const from = ctx.now.getTime() - 90 * DAY;
+    const last = ctx.appts
+      .filter(a => a.cancelled_at && new Date(a.cancelled_at).getTime() >= from)
+      .sort((a, b) => b.cancelled_at!.localeCompare(a.cancelled_at!))[0];
+    if (!last) return null;
+    if (hasFutureAppointment(lead, ctx)) return null;
+    return { reason: `Desmarcou a consulta de ${fmtDate(last.scheduled_at)}`, eventAt: last.cancelled_at!, since: last.cancelled_at! };
+  },
+
+  faltas(lead, ctx) {
+    if (!isSoldStatus(lead.status) || lead.completed_at) return null;
+    const nowMs = ctx.now.getTime();
+    const from = nowMs - 90 * DAY;
+    // Faltou = falta registrada, ou consulta que já passou (1 dia de folga para registrar) sem presença
+    const missed = ctx.appts
+      .filter(a => !a.attended_at && !a.cancelled_at && !a.rescheduled_at)
+      .filter(a => {
+        const t = new Date(a.scheduled_at).getTime();
+        return t >= from && (a.no_show_at ? true : t < nowMs - DAY);
+      })
+      .filter(a => !lead.closed_at || ms(a.scheduled_at) > ms(lead.closed_at))
+      .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))[0];
+    if (!missed) return null;
+    const cameLater = ctx.appts.some(a => a.attended_at && ms(a.scheduled_at) > ms(missed.scheduled_at));
+    if (cameLater || hasFutureAppointment(lead, ctx)) return null;
+    return { reason: `Faltou em ${fmtDate(missed.scheduled_at)}`, eventAt: missed.scheduled_at, since: missed.scheduled_at };
+  },
+
+  faltas_primeira(lead) {
+    if (!FIRST_NO_SHOW.has(lead.status)) return null;
+    const at = lead.stage_entered_at || lead.scheduled_appointment_at || lead.updated_at;
+    const when = lead.scheduled_appointment_at ? ` de ${fmtDate(lead.scheduled_appointment_at)}` : '';
+    return { reason: `Faltou à 1ª consulta${when}`, eventAt: at, since: lead.stage_entered_at ?? undefined };
+  },
+
+};
+
 const RULES: Record<CrcBoardKey, Rule> = {
   sem_confirmacao(lead, ctx) {
     if (lead.status === 'confirmado' || LOST.has(lead.status)) return null;
@@ -292,41 +307,12 @@ const RULES: Record<CrcBoardKey, Rule> = {
     };
   },
 
-  desmarcacoes(lead, ctx) {
-    if (LOST.has(lead.status)) return null;
-    const from = ctx.now.getTime() - 90 * DAY;
-    const last = ctx.appts
-      .filter(a => a.cancelled_at && new Date(a.cancelled_at).getTime() >= from)
-      .sort((a, b) => b.cancelled_at!.localeCompare(a.cancelled_at!))[0];
-    if (!last) return null;
-    if (hasFutureAppointment(lead, ctx)) return null;
-    return { reason: `Desmarcou a consulta de ${fmtDate(last.scheduled_at)}`, eventAt: last.cancelled_at!, since: last.cancelled_at! };
-  },
-
-  faltas(lead, ctx) {
-    if (!isSoldStatus(lead.status) || lead.completed_at) return null;
-    const nowMs = ctx.now.getTime();
-    const from = nowMs - 90 * DAY;
-    // Faltou = falta registrada, ou consulta que já passou (1 dia de folga para registrar) sem presença
-    const missed = ctx.appts
-      .filter(a => !a.attended_at && !a.cancelled_at && !a.rescheduled_at)
-      .filter(a => {
-        const t = new Date(a.scheduled_at).getTime();
-        return t >= from && (a.no_show_at ? true : t < nowMs - DAY);
-      })
-      .filter(a => !lead.closed_at || ms(a.scheduled_at) > ms(lead.closed_at))
-      .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))[0];
-    if (!missed) return null;
-    const cameLater = ctx.appts.some(a => a.attended_at && ms(a.scheduled_at) > ms(missed.scheduled_at));
-    if (cameLater || hasFutureAppointment(lead, ctx)) return null;
-    return { reason: `Faltou em ${fmtDate(missed.scheduled_at)}`, eventAt: missed.scheduled_at, since: missed.scheduled_at };
-  },
-
-  faltas_primeira(lead) {
-    if (!FIRST_NO_SHOW.has(lead.status)) return null;
-    const at = lead.stage_entered_at || lead.scheduled_appointment_at || lead.updated_at;
-    const when = lead.scheduled_appointment_at ? ` de ${fmtDate(lead.scheduled_appointment_at)}` : '';
-    return { reason: `Faltou à 1ª consulta${when}`, eventAt: at, since: lead.stage_entered_at ?? undefined };
+  nao_compareceu(lead, ctx) {
+    const found = Object.values(NO_SHOW_RULES)
+      .map(rule => rule(lead, ctx))
+      .filter((o): o is Occurrence => o !== null)
+      .sort((a, b) => ms(b.eventAt) - ms(a.eventAt));
+    return found[0] ?? null;
   },
 
   inadimplencia(_lead, ctx) {

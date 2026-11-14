@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Cake, CalendarClock, CalendarX, CircleDollarSign, FileSpreadsheet, Loader2,
-  Plus, Search, Stethoscope, UserX, UserRoundX, AlertTriangle,
+  Plus, Search, Stethoscope, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,9 +25,7 @@ import type { Lead } from '@/types/crm';
 const ICONS: Record<CrcBoardKey, typeof Cake> = {
   sem_confirmacao: CalendarClock,
   aniversariantes: Cake,
-  desmarcacoes: CalendarX,
-  faltas: UserX,
-  faltas_primeira: UserRoundX,
+  nao_compareceu: CalendarX,
   inadimplencia: CircleDollarSign,
   orcamentos: FileSpreadsheet,
   tratamento_sem_agendamento: Stethoscope,
@@ -35,8 +33,8 @@ const ICONS: Record<CrcBoardKey, typeof Cake> = {
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-/** `header`: conteúdo mostrado acima dos quadros na tela inicial (as demais telas do CRC). */
-export function CRCView({ header }: { header?: ReactNode } = {}) {
+/** `footer`: conteúdo mostrado abaixo dos quadros na tela inicial (as demais telas do CRC). */
+export function CRCView({ footer }: { footer?: ReactNode } = {}) {
   const [params, setParams] = useSearchParams();
   const boardKey = params.get('quadro') as CrcBoardKey | null;
   const board = boardKey && CRC_BOARD_MAP[boardKey] ? CRC_BOARD_MAP[boardKey] : null;
@@ -75,10 +73,9 @@ export function CRCView({ header }: { header?: ReactNode } = {}) {
         <CRCBoardView board={board.key} items={boards[board.key]} leads={leads} onBack={() => openBoard(null)} />
       ) : (
         <>
-          {header}
           <section aria-labelledby="crc-quadros" className="space-y-2">
             <h2 id="crc-quadros" className="text-sm font-semibold text-muted-foreground">Quadros de relacionamento</h2>
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRC_BOARDS.map(b => {
                 const items = boards[b.key];
                 const open = openCount(b.key, items);
@@ -96,6 +93,7 @@ export function CRCView({ header }: { header?: ReactNode } = {}) {
               })}
             </div>
           </section>
+          {footer}
         </>
       )}
     </div>

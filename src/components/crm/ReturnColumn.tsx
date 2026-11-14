@@ -6,7 +6,8 @@ import { useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import type { Lead, Task } from '@/types/crm';
 
-const OPEN = new Set(['pendente', 'reagendado']);
+// Reagendar move a própria tarefa para a nova data (continua pendente); "reagendado" é só histórico antigo.
+const OPEN = new Set(['pendente']);
 
 /** Retornos para hoje e atrasados (tarefas em aberto até o fim do dia). */
 export function useDueReturns() {
@@ -17,7 +18,12 @@ export function useDueReturns() {
       .filter(t => OPEN.has(t.status) && new Date(t.scheduled_at).getTime() <= limit)
       .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
   }, [tasks]);
-  return { due, isLoading };
+  const late = useMemo(() => {
+    const today = startOfDay(new Date()).getTime();
+    return due.filter(t => new Date(t.scheduled_at).getTime() < today).length;
+  }, [due]);
+  /** due = do dia + em atraso; late = só os de dias anteriores. */
+  return { due, late, today: due.length - late, isLoading };
 }
 
 function whenLabel(t: Task) {

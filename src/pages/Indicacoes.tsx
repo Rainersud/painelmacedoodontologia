@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { ReferralDashboard } from '@/components/crm/ReferralDashboard';
 import { ReferralRankingWidget } from '@/components/crm/ReferralRankingWidget';
+import { OpenReferralsList } from '@/components/crm/OpenReferralsList';
 import { ReferrerDetailDialog } from '@/components/crm/ReferrerDetailDialog';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
@@ -38,6 +39,7 @@ const Indicacoes = ({ embedded = false }: { embedded?: boolean } = {}) => {
           <p className="text-sm text-muted-foreground">Métricas do programa de indicações e benefícios</p>
         </div>
         <ReferralDashboard />
+        <OpenReferralsList onOpenLead={handleViewLead} />
         <ReferralRankingWidget
           onLeadClick={(leadId) => handleReferrerClick(leadId)}
         />

@@ -109,7 +109,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     }
     if (s.returns.overdue > 0) insights.push(`${s.returns.overdue} retorno(s) atrasado(s) e sem agendamento: é a lista mais quente para recompra.`);
     if (s.returns.next30 > 0) insights.push(`${s.returns.next30} retorno(s) nos próximos 30 dias ainda sem agendamento.`);
-    if (s.ltvPurchases > 0 && s.frontTicket > 0) {
+    if (s.ltvRevenue > 0 && s.ltvPurchases > 0 && s.frontTicket > 0) {
       insights.push(`Cada compra no LTV vale em média ${pct((s.ltvTicket / s.frontTicket) * 100)} do ticket do front.`);
     }
     if (ltvCac !== null) {
@@ -138,7 +138,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Kpi icon={TrendingUp} label="LTV médio por paciente" value={formatCurrency(s.avgLtv)}
           sub={`Front ${formatCurrency(s.frontTicket)} + LTV ${formatCurrency(Math.max(0, s.avgLtv - s.frontTicket))}`}
           help="(Valor vendido no front + valor vendido no LTV) ÷ número de pacientes." />

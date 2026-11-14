@@ -155,7 +155,7 @@ export function FinancialDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid {...chartGrid} />
-                <XAxis {...chartAxis} dataKey="label" />
+                <XAxis {...chartAxis} dataKey="label" interval={0} tick={{ ...chartAxis.tick, fontSize: 11 }} />
                 <YAxis {...chartAxis} width={64} tickFormatter={v => (v >= 1000 ? `${Math.round(v / 1000)} mil` : String(v))} />
                 <ChartTooltip {...chartTooltipProps} formatter={(v: number) => formatCurrency(v)} />
                 <Legend {...chartLegend} />

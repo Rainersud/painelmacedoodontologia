@@ -19,7 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
-import { defaultReturnDate, summarize } from '@/lib/ltv';
+import { defaultReturnDate, summarize, LTV_PERIODS, ltvActivity, ltvPeriodRange, type LtvPeriod } from '@/lib/ltv';
 import { useLTVData } from '@/hooks/useLTVData';
 import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
 
@@ -956,6 +956,12 @@ const Comercial2 = () => {
   const metrics = useUpsellMetrics();
   const ltvData = useLTVData();
   const ltv = useMemo(() => summarize(ltvData.patients), [ltvData.patients]);
+  const [period, setPeriod] = useState<LtvPeriod>('mes');
+  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
+  const activity = useMemo(() => {
+    const r = ltvPeriodRange(period);
+    return ltvActivity(ltvData.patients, ltvData.payments, r.start, r.end);
+  }, [period, ltvData.patients, ltvData.payments]);
   const patientByOpp = useMemo(() => new Map(ltvData.patients.map(p => [p.oppId, p])), [ltvData.patients]);
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
@@ -1067,16 +1073,35 @@ const Comercial2 = () => {
   return (
     <AppLayout title="Comercial 2 – Pós-Venda e LTV">
       <Tabs defaultValue="pipeline" className="flex flex-col h-auto min-h-0">
-        <TabsList className="shrink-0 mb-3 w-fit">
-          <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
-          <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
-          <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
-        </TabsList>
+        <div className="shrink-0 mb-3 flex flex-wrap items-center justify-between gap-2">
+          <TabsList className="w-fit">
+            <TabsTrigger value="pipeline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Pipeline</TabsTrigger>
+            <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
+            <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
+          </TabsList>
+          <div className="inline-flex rounded-lg bg-muted p-1" role="radiogroup" aria-label="Período dos indicadores">
+            {LTV_PERIODS.map(p => (
+              <button
+                key={p.key}
+                type="button"
+                role="radio"
+                aria-checked={period === p.key}
+                onClick={() => setPeriod(p.key)}
+                className={cn(
+                  'rounded-md px-3.5 py-1.5 text-xs font-medium transition-colors',
+                  period === p.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <TabsContent value="financeiro" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <FinancialDashboard />
+          <FinancialDashboard period={period} />
         </TabsContent>
         <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <LTVRecurrencePanel onOpenLead={(oppId) => {
+          <LTVRecurrencePanel period={period} onOpenLead={(oppId) => {
             const opp = opportunities?.find(o => o.id === oppId);
             if (opp) {
               setSelectedOpp(opp);
@@ -1094,7 +1119,7 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-primary" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Pacientes</p>
+                        <p className="text-[10px] text-muted-foreground">Pacientes na base</p>
                         <p className="text-lg font-bold">{ltv.patients}</p>
                       </div>
                     </div>
@@ -1105,8 +1130,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-chart-5" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Recompraram</p>
-                        <p className="text-lg font-bold">{ltv.repeatPatients}</p>
+                        <p className="text-[10px] text-muted-foreground">Compraram no LTV {periodDef.current}</p>
+                        <p className="text-lg font-bold">{activity.buyers}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1116,8 +1141,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Taxa de recompra</p>
-                        <p className="text-lg font-bold">{ltv.repurchaseRate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</p>
+                        <p className="text-[10px] text-muted-foreground">Entraram no LTV {periodDef.current}</p>
+                        <p className="text-lg font-bold">{activity.newPatients}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1127,8 +1152,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-success" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Vendido no LTV</p>
-                        <p className="text-lg font-bold">{formatCurrency(ltv.ltvRevenue)}</p>
+                        <p className="text-[10px] text-muted-foreground">Vendido no LTV {periodDef.current}</p>
+                        <p className="text-lg font-bold">{formatCurrency(activity.sold)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1138,8 +1163,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-warning-strong" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Ticket médio LTV</p>
-                        <p className="text-lg font-bold">{formatCurrency(ltv.ltvTicket)}</p>
+                        <p className="text-[10px] text-muted-foreground">Ticket médio LTV {periodDef.current}</p>
+                        <p className="text-lg font-bold">{formatCurrency(activity.ticket)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1149,8 +1174,8 @@ const Comercial2 = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-chart-2" />
                       <div>
-                        <p className="text-[10px] text-muted-foreground">LTV médio</p>
-                        <p className="text-lg font-bold">{formatCurrency(ltv.avgLtv)}</p>
+                        <p className="text-[10px] text-muted-foreground">Retornos {periodDef.current}</p>
+                        <p className="text-lg font-bold">{activity.returnsDue}</p>
                       </div>
                     </div>
                   </CardContent>

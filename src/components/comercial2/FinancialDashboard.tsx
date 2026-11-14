@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { endOfDay, format, startOfMonth, startOfYear, subMonths } from 'date-fns';
+import { useMemo } from 'react';
+import { format } from 'date-fns';
 import { ArrowDownRight, ArrowUpRight, Info, Loader2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -7,36 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { chartAxis, chartGrid, chartLegend, chartTooltipProps } from '@/lib/chartStyle';
-import { cashByMonth, cashInRange, ltvToReceiveByMonth } from '@/lib/ltv';
+import { cashByMonth, cashInRange, ltvToReceiveByMonth, LTV_PERIODS, ltvPeriodRange, type LtvPeriod } from '@/lib/ltv';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useOpenLead } from '@/contexts/LeadDetailContext';
-
-type Period = 'mes' | 'mes_passado' | '3m' | 'ano';
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'mes', label: 'Este mês' },
-  { key: 'mes_passado', label: 'Mês passado' },
-  { key: '3m', label: '3 meses' },
-  { key: 'ano', label: 'Este ano' },
-];
-
-/** Período escolhido e o período anterior do mesmo tamanho (para a variação). */
-function ranges(p: Period, now = new Date()) {
-  if (p === 'mes') {
-    const s = startOfMonth(now);
-    return { cur: [s, endOfDay(now)], prev: [startOfMonth(subMonths(now, 1)), endOfDay(new Date(s.getTime() - 1))] } as const;
-  }
-  if (p === 'mes_passado') {
-    const s = startOfMonth(subMonths(now, 1));
-    const e = endOfDay(new Date(startOfMonth(now).getTime() - 1));
-    return { cur: [s, e], prev: [startOfMonth(subMonths(now, 2)), endOfDay(new Date(s.getTime() - 1))] } as const;
-  }
-  if (p === '3m') {
-    const s = startOfMonth(subMonths(now, 2));
-    return { cur: [s, endOfDay(now)], prev: [startOfMonth(subMonths(now, 5)), endOfDay(new Date(s.getTime() - 1))] } as const;
-  }
-  const s = startOfYear(now);
-  return { cur: [s, endOfDay(now)], prev: [startOfYear(subMonths(s, 1)), endOfDay(new Date(s.getTime() - 1))] } as const;
-}
 
 const METHOD: Record<string, string> = {
   credito: 'Crédito', debito: 'Débito', pix: 'Pix', boleto: 'Boleto', dinheiro: 'Dinheiro', cheque: 'Cheque',
@@ -74,21 +47,21 @@ function Kpi({ label, value, sub, help, delta }: { label: string; value: string;
 }
 
 /** Financeiro do LTV: o caixa das recompras, separado do front e somado ao faturamento da clínica. */
-export function FinancialDashboard() {
+export function FinancialDashboard({ period }: { period: LtvPeriod }) {
   const { patients, payments, isLoading } = useLTVData();
   const openLead = useOpenLead();
-  const [period, setPeriod] = useState<Period>('mes');
 
   const nameByLead = useMemo(() => new Map(patients.map(p => [p.leadId, p.name])), [patients]);
-  const r = ranges(period);
-  const cur = cashInRange(payments, r.cur[0], r.cur[1]);
-  const prev = cashInRange(payments, r.prev[0], r.prev[1]);
+  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
+  const r = ltvPeriodRange(period);
+  const cur = cashInRange(payments, r.start, r.end);
+  const prev = cashInRange(payments, r.prevStart, r.prevEnd);
   const delta = prev.ltv > 0 ? ((cur.ltv - prev.ltv) / prev.ltv) * 100 : null;
   const share = cur.total > 0 ? (cur.ltv / cur.total) * 100 : 0;
 
   const soldInPeriod = payments
     .filter(p => p.upsell_opportunity_id && p.status !== 'cancelado' && p.created_at
-      && new Date(p.created_at) >= r.cur[0] && new Date(p.created_at) <= r.cur[1])
+      && new Date(p.created_at) >= r.start && new Date(p.created_at) <= r.end)
     .reduce((s, p) => s + Number(p.gross_value ?? p.net_value ?? 0), 0);
 
   const monthly = useMemo(() => cashByMonth(payments, 12), [payments]);
@@ -113,33 +86,16 @@ export function FinancialDashboard() {
             Pagamentos registrados no Financeiro da Etapa dos cards do LTV. Eles também somam no faturamento da meta da clínica.
           </p>
         </div>
-        <div className="inline-flex rounded-lg bg-muted p-1" role="tablist" aria-label="Período">
-          {PERIODS.map(p => (
-            <button
-              key={p.key}
-              type="button"
-              role="tab"
-              aria-selected={period === p.key}
-              onClick={() => setPeriod(p.key)}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                period === p.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Recebido no LTV" value={formatCurrency(cur.ltv)} delta={delta}
-          sub={delta === null ? 'sem base no período anterior' : 'vs. período anterior'}
+        <Kpi label={`Recebido no LTV ${periodDef.current}`} value={formatCurrency(cur.ltv)} delta={delta}
+          sub={delta === null ? `${periodDef.previous}: ${formatCurrency(prev.ltv)}` : `vs ${periodDef.previous}`}
           help="Pagamentos do LTV com status pago, valor líquido (já sem taxas), pela data do pagamento." />
-        <Kpi label="Participação no faturamento" value={`${share.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+        <Kpi label={`Participação no faturamento ${periodDef.current}`} value={`${share.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
           sub={`de ${formatCurrency(cur.total)} recebidos pela clínica`}
           help="Recebido no LTV ÷ tudo o que a clínica recebeu no período (front + LTV). É o mesmo faturamento usado na meta." />
-        <Kpi label="Vendido no LTV" value={formatCurrency(soldInPeriod)}
+        <Kpi label={`Vendido no LTV ${periodDef.current}`} value={formatCurrency(soldInPeriod)}
           sub="registrado no período (pago + a receber)"
           help="Valor bruto dos pagamentos do LTV registrados no período, inclusive parcelas que ainda vão vencer." />
         <Kpi label="A receber do LTV" value={formatCurrency(pendingTotal)}

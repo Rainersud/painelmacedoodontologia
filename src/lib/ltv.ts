@@ -10,7 +10,10 @@
 //     O valor total do paciente (front + LTV) é outro indicador: avgPatientValue.
 //     Os pagamentos do LTV também entram no faturamento da meta da clínica (metrics/rules.revenue
 //     soma todos os pagamentos pagos, do front e do LTV).
-import { addMonths, differenceInCalendarDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import {
+  addMonths, differenceInCalendarDays, endOfDay, endOfMonth, endOfWeek, format, startOfDay, startOfMonth,
+  startOfWeek, subDays, subMonths, subWeeks,
+} from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const LTV_STAGES = [
@@ -354,4 +357,66 @@ export function segmentBy(patients: LtvPatient[], key: (p: LtvPatient) => string
       };
     })
     .sort((a, b) => b.patients - a.patients || b.ltvRevenue - a.ltvRevenue);
+}
+
+// ---------- Período (Dia / Semana / Mês) ----------
+// O filtro do Comercial 2 vale para o que ACONTECEU no período: vendas e recebimentos do LTV,
+// recompras, pacientes que entraram e retornos marcados. Indicadores de vida inteira
+// (LTV médio, taxa de recompra, jornada) continuam acumulados — é assim que o LTV é medido.
+
+export type LtvPeriod = 'dia' | 'semana' | 'mes';
+
+export const LTV_PERIODS: { key: LtvPeriod; label: string; current: string; previous: string }[] = [
+  { key: 'dia', label: 'Dia', current: 'hoje', previous: 'ontem' },
+  { key: 'semana', label: 'Semana', current: 'nesta semana', previous: 'semana passada' },
+  { key: 'mes', label: 'Mês', current: 'neste mês', previous: 'mês passado' },
+];
+
+export function ltvPeriodRange(kind: LtvPeriod, now: Date = new Date()) {
+  if (kind === 'dia') {
+    const start = startOfDay(now);
+    return { start, end: endOfDay(now), prevStart: subDays(start, 1), prevEnd: endOfDay(subDays(start, 1)) };
+  }
+  if (kind === 'semana') {
+    const start = startOfWeek(now, { weekStartsOn: 1 });
+    return { start, end: endOfWeek(now, { weekStartsOn: 1 }), prevStart: subWeeks(start, 1), prevEnd: endOfDay(subDays(start, 1)) };
+  }
+  const start = startOfMonth(now);
+  return { start, end: endOfMonth(now), prevStart: startOfMonth(subMonths(now, 1)), prevEnd: endOfMonth(subMonths(now, 1)) };
+}
+
+export interface LtvActivity {
+  /** pagamentos do LTV registrados no período (bruto, pagos + a receber) */
+  sold: number;
+  /** pagamentos do LTV pagos no período (líquido) */
+  received: number;
+  /** pacientes que compraram no LTV no período */
+  buyers: number;
+  /** vendido ÷ pacientes que compraram no período */
+  ticket: number;
+  /** pacientes que entraram no LTV (venda do front) no período */
+  newPatients: number;
+  /** retornos marcados para o período (ainda não agendados) */
+  returnsDue: number;
+}
+
+const inside = (d: string | Date | null | undefined, start: Date, end: Date) => {
+  if (!d) return false;
+  const x = typeof d === 'string' && d.length === 10 ? new Date(`${d}T12:00:00`) : new Date(d);
+  return x >= start && x <= end;
+};
+
+export function ltvActivity(patients: LtvPatient[], payments: LtvPaymentRow[], start: Date, end: Date): LtvActivity {
+  const ltvPays = payments.filter(p => p.upsell_opportunity_id && p.status !== 'cancelado' && p.status !== 'estornado');
+  const soldPays = ltvPays.filter(p => inside(p.created_at, start, end));
+  const sold = soldPays.reduce((s, p) => s + n(p.gross_value ?? p.net_value), 0);
+  const buyers = new Set(soldPays.map(p => p.upsell_opportunity_id)).size;
+  return {
+    sold,
+    received: ltvPays.filter(p => p.status === 'pago' && inside(p.paid_at, start, end)).reduce((s, p) => s + n(p.net_value), 0),
+    buyers,
+    ticket: safe(sold, buyers),
+    newPatients: patients.filter(p => inside(p.soldAt, start, end)).length,
+    returnsDue: patients.filter(p => !p.returnScheduled && inside(p.nextReturn, start, end)).length,
+  };
 }

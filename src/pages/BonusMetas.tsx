@@ -1,357 +1,214 @@
 import { useState } from 'react';
-import { describeError } from '@/lib/errors';
+import { addMonths, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
+import { Award, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Settings, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useAgentBonus, useAllAgentsBonus } from '@/hooks/useAgentBonus';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Award, 
-  Settings, 
-  CheckCircle2, 
-  XCircle, 
-  TrendingUp,
-  Users,
-  Calendar,
-  UserCheck,
-  DollarSign,
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import { BONUS_SETTINGS, type WeekResult, type WeekState } from '@/lib/bonus';
+import { useWeeklyBonus, type WeeklyBonusData } from '@/hooks/useWeeklyBonus';
 
-type Period = 'diario' | 'semanal' | 'mensal';
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const dm = (d: Date) => format(d, 'dd/MM');
 
-// Monday.com style colors
-// Cores do padrão: série fixa por métrica, laranja vira o tom de destaque da marca
-const mondayColors = {
-  blue: 'hsl(var(--chart-1))',
-  green: 'hsl(var(--chart-5))',
-  purple: 'hsl(var(--chart-2))',
-  orange: 'hsl(var(--primary))',
-  pink: 'hsl(var(--chart-4))',
-  teal: 'hsl(var(--chart-1))',
-  yellow: 'hsl(var(--warning))',
-  red: 'hsl(var(--destructive))',
+const STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
+  batida: { label: 'Batida', cls: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30', Icon: CheckCircle2 },
+  nao_batida: { label: 'Não batida', cls: 'bg-destructive/10 text-destructive border-destructive/30', Icon: XCircle },
+  em_andamento: { label: 'Em andamento', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30', Icon: Clock },
+  futura: { label: 'A começar', cls: 'bg-muted text-muted-foreground border-border', Icon: Circle },
 };
 
-const metricConfig: Record<string, { icon: React.ElementType; color: string }> = {
-  novos_leads: { icon: Users, color: mondayColors.blue },
-  agendamentos: { icon: Calendar, color: mondayColors.purple },
-  comparecimentos: { icon: UserCheck, color: mondayColors.green },
-  resgatados: { icon: Sparkles, color: mondayColors.orange },
-  fechados: { icon: DollarSign, color: mondayColors.pink },
-};
+function WeekRow({ w, index }: { w: WeekResult; index: number }) {
+  const st = STATE[w.state];
+  return (
+    <div className="grid grid-cols-[110px_1fr_auto] items-center gap-3 rounded-lg border p-3">
+      <div>
+        <p className="text-sm font-medium">Semana {index + 1}</p>
+        <p className="text-xs text-muted-foreground">{dm(w.week.start)} a {dm(w.week.end)}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {w.goals.map(g => (
+          <span
+            key={g.key}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs',
+              g.hit ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border',
+            )}
+          >
+            {g.hit ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <Circle className="h-3.5 w-3.5 text-muted-foreground" />}
+            {g.label}
+            <strong className="tabular-nums">{g.current}/{g.target}</strong>
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <Badge variant="outline" className={cn('gap-1', st.cls)}><st.Icon className="h-3 w-3" />{st.label}</Badge>
+        <span className={cn('text-sm font-semibold tabular-nums', w.earned > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground')}>
+          {w.earned > 0 ? brl(w.earned) : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GroupCard({ g, weeklyValue }: { g: WeeklyBonusData['groups'][number]; weeklyValue: number }) {
+  const n = g.weeks.length;
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">{g.label}</CardTitle>
+            <p className="text-sm text-muted-foreground">Responsável: <strong className="text-foreground">{g.owner}</strong></p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Bônus do mês</p>
+            <p className="text-2xl font-bold tabular-nums">{brl(g.total)}</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {g.weeks.map((w, i) => <WeekRow key={i} w={w} index={i} />)}
+        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+          <div className="flex justify-between"><span>Semanas batidas</span><strong className="tabular-nums">{g.weeksHit} de {n} · {brl(g.weeklyTotal)}</strong></div>
+          <div className="flex justify-between">
+            <span>Bônus dobrado (todas as {n} semanas)</span>
+            <strong className={cn('tabular-nums', g.doubleBonus > 0 && 'text-emerald-700 dark:text-emerald-400')}>
+              {g.doubleBonus > 0 ? `+ ${brl(g.doubleBonus)}` : g.doubleStillPossible ? `possível: + ${brl(weeklyValue * n)}` : 'perdido neste mês'}
+            </strong>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+async function saveSetting(key: string, value: number) {
+  const { data: existing } = await supabase.from('meta_settings').select('id').eq('setting_key', key).maybeSingle();
+  const { error } = existing
+    ? await supabase.from('meta_settings').update({ setting_value: value }).eq('id', existing.id)
+    : await supabase.from('meta_settings').insert({ setting_key: key, setting_value: value });
+  if (error) throw error;
+}
+
+function SettingsDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange: (o: boolean) => void; data: WeeklyBonusData }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    weeklyValue: String(data.settings.weeklyValue),
+    resgatesPerWeek: String(data.settings.resgatesPerWeek),
+    indicacoesPerWeek: String(data.settings.indicacoesPerWeek),
+    atendimento: data.groups.find(g => g.group === 'atendimento')?.owner ?? '',
+    indicacoes: data.groups.find(g => g.group === 'indicacoes')?.owner ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      for (const k of ['weeklyValue', 'resgatesPerWeek', 'indicacoesPerWeek'] as const) {
+        const v = Number(form[k]);
+        if (!Number.isFinite(v) || v <= 0) throw new Error('Use números maiores que zero.');
+        await saveSetting(BONUS_SETTINGS[k].key, v);
+      }
+      for (const grupo of ['atendimento', 'indicacoes'] as const) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
+        const { error } = await (supabase as any).from('bonus_responsaveis')
+          .upsert({ grupo, nome: form[grupo].trim() || (grupo === 'atendimento' ? 'Ariane' : 'Lidiane'), updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+      await qc.invalidateQueries({ queryKey: ['weekly-bonus'] });
+      toast.success('Regras do bônus salvas');
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(`Não foi possível salvar. ${describeError(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const field = (k: keyof typeof form, label: string, type = 'number') => (
+    <div className="space-y-1.5">
+      <Label htmlFor={k}>{label}</Label>
+      <Input id={k} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+    </div>
+  );
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Regras do bônus</DialogTitle></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {field('weeklyValue', 'Valor por semana batida (R$)')}
+          {field('resgatesPerWeek', 'Resgates por semana')}
+          {field('indicacoesPerWeek', 'Indicações por semana')}
+          <div />
+          {field('atendimento', 'Responsável — Atendimento', 'text')}
+          {field('indicacoes', 'Responsável — Indicações', 'text')}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Agendamentos e comparecimentos por semana vêm da escada de Metas da clínica (faturamento ÷ ticket médio).
+        </p>
+        <DialogFooter><Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar regras'}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function BonusMetas({ embedded = false }: { embedded?: boolean } = {}) {
   const { isAdmin } = useAuth();
-  const [period, setPeriod] = useState<Period>('diario');
-  const { agentData, bonusTargets, isLoading, updateBonusTarget } = useAgentBonus(undefined, period);
-  const { data: allAgents } = useAllAgentsBonus(period);
-  const [editingTarget, setEditingTarget] = useState<{ type: string; target: number; bonusValue: number } | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const handleSaveTarget = async () => {
-    if (!editingTarget) return;
-    try {
-      await updateBonusTarget.mutateAsync(editingTarget);
-      toast.success('Meta atualizada!');
-      setEditingTarget(null);
-      setIsDialogOpen(false);
-    } catch (error) {
-      toast.error(`Não foi possível atualizar. ${describeError(error)}`);
-    }
-  };
+  const [month, setMonth] = useState(() => new Date());
+  const [editing, setEditing] = useState(false);
+  const { data, isLoading } = useWeeklyBonus(month);
+  const total = (data?.groups ?? []).reduce((s, g) => s + g.total, 0);
 
   return (
     <PageShell embedded={embedded} title="Bônus por Metas">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Bônus por Metas</h2>
-            <p className="text-muted-foreground">Acompanhamento de metas individuais</p>
+            <h2 className="text-lg font-semibold">Bônus por metas</h2>
+            <p className="text-sm text-muted-foreground">
+              {data ? brl(data.settings.weeklyValue) : 'R$ 100'} por semana com todas as metas batidas. Batendo todas as semanas do mês, o bônus dobra.
+            </p>
           </div>
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="diario" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Diário
-              </TabsTrigger>
-              <TabsTrigger value="semanal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Semanal
-              </TabsTrigger>
-              <TabsTrigger value="mensal" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Mensal
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" aria-label="Mês anterior" onClick={() => setMonth(m => addMonths(m, -1))}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="min-w-[130px] text-center text-sm font-medium capitalize">{format(month, 'MMMM yyyy', { locale: ptBR })}</span>
+            <Button variant="outline" size="icon" aria-label="Próximo mês" onClick={() => setMonth(m => addMonths(m, 1))}><ChevronRight className="h-4 w-4" /></Button>
+            {isAdmin && data && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}><Settings className="h-4 w-4" />Regras</Button>
+            )}
+          </div>
         </div>
 
-        {/* My Bonus Summary - Monday Style */}
-        {agentData && (
-          <Card className="monday-card overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground font-medium">Bônus Ganho</p>
-                  <p className="text-4xl font-bold" style={{ color: mondayColors.orange }}>
-                    R$ {agentData.earnedBonus.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    de R$ {agentData.totalBonus.toFixed(2)} possível
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs font-medium px-3 py-1 rounded-full bg-success/15 text-success">
-                      {agentData.metrics.filter(m => m.completed).length} metas batidas
-                    </span>
-                  </div>
-                </div>
-                <div 
-                  className="h-20 w-20 rounded-2xl flex items-center justify-center text-white"
-                  style={{ backgroundColor: mondayColors.orange }}
-                >
-                  <Award className="h-10 w-10" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Funnel Visual - Monday Pipeline */}
-        <Card className="monday-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold">Funil de Desempenho</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
-              {isLoading ? (
-                [1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-32 flex-1 min-w-[120px] bg-muted/50 rounded-xl animate-pulse" />
-                ))
-              ) : (
-                agentData?.metrics.map((metric, index, arr) => {
-                  const config = metricConfig[metric.type] || { icon: TrendingUp, color: mondayColors.blue };
-                  const Icon = config.icon;
-
-                  return (
-                    <div key={metric.type} className="flex items-center flex-1 min-w-[120px]">
-                      <div className="flex-1">
-                        <div 
-                          className={cn(
-                            "rounded-xl p-4 text-center transition-all hover:scale-105 relative overflow-hidden",
-                            metric.completed ? "text-white" : "bg-muted/50"
-                          )}
-                          style={{ backgroundColor: metric.completed ? config.color : undefined }}
-                        >
-                          {metric.completed && (
-                            <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-white/80" />
-                          )}
-                          <Icon className={cn("h-6 w-6 mx-auto mb-2", !metric.completed && "text-muted-foreground")} />
-                          <p className="text-2xl font-bold">{metric.current}</p>
-                          <p className={cn("text-xs", metric.completed ? "opacity-90" : "text-muted-foreground")}>
-                            / {metric.target}
-                          </p>
-                          <p className="text-xs font-medium mt-1">{metric.label}</p>
-                          <div 
-                            className={cn(
-                              "mt-2 inline-block rounded-full px-2 py-0.5",
-                              metric.completed ? "bg-white/20" : "bg-muted"
-                            )}
-                          >
-                            <span className="text-xs font-semibold">R$ {metric.bonusValue.toFixed(0)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {index < arr.length - 1 && (
-                        <ArrowRight className="h-5 w-5 text-muted-foreground mx-1 flex-shrink-0" />
-                      )}
-                    </div>
-                  );
-                })
-              )}
+        {isLoading || !data ? (
+          <p className="text-sm text-muted-foreground">Carregando bônus…</p>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="flex flex-wrap items-center gap-6 p-4">
+                <Award className="h-8 w-8 text-primary" />
+                <div><p className="text-xs text-muted-foreground">Total da equipe no mês</p><p className="text-2xl font-bold tabular-nums">{brl(total)}</p></div>
+                {data.groups.map(g => (
+                  <div key={g.group}><p className="text-xs text-muted-foreground">{g.owner}</p><p className="text-lg font-semibold tabular-nums">{brl(g.total)}</p></div>
+                ))}
+              </CardContent>
+            </Card>
+            <div className="grid gap-6 xl:grid-cols-2">
+              {data.groups.map(g => <GroupCard key={g.group} g={g} weeklyValue={data.settings.weeklyValue} />)}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Metrics Grid */}
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {isLoading ? (
-            [1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-40 bg-muted/50 rounded-xl animate-pulse" />
-            ))
-          ) : (
-            agentData?.metrics.map((metric) => {
-              const config = metricConfig[metric.type] || { icon: TrendingUp, color: mondayColors.blue };
-              const Icon = config.icon;
-
-              return (
-                <Card key={metric.type} className="monday-card overflow-hidden group">
-                  <div 
-                    className="h-1.5 w-full"
-                    style={{ backgroundColor: metric.completed ? config.color : 'hsl(var(--muted))' }}
-                  />
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div 
-                        className={cn(
-                          "h-10 w-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
-                          metric.completed ? "text-white" : "bg-muted"
-                        )}
-                        style={{ backgroundColor: metric.completed ? config.color : undefined }}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {metric.completed ? (
-                          <CheckCircle2 className="h-5 w-5 text-success" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        {isAdmin && (
-                          <Dialog open={isDialogOpen && editingTarget?.type === metric.type} onOpenChange={(open) => {
-                            setIsDialogOpen(open);
-                            if (!open) setEditingTarget(null);
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => setEditingTarget({ type: metric.type, target: metric.target, bonusValue: metric.bonusValue })}
-                              >
-                                <Settings className="h-3 w-3" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Editar {metric.label}</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4 mt-4">
-                                <div className="space-y-2">
-                                  <Label>Meta Diária</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingTarget?.target || 0} 
-                                    onChange={(e) => setEditingTarget(prev => prev ? { ...prev, target: parseInt(e.target.value) } : null)} 
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Valor do Bônus (R$)</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingTarget?.bonusValue || 0} 
-                                    onChange={(e) => setEditingTarget(prev => prev ? { ...prev, bonusValue: parseFloat(e.target.value) } : null)} 
-                                  />
-                                </div>
-                                <Button className="w-full" onClick={handleSaveTarget}>Salvar</Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold">{metric.current}</span>
-                        <span className="text-sm text-muted-foreground">/ {metric.target}</span>
-                      </div>
-                      
-                      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                          style={{ 
-                            width: `${Math.min(metric.percentage, 100)}%`,
-                            backgroundColor: config.color 
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: config.color }}>{metric.percentage}%</span>
-                        <span 
-                          className={cn(
-                            "text-xs font-semibold px-2 py-0.5 rounded-full",
-                            metric.completed ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          R$ {metric.bonusValue.toFixed(0)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-
-        {/* All Agents (Admin Only) */}
-        {isAdmin && allAgents && allAgents.length > 0 && (
-          <Card className="monday-card">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-semibold">Todos os Colaboradores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {allAgents.map((agent, index) => {
-                  const completedCount = agent.metrics.filter(m => m.completed).length;
-                  const totalCount = agent.metrics.length;
-                  const progressPercent = (completedCount / totalCount) * 100;
-
-                  return (
-                    <div 
-                      key={agent.agent.id} 
-                      className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <Avatar className="h-12 w-12 border-2" style={{ borderColor: mondayColors.blue }}>
-                            <AvatarFallback className="text-sm font-semibold">
-                              {agent.agent.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-card border-2 border-background flex items-center justify-center text-[10px] font-bold">
-                            {index + 1}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-semibold">{agent.agent.full_name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {agent.metrics.slice(0, 5).map((m, i) => (
-                              <div 
-                                key={i}
-                                className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  m.completed ? "bg-success" : "bg-muted-foreground/30"
-                                )}
-                              />
-                            ))}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              {completedCount}/{totalCount} metas
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold" style={{ color: mondayColors.orange }}>
-                          R$ {agent.earnedBonus.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">bônus ganho</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+            <p className="text-xs text-muted-foreground">
+              Indicações contam tudo que foi apontado no Comercial 1, CRC e Comercial 2 (cada pessoa indicada conta uma vez). Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira.
+            </p>
+            {editing && <SettingsDialog open={editing} onOpenChange={setEditing} data={data} />}
+          </>
         )}
       </div>
     </PageShell>

@@ -823,7 +823,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   <div className="space-y-1">
                     {appointmentHistory.map((apt, idx) => {
                       const status = apt.attended_at ? 'Compareceu'
-                        : apt.no_show_at ? 'Faltou'
+                        : apt.no_show_at ? 'Não compareceu'
                         : apt.rescheduled_at ? 'Reagendado'
                         : apt.cancelled_at ? 'Desmarcou'
                         : apt.confirmed_at ? 'Confirmado' : 'Agendado';

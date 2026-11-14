@@ -30,6 +30,9 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { normalize, fuzzyMatch } from '@/lib/searchUtils';
 
+/** Cards desenhados por coluna antes do "Mostrar mais". */
+const PAGE = 40;
+
 const FOLLOWUP_KEYS = new Set([
   'followup_1','followup_2','followup_3','followup_4','followup_5',
   'followup_6','followup_7','followup_8','followup_9',
@@ -62,6 +65,8 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
+  // Desenha os cards aos poucos: colunas com centenas de leads travavam o navegador
+  const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('funil-collapsed');
@@ -275,6 +280,7 @@ function KanbanBoard({
                               </div>
                             );
                             items.forEach(lead => {
+                              if (globalIndex >= (visibleCount[stage.key] ?? PAGE)) return;
                               rendered.push(
                                 <div
                                   key={lead.id}
@@ -291,6 +297,20 @@ function KanbanBoard({
                               );
                             });
                           });
+                          const hidden = stageLeads.length - Math.min(stageLeads.length, visibleCount[stage.key] ?? PAGE);
+                          if (hidden > 0) {
+                            rendered.push(
+                              <Button
+                                key="more"
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-1 text-xs"
+                                onClick={() => setVisibleCount(v => ({ ...v, [stage.key]: (v[stage.key] ?? PAGE) + PAGE }))}
+                              >
+                                Mostrar mais {Math.min(PAGE, hidden)} de {hidden}
+                              </Button>
+                            );
+                          }
                           if (stageLeads.length === 0) {
                             rendered.push(
                               <div

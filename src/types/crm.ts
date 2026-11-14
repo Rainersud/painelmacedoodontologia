@@ -189,7 +189,7 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'followup_13', label: 'D7 Manhã (T13)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'followup_14', label: 'D7 Tarde (T14)', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'agendou', label: 'Agendado', color: 'bg-primary', bgColor: 'bg-primary/10' },
-  { key: 'faltou', label: 'Faltou', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
+  { key: 'faltou', label: 'Não compareceu', color: 'bg-destructive', bgColor: 'bg-destructive/10' },
   { key: 'compareceu', label: 'Compareceu', color: 'bg-success', bgColor: 'bg-success/10' },
   { key: 'quase_cliente', label: 'Quase Cliente', color: 'bg-chart-4', bgColor: 'bg-chart-4/10' },
   { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },

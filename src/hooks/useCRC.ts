@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +54,7 @@ interface CrcSources {
 function useCrcSources() {
   return useQuery({
     queryKey: ['crc-sources'],
+    refetchInterval: 60_000,
     queryFn: async (): Promise<CrcSources> => {
       const since = new Date(Date.now() - 120 * 86_400_000).toISOString();
       const today = new Date();
@@ -108,6 +109,12 @@ function useCrcSources() {
 export function useCrcBoards() {
   const leadsQ = useCRMLeads();
   const srcQ = useCrcSources();
+  // As confirmações andam com o relógio (24h, 2h, 10 min antes): recalcula a cada minuto
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const boards = useMemo(() => {
     if (!leadsQ.data || !srcQ.data) return null;
@@ -119,7 +126,7 @@ export function useCrcBoards() {
       birthdays: srcQ.data.birthdays,
       cards: srcQ.data.cards,
     });
-  }, [leadsQ.data, srcQ.data]);
+  }, [leadsQ.data, srcQ.data, tick]);
 
   return {
     boards,

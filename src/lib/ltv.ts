@@ -6,6 +6,8 @@
 //   - Compra no LTV = cada evolução salva no card do LTV (comprou_2 = 1ª recompra ... comprou_6 = 5+).
 //   - Valor vendido no LTV = soma dos pagamentos registrados no card do LTV (bruto, pagos e a receber).
 //   - Recebido = pagamentos com status "pago", valor líquido, pela data do pagamento.
+//   - LTV médio = só o que foi movimentado no LTV ÷ pacientes (o front NÃO entra).
+//     O valor total do paciente (front + LTV) é outro indicador: avgPatientValue.
 //     Os pagamentos do LTV também entram no faturamento da meta da clínica (metrics/rules.revenue
 //     soma todos os pagamentos pagos, do front e do LTV).
 import { addMonths, differenceInCalendarDays, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
@@ -132,8 +134,10 @@ export interface LtvGroup {
   share: number;
   frontValue: number;
   ltvValue: number;
-  /** (front + LTV) ÷ pacientes do grupo */
+  /** vendido no LTV ÷ pacientes do grupo (sem o front) */
   avgLtv: number;
+  /** (front + LTV) ÷ pacientes do grupo */
+  avgPatientValue: number;
   /** % dos pacientes do grupo anterior que chegaram neste grupo ou além */
   stepConversion: number | null;
 }
@@ -153,12 +157,16 @@ export interface LtvSummary {
   ltvPurchases: number;
   /** compras por paciente, contando o front */
   purchasesPerPatient: number;
-  /** LTV médio = (front + LTV) ÷ pacientes */
+  /** LTV médio = vendido no LTV ÷ pacientes (só o que foi movimentado no LTV) */
   avgLtv: number;
+  /** recebido no LTV ÷ pacientes */
+  avgLtvReceived: number;
+  /** valor total do paciente = (front + LTV) ÷ pacientes */
+  avgPatientValue: number;
   frontTicket: number;
   /** ticket médio de cada compra no LTV */
   ltvTicket: number;
-  /** LTV médio só de quem recomprou */
+  /** vendido no LTV ÷ pacientes que recompraram */
   avgLtvRepeat: number;
   /** dias da venda até a 1ª compra no LTV (média) */
   avgDaysToRepurchase: number | null;
@@ -191,7 +199,8 @@ export function summarize(patients: LtvPatient[], now: Date = new Date()): LtvSu
       share: safe(inGroup.length, total) * 100,
       frontValue: f,
       ltvValue: l,
-      avgLtv: safe(f + l, inGroup.length),
+      avgLtv: safe(l, inGroup.length),
+      avgPatientValue: safe(f + l, inGroup.length),
       stepConversion: i === 0 ? null : safe(reached, reachedPrev) * 100,
     };
   });
@@ -214,10 +223,12 @@ export function summarize(patients: LtvPatient[], now: Date = new Date()): LtvSu
     ltvShare: safe(ltv, front + ltv) * 100,
     ltvPurchases: purchases,
     purchasesPerPatient: safe(total + purchases, total),
-    avgLtv: safe(front + ltv, total),
+    avgLtv: safe(ltv, total),
+    avgLtvReceived: safe(patients.reduce((a, p) => a + p.ltvReceived, 0), total),
+    avgPatientValue: safe(front + ltv, total),
     frontTicket: safe(front, total),
     ltvTicket: safe(ltv, purchases),
-    avgLtvRepeat: safe(repeat.reduce((s, p) => s + p.frontValue + p.ltvSold, 0), repeat.length),
+    avgLtvRepeat: safe(ltv, repeat.length),
     avgDaysToRepurchase: days.length ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : null,
     ltvReceived: patients.reduce((s, p) => s + p.ltvReceived, 0),
     ltvToReceive: patients.reduce((s, p) => s + p.ltvToReceive, 0),

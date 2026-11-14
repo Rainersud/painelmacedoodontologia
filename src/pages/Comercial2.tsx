@@ -1247,10 +1247,11 @@ const Comercial2 = () => {
                 {(searchQuery.trim() ? UPSELL_STAGES.filter(s => getOppsByStatus(s.key).length > 0) : UPSELL_STAGES).map((stage) => {
                   const stageOpps = getOppsByStatus(stage.key);
                   const isDropping = dropTarget === stage.key && draggedId !== null;
-                  // Mesma conta da Jornada de recompra: front + vendido no LTV dos pacientes da coluna
+                  // Coluna do front: valor vendido no Comercial 1. Colunas do LTV: só o vendido no LTV
+                  const isFrontColumn = stage.key === 'comprou_1';
                   const totalValue = stageOpps.reduce((sum, o) => {
                     const pt = patientByOpp.get(o.id);
-                    return sum + (pt ? pt.frontValue + pt.ltvSold : 0);
+                    return sum + (pt ? (isFrontColumn ? pt.frontValue : pt.ltvSold) : 0);
                   }, 0);
                   const isLocked = stage.locked;
 
@@ -1277,7 +1278,7 @@ const Comercial2 = () => {
                             </Badge>
                           </div>
                           <p className="text-[10px] text-muted-foreground font-medium">
-                            {isLocked ? 'Somente leitura (CAC)': formatCurrency(totalValue)}
+                            {isLocked ? 'Somente leitura (CAC)' : `${formatCurrency(totalValue)} ${isFrontColumn ? 'no front' : 'no LTV'}`}
                           </p>
                         </div>
 
@@ -1345,14 +1346,7 @@ const Comercial2 = () => {
                                           <Badge className={cn('text-[9px]', contactCfg.color)}>
                                             {contactCfg.label}
                                           </Badge>
-                                          {(() => {
-                                            const pt = patientByOpp.get(opp.id);
-                                            return pt ? (
-                                              <span className="text-[10px] font-bold text-success" title="Valor total do paciente (front + LTV)">
-                                                {formatCurrency(pt.frontValue + pt.ltvSold)}
-                                              </span>
-                                            ) : null;
-                                          })()}
+
                                         </div>
                                         {opp.attempt_count > 0 && (
                                           <p className="text-[10px] text-muted-foreground">

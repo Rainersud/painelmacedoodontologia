@@ -129,7 +129,8 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
       const cacMedio = cac(totalCosts, salesCount);
 
       const uniquePacientes = ltvSummary.patients;
-      const ltvTotal = ltvSummary.totalRevenue;
+      // LTV = só o que foi movimentado no Comercial 2 (o front não entra)
+      const ltvTotal = ltvSummary.ltvRevenue;
       // Ticket médio pela regra única: faturamento ÷ vendas
       const ticketMedio = safeDiv(faturamentoRecebido, salesCount);
 

@@ -77,7 +77,8 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
 
   const s = useMemo(() => summarize(patients), [patients]);
   const cac = cacData?.cac ?? 0;
-  const ltvCac = cac > 0 ? s.avgLtv / cac : null;
+  // Valor total do paciente (front + LTV) ÷ CAC: quanto volta de cada real investido para trazê-lo
+  const ltvCac = cac > 0 ? s.avgPatientValue / cac : null;
   const maxGroup = Math.max(1, ...s.groups.map(g => g.patients));
 
   const stageLeads = useMemo<LeadEntry[]>(() => {
@@ -85,12 +86,12 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     const idx = LTV_STAGES.findIndex(st => st.key === openStage);
     return patients
       .filter(p => p.stage === idx)
-      .sort((a, b) => (b.frontValue + b.ltvSold) - (a.frontValue + a.ltvSold))
+      .sort((a, b) => b.ltvSold - a.ltvSold || b.frontValue - a.frontValue)
       .map((p: LtvPatient) => ({
         id: p.oppId,
         leadId: p.leadId,
         name: p.name,
-        ltv: p.frontValue + p.ltvSold,
+        ltv: p.ltvSold,
         purchaseCount: p.ltvPurchases + 1,
         hasOpenUpsell: p.contactStatus !== 'fechado' && p.contactStatus !== 'recusado',
         status: LTV_STAGES[p.stage].key,
@@ -114,8 +115,8 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
     }
     if (ltvCac !== null) {
       insights.push(ltvCac >= 3
-        ? `LTV/CAC de ${ltvCac.toFixed(1)}x: cada R$ 1 investido para trazer um paciente volta ${ltvCac.toFixed(1)}x ao longo do tempo (saudável a partir de 3x).`
-        : `LTV/CAC de ${ltvCac.toFixed(1)}x, abaixo de 3x: aumentar a recompra é o caminho mais barato para melhorar a margem.`);
+        ? `Valor do paciente (front + LTV) ÷ CAC = ${ltvCac.toFixed(1)}x: cada R$ 1 investido para trazer um paciente volta ${ltvCac.toFixed(1)}x (saudável a partir de 3x).`
+        : `Valor do paciente (front + LTV) ÷ CAC = ${ltvCac.toFixed(1)}x, abaixo de 3x: aumentar a recompra é o caminho mais barato para melhorar a margem.`);
     }
   }
 
@@ -140,8 +141,8 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Kpi icon={TrendingUp} label="LTV médio por paciente" value={formatCurrency(s.avgLtv)}
-          sub={`Front ${formatCurrency(s.frontTicket)} + LTV ${formatCurrency(Math.max(0, s.avgLtv - s.frontTicket))}`}
-          help="(Valor vendido no front + valor vendido no LTV) ÷ número de pacientes." />
+          sub={`recebido ${formatCurrency(s.avgLtvReceived)} · quem recomprou ${formatCurrency(s.avgLtvRepeat)}`}
+          help="Só o que foi movimentado no LTV: vendido no LTV ÷ pacientes. A venda do front não entra. Abaixo: o recebido (pago) por paciente e a média só de quem recomprou." />
         <Kpi icon={Repeat} label="Taxa de recompra" value={pct(s.repurchaseRate)}
           sub={`${s.repeatPatients} de ${s.patients} pacientes`}
           help="Pacientes com pelo menos uma compra no LTV ÷ todos os pacientes que compraram no front." />
@@ -155,7 +156,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
           sub="contando a compra do front"
           help="(Pacientes + compras no LTV) ÷ pacientes. 1,0 = ninguém recomprou ainda." />
         <Kpi icon={CalendarClock} label="Até a 1ª recompra" value={s.avgDaysToRepurchase === null ? '–' : `${s.avgDaysToRepurchase} dias`}
-          sub={ltvCac !== null ? `LTV/CAC ${ltvCac.toFixed(1)}x` : 'em média, desde a venda'}
+          sub={ltvCac !== null ? `valor do paciente ÷ CAC: ${ltvCac.toFixed(1)}x` : 'em média, desde a venda'}
           help="Média de dias entre a venda do front e o primeiro pagamento registrado no LTV." />
       </div>
 
@@ -172,7 +173,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                   <th className="font-medium py-2 pr-3">Etapa</th>
                   <th className="font-medium py-2 pr-3 w-[32%]">Pacientes</th>
                   <th className="font-medium py-2 pr-3 text-right">Avançou da etapa anterior</th>
-                  <th className="font-medium py-2 pr-3 text-right">Vendido (front + LTV)</th>
+                  <th className="font-medium py-2 pr-3 text-right">Vendido no LTV</th>
                   <th className="font-medium py-2 text-right">LTV médio</th>
                 </tr>
               </thead>
@@ -195,8 +196,8 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                     <td className="py-2.5 pr-3 text-right tabular-nums text-muted-foreground">
                       {g.stepConversion === null ? '–' : pct(g.stepConversion)}
                     </td>
-                    <td className="py-2.5 pr-3 text-right tabular-nums">{formatCurrency(g.frontValue + g.ltvValue)}</td>
-                    <td className="py-2.5 text-right tabular-nums font-medium">{g.patients ? formatCurrency(g.avgLtv) : '–'}</td>
+                    <td className="py-2.5 pr-3 text-right tabular-nums">{g.key === 'comprou_1' ? '–' : formatCurrency(g.ltvValue)}</td>
+                    <td className="py-2.5 text-right tabular-nums font-medium">{g.patients && g.key !== 'comprou_1' ? formatCurrency(g.avgLtv) : '–'}</td>
                   </tr>
                 ))}
               </tbody>

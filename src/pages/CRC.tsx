@@ -1,100 +1,154 @@
 import { lazy, Suspense, type ComponentType } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Gift, Loader2, Megaphone, RotateCcw, Wallet, Workflow, type LucideIcon } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Button } from '@/components/ui/button';
 import { CRCView } from '@/components/crc/CRCView';
+import { HubCard } from '@/components/crc/HubCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
-import { cn } from '@/lib/utils';
+import { useRemarketingEntries } from '@/hooks/useRemarketing';
+import { supabase } from '@/integrations/supabase/client';
 
-// As telas completas de Follow Up, Remarketing, Retorno, Indicações e Crédito Liberado
-// moram dentro do CRC, como abas, com todas as regras e funções que já tinham.
+// Tela única do CRC: os quadros de relacionamento e as telas completas de Follow Up,
+// Remarketing, Retorno, Indicações e Crédito Liberado, todas como cards. Clicar num card
+// abre a tela com todas as regras e funções que ela já tinha.
 const Funil = lazy(() => import('./Funil'));
 const Remarketing = lazy(() => import('./Remarketing'));
 const Tarefas = lazy(() => import('./Tarefas'));
 const Indicacoes = lazy(() => import('./Indicacoes'));
 const CreditoLiberado = lazy(() => import('./CreditoLiberado'));
 
-const FollowUpTab: ComponentType = () => <Funil mode="followup" embedded />;
+const FOLLOWUP_STATUSES = [
+  'followup_1', 'followup_2', 'followup_3', 'followup_4', 'followup_5', 'followup_6', 'followup_7',
+  'followup_8', 'followup_9', 'followup_10', 'followup_11', 'followup_12', 'followup_13', 'followup_14',
+] as const;
 
-interface CrcTab {
+/** Leads que estão hoje em alguma etapa de follow-up. */
+function useFollowUpCount() {
+  return useQuery({
+    queryKey: ['crc-followup-count'],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('leads').select('id', { count: 'exact', head: true }).in('status', FOLLOWUP_STATUSES);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
+interface CrcSection {
   key: string;
   label: string;
+  rule: string;
+  caption: string;
+  icon: LucideIcon;
   /** Permissão necessária (mesma do item de menu que existia antes). */
   module: string;
   Component: ComponentType;
 }
 
-const CRC_TABS: CrcTab[] = [
-  { key: 'quadros', label: 'Quadros', module: 'funil', Component: CRCView },
-  { key: 'follow-up', label: 'Follow Up', module: 'funil', Component: FollowUpTab },
-  { key: 'remarketing', label: 'Remarketing', module: 'remarketing', Component: () => <Remarketing embedded /> },
-  { key: 'retorno', label: 'Retorno', module: 'tarefas', Component: () => <Tarefas embedded /> },
-  { key: 'indicacoes', label: 'Indicações', module: 'indicacoes', Component: () => <Indicacoes embedded /> },
-  { key: 'credito', label: 'Crédito Liberado', module: 'credito_liberado', Component: () => <CreditoLiberado embedded /> },
+const SECTIONS: CrcSection[] = [
+  {
+    key: 'follow-up', label: 'Follow Up', icon: Workflow, module: 'funil', caption: 'em follow-up',
+    rule: 'Cadência de 14 contatos (D1 a D14) para quem ainda não agendou.',
+    Component: () => <Funil mode="followup" embedded />,
+  },
+  {
+    key: 'remarketing', label: 'Remarketing', icon: Megaphone, module: 'remarketing', caption: 'leads ativos',
+    rule: 'Recuperação contínua de 365 dias para leads não convertidos.',
+    Component: () => <Remarketing embedded />,
+  },
+  {
+    key: 'retorno', label: 'Retorno', icon: RotateCcw, module: 'tarefas', caption: 'para hoje',
+    rule: 'Retornos e tarefas de contato com vencimento até hoje.',
+    Component: () => <Tarefas embedded />,
+  },
+  {
+    key: 'indicacoes', label: 'Indicações', icon: Gift, module: 'indicacoes', caption: 'abertas',
+    rule: 'Pessoas indicadas que ainda não fecharam nem foram perdidas.',
+    Component: () => <Indicacoes embedded />,
+  },
+  {
+    key: 'credito', label: 'Crédito Liberado', icon: Wallet, module: 'credito_liberado', caption: 'pacientes',
+    rule: 'Pacientes com crédito aprovado na PAGMAIS ou na MAIORAL.',
+    Component: () => <CreditoLiberado embedded />,
+  },
 ];
 
-const TITLES: Record<string, string> = {
-  quadros: 'CRC — Central de Relacionamento',
-  'follow-up': 'CRC — Follow Up',
-  remarketing: 'CRC — Remarketing',
-  retorno: 'CRC — Retorno',
-  indicacoes: 'CRC — Indicações',
-  credito: 'CRC — Crédito Liberado',
-};
+const Spinner = () => (
+  <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
+);
 
 const CRC = () => {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { canView } = usePermissions();
   const counts = useMenuCounts();
+  const followUp = useFollowUpCount();
+  const remarketing = useRemarketingEntries();
 
-  const tabs = CRC_TABS.filter(t => isAdmin || canView(t.module));
-  const requested = params.get('aba') || 'quadros';
-  const active = tabs.find(t => t.key === requested) ?? tabs[0];
-  const badge: Record<string, number> = {
-    retorno: counts['/retorno'] ?? 0,
-    indicacoes: counts['/indicacoes'] ?? 0,
-    credito: counts['/credito-liberado'] ?? 0,
+  const sections = SECTIONS.filter(s => isAdmin || canView(s.module));
+  const showBoards = isAdmin || canView('funil');
+  const active = sections.find(s => s.key === params.get('aba')) ?? null;
+
+  const count: Record<string, number | null> = {
+    'follow-up': followUp.data ?? null,
+    remarketing: remarketing.data ? remarketing.data.length : null,
+    retorno: counts['/retorno'] ?? null,
+    indicacoes: counts['/indicacoes'] ?? null,
+    credito: counts['/credito-liberado'] ?? null,
   };
 
-  return (
-    <AppLayout title={TITLES[active?.key ?? 'quadros']}>
-      <div className="flex flex-col min-h-0 flex-1">
-        <nav className="shrink-0 mb-4 -mx-1 px-1 overflow-x-auto" aria-label="Seções do CRC">
-          <div className="inline-flex gap-1 rounded-lg bg-muted p-1">
-            {tabs.map(t => {
-              const isActive = t.key === active?.key;
-              const n = badge[t.key] ?? 0;
-              return (
-                <Link
-                  key={t.key}
-                  to={t.key === 'quadros' ? '/crc' : `/crc?aba=${t.key}`}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                    isActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {t.label}
-                  {n > 0 && (
-                    <span
-                      className="min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold tabular-nums flex items-center justify-center"
-                      aria-label={`${n} em aberto`}
-                    >
-                      {n > 99 ? '99+' : n}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+  if (active) {
+    return (
+      <AppLayout title={`CRC — ${active.label}`}>
+        <div className="flex flex-col min-h-0 flex-1">
+          <div className="shrink-0 mb-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/crc')} className="-ml-2">
+              <ArrowLeft className="h-4 w-4 mr-1" /> CRC
+            </Button>
           </div>
-        </nav>
-        <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>}>
-          {active ? <active.Component /> : <p className="text-sm text-muted-foreground">Você não tem acesso às telas do CRC.</p>}
-        </Suspense>
+          <Suspense fallback={<Spinner />}>
+            <active.Component />
+          </Suspense>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const sectionCards = sections.length > 0 && (
+    <section aria-labelledby="crc-acompanhamento" className="space-y-2">
+      <h2 id="crc-acompanhamento" className="text-sm font-semibold text-muted-foreground">Acompanhamento</h2>
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {sections.map(s => (
+          <HubCard
+            key={s.key}
+            icon={s.icon}
+            label={s.label}
+            rule={s.rule}
+            count={count[s.key]}
+            caption={s.caption}
+            onClick={() => navigate(`/crc?aba=${s.key}`)}
+          />
+        ))}
       </div>
+    </section>
+  );
+
+  return (
+    <AppLayout title="CRC — Central de Relacionamento">
+      {showBoards ? (
+        <CRCView header={sectionCards} />
+      ) : sections.length > 0 ? (
+        <div className="space-y-4">{sectionCards}</div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Você não tem acesso às telas do CRC.</p>
+      )}
     </AppLayout>
   );
 };

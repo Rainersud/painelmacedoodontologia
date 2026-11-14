@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -62,7 +62,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const DashboardBI = () => {
+const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [period, setPeriod] = useState<BIPeriodFilter>('todos');
   const { data, isLoading } = useBIDashboard(period);
 
@@ -131,7 +131,7 @@ const DashboardBI = () => {
     : [];
 
   return (
-    <AppLayout title="Dashboard BI">
+    <PageShell embedded={embedded} title="Dashboard BI">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -457,7 +457,7 @@ const DashboardBI = () => {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 };
 

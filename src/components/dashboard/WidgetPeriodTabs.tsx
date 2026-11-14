@@ -6,7 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DashboardPeriod, CustomYearRange } from './PeriodFilterContext';
+import { DashboardPeriod, CustomYearRange, useHasMasterPeriod } from './PeriodFilterContext';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -17,6 +17,8 @@ interface Props {
   variant?: 'day-week-month' | 'week-month-year';
   customRange?: CustomYearRange;
   onCustomRangeChange?: (r: CustomYearRange | undefined) => void;
+  /** filtro mestre da tela: os filtros de cada bloco somem quando ele existe */
+  master?: boolean;
 }
 
 export function WidgetPeriodTabs({
@@ -25,10 +27,15 @@ export function WidgetPeriodTabs({
   size = 'xs',
   customRange,
   onCustomRangeChange,
+  master = false,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const hasMaster = useHasMasterPeriod();
   const h = size === 'xs' ? 'h-7' : 'h-8';
   const t = size === 'xs' ? 'h-5 text-[11px] px-2.5' : 'h-6 text-xs px-3';
+
+  // Com filtro mestre na tela, só ele aparece (um filtro de período por tela)
+  if (hasMaster && !master) return null;
 
   const items: { v: DashboardPeriod; label: string }[] = [
     { v: 'hoje', label: 'Dia' },

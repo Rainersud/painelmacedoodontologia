@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +40,7 @@ import {
 } from '@/lib/metrics';
 
 
-export default function Relatorios() {
+export default function Relatorios({ embedded = false }: { embedded?: boolean } = {}) {
   const [period, setPeriod] = useState('30');
 
   const startDate = period === 'month' 
@@ -156,7 +156,7 @@ export default function Relatorios() {
   };
 
   return (
-    <AppLayout title="Relatórios">
+    <PageShell embedded={embedded} title="Relatórios">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -367,6 +367,6 @@ export default function Relatorios() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

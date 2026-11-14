@@ -1,5 +1,14 @@
 // Metas: uma fonte (meta_settings), proporcional aos dias úteis do período.
 //
+// OBJETIVO CENTRAL (14/11/2026): o faturamento do mês e o ticket médio mandam em tudo.
+// As metas de volume não são mais digitadas uma a uma; saem da "escada" a partir deles:
+//   vendas          = faturamento ÷ ticket médio
+//   comparecimentos = vendas ÷ taxa de fechamento        (padrão 30%)
+//   agendamentos    = comparecimentos ÷ taxa de comparecimento (padrão 40%)
+//   leads           = agendamentos ÷ taxa de agendamento (padrão 50%)
+//   investimento    = leads × CPL meta
+// Subiu o faturamento ou baixou o ticket → todas as metas de volume sobem na mesma proporção.
+//
 // Cada meta tem UMA chave em meta_settings: a mesma que a tela "Metas da Clínica" grava
 // (useClinicGoals). As cópias antigas (meta_*_mes, meta_taxa_*, meta_roi_liquido...) foram
 // removidas do banco em 13/11/2026. Sem valor configurado, vale o padrão (fallback).
@@ -22,16 +31,18 @@ interface GoalDef {
 }
 
 export const GOAL_DEFS: Record<GoalKey, GoalDef> = {
+  // leads, agendamentos, comparecimentos, vendas e investimento são DERIVADOS (ver deriveGoalLadder);
+  // as chaves abaixo ficam só como referência histórica e não são lidas.
   leads:               { keys: ['meta_leads'], fallback: 300, proportional: true },
   agendamentos:        { keys: ['meta_agendamentos'], fallback: 135, proportional: true },
   comparecimentos:     { keys: ['meta_comparecimentos'], fallback: 95, proportional: true },
   vendas:              { keys: ['meta_fechamentos'], fallback: 20, proportional: true },
-  faturamento:         { keys: ['meta_faturamento'], fallback: 120000, proportional: true },
+  faturamento:         { keys: ['meta_faturamento'], fallback: 100000, proportional: true },
   investimento:        { keys: ['investimento_marketing'], fallback: 6000, proportional: true },
   ticket_medio:        { keys: ['meta_ticket_medio'], fallback: 6000, proportional: false },
-  taxa_agendamento:    { keys: ['taxa_agendamentos'], fallback: 45, proportional: false },
-  taxa_comparecimento: { keys: ['taxa_comparecimentos'], fallback: 70, proportional: false },
-  taxa_fechamento:     { keys: ['taxa_fechamentos'], fallback: 21, proportional: false },
+  taxa_agendamento:    { keys: ['taxa_agendamentos'], fallback: 50, proportional: false },
+  taxa_comparecimento: { keys: ['taxa_comparecimentos'], fallback: 40, proportional: false },
+  taxa_fechamento:     { keys: ['taxa_fechamentos'], fallback: 30, proportional: false },
   cpl:                 { keys: ['meta_cpl'], fallback: 20, proportional: false },
   cac:                 { keys: ['meta_cac'], fallback: 300, proportional: false },
   roi:                 { keys: ['meta_roi'], fallback: 8, proportional: false },
@@ -43,8 +54,8 @@ export const DEFAULT_BUSINESS_DAYS_PER_MONTH = 20;
 
 export type MetaSettingsMap = Record<string, number | string | null | undefined>;
 
-/** Meta mensal configurada (sem proporção). */
-export function monthlyGoal(settings: MetaSettingsMap, key: GoalKey): number {
+/** Valor configurado em meta_settings (ou o padrão), sem derivar nada. */
+function configured(settings: MetaSettingsMap, key: GoalKey): number {
   const def = GOAL_DEFS[key];
   for (const k of def.keys) {
     const v = settings[k];
@@ -53,6 +64,59 @@ export function monthlyGoal(settings: MetaSettingsMap, key: GoalKey): number {
     }
   }
   return def.fallback;
+}
+
+export interface GoalLadder {
+  faturamento: number;
+  ticket: number;
+  taxaFechamento: number;
+  taxaComparecimento: number;
+  taxaAgendamento: number;
+  cpl: number;
+  vendas: number;
+  comparecimentos: number;
+  agendamentos: number;
+  leads: number;
+  investimento: number;
+}
+
+/** A escada de metas do mês, a partir do faturamento + ticket médio e das taxas do funil. */
+export function deriveGoalLadder(settings: MetaSettingsMap): GoalLadder {
+  const faturamento = configured(settings, 'faturamento');
+  const ticket = configured(settings, 'ticket_medio');
+  const taxaFechamento = configured(settings, 'taxa_fechamento');
+  const taxaComparecimento = configured(settings, 'taxa_comparecimento');
+  const taxaAgendamento = configured(settings, 'taxa_agendamento');
+  const cpl = configured(settings, 'cpl');
+  const vendas = Math.max(1, Math.ceil(faturamento / ticket));
+  const comparecimentos = Math.ceil(vendas / (taxaFechamento / 100));
+  const agendamentos = Math.ceil(comparecimentos / (taxaComparecimento / 100));
+  const leads = Math.ceil(agendamentos / (taxaAgendamento / 100));
+  return {
+    faturamento, ticket, taxaFechamento, taxaComparecimento, taxaAgendamento, cpl,
+    vendas, comparecimentos, agendamentos, leads,
+    investimento: Math.round(leads * cpl),
+  };
+}
+
+const DERIVED: Partial<Record<GoalKey, keyof GoalLadder>> = {
+  vendas: 'vendas', comparecimentos: 'comparecimentos', agendamentos: 'agendamentos',
+  leads: 'leads', investimento: 'investimento',
+};
+
+/** Meta mensal (sem proporção). Metas de volume saem da escada do objetivo central. */
+export function monthlyGoal(settings: MetaSettingsMap, key: GoalKey): number {
+  const derived = DERIVED[key];
+  if (derived) return deriveGoalLadder(settings)[derived];
+  return configured(settings, key);
+}
+
+/**
+ * Quanto as metas de volume mudam quando o objetivo central muda: razão entre as vendas
+ * necessárias depois e antes. Usado para escalar os alvos de bônus e de indicações.
+ */
+export function volumeFactor(before: MetaSettingsMap, after: MetaSettingsMap): number {
+  return deriveGoalLadder(after).vendas / deriveGoalLadder(before).vendas;
 }
 
 /** Base de dias úteis por mês para a proporção (padrão 20). */

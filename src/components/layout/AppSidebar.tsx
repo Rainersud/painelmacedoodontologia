@@ -1,24 +1,5 @@
 import {
-  LayoutDashboard,
-  Headset,
-  Filter,
-  Target,
-  Bell,
-  FileText,
-  Settings,
-  LogOut,
-  UserCircle,
-  CalendarCheck,
-  Megaphone,
-  Layers,
-  BarChart3,
-  Award,
-  TrendingUp,
-  Wallet,
-  LineChart,
-  HeartHandshake,
-  Headphones,
-  type LucideIcon,
+  Filter, Target, Settings, LogOut, UserCircle, CalendarCheck, BarChart3, HeartHandshake, Headphones, type LucideIcon,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
@@ -98,7 +79,8 @@ function CollapsibleGroup({
 }
 
 
-type NavItemDef = { title: string; url: string; icon: LucideIcon; module: string };
+/** `modules`: o item aparece se a pessoa pode ver ao menos uma das telas da área. */
+type NavItemDef = { title: string; url: string; icon: LucideIcon; module: string; modules?: string[] };
 
 // Comercial / Vendas: o dia a dia do atendimento
 const mainNavItems: NavItemDef[] = [
@@ -107,20 +89,11 @@ const mainNavItems: NavItemDef[] = [
   { title: 'Comercial 2 – LTV', url: '/comercial-2', icon: HeartHandshake, module: 'comercial_2' },
 ];
 
+// Gestão: tudo o que o Comercial alimenta (metas, dados e reuniões)
 const managementNavItems: NavItemDef[] = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
-  { title: 'Call Center', url: '/call-center', icon: Headset, module: 'call_center' },
-  { title: 'Dashboard BI', url: '/bi', icon: BarChart3, module: 'bi' },
-  { title: 'Metas da Clínica', url: '/metas-clinica', icon: Target, module: 'metas_clinica' },
-  { title: 'Bônus por Metas', url: '/bonus-metas', icon: Award, module: 'bonus_metas' },
-  { title: 'Plano Incentivo', url: '/plano-incentivo', icon: TrendingUp, module: 'plano_incentivo' },
-  { title: 'CAC & Financeiro', url: '/cac', icon: Wallet, module: 'cac' },
-  { title: 'Métricas de Vendas', url: '/metricas-vendas', icon: LineChart, module: 'metricas_vendas' },
-  { title: 'Alertas', url: '/alertas', icon: Bell, module: 'alertas' },
-  { title: 'Relatórios', url: '/relatorios', icon: FileText, module: 'relatorios' },
+  { title: 'Metas / Objetivos', url: '/objetivos', icon: Target, module: 'metas_clinica', modules: ['metas_clinica', 'bonus_metas', 'plano_incentivo'] },
+  { title: 'Dados / Métricas', url: '/dados', icon: BarChart3, module: 'cac', modules: ['central_funis', 'funil_trafego', 'cac', 'metricas_vendas', 'relatorios', 'bi', 'call_center'] },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
-  { title: 'Funil Tráfego Pago', url: '/funil-trafego', icon: Megaphone, module: 'funil_trafego' },
-  { title: 'Central de Funis', url: '/central-funis', icon: Layers, module: 'central_funis' },
 ];
 
 
@@ -155,7 +128,7 @@ export function AppSidebar() {
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   const filterVisible = (items: NavItemDef[]) =>
-    items.filter(item => isAdmin || canView(item.module));
+    items.filter(item => isAdmin || (item.modules ?? [item.module]).some(m => canView(m)));
   const currentTitle = (items: NavItemDef[]) => items.find(i => isActive(i.url))?.title;
 
   const handleSignOut = async () => {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -118,7 +118,7 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: 'mes', label: 'Mês' },
 ];
 
-export default function PlanoIncentivoV2() {
+export default function PlanoIncentivoV2({ embedded = false }: { embedded?: boolean } = {}) {
   const [period, setPeriod] = useState<Period>('mes');
   const { data: panel, isLoading } = useClinicGoalsPanel(period);
   const { data: referralsCount = 0 } = useReferralsCount(period);
@@ -196,7 +196,7 @@ export default function PlanoIncentivoV2() {
     : 0;
 
   return (
-    <AppLayout title="Plano de Incentivo Inteligente">
+    <PageShell embedded={embedded} title="Plano de Incentivo Inteligente">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -349,6 +349,6 @@ export default function PlanoIncentivoV2() {
           </Card>
         )}
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

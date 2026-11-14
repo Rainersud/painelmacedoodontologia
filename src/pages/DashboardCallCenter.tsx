@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -124,7 +124,7 @@ function Highlights({ rankings }: { rankings: ReturnType<typeof useAgentRankings
   );
 }
 
-export default function DashboardCallCenter() {
+export default function DashboardCallCenter({ embedded = false }: { embedded?: boolean } = {}) {
   const { user, isAdmin, fullName } = useAuth();
   const [period, setPeriod] = useState<Period>('hoje');
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined);
@@ -168,7 +168,7 @@ export default function DashboardCallCenter() {
   const shownAgents = [...activeMetrics].sort((a, b) => b.revenue - a.revenue);
 
   return (
-    <AppLayout title="Call Center">
+    <PageShell embedded={embedded} title="Call Center">
       <div className="space-y-4">
         {/* Cabeçalho + filtros */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
@@ -323,6 +323,6 @@ export default function DashboardCallCenter() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

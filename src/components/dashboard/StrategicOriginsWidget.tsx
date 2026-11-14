@@ -6,8 +6,10 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
+import { useMetaSettings } from '@/hooks/useMetaSettings';
 
-const DAILY_GOALS: Record<string, number> = {
+/** Meta diária de cada origem (meta_settings meta_origem_<origem>_dia), escalada com o objetivo central. */
+const DEFAULT_DAILY_GOALS: Record<string, number> = {
   indicacao_pac: 10,
   prospeccao_ativa: 6,
   indicacao_parceria: 5,
@@ -17,6 +19,8 @@ const DAILY_GOALS: Record<string, number> = {
 export function StrategicOriginsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('mes');
   const { data, isLoading } = useStrategicOrigins(range);
+  const { data: settings } = useMetaSettings();
+  const dailyGoalOf = (key: string) => Number(settings?.[`meta_origem_${key}_dia`]) || DEFAULT_DAILY_GOALS[key] || 0;
 
   const rows = (data || []).filter(r => (STRATEGIC_ORIGINS as readonly string[]).includes(r.key));
   const periodLabel = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
@@ -31,7 +35,7 @@ export function StrategicOriginsWidget() {
               Origens Estratégicas — Recebidos · Agendados · Compareceu · Faturamento
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Acompanhamento individual das origens de indicação integrado ao Comercial 1. Metas considerando dias úteis ({range.businessDays}du).
+              Atualiza na hora pelo campo "Como o lead chegou?" do card do lead (Comercial 1, CRC e Comercial 2). Indicados de pacientes contam como Indicação Pac. Metas por dias úteis ({range.businessDays} du).
             </p>
           </div>
           <WidgetPeriodTabs value={period} onChange={setPeriod} />
@@ -43,7 +47,7 @@ export function StrategicOriginsWidget() {
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {rows.map(r => {
-              const dailyGoal = DAILY_GOALS[r.key] || 0;
+              const dailyGoal = dailyGoalOf(r.key);
               const periodGoal = dailyGoal * range.businessDays;
               const goalProgress = periodGoal > 0 ? Math.min(100, Math.round((r.recebidos / periodGoal) * 100)) : 0;
               const goalColor = goalProgress >= 100 ? 'text-success' : goalProgress >= 60 ? 'text-primary' : 'text-destructive';

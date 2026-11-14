@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
+import { AdIntegrationsCard } from '@/components/traffic/AdIntegrationsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -307,7 +308,7 @@ function TrafficReconciliation({ month, creatives }: { month: Date; creatives: A
   );
 }
 
-export default function FunilTrafego() {
+export default function FunilTrafego({ embedded = false }: { embedded?: boolean } = {}) {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const { creatives, consolidated, bestCreative, worstCreative, isLoading, addCreative, updateCreative, deleteCreative } = useAdCreatives(selectedMonth);
   const [viewMode, setViewMode] = useState<'individual' | 'consolidated'>('consolidated');
@@ -354,18 +355,18 @@ export default function FunilTrafego() {
 
   if (isLoading) {
     return (
-      <AppLayout title="Funil de Tráfego Pago">
+      <PageShell embedded={embedded} title="Funil de Tráfego Pago">
         <div className="p-4 space-y-4">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-96 w-full" />
         </div>
-      </AppLayout>
+      </PageShell>
     );
   }
 
   return (
-    <AppLayout title="Funil de Tráfego Pago">
-      <div className="p-4 space-y-4 max-w-5xl mx-auto">
+    <PageShell embedded={embedded} title="Funil de Tráfego Pago">
+      <div className={embedded ? "space-y-4" : "p-4 space-y-4 max-w-5xl mx-auto"}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
@@ -388,6 +389,8 @@ export default function FunilTrafego() {
             />
           </div>
         </div>
+
+        <AdIntegrationsCard />
 
         <TrafficReconciliation month={selectedMonth} creatives={creatives} />
 
@@ -578,6 +581,6 @@ export default function FunilTrafego() {
           </Card>
         )}
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

@@ -14,25 +14,16 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const Login = lazy(() => import("./pages/Login"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const Funil = lazy(() => import("./pages/Funil"));
 const CRC = lazy(() => import("./pages/CRC"));
 import { MovedToCRC } from "@/components/layout/MovedToCRC";
-const MetasClinica = lazy(() => import("./pages/MetasClinica"));
-const BonusMetas = lazy(() => import("./pages/BonusMetas"));
-const PlanoIncentivoV2 = lazy(() => import("./pages/PlanoIncentivoV2"));
-const Alertas = lazy(() => import("./pages/Alertas"));
-const Relatorios = lazy(() => import("./pages/Relatorios"));
+import { HomeRedirect, MovedTo } from "@/components/layout/MovedTo";
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Perfil = lazy(() => import("./pages/Perfil"));
-const CACDashboard = lazy(() => import("./pages/CACDashboard"));
-const MetricasVendas = lazy(() => import("./pages/MetricasVendas"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
-const FunilTrafego = lazy(() => import("./pages/FunilTrafego"));
-const CentralFunis = lazy(() => import("./pages/CentralFunis"));
+const Objetivos = lazy(() => import("./pages/Objetivos"));
+const DadosMetricas = lazy(() => import("./pages/DadosMetricas"));
 const Comercial2 = lazy(() => import("./pages/Comercial2"));
-const DashboardBI = lazy(() => import("./pages/DashboardBI"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Quando uma busca de dados falha, avisa com o motivo (antes a tela mostrava 0 sem explicar).
@@ -93,31 +84,34 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/call-center" element={<ProtectedRoute><DashboardCallCenter /></ProtectedRoute>} />
+                <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
+                <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
+                <Route path="/dados" element={<ProtectedRoute><DadosMetricas /></ProtectedRoute>} />
+                <Route path="/call-center" element={<MovedTo path="/dados" tab="call-center" />} />
                 <Route path="/crm" element={<Navigate to="/" replace />} />
                 <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
                 <Route path="/indicacoes" element={<MovedToCRC tab="indicacoes" />} />
                 <Route path="/tarefas" element={<MovedToCRC tab="retorno" />} />
                 <Route path="/agendamentos" element={<MovedToCRC tab="retorno" />} />
                 <Route path="/credito-liberado" element={<MovedToCRC tab="credito" />} />
-                <Route path="/metas" element={<Navigate to="/metas-clinica" replace />} />
-                <Route path="/metas-clinica" element={<ProtectedRoute><MetasClinica /></ProtectedRoute>} />
-                <Route path="/bonus-metas" element={<ProtectedRoute><BonusMetas /></ProtectedRoute>} />
-                <Route path="/plano-incentivo" element={<ProtectedRoute><PlanoIncentivoV2 /></ProtectedRoute>} />
-                <Route path="/incentivos" element={<Navigate to="/plano-incentivo" replace />} />
-                <Route path="/alertas" element={<ProtectedRoute><Alertas /></ProtectedRoute>} />
-                <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-                <Route path="/cac" element={<ProtectedRoute><CACDashboard /></ProtectedRoute>} />
-                <Route path="/metricas-vendas" element={<ProtectedRoute><MetricasVendas /></ProtectedRoute>} />
+                <Route path="/metas" element={<MovedTo path="/objetivos" tab="metas" />} />
+                <Route path="/metas-clinica" element={<MovedTo path="/objetivos" tab="metas" />} />
+                <Route path="/bonus-metas" element={<MovedTo path="/objetivos" tab="bonus" />} />
+                <Route path="/plano-incentivo" element={<MovedTo path="/objetivos" tab="incentivo" />} />
+                <Route path="/incentivos" element={<MovedTo path="/objetivos" tab="incentivo" />} />
+                <Route path="/alertas" element={<MovedTo path="/objetivos" tab="metas" />} />
+                <Route path="/relatorios" element={<MovedTo path="/dados" tab="relatorios" />} />
+                <Route path="/cac" element={<MovedTo path="/dados" tab="cac" />} />
+                <Route path="/metricas-vendas" element={<MovedTo path="/dados" tab="vendas" />} />
                 <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
-                <Route path="/funil-trafego" element={<ProtectedRoute><FunilTrafego /></ProtectedRoute>} />
-                <Route path="/central-funis" element={<ProtectedRoute><CentralFunis /></ProtectedRoute>} />
+                <Route path="/funil-trafego" element={<MovedTo path="/dados" tab="trafego" />} />
+                <Route path="/central-funis" element={<MovedTo path="/dados" tab="funil" />} />
+                <Route path="/funil-vendas" element={<MovedTo path="/dados" tab="funil" />} />
                 <Route path="/comercial-2" element={<ProtectedRoute><Comercial2 /></ProtectedRoute>} />
                 <Route path="/crc" element={<ProtectedRoute><CRC /></ProtectedRoute>} />
                 <Route path="/follow-up" element={<MovedToCRC tab="follow-up" />} />
                 <Route path="/remarketing" element={<MovedToCRC tab="remarketing" />} />
-                <Route path="/bi" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
+                <Route path="/bi" element={<MovedTo path="/dados" tab="bi" />} />
                 <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />
                 <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

@@ -165,16 +165,24 @@ const fmtBRL = (v: number) =>
 
 const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
-export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange) {
+/** Comparação escolhida no filtro mestre (ex.: mesmo período do ano passado). */
+export interface PanelComparison { prevStart: Date; prevEnd: Date }
+
+export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange, compare?: PanelComparison) {
   return useQuery({
-    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
+    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString(), compare?.prevStart.toISOString(), compare?.prevEnd.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
       // Calendário, metas e números pela camada única de indicadores.
       const base = buildPeriodForCalendar(period, customRange);
-      const data = await fetchMetricsData({ start: base.previous.start, end: base.end });
+      const fetchStart = compare && compare.prevStart < base.previous.start ? compare.prevStart : base.previous.start;
+      const data = await fetchMetricsData({ start: fetchStart, end: base.end });
       const { calendar: bizCal, settings: s } = data;
       const cal: CalendarCfg = { isBusinessDay: bizCal.isBusinessDay, monthlyBusinessDays: businessDaysPerMonth(s) };
       const range = buildRange(period, customRange, cal);
+      if (compare) {
+        range.prevStart = compare.prevStart;
+        range.prevEnd = compare.prevEnd;
+      }
       const cur = { start: range.start, end: range.end };
       const prevR = { start: range.prevStart, end: range.prevEnd };
 

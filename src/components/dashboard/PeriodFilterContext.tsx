@@ -11,6 +11,26 @@ export interface PeriodRange {
   label: string;
   /** dias úteis proporcionais ao período (base 20du/mês) */
   businessDays: number;
+  /** com o que o período está sendo comparado (ex.: "mês anterior", "mesmo período de 2025") */
+  prevLabel?: string;
+}
+
+/** 0 = período anterior; 1, 2, 3 = mesmo período de 1, 2 ou 3 anos atrás. */
+export type CompareYears = 0 | 1 | 2 | 3;
+
+const PREV_LABELS: Record<DashboardPeriod, string> = {
+  hoje: 'ontem', semana: 'semana anterior', mes: 'mês anterior', ano: 'ano anterior',
+};
+
+/** Aplica a comparação escolhida: período anterior ou o mesmo período de anos atrás. */
+export function withComparison(r: PeriodRange, period: DashboardPeriod, years: CompareYears): PeriodRange {
+  if (!years) return { ...r, prevLabel: r.prevLabel ?? PREV_LABELS[period] };
+  return {
+    ...r,
+    prevStart: subYears(r.start, years),
+    prevEnd: subYears(r.end, years),
+    prevLabel: `mesmo período de ${r.start.getFullYear() - years}`,
+  };
 }
 
 export interface CustomYearRange {
@@ -90,6 +110,8 @@ interface Ctx {
   range: PeriodRange;
   customRange?: CustomYearRange;
   setCustomRange: (r: CustomYearRange | undefined) => void;
+  compareYears: CompareYears;
+  setCompareYears: (y: CompareYears) => void;
 }
 
 const PeriodCtx = createContext<Ctx | null>(null);
@@ -97,13 +119,14 @@ const PeriodCtx = createContext<Ctx | null>(null);
 export function PeriodFilterProvider({ children }: { children: ReactNode }) {
   const [period, setPeriod] = useState<DashboardPeriod>('mes');
   const [customRange, setCustomRange] = useState<CustomYearRange | undefined>(undefined);
+  const [compareYears, setCompareYears] = useState<CompareYears>(0);
   const range = useMemo<PeriodRange>(
-    () => buildRange(period, customRange),
-    [period, customRange],
+    () => withComparison(buildRange(period, customRange), period, compareYears),
+    [period, customRange, compareYears],
   );
   const value = useMemo<Ctx>(
-    () => ({ period, setPeriod, range, customRange, setCustomRange }),
-    [period, range, customRange],
+    () => ({ period, setPeriod, range, customRange, setCustomRange, compareYears, setCompareYears }),
+    [period, range, customRange, compareYears],
   );
   return (
     <PeriodCtx.Provider value={value}>
@@ -124,6 +147,11 @@ export function usePeriodFilter() {
  * (PeriodFilterProvider) quando o usuário altera o calendário do topo, mas permite
  * sobrescrita local depois.
  */
+/** Há um filtro mestre na tela? (os filtros de cada bloco somem e todos seguem o mestre) */
+export function useHasMasterPeriod() {
+  return useContext(PeriodCtx) !== null;
+}
+
 export function useLocalPeriod(initial: DashboardPeriod = 'mes') {
   const ctx = useContext(PeriodCtx);
   const [period, setPeriod] = useState<DashboardPeriod>(ctx?.period ?? initial);
@@ -137,9 +165,11 @@ export function useLocalPeriod(initial: DashboardPeriod = 'mes') {
   }, [ctx?.period, ctx?.customRange]);
 
   const range = useMemo<PeriodRange>(
-    () => buildRange(period, customRange),
-    [period, customRange],
+    () => withComparison(buildRange(period, customRange), period, ctx?.compareYears ?? 0),
+    [period, customRange, ctx?.compareYears],
   );
+  // Com filtro mestre, o bloco usa exatamente o período e a comparação dele
+  if (ctx) return { period: ctx.period, setPeriod: ctx.setPeriod, range: ctx.range, customRange: ctx.customRange, setCustomRange: ctx.setCustomRange };
   return { period, setPeriod, range, customRange, setCustomRange };
 }
 

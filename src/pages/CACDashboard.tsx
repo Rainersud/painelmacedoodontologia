@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ const categoryColors: Record<string, string> = {
   outros: SERIES_OTHER,
 };
 
-export default function CACDashboard() {
+export default function CACDashboard({ embedded = false }: { embedded?: boolean } = {}) {
   const [selectedMonth, setSelectedMonth] = useState(startOfMonth(new Date()));
   const { isAdmin } = useAuth();
   const { costs, totalByCategory, totalCosts, isLoading, addCost, updateCost, deleteCost } = useAcquisitionCosts(selectedMonth);
@@ -94,7 +94,7 @@ export default function CACDashboard() {
   const gaugeData = [{ value: Math.abs(gaugePercent), fill: gaugePercent >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))' }];
 
   return (
-    <AppLayout title="CAC & Financeiro">
+    <PageShell embedded={embedded} title="CAC & Financeiro">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -441,6 +441,6 @@ export default function CACDashboard() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </PageShell>
   );
 }

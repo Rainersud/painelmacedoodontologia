@@ -47,6 +47,8 @@ export interface LtvOppRow {
     treatment_value?: number | string | null;
     closed_at?: string | null;
     sale_type?: string | null;
+    interest_product?: string | null;
+    lead_arrival_source?: string | null;
   } | null;
 }
 
@@ -73,6 +75,10 @@ export interface LtvPatient {
   ltvPurchases: number;
   soldAt: Date | null;
   saleType: string | null;
+  /** tratamento que o paciente comprou no front (porta de entrada) */
+  entryTreatment: string;
+  /** origem do lead (canal de aquisição) */
+  origin: string;
   frontValue: number;
   ltvSold: number;
   ltvReceived: number;
@@ -113,6 +119,8 @@ export function buildPatients(opps: LtvOppRow[], payments: LtvPaymentRow[]): Ltv
       ltvPurchases: counted,
       soldAt: o.lead?.closed_at ? new Date(o.lead.closed_at) : null,
       saleType: o.lead?.sale_type ?? null,
+      entryTreatment: o.lead?.interest_product || 'outro',
+      origin: o.lead?.lead_arrival_source || 'passou_na_frente',
       frontValue: n(o.lead?.treatment_value),
       ltvSold: pays.reduce((s, p) => s + n(p.gross_value ?? p.net_value), 0),
       ltvReceived: pays.filter(p => p.status === 'pago').reduce((s, p) => s + n(p.net_value), 0),
@@ -306,4 +314,44 @@ export function cashInRange(payments: LtvPaymentRow[], start: Date, end: Date) {
 export function monthRange(offset = 0, now: Date = new Date()) {
   const s = startOfMonth(subMonths(now, offset));
   return { start: s, end: endOfMonth(s) };
+}
+
+// ---------- Segmentação (como o LTV é lido por tratamento de entrada e por origem) ----------
+
+export const ENTRY_TREATMENT_LABELS: Record<string, string> = {
+  implante: 'Implante',
+  protese_flexivel: 'Prótese flexível',
+  protese_total: 'Prótese total',
+  outro: 'Outro',
+};
+
+export interface LtvSegment {
+  key: string;
+  patients: number;
+  repurchaseRate: number;
+  ltvRevenue: number;
+  avgLtv: number;
+  frontTicket: number;
+}
+
+/** LTV quebrado por um atributo do paciente (tratamento de entrada ou origem). */
+export function segmentBy(patients: LtvPatient[], key: (p: LtvPatient) => string): LtvSegment[] {
+  const groups = new Map<string, LtvPatient[]>();
+  for (const p of patients) {
+    const k = key(p);
+    groups.set(k, [...(groups.get(k) ?? []), p]);
+  }
+  return [...groups.entries()]
+    .map(([k, list]) => {
+      const s = summarize(list);
+      return {
+        key: k,
+        patients: s.patients,
+        repurchaseRate: s.repurchaseRate,
+        ltvRevenue: s.ltvRevenue,
+        avgLtv: s.avgLtv,
+        frontTicket: s.frontTicket,
+      };
+    })
+    .sort((a, b) => b.patients - a.patients || b.ltvRevenue - a.ltvRevenue);
 }

@@ -90,7 +90,7 @@ export function useUpsellOpportunities() {
     queryFn: async () => {
       const { data, error } = await allPages(supabase
         .from('upsell_opportunities')
-        .select('*, lead:leads(name, phone, interest_product, treatment_value, closed_at, sale_type)')
+        .select('*, lead:leads(name, phone, interest_product, treatment_value, closed_at, sale_type, lead_arrival_source)')
         .order('created_at', { ascending: false })
         .order('id'));
       if (error) throw error;

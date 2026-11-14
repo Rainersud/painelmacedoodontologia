@@ -688,6 +688,7 @@ export type Database = {
           assigned_agent_id: string | null
           attendance_discount_status: string
           budget_value: number | null
+          campaign: string | null
           closed_at: string | null
           completed_at: string | null
           contact_attempts: number
@@ -729,6 +730,7 @@ export type Database = {
           assigned_agent_id?: string | null
           attendance_discount_status?: string
           budget_value?: number | null
+          campaign?: string | null
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number
@@ -770,6 +772,7 @@ export type Database = {
           assigned_agent_id?: string | null
           attendance_discount_status?: string
           budget_value?: number | null
+          campaign?: string | null
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number

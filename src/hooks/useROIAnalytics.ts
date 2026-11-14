@@ -4,7 +4,7 @@ import { usePeriodFilter, type PeriodRange } from '@/components/dashboard/Period
 import { startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
-  TRAFFIC_CATEGORY, attendances, bookedAppointments, closingRate, fetchMetricsData, inRange, investment,
+  TRAFFIC_CATEGORY, attendances, bookedAppointments, campaignBreakdown, closingRate, fetchMetricsData, inRange, investment,
   leadOrigin, newLeads, pct, revenue, revenueByAgent, roi, safeDiv, sales,
 } from '@/lib/metrics';
 
@@ -127,25 +127,21 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
         };
       }).sort((a, b) => b.receita - a.receita);
 
-      // BY CAMPAIGN
-      const byCampaign: ROIByDimension[] = ads.map(a => {
-        const inv = Number(a.investment || 0);
-        const rev = Number(a.revenue || 0);
-        const vendas = a.sales || 0;
-        return {
-          name: a.name,
-          receita: rev,
-          investimento: inv,
-          roi: inv > 0 ? Math.round(((rev - inv) / inv) * 100) : 0,
-          vendas,
-          leads: 0,
-          agendamentos: 0,
-          comparecimentos: 0,
-          ticketMedio: vendas > 0 ? Math.round(rev / vendas) : 0,
-          taxaFechamento: 0,
-          roas: inv > 0 ? parseFloat((rev / inv).toFixed(2)) : 0,
-        };
-      }).sort((a, b) => b.roi - a.roi);
+      // POR CAMPANHA — leads marcados com a campanha (regra única) + investimento do Funil de Tráfego
+      const byCampaign: ROIByDimension[] = campaignBreakdown(data.leads, data.appointments, data.payments, ads, period)
+        .map(c => ({
+          name: c.digitado ? `${c.name} (digitado)` : c.name,
+          receita: c.receita,
+          investimento: Math.round(c.investimento),
+          roi: Math.round(roi(c.receita, c.investimento)),
+          vendas: c.vendas,
+          leads: c.leads,
+          agendamentos: c.agendamentos,
+          comparecimentos: c.comparecimentos,
+          ticketMedio: Math.round(safeDiv(c.receita, c.vendas)),
+          taxaFechamento: Math.round(pct(c.vendas, c.comparecimentos)),
+          roas: parseFloat(safeDiv(c.receita, c.investimento).toFixed(2)),
+        }));
 
       // POR ATENDENTE — receita do dono do lead (regra única)
       const profileMap = new Map(profiles.map(p => [p.user_id, p.full_name]));

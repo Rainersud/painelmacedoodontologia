@@ -91,6 +91,8 @@ export interface Lead {
   score_category?: 'frio' | 'morno' | 'quente';
   contact_attempts?: number;
   prontuario_url?: string | null;
+  /** Campanha de origem (casa com o Funil de Tráfego pelo nome) */
+  campaign?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data

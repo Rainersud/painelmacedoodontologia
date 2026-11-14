@@ -7,6 +7,8 @@ export interface AppointmentRecord {
   confirmed_at: string | null;
   attended_at: string | null;
   cancelled_at: string | null;
+  rescheduled_at: string | null;
+  no_show_at: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -17,7 +19,7 @@ export function useAppointmentHistory(leadId: string) {
     queryFn: async (): Promise<AppointmentRecord[]> => {
       const { data, error } = await supabase
         .from('appointments')
-        .select('id, scheduled_at, confirmed_at, attended_at, cancelled_at, notes, created_at')
+        .select('id, scheduled_at, confirmed_at, attended_at, cancelled_at, rescheduled_at, no_show_at, notes, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: true });
 

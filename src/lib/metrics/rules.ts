@@ -37,6 +37,11 @@ export interface AppointmentRow {
   attended_at?: string | null;
   confirmed_at?: string | null;
   cancelled_at?: string | null;
+  /** Consulta substituída por outra data (a nova aponta para esta em rescheduled_from_id). */
+  rescheduled_at?: string | null;
+  rescheduled_from_id?: string | null;
+  /** Paciente não veio. */
+  no_show_at?: string | null;
 }
 
 export interface PaymentRow {
@@ -106,12 +111,14 @@ export function conversionRate(leads: LeadRow[], range: DateRange, agentId?: str
 
 /** Agendamentos: consultas MARCADAS no período (produtividade do call center e Bônus). */
 export function bookedAppointments(appts: AppointmentRow[], range: DateRange, agentId?: string) {
-  return appts.filter(a => inRange(a.created_at, range) && (!agentId || a.agent_id === agentId));
+  // Reagendar não é um novo agendamento: a consulta nova (rescheduled_from_id) não conta de novo.
+  return appts.filter(a => !a.rescheduled_from_id && inRange(a.created_at, range) && (!agentId || a.agent_id === agentId));
 }
 
 /** Consultas do período: consultas que ACONTECEM no período (agenda da clínica). */
 export function appointmentsInPeriod(appts: AppointmentRow[], range: DateRange, agentId?: string) {
-  return appts.filter(a => inRange(a.scheduled_at, range) && (!agentId || a.agent_id === agentId));
+  // A data antiga de uma consulta reagendada não acontece mais: fica fora da agenda.
+  return appts.filter(a => !a.rescheduled_at && inRange(a.scheduled_at, range) && (!agentId || a.agent_id === agentId));
 }
 
 /** Comparecimentos: presenças registradas no período (data do comparecimento). */

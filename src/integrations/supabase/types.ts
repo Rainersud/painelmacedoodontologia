@@ -261,7 +261,10 @@ export type Database = {
           created_at: string
           id: string
           lead_id: string
+          no_show_at: string | null
           notes: string | null
+          rescheduled_at: string | null
+          rescheduled_from_id: string | null
           revenue: number | null
           scheduled_at: string
           treatment_type: string | null
@@ -275,7 +278,10 @@ export type Database = {
           created_at?: string
           id?: string
           lead_id: string
+          no_show_at?: string | null
           notes?: string | null
+          rescheduled_at?: string | null
+          rescheduled_from_id?: string | null
           revenue?: number | null
           scheduled_at: string
           treatment_type?: string | null
@@ -289,7 +295,10 @@ export type Database = {
           created_at?: string
           id?: string
           lead_id?: string
+          no_show_at?: string | null
           notes?: string | null
+          rescheduled_at?: string | null
+          rescheduled_from_id?: string | null
           revenue?: number | null
           scheduled_at?: string
           treatment_type?: string | null

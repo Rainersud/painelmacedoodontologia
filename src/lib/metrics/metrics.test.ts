@@ -244,3 +244,16 @@ describe('projectByBusinessDays', () => {
     expect(projectByBusinessDays(1000, range, cal, new Date(2026, 10, 13, 15))).toBe(2100);
   });
 });
+
+describe('reagendamento', () => {
+  it('não conta como novo agendamento e a data antiga sai da agenda', async () => {
+    const { bookedAppointments, appointmentsInPeriod } = await import('./rules');
+    const range = { start: new Date('2026-11-01T03:00:00Z'), end: new Date('2026-12-01T02:59:59Z') };
+    const appts = [
+      { id: 'a', lead_id: 'x', created_at: '2026-11-03T12:00:00Z', scheduled_at: '2026-11-10T12:00:00Z', rescheduled_at: '2026-11-08T12:00:00Z' },
+      { id: 'b', lead_id: 'x', created_at: '2026-11-08T12:00:00Z', scheduled_at: '2026-11-17T12:00:00Z', rescheduled_from_id: 'a' },
+    ];
+    expect(bookedAppointments(appts, range).map(a => a.id)).toEqual(['a']);
+    expect(appointmentsInPeriod(appts, range).map(a => a.id)).toEqual(['b']);
+  });
+});

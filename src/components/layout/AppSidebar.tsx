@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useMenuCounts } from '@/hooks/useMenuCounts';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -160,6 +161,7 @@ export function AppSidebar() {
 
 
   const isActive = (path: string) => location.pathname === path;
+  const menuCounts = useMenuCounts();
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
   const filterVisible = (items: NavItemDef[]) =>
@@ -188,6 +190,17 @@ export function AppSidebar() {
         >
           <item.icon className="h-5 w-5 shrink-0" aria-hidden />
           <span>{item.title}</span>
+          {menuCounts[item.url] > 0 && (
+            <span
+              className={cn(
+                'ml-auto min-w-5 h-5 px-1.5 rounded-full text-[11px] font-semibold tabular-nums flex items-center justify-center',
+                isActive(item.url) ? 'bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground' : 'bg-primary text-primary-foreground',
+              )}
+              aria-label={`${menuCounts[item.url]} em aberto`}
+            >
+              {menuCounts[item.url] > 99 ? '99+' : menuCounts[item.url]}
+            </span>
+          )}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>

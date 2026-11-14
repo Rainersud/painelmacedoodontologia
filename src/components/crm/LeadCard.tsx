@@ -1,16 +1,13 @@
 import { memo } from 'react';
 import { LeadTemperatureBadge } from './LeadTemperature';
-import { DollarSign, CheckSquare, Zap } from 'lucide-react';
+import { CheckSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ReferralPopover } from './ReferralPopover';
 import { IndicacaoBadge } from './IndicacaoBadge';
 import { useLeadReferralTagsEnhanced } from '@/hooks/useReferralTagsEnhanced';
-import { getDaysInStage, getStageAlertLevel, type Lead } from '@/types/crm';
+import { getDaysInStage, type Lead } from '@/types/crm';
 import { useLeadAlerts } from '@/hooks/useLeadAlerts';
 import { useFriendlyPatientStatus } from '@/hooks/useFriendlyPatient';
-import { getScoreColor } from '@/hooks/useLeadScoring';
 import { cn } from '@/lib/utils';
 
 interface LeadCardProps {
@@ -38,7 +35,6 @@ function LeadCardComponent({
   const { data: refTags } = useLeadReferralTagsEnhanced(lead.id);
   const { data: friendlyData } = useFriendlyPatientStatus(lead.status === 'fechado' ? lead.id : undefined);
   const leadAlerts = useLeadAlerts(lead);
-  const scoreColors = getScoreColor(lead.score_category || 'morno');
   const hasTask = lead.tasks && lead.tasks.length > 0;
   const hasReferralData = refTags && (refTags.isReferred || refTags.isReferrer || refTags.pendingBonuses.length > 0);
 
@@ -46,49 +42,16 @@ function LeadCardComponent({
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value);
 
   const days = getDaysInStage(lead.stage_entered_at);
-  const alertLevel = getStageAlertLevel(days);
   const isFollowUpStage = lead.status?.startsWith('followup_') || lead.status === 'nao_respondeu';
-
-  // Time-based grouping category badge (visual only)
-  const createdDays = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000);
-  const lastActivity = (lead as any).last_interaction_at || lead.updated_at || lead.created_at;
-  const inactivityDays = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 86400000);
-  let timeCategory: { label: string; cls: string } | null = null;
-  if (inactivityDays >= 7) timeCategory = { label: 'Sem acomp.', cls: 'bg-destructive/10 text-destructive'};
-  else if (createdDays === 0) timeCategory = { label: 'Hoje', cls: 'bg-success/10 text-success'};
-  else if (createdDays === 1) timeCategory = { label: 'Ontem', cls: 'bg-warning/10 text-warning-strong'};
-  else if (createdDays <= 7) timeCategory = { label: 'Semana', cls: 'bg-primary/10 text-primary'};
-  else timeCategory = { label: 'Antigo', cls: 'bg-muted text-muted-foreground'};
-
-  // Calculate total days in follow-up (from first follow-up entry)
-  const totalFollowUpDays = isFollowUpStage && lead.stage_entered_at
-    ? Math.max(days, Math.floor((Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
 
   // Excess attempts warning (>2 same day approximation based on contact_attempts and days)
   const showExcessWarning = isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && days === 0 && (lead.contact_attempts ?? 0) >= 2;
-  const alertColors = {
-    normal: 'bg-success/10 text-success',
-    attention: 'bg-warning/10 text-warning-strong',
-    critical: 'bg-destructive/10 text-destructive',
-  };
-
   // Get the highest priority alert for the card border
   const topAlert = leadAlerts[0];
-  const alertBorderClass = topAlert?.level === 'critical' ? 'border-l-4 border-l-destructive' : 
-                      topAlert?.level === 'opportunity' ? 'border-l-4 border-l-success' :
-                      topAlert?.level === 'attention' ? 'border-l-4 border-l-warning' : '';
-
+  const alertBorderClass = topAlert?.level === 'critical' ? 'border-l-4 border-l-destructive' :
+    topAlert?.level === 'opportunity' ? 'border-l-4 border-l-success' :
+    topAlert?.level === 'attention' ? 'border-l-4 border-l-warning' : '';
   const isEven = index % 2 === 0;
-
-  // Cyclic border colors to improve visual separation between adjacent cards
-  const cyclicBorderColors = [
-    'border-primary/50',
-    'border-chart-2/50',
-    'border-chart-3/50',
-    'border-chart-4/50',
-  ];
-  const cyclicBorder = cyclicBorderColors[index % cyclicBorderColors.length];
 
   if (dense) {
     const dotClass =
@@ -123,125 +86,66 @@ function LeadCardComponent({
     );
   }
 
+  // Mesmo formato dos cartões do CRC: nome, o que está acontecendo, telefone e valor.
+  const product = lead.interest_product === 'implante' ? 'Implante'
+    : lead.interest_product === 'protese_flexivel' ? 'Prótese flexível'
+    : lead.interest_product === 'protese_total' ? 'Prótese total'
+    : lead.interest_product || '';
+  const appt = lead.scheduled_appointment_at ? new Date(lead.scheduled_appointment_at) : null;
+  const reason = topAlert?.title
+    ?? (appt && ['agendou', 'consulta_agendada', 'confirmado', 'faltou'].includes(lead.status)
+      ? `Consulta ${appt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' })} às ${appt.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}`
+      : null)
+    ?? (isFollowUpStage && (lead.contact_attempts ?? 0) > 0 ? `${lead.contact_attempts} de 9 tentativas` : null)
+    ?? [product, days > 0 ? `${days} ${days === 1 ? 'dia' : 'dias'} nesta etapa` : 'Entrou hoje nesta etapa'].filter(Boolean).join(' · ');
+  const value = lead.budget_value || lead.treatment_value || 0;
+
   return (
-    <Card 
+    <div
+      role="button"
+      tabIndex={0}
       draggable={!!onDragStart}
       onDragStart={(e) => onDragStart?.(e, lead)}
       onClick={() => onClick?.(lead)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(lead); } }}
       className={cn(
-        "cursor-pointer hover:shadow-lg transition-all duration-200 border-2 shadow-sm group relative",
-        cyclicBorder,
-        isEven ? "bg-card" : "bg-accent/70",
-        onDragStart && "active:cursor-grabbing",
-        alertBorderClass
+        'w-full text-left rounded-lg border bg-background px-2.5 py-2 shadow-sm transition cursor-pointer',
+        'hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        topAlert?.level === 'critical' && 'border-l-2 border-l-destructive',
+        topAlert?.level === 'opportunity' && 'border-l-2 border-l-success',
+        onDragStart && 'active:cursor-grabbing',
       )}
     >
-      {/* Task indicator */}
-      {hasTask && (
-        <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-warning flex items-center justify-center shadow-sm">
-          <CheckSquare className="h-3 w-3 text-white" />
+      <div className="flex items-center gap-1.5">
+        <p className="text-sm font-medium truncate flex-1 min-w-0">{lead.name}</p>
+        <IndicacaoBadge source={lead.source} size="xs" />
+        {hasReferralData && refTags && (
+          <span onClick={(e) => e.stopPropagation()}><ReferralPopover lead={lead} refTags={refTags} /></span>
+        )}
+        <LeadTemperatureBadge rating={lead.interest_rating} />
+      </div>
+      <p className={cn('text-xs mt-0.5 line-clamp-2',
+        topAlert?.level === 'critical' ? 'text-destructive' : 'text-muted-foreground')}>
+        {reason}
+      </p>
+      {(showExcessWarning || lead.no_show_count > 0 || (lead.status === 'fechado' && friendlyData?.friendly_patient)) && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {lead.no_show_count > 0 && (
+            <span className="rounded px-1 text-[10px] bg-destructive/10 text-destructive">{lead.no_show_count}x falta</span>
+          )}
+          {showExcessWarning && (
+            <span className="rounded px-1 text-[10px] bg-destructive/10 text-destructive">Muitas tentativas hoje</span>
+          )}
+          {lead.status === 'fechado' && friendlyData?.friendly_patient && (
+            <span className="rounded px-1 text-[10px] bg-primary/10 text-primary">Paciente amigo</span>
+          )}
         </div>
       )}
-
-      <CardContent className="p-1.5">
-        {/* Row 1: Avatar + Name + Value */}
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className="rounded-full bg-primary/10 flex items-center justify-center shrink-0 h-6 w-6">
-            <span className="font-semibold text-primary text-[9px]">
-              {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <p className="font-semibold truncate text-xs flex-1 min-w-0">{lead.name}</p>
-          {/* Indicacao badge */}
-          <IndicacaoBadge source={lead.source} size="xs" />
-          {hasReferralData && refTags && (
-            <ReferralPopover lead={lead} refTags={refTags} />
-          )}
-        </div>
-
-        {/* Row 2: Compact badges row */}
-        <div className="flex flex-wrap items-center gap-1 mb-1">
-          <LeadTemperatureBadge rating={lead.interest_rating} />
-          {topAlert && (
-            <Badge variant="outline" className={cn(
-              "text-[9px] border-0 font-medium px-1 py-0 h-4",
-              topAlert.level === 'critical' ? 'bg-destructive/10 text-destructive' :
-              topAlert.level === 'opportunity' ? 'bg-success/10 text-success' :
-              'bg-warning/10 text-warning-strong'
-            )}>
-              <Zap className="h-2 w-2 mr-0.5" />
-              {topAlert.shortLabel}
-            </Badge>
-          )}
-          {lead.interest_product && (
-            <Badge variant="outline" className="text-[9px] bg-chart-3/10 text-chart-3 border-chart-3/20 px-1 py-0 h-4">
-              {lead.interest_product === 'implante'? 'Impl.': 
-                   lead.interest_product === 'protese_flexivel' ? 'P.Flex' :
-                   lead.interest_product === 'protese_total' ? 'P.Total' : lead.interest_product}
-            </Badge>
-          )}
-          {lead.scheduled_appointment_at && (
-            <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 px-1 py-0 h-4">
-              {new Date(lead.scheduled_appointment_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit'})}
-            </Badge>
-          )}
-          {lead.no_show_count > 0 && (
-            <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-0 px-1 py-0 h-4">
-              {lead.no_show_count}x falta
-            </Badge>
-          )}
-          {isFollowUpStage && (lead.contact_attempts ?? 0) > 0 && (
-            <Badge variant="outline" className="text-[9px] bg-warning/10 text-warning-strong border-0 px-1 py-0 h-4">
-              {lead.contact_attempts}/9
-            </Badge>
-          )}
-          {(() => {
-            const eligibleSources = ['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling'];
-            const showReward = eligibleSources.includes((lead as any).lead_arrival_source) || refTags?.isReferred;
-            return showReward ? (
-              <Badge
-                variant="outline"
-                className="text-[9px] bg-success/10 text-success border-0 px-1 py-0 h-4"
-                title="Ganhou Limpeza + 10% de desconto em qualquer tratamento"
-              >
-                Limpeza + 10% off
-              </Badge>
-            ) : null;
-          })()}
-        </div>
-
-        {/* Excess attempts warning */}
-        {showExcessWarning && (
-          <div className="bg-destructive/10 rounded px-1.5 py-0.5 mb-1">
-            <p className="text-[8px] text-destructive font-medium">
-              Excesso de tentativas neste período – pode reduzir conversão
-            </p>
-          </div>
-        )}
-
-        {/* Paciente Amigo Badge - only for fechado */}
-        {lead.status === 'fechado' && friendlyData && (
-          <div className="mb-1">
-            <Badge variant="outline" className={cn(
-              "text-[9px] border-0 font-medium px-1 py-0 h-4",
-              friendlyData.friendly_patient ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-            )}>
-              {friendlyData.friendly_patient ? 'Paciente amigo' : 'Não é paciente amigo'}
-            </Badge>
-          </div>
-        )}
-
-        {/* Row 3: Value */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/50">
-          <div className="flex items-center gap-0.5">
-            <DollarSign className="h-3 w-3 text-success" />
-            <span className="font-bold text-[11px]">
-              {formatCurrency(lead.budget_value || lead.treatment_value || 0)}
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+        <span className="truncate tabular-nums">{lead.phone}</span>
+        {value > 0 && <span className="shrink-0 font-semibold text-foreground tabular-nums">{formatCurrency(value)}</span>}
+      </div>
+    </div>
   );
 }
 

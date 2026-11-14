@@ -145,6 +145,10 @@ export interface CrcAppointment {
   confirmed_at?: string | null;
   attended_at?: string | null;
   cancelled_at?: string | null;
+  /** Data trocada por outra consulta (fica só no histórico). */
+  rescheduled_at?: string | null;
+  /** Paciente faltou. */
+  no_show_at?: string | null;
 }
 
 export interface CrcOverduePayment {
@@ -211,7 +215,7 @@ function money(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 function isActive(a: CrcAppointment) {
-  return !a.cancelled_at && !a.attended_at;
+  return !a.cancelled_at && !a.attended_at && !a.rescheduled_at && !a.no_show_at;
 }
 
 interface Occurrence {
@@ -236,7 +240,7 @@ function hasFutureAppointment(lead: CrcLead, ctx: Ctx): boolean {
   if (SCHEDULED.has(lead.status) || lead.status === 'confirmado') {
     if (lead.scheduled_appointment_at && new Date(lead.scheduled_appointment_at).getTime() >= nowMs) return true;
   }
-  return ctx.appts.some(a => !a.cancelled_at && new Date(a.scheduled_at).getTime() >= nowMs);
+  return ctx.appts.some(a => isActive(a) && new Date(a.scheduled_at).getTime() >= nowMs);
 }
 
 const RULES: Record<CrcBoardKey, Rule> = {
@@ -292,12 +296,12 @@ const RULES: Record<CrcBoardKey, Rule> = {
     if (!isSoldStatus(lead.status) || lead.completed_at) return null;
     const nowMs = ctx.now.getTime();
     const from = nowMs - 90 * DAY;
-    // Faltou = consulta já passou (com 1 dia de folga para registrar), sem presença e sem cancelamento.
+    // Faltou = falta registrada, ou consulta que já passou (1 dia de folga para registrar) sem presença
     const missed = ctx.appts
-      .filter(a => isActive(a))
+      .filter(a => !a.attended_at && !a.cancelled_at && !a.rescheduled_at)
       .filter(a => {
         const t = new Date(a.scheduled_at).getTime();
-        return t >= from && t < nowMs - DAY;
+        return t >= from && (a.no_show_at ? true : t < nowMs - DAY);
       })
       .filter(a => !lead.closed_at || ms(a.scheduled_at) > ms(lead.closed_at))
       .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))[0];

@@ -17,7 +17,7 @@ import { Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftR
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
-import { TodayTasksWidget } from '@/components/dashboard/TodayTasksWidget';
+import { ReturnColumn } from '@/components/crm/ReturnColumn';
 import { SmartAlertsWidget } from '@/components/dashboard/SmartAlertsWidget';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { LossAnalysisPanel } from '@/components/crm/LossAnalysisPanel';
@@ -49,13 +49,15 @@ interface KanbanBoardProps {
   handleDragStart: (e: React.DragEvent, lead: Lead) => void;
   handleDragEnd: () => void;
   handleOpenDetail: (lead: Lead) => void;
+  /** Coluna fixa antes das etapas (Retorno, no Comercial 1). */
+  leading?: React.ReactNode;
 }
 
 function KanbanBoard({
   stages, getLeadsByStatus, getTotalBudgetByStatus,
   dropTargetStatus, draggedLeadId,
   handleDragOver, handleDragLeave, handleDrop,
-  handleDragStart, handleDragEnd, handleOpenDetail,
+  handleDragStart, handleDragEnd, handleOpenDetail, leading,
 }: KanbanBoardProps) {
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -139,7 +141,8 @@ function KanbanBoard({
         className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
         style={{ willChange: 'scroll-position' }}
       >
-        <div ref={innerRef} className="flex gap-2 min-w-max h-full pb-2 px-1">
+        <div ref={innerRef} className="flex gap-3 min-w-max h-full pb-2 px-1">
+          {leading}
           {stages.map((stage, stageIdx) => {
             const stageLeads = getLeadsByStatus(stage.key);
             const totalValue = getTotalBudgetByStatus(stage.key);
@@ -197,13 +200,13 @@ function KanbanBoard({
                   onDrop={(e) => handleDrop(e, stage.key)}
                 >
                   <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border shadow-sm transition-all duration-200",
-                    isFollowUp ? 'border-warning/30' : 'border-border/50',
+                    "flex flex-col min-h-0 h-full rounded-xl bg-card border transition-all duration-200",
+                    isFollowUp ? 'border-warning/30' : 'border-border',
                     isDropTarget && 'ring-2 ring-primary ring-offset-2'
                   )}>
-                    {/* Column header */}
-                    <div className="shrink-0 px-2 pt-2 pb-1.5">
-                      <div className="flex items-center gap-1.5 mb-0.5">
+                    {/* Cabeçalho da coluna (mesmo formato do CRC) */}
+                    <div className="shrink-0 px-3 pt-3 pb-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => toggleColumn(stage.key)}
@@ -214,7 +217,7 @@ function KanbanBoard({
                         </button>
                         <div className={`h-2 w-2 rounded-full ${stage.color}`} />
                         <span
-                          className="text-[11px] font-semibold flex-1 truncate cursor-pointer"
+                          className="text-sm font-semibold flex-1 truncate cursor-pointer"
                           onClick={() => toggleColumn(stage.key)}
                         >
                           {stage.label}
@@ -222,21 +225,23 @@ function KanbanBoard({
                         {isFollowUp && (
                           <FollowUpCopyPopover stageKey={stage.key} />
                         )}
-                        <Badge variant="secondary" className="font-semibold bg-muted text-[10px] h-4 min-w-4 px-1 flex items-center justify-center">
+                        <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[11px] font-semibold flex items-center justify-center">
                           {stageLeads.length}
                         </Badge>
                       </div>
-                      <p className="text-[9px] text-muted-foreground font-medium">
-                        {formatCurrency(totalValue)}
-                      </p>
+                      {totalValue > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+                          {formatCurrency(totalValue)}
+                        </p>
+                      )}
                     </div>
 
 
                   {/* Column body */}
-                  <div className="flex-1 min-h-0 px-1.5 pb-1.5">
+                  <div className="flex-1 min-h-0 px-2 pb-2">
                     <div className="h-[calc(100vh-280px)]">
                       <CustomScrollbar>
-                        <div className="space-y-1 pr-1 pb-4">
+                        <div className="space-y-1.5 pr-1 pb-4">
                         {(() => {
                           const groupsOrder: { key: string; label: string; cls: string }[] = [
                             { key: 'hoje', label: 'Hoje', cls: 'bg-success/10 text-success'},
@@ -264,9 +269,9 @@ function KanbanBoard({
                             const items = buckets[g.key];
                             if (!items || items.length === 0) return;
                             rendered.push(
-                              <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-1.5 py-0.5 mt-1 first:mt-0 flex items-center justify-between", g.cls)}>
-                                <span className="text-[9px] font-bold">{g.label}</span>
-                                <span className="text-[9px] font-bold">{items.length}</span>
+                              <div key={`hdr-${g.key}`} className={cn("sticky top-0 z-10 rounded-md px-2 py-0.5 mt-2 first:mt-0 flex items-center justify-between", g.cls)}>
+                                <span className="text-[10px] font-semibold">{g.label}</span>
+                                <span className="text-[10px] font-semibold tabular-nums">{items.length}</span>
                               </div>
                             );
                             items.forEach(lead => {
@@ -292,12 +297,11 @@ function KanbanBoard({
                                 key="empty"
                                 className={cn(
                                   "text-center py-6 rounded-lg",
-                                  stage.bgColor,
                                   isDropTarget && 'border-2 border-dashed border-primary'
                                 )}
                               >
-                                <p className="text-[10px] text-muted-foreground">
-                                  {isDropTarget ? 'Solte aqui' : 'Nenhum contato'}
+                                <p className="text-xs text-muted-foreground">
+                                  {isDropTarget ? 'Solte aqui' : 'Arraste um contato para cá'}
                                 </p>
                               </div>
                             );
@@ -341,6 +345,7 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: leads, isLoading } = useCRMLeads();
+  const leadsById = useMemo(() => new Map((leads ?? []).map(l => [l.id, l])), [leads]);
   const updateStatus = useUpdateLeadStatus();
   
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
@@ -589,7 +594,6 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
         {/* Operational command center — above search, below page title */}
         {!isFollowUpMode && (
           <div className="shrink-0 space-y-4 mb-4">
-            <TodayTasksWidget onlyToday />
             <SmartAlertsWidget />
           </div>
         )}
@@ -736,6 +740,7 @@ const Funil = ({ mode = 'comercial1' }: FunilProps) => { // v2
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
           handleOpenDetail={handleOpenDetail}
+          leading={!isFollowUpMode ? <ReturnColumn leadsById={leadsById} onOpen={handleOpenDetail} /> : undefined}
         />
 
         {/* Loss Analysis Panel */}

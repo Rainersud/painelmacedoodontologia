@@ -2,7 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
-import { useLTVMetrics } from '@/hooks/useLTVMetrics';
+import { useLTVData } from '@/hooks/useLTVData';
+import { summarize } from '@/lib/ltv';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { PaceBar } from '@/components/metrics/PaceBar';
@@ -97,7 +98,8 @@ export function ClinicGoalsPanel() {
   const { period, setPeriod, customRange, setCustomRange } = useLocalPeriod('mes');
   const { data, isLoading } = useClinicGoalsPanel(period, customRange);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
-  const { data: ltv } = useLTVMetrics('todos', 'todos');
+  const ltvData = useLTVData();
+  const ltv = ltvData.isLoading ? null : summarize(ltvData.patients);
 
   const metrics = data?.metrics ?? [];
   const byKey = (k: string) => metrics.find(m => m.key === k);
@@ -105,7 +107,7 @@ export function ClinicGoalsPanel() {
   const funnel = FUNNEL_KEYS.map(byKey).filter((m): m is PanelMetric => !!m);
   const efficiency = [
     ...EFFICIENCY_KEYS.map(byKey).filter((m): m is PanelMetric => !!m),
-    ...(ltv ? [buildLTVMetric(ltv.overallLTV)] : []),
+    ...(ltv ? [buildLTVMetric(ltv.avgLtv)] : []),
   ];
 
   return (

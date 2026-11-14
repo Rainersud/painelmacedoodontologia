@@ -206,11 +206,11 @@ export function useBIDashboard(period: BIPeriodFilter = 'todos') {
 
       // LTV Funnel
       const stages = [
-        { label: 'Comprou 1x', min: 1, max: 1 },
-        { label: 'Comprou 2x', min: 2, max: 2 },
-        { label: 'Comprou 3x', min: 3, max: 3 },
-        { label: 'Comprou 4x', min: 4, max: 4 },
-        { label: 'Comprou 5x+', min: 5, max: null },
+        { label: 'Comprou no front', min: 1, max: 1 },
+        { label: 'LTV 1 vez', min: 2, max: 2 },
+        { label: 'LTV 2 vezes', min: 3, max: 3 },
+        { label: 'LTV 3 vezes', min: 4, max: 4 },
+        { label: 'LTV 4+ vezes', min: 5, max: null },
       ];
 
       const ltvFunnel: LTVFunnelStage[] = stages.map((stage, idx) => {

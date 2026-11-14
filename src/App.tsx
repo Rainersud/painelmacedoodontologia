@@ -16,10 +16,8 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardCallCenter = lazy(() => import("./pages/DashboardCallCenter"));
 const Funil = lazy(() => import("./pages/Funil"));
-const FollowUp = lazy(() => import("./pages/FollowUp"));
 const CRC = lazy(() => import("./pages/CRC"));
-const Tarefas = lazy(() => import("./pages/Tarefas"));
-const Indicacoes = lazy(() => import("./pages/Indicacoes"));
+import { MovedToCRC } from "@/components/layout/MovedToCRC";
 const MetasClinica = lazy(() => import("./pages/MetasClinica"));
 const BonusMetas = lazy(() => import("./pages/BonusMetas"));
 const PlanoIncentivoV2 = lazy(() => import("./pages/PlanoIncentivoV2"));
@@ -27,14 +25,12 @@ const Alertas = lazy(() => import("./pages/Alertas"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Perfil = lazy(() => import("./pages/Perfil"));
-const CreditoLiberado = lazy(() => import("./pages/CreditoLiberado"));
 const CACDashboard = lazy(() => import("./pages/CACDashboard"));
 const MetricasVendas = lazy(() => import("./pages/MetricasVendas"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const FunilTrafego = lazy(() => import("./pages/FunilTrafego"));
 const CentralFunis = lazy(() => import("./pages/CentralFunis"));
 const Comercial2 = lazy(() => import("./pages/Comercial2"));
-const Remarketing = lazy(() => import("./pages/Remarketing"));
 const DashboardBI = lazy(() => import("./pages/DashboardBI"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -99,10 +95,10 @@ const App = () => (
                 <Route path="/call-center" element={<ProtectedRoute><DashboardCallCenter /></ProtectedRoute>} />
                 <Route path="/crm" element={<Navigate to="/" replace />} />
                 <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
-                <Route path="/indicacoes" element={<ProtectedRoute><Indicacoes /></ProtectedRoute>} />
-                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
-                <Route path="/agendamentos" element={<Navigate to="/tarefas" replace />} />
-                <Route path="/credito-liberado" element={<ProtectedRoute><CreditoLiberado /></ProtectedRoute>} />
+                <Route path="/indicacoes" element={<MovedToCRC tab="indicacoes" />} />
+                <Route path="/tarefas" element={<MovedToCRC tab="retorno" />} />
+                <Route path="/agendamentos" element={<MovedToCRC tab="retorno" />} />
+                <Route path="/credito-liberado" element={<MovedToCRC tab="credito" />} />
                 <Route path="/metas" element={<Navigate to="/metas-clinica" replace />} />
                 <Route path="/metas-clinica" element={<ProtectedRoute><MetasClinica /></ProtectedRoute>} />
                 <Route path="/bonus-metas" element={<ProtectedRoute><BonusMetas /></ProtectedRoute>} />
@@ -117,8 +113,8 @@ const App = () => (
                 <Route path="/central-funis" element={<ProtectedRoute><CentralFunis /></ProtectedRoute>} />
                 <Route path="/comercial-2" element={<ProtectedRoute><Comercial2 /></ProtectedRoute>} />
                 <Route path="/crc" element={<ProtectedRoute><CRC /></ProtectedRoute>} />
-                <Route path="/follow-up" element={<ProtectedRoute><FollowUp /></ProtectedRoute>} />
-                <Route path="/remarketing" element={<ProtectedRoute><Remarketing /></ProtectedRoute>} />
+                <Route path="/follow-up" element={<MovedToCRC tab="follow-up" />} />
+                <Route path="/remarketing" element={<MovedToCRC tab="remarketing" />} />
                 <Route path="/bi" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute requireAdmin><Configuracoes /></ProtectedRoute>} />
                 <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -346,7 +346,7 @@ function TaskItem({
   );
 }
 
-const Tarefas = () => {
+const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
@@ -420,7 +420,7 @@ const Tarefas = () => {
   }, [selectedDate, viewMode]);
 
   return (
-    <AppLayout title="Retorno">
+    <PageShell embedded={embedded} title="Retorno">
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar + Controls */}
         <div className="space-y-4">
@@ -636,7 +636,7 @@ const Tarefas = () => {
           task={editTask}
         />
       )}
-    </AppLayout>
+    </PageShell>
   );
 };
 

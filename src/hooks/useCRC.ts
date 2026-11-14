@@ -14,10 +14,7 @@ import {
   type CrcBirthday,
   type CrcBoardKey,
   type CrcCardRow,
-  type CrcCredit,
   type CrcOverduePayment,
-  type CrcRemarketing,
-  type CrcTask,
   END_OF_CYCLE,
 } from '@/lib/crc';
 import { endContactCycle } from '@/lib/contactCycle';
@@ -50,10 +47,6 @@ interface CrcSources {
   overduePayments: CrcOverduePayment[];
   birthdays: CrcBirthday[];
   cards: CrcCardRow[];
-  tasks: CrcTask[];
-  remarketing: CrcRemarketing[];
-  referredLeadIds: string[];
-  credits: CrcCredit[];
   /** false = tabelas do CRC ainda não existem; a tela mostra os quadros, mas não grava colunas. */
   ready: boolean;
 }
@@ -66,7 +59,7 @@ function useCrcSources() {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      const [appts, pays, triage, cards, tasks, rmkt, refs, credit] = await Promise.all([
+      const [appts, pays, triage, cards] = await Promise.all([
         allPages<CrcAppointment>(
           supabase.from('appointments')
             .select('lead_id, scheduled_at, created_at, confirmed_at, attended_at, cancelled_at, rescheduled_at, no_show_at')
@@ -91,28 +84,9 @@ function useCrcSources() {
             .select('board, lead_id, stage, manual, archived_at, updated_at')
             .order('id'),
         ),
-        allPages<CrcTask>(
-          supabase.from('tasks')
-            .select('id, lead_id, title, scheduled_at')
-            .in('status', ['pendente', 'reagendado'])
-            .order('id'),
-        ),
-        allPages<CrcRemarketing>(
-          supabase.from('remarketing_entries')
-            .select('lead_id, current_stage, entered_at')
-            .eq('is_active', true)
-            .order('id'),
-        ),
-        allPages<{ referred_lead_id: string }>(supabase.from('referrals').select('referred_lead_id').order('id')),
-        allPages<{ lead_id: string; credit_pagmais_value: number | null; credit_maioral_value: number | null }>(
-          supabase.from('patient_triage')
-            .select('lead_id, credit_pagmais_value, credit_maioral_value')
-            .eq('credit_status', 'aprovado')
-            .order('id'),
-        ),
       ]);
 
-      for (const r of [appts, pays, triage, tasks, rmkt, refs, credit]) if (r.error) throw r.error;
+      for (const r of [appts, pays, triage]) if (r.error) throw r.error;
       let ready = true;
       if (cards.error) {
         if (isMissingTable(cards.error)) ready = false;
@@ -124,12 +98,6 @@ function useCrcSources() {
         overduePayments: pays.data.filter(p => p.due_date),
         birthdays: triage.data.filter(b => b.birth_date),
         cards: ready ? cards.data : [],
-        tasks: tasks.data,
-        remarketing: rmkt.data,
-        referredLeadIds: refs.data.map(r => r.referred_lead_id),
-        credits: credit.data.map(c => ({
-          lead_id: c.lead_id, pagmais: Number(c.credit_pagmais_value) || 0, maioral: Number(c.credit_maioral_value) || 0,
-        })),
         ready,
       };
     },
@@ -150,10 +118,6 @@ export function useCrcBoards() {
       overduePayments: srcQ.data.overduePayments,
       birthdays: srcQ.data.birthdays,
       cards: srcQ.data.cards,
-      tasks: srcQ.data.tasks,
-      remarketing: srcQ.data.remarketing,
-      referredLeadIds: srcQ.data.referredLeadIds,
-      credits: srcQ.data.credits,
     });
   }, [leadsQ.data, srcQ.data]);
 

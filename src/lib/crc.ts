@@ -12,12 +12,7 @@ export type CrcBoardKey =
   | 'faltas_primeira'
   | 'inadimplencia'
   | 'orcamentos'
-  | 'tratamento_sem_agendamento'
-  | 'retorno'
-  | 'follow_up'
-  | 'remarketing'
-  | 'indicacao'
-  | 'credito_liberado';
+  | 'tratamento_sem_agendamento';
 
 export interface CrcStage {
   key: string;
@@ -130,62 +125,6 @@ export const CRC_BOARDS: CrcBoard[] = [
       { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
     ],
   },
-  {
-    key: 'retorno',
-    label: 'Retorno',
-    rule: 'Retornos (tarefas) em aberto: atrasados, de hoje e dos próximos 7 dias.',
-    stages: [
-      { key: 'pendente', label: 'Retorno pendente' },
-      { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'reagendado', label: 'Reagendado', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'follow_up',
-    label: 'Follow Up',
-    rule: 'Leads no Follow Up (D1 a D7) ou em "Não respondeu".',
-    stages: [
-      { key: 'a_contatar', label: 'A contatar' },
-      { key: 'tentativa_1', label: 'Tentativa 1' },
-      { key: 'tentativa_2', label: 'Tentativa 2' },
-      { key: 'respondeu', label: 'Respondeu', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'remarketing',
-    label: 'Remarketing',
-    rule: 'Leads com remarketing ativo.',
-    stages: [
-      { key: 'a_contatar', label: 'A contatar' },
-      { key: 'mensagem_enviada', label: 'Mensagem enviada' },
-      { key: 'respondeu', label: 'Respondeu', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'indicacao',
-    label: 'Indicação',
-    rule: 'Pessoas indicadas (origem indicação ou vinculadas a quem indicou) que ainda não fecharam.',
-    stages: [
-      { key: 'indicado', label: 'Indicado' },
-      { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'agendou', label: 'Agendou', done: true },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
-  {
-    key: 'credito_liberado',
-    label: 'Crédito liberado',
-    rule: 'Pacientes com crédito aprovado na triagem (PAGMAIS ou MAIORAL) que ainda não fecharam.',
-    stages: [
-      { key: 'credito_aprovado', label: 'Crédito aprovado' },
-      { key: 'contato_feito', label: 'Contato feito' },
-      { key: 'negociando', label: 'Negociando' },
-      { key: 'fim_de_ciclo', label: 'Fim de ciclo', done: true },
-    ],
-  },
 ];
 
 /** Coluna de quem não quer mais receber contato. */
@@ -206,8 +145,6 @@ export interface CrcLead {
   closed_at?: string | null;
   completed_at?: string | null;
   updated_at: string;
-  lead_arrival_source?: string | null;
-  contact_attempts?: number | null;
   /** Fim de ciclo: não quer mais receber contato. */
   contact_opt_out_at?: string | null;
 }
@@ -236,25 +173,6 @@ export interface CrcBirthday {
   birth_date: string; // AAAA-MM-DD
 }
 
-export interface CrcTask {
-  id: string;
-  lead_id: string | null;
-  title: string;
-  scheduled_at: string;
-}
-
-export interface CrcRemarketing {
-  lead_id: string;
-  current_stage: string;
-  entered_at: string;
-}
-
-export interface CrcCredit {
-  lead_id: string;
-  pagmais: number;
-  maioral: number;
-}
-
 export interface CrcCardRow {
   board: string;
   lead_id: string;
@@ -271,14 +189,6 @@ export interface CrcInput {
   overduePayments: CrcOverduePayment[];
   birthdays: CrcBirthday[];
   cards: CrcCardRow[];
-  /** Retornos (tarefas) em aberto. */
-  tasks?: CrcTask[];
-  /** Entradas ativas de remarketing. */
-  remarketing?: CrcRemarketing[];
-  /** Leads vinculados a quem os indicou. */
-  referredLeadIds?: string[];
-  /** Crédito aprovado na triagem. */
-  credits?: CrcCredit[];
 }
 
 export interface CrcItem {
@@ -334,17 +244,7 @@ interface Ctx {
   appts: CrcAppointment[];
   overdue: CrcOverduePayment[];
   birth?: string;
-  tasks: CrcTask[];
-  rmkt?: CrcRemarketing;
-  referred: boolean;
-  credit?: CrcCredit;
 }
-
-const FOLLOW_UP_LABEL = (status: string) => {
-  if (status === 'nao_respondeu') return 'Não respondeu';
-  const n = Number(status.replace('followup_', ''));
-  return n ? `D${Math.ceil(n / 2)} ${n % 2 ? 'Manhã' : 'Tarde'} (T${n})` : status;
-};
 
 function hasFutureAppointment(lead: CrcLead, ctx: Ctx): boolean {
   const nowMs = ctx.now.getTime();
@@ -453,58 +353,6 @@ const RULES: Record<CrcBoardKey, Rule> = {
     };
   },
 
-  retorno(_lead, ctx) {
-    const limit = ctx.now.getTime() + 7 * DAY;
-    const next = ctx.tasks
-      .filter(t => new Date(t.scheduled_at).getTime() <= limit)
-      .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
-    if (!next) return null;
-    const late = new Date(next.scheduled_at).getTime() < ctx.now.getTime();
-    const more = ctx.tasks.length > 1 ? ` (+${ctx.tasks.length - 1})` : '';
-    return {
-      reason: `${next.title} · ${late ? 'atrasado desde ' : ''}${fmtDateTime(next.scheduled_at)}${more}`,
-      eventAt: next.scheduled_at,
-    };
-  },
-
-  follow_up(lead) {
-    if (!lead.status.startsWith('followup_') && lead.status !== 'nao_respondeu') return null;
-    const tries = lead.contact_attempts ? ` · ${lead.contact_attempts} tentativa${lead.contact_attempts > 1 ? 's' : ''}` : '';
-    return {
-      reason: `${FOLLOW_UP_LABEL(lead.status)}${tries}`,
-      eventAt: lead.stage_entered_at || lead.updated_at,
-      since: lead.stage_entered_at ?? undefined,
-    };
-  },
-
-  remarketing(lead, ctx) {
-    if (!ctx.rmkt || isSoldStatus(lead.status)) return null;
-    const stage = ctx.rmkt.current_stage.replace('dia_', 'dia ').replace(/_/g, ' ');
-    return { reason: `Remarketing · ${stage}`, eventAt: ctx.rmkt.entered_at, since: ctx.rmkt.entered_at };
-  },
-
-  indicacao(lead, ctx) {
-    const byOrigin = lead.lead_arrival_source === 'indicacao_pac' || lead.lead_arrival_source === 'indicacao_parceria';
-    if (!(byOrigin || ctx.referred || lead.status === 'indicacoes')) return null;
-    if (isSoldStatus(lead.status) || LOST.has(lead.status)) return null;
-    const how = lead.lead_arrival_source === 'indicacao_parceria' ? 'Indicação de parceria' : 'Indicação de paciente';
-    return { reason: how, eventAt: lead.stage_entered_at || lead.updated_at };
-  },
-
-  credito_liberado(lead, ctx) {
-    if (!ctx.credit || isSoldStatus(lead.status) || LOST.has(lead.status)) return null;
-    const parts = [
-      ctx.credit.pagmais > 0 ? `PAGMAIS ${money(ctx.credit.pagmais)}` : null,
-      ctx.credit.maioral > 0 ? `MAIORAL ${money(ctx.credit.maioral)}` : null,
-    ].filter(Boolean);
-    if (!parts.length) return null;
-    return {
-      reason: parts.join(' · '),
-      eventAt: lead.stage_entered_at || lead.updated_at,
-      amount: ctx.credit.pagmais + ctx.credit.maioral,
-    };
-  },
-
   tratamento_sem_agendamento(lead, ctx) {
     if (!IN_TREATMENT.has(lead.status) || lead.completed_at) return null;
     if (hasFutureAppointment(lead, ctx)) return null;
@@ -520,10 +368,6 @@ export function buildCrcBoards(input: CrcInput): Record<CrcBoardKey, CrcItem[]> 
   const birthBy = new Map(input.birthdays.map(b => [b.lead_id, b.birth_date]));
   const cardBy = new Map(input.cards.map(c => [`${c.board}:${c.lead_id}`, c]));
   const leadBy = new Map(input.leads.map(l => [l.id, l]));
-  const tasksBy = groupBy((input.tasks ?? []).filter(t => t.lead_id), t => t.lead_id!);
-  const rmktBy = new Map((input.remarketing ?? []).map(r => [r.lead_id, r]));
-  const referred = new Set(input.referredLeadIds ?? []);
-  const creditBy = new Map((input.credits ?? []).map(c => [c.lead_id, c]));
   const recentLimit = input.now.getTime() - 7 * DAY;
 
   const out = Object.fromEntries(CRC_BOARDS.map(b => [b.key, [] as CrcItem[]])) as Record<CrcBoardKey, CrcItem[]>;
@@ -537,10 +381,7 @@ export function buildCrcBoards(input: CrcInput): Record<CrcBoardKey, CrcItem[]> 
     for (const lead of input.leads) {
       // Fim de ciclo: não entra mais em quadro de contato (cobrança continua)
       if (lead.contact_opt_out_at && board.key !== 'inadimplencia') continue;
-      const ctx: Ctx = {
-        now: input.now, appts: apptsBy.get(lead.id) ?? [], overdue: overdueBy.get(lead.id) ?? [], birth: birthBy.get(lead.id),
-        tasks: tasksBy.get(lead.id) ?? [], rmkt: rmktBy.get(lead.id), referred: referred.has(lead.id), credit: creditBy.get(lead.id),
-      };
+      const ctx: Ctx = { now: input.now, appts: apptsBy.get(lead.id) ?? [], overdue: overdueBy.get(lead.id) ?? [], birth: birthBy.get(lead.id) };
       const occ = RULES[board.key](lead, ctx);
       if (!occ) continue;
       const card = cardBy.get(`${board.key}:${lead.id}`);

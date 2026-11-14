@@ -15,8 +15,8 @@ function build(partial: Partial<CrcInput>) {
 const ids = (items: { lead: { id: string } }[]) => items.map(i => i.lead.id);
 
 describe('CRC — quem entra em cada quadro', () => {
-  it('tem os 8 quadros do print + Retorno, Follow Up, Remarketing, Indicação e Crédito', () => {
-    expect(CRC_BOARDS).toHaveLength(13);
+  it('tem os 8 quadros do print, cada um com colunas', () => {
+    expect(CRC_BOARDS).toHaveLength(8);
     CRC_BOARDS.forEach(b => expect(b.stages.length).toBeGreaterThan(1));
   });
 
@@ -146,42 +146,6 @@ describe('CRC — colunas salvas', () => {
       cards: [{ board: 'desmarcacoes', lead_id: 'm1', stage: 'tentando_reagendar', manual: true, updated_at: iso(-1) }],
     });
     expect(r.desmarcacoes[0]).toMatchObject({ manual: true, stage: 'tentando_reagendar' });
-  });
-});
-
-describe('CRC — quadros trazidos dos outros módulos', () => {
-  it('retorno: tarefas em aberto até 7 dias', () => {
-    const r = build({
-      leads: [lead('r1', 'compareceu'), lead('r2', 'compareceu')],
-      tasks: [
-        { id: 't1', lead_id: 'r1', title: 'Ligar sobre orçamento', scheduled_at: iso(-2) },
-        { id: 't2', lead_id: 'r2', title: 'Retorno', scheduled_at: iso(30) },
-      ],
-    });
-    expect(ids(r.retorno)).toEqual(['r1']);
-    expect(r.retorno[0].reason).toContain('atrasado desde');
-  });
-
-  it('follow up, remarketing, indicação e crédito', () => {
-    const r = build({
-      leads: [
-        lead('f', 'followup_3', { contact_attempts: 2 }),
-        lead('m', 'nao_respondeu'),
-        lead('i', 'novo_lead', { lead_arrival_source: 'indicacao_pac' }),
-        lead('v', 'agendou'),
-        lead('c', 'compareceu'),
-        lead('cx', 'fechado'),
-      ],
-      remarketing: [{ lead_id: 'm', current_stage: 'dia_5', entered_at: iso(-3) }],
-      referredLeadIds: ['v'],
-      credits: [{ lead_id: 'c', pagmais: 45000, maioral: 0 }, { lead_id: 'cx', pagmais: 1000, maioral: 0 }],
-    });
-    expect(ids(r.follow_up).sort()).toEqual(['f', 'm']);
-    expect(r.follow_up.find(i => i.lead.id === 'f')!.reason).toContain('D2 Manhã (T3)');
-    expect(ids(r.remarketing)).toEqual(['m']);
-    expect(ids(r.indicacao).sort()).toEqual(['i', 'v']);
-    expect(ids(r.credito_liberado)).toEqual(['c']);
-    expect(r.credito_liberado[0].reason).toContain('PAGMAIS');
   });
 });
 

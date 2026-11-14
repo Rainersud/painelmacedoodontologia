@@ -24,13 +24,12 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
         <div className="space-y-6">
           <MasterPeriodFilter />
           <GoalLadderCard />
-          <ClinicGoalsPanel />
+          <ClinicGoalsPanel afterRevenue={<RevenueForecastWidget />} />
           <ROIAnalyticsWidget />
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />
             <LossReasonsWidget />
           </div>
-          <RevenueForecastWidget />
         </div>
       </PeriodFilterProvider>
     </PageShell>

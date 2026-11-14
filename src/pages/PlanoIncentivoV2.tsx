@@ -1,138 +1,208 @@
-import { useState } from 'react';
-import { addMonths, format } from 'date-fns';
+import { useMemo, useState } from 'react';
+import {
+  addDays, addMonths, addWeeks, endOfDay, endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek,
+} from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
+import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 import {
-  CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Plane, Settings, Trophy, XCircle,
+  CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Copy, Plane, Settings, Trophy, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageShell } from '@/components/layout/PageShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
-import { BONUS_GROUPS, BONUS_SETTINGS, type BonusGroup, type WeekResult, type WeekState } from '@/lib/bonus';
-import { usePlanoIncentivo, type IncentiveGroup, type PlanoIncentivoData } from '@/hooks/usePlanoIncentivo';
+import { BONUS_GROUPS, BONUS_SETTINGS, type BonusGroup, type GoalResult, type WeekState } from '@/lib/bonus';
+import { usePlanoIncentivo, type IncentiveGroup, type IncentivePeriod, type PlanoIncentivoData } from '@/hooks/usePlanoIncentivo';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 const dm = (d: Date) => format(d, 'dd/MM');
 
-const STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
-  batida: { label: 'Batida', cls: 'bg-success/10 text-success border-success/30', Icon: CheckCircle2 },
-  nao_batida: { label: 'Não batida', cls: 'bg-destructive/10 text-destructive border-destructive/30', Icon: XCircle },
-  em_andamento: { label: 'Em andamento', cls: 'bg-warning/15 text-warning-strong border-warning/30', Icon: Clock },
-  futura: { label: 'A começar', cls: 'bg-muted text-muted-foreground border-border', Icon: Circle },
+/** Cor fixa de cada responsável (identidade, igual no card, no gráfico e na legenda). */
+const PERSON_COLOR: Record<BonusGroup, string> = {
+  comercial: 'hsl(var(--chart-2))',
+  atendimento: 'hsl(var(--chart-1))',
+  indicacoes: 'hsl(var(--chart-3))',
 };
 
-function WeekRow({ w, index }: { w: WeekResult; index: number }) {
-  const st = STATE[w.state];
+const WEEK_STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
+  batida: { label: 'Batida', cls: 'border-success/40 bg-success/10 text-success', Icon: CheckCircle2 },
+  nao_batida: { label: 'Não batida', cls: 'border-destructive/30 bg-destructive/5 text-destructive', Icon: XCircle },
+  em_andamento: { label: 'Em andamento', cls: 'border-warning/40 bg-warning/10 text-warning-strong', Icon: Clock },
+  futura: { label: 'A começar', cls: 'border-border bg-muted/40 text-muted-foreground', Icon: Circle },
+};
+
+const PERIODS: { value: IncentivePeriod; label: string }[] = [
+  { value: 'dia', label: 'Dia' },
+  { value: 'semana', label: 'Semana' },
+  { value: 'mes', label: 'Mês' },
+];
+
+function rangeOf(period: IncentivePeriod, ref: Date) {
+  if (period === 'dia') return { start: startOfDay(ref), end: endOfDay(ref) };
+  if (period === 'semana') return { start: startOfWeek(ref, { weekStartsOn: 1 }), end: endOfWeek(ref, { weekStartsOn: 1 }) };
+  return { start: startOfMonth(ref), end: endOfMonth(ref) };
+}
+
+function periodLabel(period: IncentivePeriod, ref: Date) {
+  const r = rangeOf(period, ref);
+  if (period === 'dia') return format(ref, "EEE, dd 'de' MMM", { locale: ptBR });
+  if (period === 'semana') return `${dm(r.start)} a ${dm(r.end)}`;
+  return format(ref, 'MMMM yyyy', { locale: ptBR });
+}
+
+/** Anel de progresso de uma meta. */
+function GoalRing({ g, color }: { g: GoalResult; color: string }) {
+  const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+  const r = 30;
+  const c = 2 * Math.PI * r;
+  const stroke = g.hit ? 'hsl(var(--success))' : color;
   return (
-    <div className="rounded-lg border p-2.5 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm">
-          <span className="font-medium">Semana {index + 1}</span>
-          <span className="text-xs text-muted-foreground"> · {dm(w.week.start)} a {dm(w.week.end)}</span>
-        </p>
-        <div className="flex items-center gap-2">
-          <span className={cn('text-sm font-semibold tabular-nums', w.earned > 0 ? 'text-success' : 'text-muted-foreground')}>
-            {w.earned > 0 ? brl(w.earned) : '—'}
-          </span>
-          <Badge variant="outline" className={cn('gap-1 text-[11px]', st.cls)}><st.Icon className="h-3 w-3" />{st.label}</Badge>
+    <div className="flex flex-col items-center gap-1.5 min-w-0">
+      <div className="relative h-[76px] w-[76px]">
+        <svg viewBox="0 0 76 76" className="h-full w-full -rotate-90" aria-hidden>
+          <circle cx="38" cy="38" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
+          <circle cx="38" cy="38" r={r} fill="none" stroke={stroke} strokeWidth="7" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} className="transition-[stroke-dashoffset] duration-500" />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {g.hit ? <CheckCircle2 className="h-5 w-5 text-success" aria-hidden /> : <span className="text-base font-bold tabular-nums">{pct}%</span>}
         </div>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {w.goals.map(g => (
-          <span
-            key={g.key}
-            className={cn('inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px]',
-              g.hit ? 'border-success/30 bg-success/5' : 'border-border')}
-          >
-            {g.hit ? <CheckCircle2 className="h-3 w-3 text-success" /> : <Circle className="h-3 w-3 text-muted-foreground" />}
-            {g.label} <strong className="tabular-nums">{g.current}/{g.target}</strong>
-          </span>
-        ))}
-      </div>
+      <p className="text-xs font-medium text-center leading-tight">{g.label}</p>
+      <p className="text-[11px] text-muted-foreground tabular-nums">
+        <b className="text-foreground">{g.current}</b> de {g.target}
+      </p>
     </div>
   );
 }
 
-function PersonCard({ g, data }: { g: IncentiveGroup; data: PlanoIncentivoData }) {
-  const n = g.weeks.length;
+function PersonCard({ g, data, period }: { g: IncentiveGroup; data: PlanoIncentivoData; period: IncentivePeriod }) {
+  const color = PERSON_COLOR[g.group];
   const { tripMonths, tripValue, weeklyValue } = data.settings;
   const role = BONUS_GROUPS.find(b => b.key === g.group)?.label ?? g.label;
+  const allHit = g.periodGoals.length > 0 && g.periodGoals.every(x => x.hit);
+  const missing = g.periodGoals.filter(x => !x.hit && x.target > 0);
+  const noun = period === 'dia' ? 'no dia' : period === 'semana' ? 'na semana' : 'no mês';
   return (
-    <Card className="monday-card flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="monday-card overflow-hidden flex flex-col">
+      <div className="h-1" style={{ background: color }} />
+      <CardContent className="p-5 flex-1 flex flex-col gap-5">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-lg">{g.owner}</CardTitle>
-            <p className="text-sm text-muted-foreground">{role}: {g.monthGoals.map(m => m.label.toLowerCase()).join(', ')}</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{ background: color }} aria-hidden>
+              {g.owner.slice(0, 1).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="text-base font-semibold truncate">{g.owner}</p>
+              <p className="text-xs text-muted-foreground">{role}</p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Bônus do mês</p>
-            <p className="text-2xl font-bold tabular-nums">{brl(g.total)}</p>
+          <div className="text-right shrink-0">
+            <p className="text-[11px] text-muted-foreground">Bônus do mês</p>
+            <p className="text-xl font-bold tabular-nums">{brl(g.total)}</p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4 flex-1">
-        <div className="space-y-2.5">
-          <p className="text-xs font-medium text-muted-foreground">Metas do mês</p>
-          {g.monthGoals.map(m => {
-            const pct = m.target > 0 ? Math.min(100, Math.round((m.current / m.target) * 100)) : 0;
-            return (
-              <div key={m.key} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>{m.label}</span>
-                  <span className="tabular-nums"><strong>{m.current}</strong> / {m.target}</span>
-                </div>
-                <Progress value={pct} className="h-1.5" />
-              </div>
-            );
-          })}
+
+        <div className={cn('grid gap-2', g.periodGoals.length >= 3 ? 'grid-cols-3' : g.periodGoals.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+          {g.periodGoals.map(x => <GoalRing key={x.key} g={x} color={color} />)}
         </div>
+
+        <p className={cn('rounded-lg px-3 py-2 text-xs text-center min-h-[48px] flex items-center justify-center', allHit ? 'bg-success/10 text-success font-medium' : 'bg-muted/60 text-muted-foreground')}>
+          {allHit
+            ? `Todas as metas batidas ${noun}.`
+            : `Faltam ${missing.map(x => `${x.target - x.current} ${x.label.toLowerCase()}`).join(' · ')} ${noun}.`}
+        </p>
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Semanas ({brl(weeklyValue)} cada com todas as metas batidas)</p>
-          {g.weeks.map((w, i) => <WeekRow key={i} w={w} index={i} />)}
-        </div>
-
-        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1.5">
-          <div className="flex justify-between gap-2"><span>Semanas batidas</span><strong className="tabular-nums">{g.weeksHit} de {n} · {brl(g.weeklyTotal)}</strong></div>
-          <div className="flex justify-between gap-2">
-            <span>Bônus dobrado</span>
-            <strong className={cn('tabular-nums text-right', g.doubleBonus > 0 && 'text-success')}>
-              {g.doubleBonus > 0 ? `+ ${brl(g.doubleBonus)}` : g.doubleStillPossible ? `possível: + ${brl(weeklyValue * n)}` : 'perdido neste mês'}
-            </strong>
+          <div className="flex items-baseline justify-between">
+            <p className="text-xs font-medium">Semanas do mês</p>
+            <p className="text-[11px] text-muted-foreground">{brl(weeklyValue)} por semana batida</p>
+          </div>
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${g.weeks.length}, minmax(0, 1fr))` }}>
+            {g.weeks.map((w, i) => {
+              const st = WEEK_STATE[w.state];
+              return (
+                <div key={i} className={cn('rounded-lg border px-1.5 py-2 text-center', st.cls)}
+                  title={`Semana ${i + 1} (${dm(w.week.start)} a ${dm(w.week.end)}): ${st.label}`}>
+                  <st.Icon className="h-4 w-4 mx-auto" aria-hidden />
+                  <p className="text-[11px] font-semibold mt-1">S{i + 1}</p>
+                  <p className="text-[10px] tabular-nums">{w.earned > 0 ? brl(w.earned) : dm(w.week.start)}</p>
+                  <span className="sr-only">{st.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between text-xs rounded-lg bg-muted/50 px-3 py-2">
+            <span className="flex items-center gap-1.5"><Copy className="h-3.5 w-3.5 text-muted-foreground" aria-hidden /> Bônus dobrado</span>
+            <b className={cn('tabular-nums', g.doubleBonus > 0 && 'text-success')}>
+              {g.doubleBonus > 0 ? `+ ${brl(g.doubleBonus)}` : g.doubleStillPossible ? `possível + ${brl(weeklyValue * g.weeks.length)}` : 'perdido este mês'}
+            </b>
           </div>
         </div>
 
-        <div className={cn('rounded-lg border p-3 space-y-2', g.tripEarned ? 'border-success/40 bg-success/5' : '')}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 text-sm font-medium"><Plane className="h-4 w-4 text-primary" /> Viagem de {brl(tripValue)}</span>
-            <span className="text-sm tabular-nums font-semibold">{Math.min(g.streak, tripMonths)}/{tripMonths} meses</span>
+        <div className={cn('mt-auto rounded-lg border p-3 space-y-2', g.tripEarned && 'border-success/40 bg-success/5')}>
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 font-medium"><Plane className="h-3.5 w-3.5" style={{ color }} aria-hidden /> Viagem {brl(tripValue)}</span>
+            <b className="tabular-nums">{Math.min(g.streak, tripMonths)} de {tripMonths} meses</b>
           </div>
-          <div className="flex gap-1" aria-label={`${g.streak} meses seguidos com as metas mensais batidas`}>
+          <div className="flex gap-1">
             {g.months.map(m => (
               <div key={m.month.toISOString()} className="flex-1 text-center">
-                <div className={cn('h-2 rounded-full', m.hit ? 'bg-success' : m.complete ? 'bg-destructive/40' : 'bg-muted')} />
+                <div className="h-1.5 rounded-full" style={{ background: m.hit ? 'hsl(var(--success))' : m.complete ? 'hsl(var(--destructive) / 0.35)' : 'hsl(var(--muted))' }} />
                 <span className="text-[10px] text-muted-foreground capitalize">{format(m.month, 'MMM', { locale: ptBR })}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {g.tripEarned
-              ? 'Viagem conquistada: 6 meses seguidos com todas as metas mensais batidas.'
-              : `Faltam ${tripMonths - g.streak} ${tripMonths - g.streak === 1 ? 'mês' : 'meses'} seguidos com todas as metas mensais batidas.`}
+          <p className="text-[11px] text-muted-foreground">
+            {g.tripEarned ? 'Viagem conquistada.' : `Faltam ${tripMonths - g.streak} ${tripMonths - g.streak === 1 ? 'mês seguido' : 'meses seguidos'} com as metas mensais batidas.`}
           </p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TeamChart({ data, period }: { data: PlanoIncentivoData; period: IncentivePeriod }) {
+  const config: ChartConfig = Object.fromEntries(data.groups.map(g => [g.group, { label: g.owner, color: PERSON_COLOR[g.group] }]));
+  const rows = (data.groups[0]?.series ?? []).map((p, i) => ({
+    label: p.label,
+    ...Object.fromEntries(data.groups.map(g => [g.group, Math.max(0, g.series[i]?.pct ?? 0)])),
+  }));
+  const peak = Math.max(100, ...rows.flatMap(r => data.groups.map(g => Number((r as Record<string, unknown>)[g.group]) || 0)));
+  const top = Math.ceil(peak / 25) * 25;
+  const ticks = Array.from({ length: top / 25 + 1 }, (_, i) => i * 25);
+  return (
+    <Card className="monday-card">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold">Desempenho da equipe {period === 'mes' ? 'por semana' : 'por dia'}</h3>
+          <p className="text-xs text-muted-foreground">% médio das metas de cada responsável · a linha marca 100% (meta batida)</p>
+        </div>
+        <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
+          <BarChart data={rows} barGap={2} barCategoryGap="22%">
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} className="capitalize" />
+            <YAxis tickLine={false} axisLine={false} width={40} domain={[0, top]} ticks={ticks} tickFormatter={v => `${v}%`} />
+            <ReferenceLine y={100} stroke="hsl(var(--success))" strokeDasharray="4 4" />
+            <ChartTooltip cursor={{ fillOpacity: 0.4 }} content={<ChartTooltipContent formatter={(v, name) => (
+              <span className="flex w-full justify-between gap-3"><span>{config[String(name)]?.label}</span><b className="tabular-nums">{v}%</b></span>
+            )} />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            {data.groups.map(g => (
+              <Bar key={g.group} dataKey={g.group} fill={`var(--color-${g.group})`} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+            ))}
+          </BarChart>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
@@ -217,11 +287,17 @@ function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange
 
 export default function PlanoIncentivoV2({ embedded = false }: { embedded?: boolean } = {}) {
   useLiveRefresh();
-  const { isAdmin } = useAuth();
-  const [month, setMonth] = useState(() => new Date());
+  const { canManage } = useAuth();
+  const [period, setPeriod] = useState<IncentivePeriod>('mes');
+  const [ref, setRef] = useState(() => new Date());
   const [editing, setEditing] = useState(false);
-  const { data, isLoading } = usePlanoIncentivo(month);
+  const range = useMemo(() => rangeOf(period, ref), [period, ref]);
+  // mês do bônus: o da data escolhida (na semana, o mês da quinta-feira)
+  const bonusMonth = useMemo(() => (period === 'semana' ? addDays(range.start, 3) : ref), [period, range.start, ref]);
+  const { data, isLoading } = usePlanoIncentivo(bonusMonth, period, range);
   const total = (data?.groups ?? []).reduce((sum, g) => sum + g.total, 0);
+  const move = (dir: 1 | -1) => setRef(r => (period === 'dia' ? addDays(r, dir) : period === 'semana' ? addWeeks(r, dir) : addMonths(r, dir)));
+  const settings = data?.settings ?? { weeklyValue: 100, tripValue: 5000, tripMonths: 6 };
 
   return (
     <PageShell embedded={embedded} title="Plano de Incentivo Inteligente">
@@ -229,45 +305,63 @@ export default function PlanoIncentivoV2({ embedded = false }: { embedded?: bool
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Plano de Incentivo Inteligente</h2>
-            <p className="text-sm text-muted-foreground max-w-3xl">
-              Bateu todas as suas metas na semana: {brl(data?.settings.weeklyValue ?? 100)}. Todas as semanas do mês: bônus dobrado.{' '}
-              {data?.settings.tripMonths ?? 6} meses seguidos com as metas mensais batidas: viagem de {brl(data?.settings.tripValue ?? 5000)}.
-              As metas acompanham o faturamento e o ticket médio do objetivo central.
-            </p>
+            <p className="text-sm text-muted-foreground">Metas de cada responsável, tiradas do faturamento e do ticket médio do objetivo central.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" aria-label="Mês anterior" onClick={() => setMonth(m => addMonths(m, -1))}><ChevronLeft className="h-4 w-4" /></Button>
-            <span className="min-w-[130px] text-center text-sm font-medium capitalize">{format(month, 'MMMM yyyy', { locale: ptBR })}</span>
-            <Button variant="outline" size="icon" aria-label="Próximo mês" onClick={() => setMonth(m => addMonths(m, 1))}><ChevronRight className="h-4 w-4" /></Button>
-            {isAdmin && data && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-lg border bg-card p-1" role="group" aria-label="Período">
+              {PERIODS.map(p => (
+                <Button key={p.value} size="sm" variant={period === p.value ? 'default' : 'ghost'} className="h-8 px-3"
+                  aria-pressed={period === p.value} onClick={() => setPeriod(p.value)}>
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Período anterior" onClick={() => move(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <span className="min-w-[140px] text-center text-sm font-medium capitalize">{periodLabel(period, ref)}</span>
+              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Próximo período" onClick={() => move(1)}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setRef(new Date())}>Hoje</Button>
+            {canManage && data && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}><Settings className="h-4 w-4" />Regras</Button>
             )}
           </div>
         </div>
 
+        <Card className="monday-card">
+          <CardContent className="p-5 grid gap-5 lg:grid-cols-[minmax(220px,1fr)_3fr] items-center">
+            <div className="flex items-center gap-4">
+              <span className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"><Trophy className="h-6 w-6 text-primary" aria-hidden /></span>
+              <div>
+                <p className="text-xs text-muted-foreground">Bônus da equipe em {format(bonusMonth, 'MMMM', { locale: ptBR })}</p>
+                <p className="text-3xl font-bold tabular-nums">{brl(total)}</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { Icon: CalendarCheck, title: `${brl(settings.weeklyValue)} por semana`, text: 'quando a responsável bate todas as suas metas da semana' },
+                { Icon: Copy, title: 'Bônus dobrado', text: 'batendo todas as semanas do mês, recebe o valor das semanas de novo' },
+                { Icon: Plane, title: `Viagem de ${brl(settings.tripValue)}`, text: `${settings.tripMonths} meses seguidos com todas as metas mensais batidas` },
+              ].map(r => (
+                <div key={r.title} className="flex gap-3 rounded-xl border bg-muted/30 p-3">
+                  <r.Icon className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden />
+                  <div><p className="text-sm font-semibold">{r.title}</p><p className="text-xs text-muted-foreground">{r.text}</p></div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {isLoading || !data ? (
-          <div className="grid gap-6 xl:grid-cols-3">{[1, 2, 3].map(i => <div key={i} className="h-[520px] rounded-xl bg-muted/50 animate-pulse" />)}</div>
+          <div className="grid gap-6 xl:grid-cols-3">{[1, 2, 3].map(i => <div key={i} className="h-[560px] rounded-xl bg-muted/50 animate-pulse" />)}</div>
         ) : (
           <>
-            <Card className="monday-card">
-              <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-3 p-4">
-                <div className="flex items-center gap-3">
-                  <Trophy className="h-7 w-7 text-primary" />
-                  <div><p className="text-xs text-muted-foreground">Bônus da equipe no mês</p><p className="text-2xl font-bold tabular-nums">{brl(total)}</p></div>
-                </div>
-                {data.groups.map(g => (
-                  <div key={g.group}>
-                    <p className="text-xs text-muted-foreground">{g.owner}</p>
-                    <p className="text-lg font-semibold tabular-nums">{brl(g.total)}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            <div className="grid gap-6 xl:grid-cols-3">
-              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} />)}
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} period={period} />)}
             </div>
+            <TeamChart data={data} period={period} />
             <p className="text-xs text-muted-foreground">
-              Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira. Metas da semana proporcionais aos dias úteis.
+              As metas do dia e da semana são proporcionais aos dias úteis. Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira.
               Indicações contam tudo que foi apontado no Comercial 1, CRC e Comercial 2 (cada pessoa indicada conta uma vez).
             </p>
             {editing && <RulesDialog open={editing} onOpenChange={setEditing} data={data} />}

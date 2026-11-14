@@ -80,7 +80,7 @@ const RATE_FIELDS = [
 export function GoalLadderCard() {
   const { data: settings, isLoading } = useMetaSettings();
   const { data: plano } = usePlanoIncentivo(useMemo(() => new Date(), []));
-  const { user, isAdmin } = useAuth();
+  const { user, canManage: isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const s = (settings ?? {}) as MetaSettingsMap;
   const ladder = useMemo(() => deriveGoalLadder(s), [settings]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -205,6 +205,9 @@ export function GoalLadderCard() {
                     </Button>
                   </div>
                 </div>
+              )}
+              {isAdmin && !changed && (
+                <p className="text-[11px] text-muted-foreground">Digite o novo valor: a escada ao lado mostra as metas novas antes de salvar.</p>
               )}
               {!draftValid && isAdmin && <p className="text-xs text-destructive">Use valores maiores que zero.</p>}
               <div className="pt-2 border-t border-primary/15 text-xs space-y-1">

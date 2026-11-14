@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { addMonths, endOfMonth, isAfter, startOfMonth } from 'date-fns';
+import { addDays, addMonths, endOfDay, endOfMonth, format, isAfter, startOfDay, startOfMonth, startOfWeek } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { allPages } from '@/lib/paging';
 import {
@@ -27,7 +28,13 @@ export interface IncentiveGroup extends GroupResult {
   months: MonthHit[];
   streak: number;
   tripEarned: boolean;
+  /** metas do período escolhido no filtro (dia, semana ou mês) */
+  periodGoals: GoalResult[];
+  /** % médio das metas em cada parte do período (semanas do mês, ou dias da semana) */
+  series: { label: string; pct: number; current: boolean }[];
 }
+
+export type IncentivePeriod = 'dia' | 'semana' | 'mes';
 
 export interface PlanoIncentivoData {
   weeks: Week[];
@@ -39,10 +46,15 @@ export interface PlanoIncentivoData {
 
 const ORIGINS = new Set(['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling']);
 
-export function usePlanoIncentivo(month: Date) {
+/**
+ * `month`: mês do bônus (semanas, dobrado e viagem). `period` + `range`: o recorte do filtro
+ * Dia / Semana / Mês (padrão: o mês inteiro).
+ */
+export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', range?: Week) {
   const key = `${month.getFullYear()}-${month.getMonth()}`;
+  const sel = range ?? { start: startOfMonth(month), end: endOfMonth(month) };
   return useQuery({
-    queryKey: ['plano-incentivo', key],
+    queryKey: ['plano-incentivo', key, period, sel.start.toISOString(), sel.end.toISOString()],
     refetchInterval: 60_000,
     queryFn: async (): Promise<PlanoIncentivoData> => {
       const weeks = monthWeeks(month);
@@ -50,9 +62,13 @@ export function usePlanoIncentivo(month: Date) {
         .eq('setting_key', BONUS_SETTINGS.tripMonths.key).maybeSingle();
       const tripMonths = Math.max(1, Math.round(Number(tripRow?.setting_value) || BONUS_SETTINGS.tripMonths.fallback));
       const firstMonth = startOfMonth(addMonths(month, -(tripMonths - 1)));
+      // dias da semana do recorte (para o gráfico do filtro Dia / Semana)
+      const weekOfSel = startOfWeek(sel.start, { weekStartsOn: 1 });
+      const minD = (...d: Date[]) => new Date(Math.min(...d.map(x => x.getTime())));
+      const maxD = (...d: Date[]) => new Date(Math.max(...d.map(x => x.getTime())));
       const span = {
-        start: weeks[0].start < firstMonth ? weeks[0].start : firstMonth,
-        end: weeks[weeks.length - 1].end > endOfMonth(month) ? weeks[weeks.length - 1].end : endOfMonth(month),
+        start: minD(weeks[0].start, firstMonth, sel.start, weekOfSel),
+        end: maxD(weeks[weeks.length - 1].end, endOfMonth(month), sel.end, endOfDay(addDays(weekOfSel, 6))),
       };
 
       const [data, rescued, refs, triage, refLeads, owners] = await Promise.all([
@@ -115,6 +131,22 @@ export function usePlanoIncentivo(month: Date) {
       const now = new Date();
       const ownerOf = new Map((owners.data ?? []).map(o => [o.grupo, o.nome]));
 
+      // partes do período para o gráfico: semanas do mês, ou os dias úteis da semana
+      const parts: { label: string; range: Week; current: boolean }[] = period === 'mes'
+        ? weeks.map((w, i) => ({ label: `Sem ${i + 1}`, range: w, current: w.start <= now && now <= w.end }))
+        : Array.from({ length: 7 }, (_, i) => addDays(weekOfSel, i))
+          .filter(d => data.calendar.isBusinessDay(d))
+          .map(d => ({
+            label: format(d, 'EEE dd', { locale: ptBR }),
+            range: { start: startOfDay(d), end: endOfDay(d) },
+            current: period === 'dia' ? startOfDay(d).getTime() === startOfDay(sel.start).getTime() : startOfDay(d).getTime() === startOfDay(now).getTime(),
+          }));
+      const avgPct = (goals: GoalResult[]) => {
+        const valid = goals.filter(g => g.target > 0);
+        if (!valid.length) return 0;
+        return Math.round(valid.reduce((sum, g) => sum + Math.min(150, (g.current / g.target) * 100), 0) / valid.length);
+      };
+
       const groups: IncentiveGroup[] = BONUS_GROUPS.map(def => {
         const weekly = evaluateGroup(def.key, weeks, w => def.goals.map(k => goal(k, w)), settings.weeklyValue, now);
         const months: MonthHit[] = Array.from({ length: tripMonths }, (_, i) => {
@@ -131,6 +163,8 @@ export function usePlanoIncentivo(month: Date) {
           months,
           streak,
           tripEarned: streak >= tripMonths,
+          periodGoals: def.goals.map(k => goal(k, sel)),
+          series: parts.map(p => ({ label: p.label, pct: avgPct(def.goals.map(k => goal(k, p.range))), current: p.current })),
         };
       });
 

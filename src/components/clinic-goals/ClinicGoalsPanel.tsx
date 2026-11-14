@@ -8,7 +8,7 @@ import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { ChevronRight, Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
@@ -106,7 +106,8 @@ function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
   );
 }
 
-export function ClinicGoalsPanel() {
+/** `afterRevenue`: bloco mostrado entre o faturamento do período e o funil (ex.: Previsão de Faturamento). */
+export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } = {}) {
   const { period, setPeriod, customRange, setCustomRange, range } = useLocalPeriod('mes');
   const prevLabel = range.prevLabel ?? 'período anterior';
   const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd });
@@ -182,6 +183,8 @@ export function ClinicGoalsPanel() {
           )}
         </CardContent>
       </Card>
+
+      {afterRevenue}
 
       {/* Funil: as quatro etapas em sequência */}
       <Card className="monday-card overflow-hidden">

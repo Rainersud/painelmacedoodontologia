@@ -43,10 +43,12 @@ describe('LTV — pacientes e resumo', () => {
     expect(s.repurchaseRate).toBe(50);
     expect(s.ltvPurchases).toBe(3); // b = 1, c = 2
     expect(s.purchasesPerPatient).toBeCloseTo(7 / 4);
-    expect(s.avgLtv).toBe(4000);
+    expect(s.avgLtv).toBe(500); // só LTV: 2000 ÷ 4 pacientes
+    expect(s.avgPatientValue).toBe(4000); // front + LTV
+    expect(s.avgLtvReceived).toBeCloseTo((1600 * 0.9) / 4);
     expect(s.frontTicket).toBe(3500);
     expect(s.ltvTicket).toBeCloseTo(2000 / 3);
-    expect(s.avgLtvRepeat).toBe((3000 + 1000 + 2000 + 1000) / 2);
+    expect(s.avgLtvRepeat).toBe(1000); // 2000 ÷ 2 que recompraram
     expect(s.ltvShare).toBeCloseTo(12.5);
   });
 
@@ -58,6 +60,9 @@ describe('LTV — pacientes e resumo', () => {
     expect(g.comprou_2.label).toBe('Comprou no LTV 1 vez');
     expect(g.comprou_2.patients).toBe(1);
     expect(g.comprou_2.stepConversion).toBe(50); // 2 de 4 chegaram ao LTV
+    expect(g.comprou_2.avgLtv).toBe(1000);
+    expect(g.comprou_2.avgPatientValue).toBe(4000);
+    expect(g.comprou_1.avgLtv).toBe(0);
     expect(g.comprou_3.stepConversion).toBe(50); // 1 de 2 foi além da 1ª recompra
     expect(s.groups.reduce((a, x) => a + x.patients, 0)).toBe(4);
   });

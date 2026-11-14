@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface KanbanScrollbarProps {
@@ -7,105 +7,106 @@ interface KanbanScrollbarProps {
 }
 
 /**
- * Custom horizontal scrollbar synced to a scrollable target element.
- * Always visible, thick, and easy to drag — works around native overlay
- * scrollbar issues in headless/Linux Chromium and gives a consistent feel.
+ * Barra horizontal fina, sincronizada com o quadro.
+ * A posição é atualizada direto no elemento (sem re-render do React), uma vez por quadro
+ * de animação, para o movimento ficar fluido mesmo com muitas colunas.
  */
 export function KanbanScrollbar({ targetRef, className }: KanbanScrollbarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
-  const [thumbWidth, setThumbWidth] = useState(0);
-  const [thumbLeft, setThumbLeft] = useState(0);
-  const dragging = useRef(false);
+  const frame = useRef(0);
 
-  const updateThumb = useCallback(() => {
+  const paint = useCallback(() => {
+    frame.current = 0;
     const target = targetRef.current;
-    if (!target) return;
-    const visible = target.clientWidth;
-    const total = target.scrollWidth;
-    const maxScroll = Math.max(0, total - visible);
-    const ratio = visible / Math.max(1, total);
-    const width = Math.max(48, visible * ratio);
-    const maxThumbLeft = Math.max(0, visible - width);
-    const left = maxScroll > 0 ? (target.scrollLeft / maxScroll) * maxThumbLeft : 0;
-    setThumbWidth(width);
-    setThumbLeft(left);
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    if (!target || !track || !thumb) return;
+    const trackW = track.clientWidth;
+    const maxScroll = target.scrollWidth - target.clientWidth;
+    track.style.visibility = maxScroll > 1 ? 'visible' : 'hidden';
+    const width = Math.max(56, trackW * (target.clientWidth / Math.max(1, target.scrollWidth)));
+    const left = maxScroll > 0 ? (target.scrollLeft / maxScroll) * (trackW - width) : 0;
+    thumb.style.width = `${width}px`;
+    thumb.style.transform = `translate3d(${left}px,0,0)`;
   }, [targetRef]);
+
+  const schedule = useCallback(() => {
+    if (!frame.current) frame.current = requestAnimationFrame(paint);
+  }, [paint]);
 
   useEffect(() => {
     const target = targetRef.current;
     if (!target) return;
-    updateThumb();
-    const onScroll = () => updateThumb();
-    target.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', updateThumb);
-
-    const ro = new ResizeObserver(updateThumb);
+    paint();
+    target.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    const ro = new ResizeObserver(schedule);
     ro.observe(target);
-    Array.from(target.children).forEach((c) => ro.observe(c as Element));
-
+    Array.from(target.children).forEach(c => ro.observe(c as Element));
     return () => {
-      target.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', updateThumb);
+      target.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
       ro.disconnect();
+      if (frame.current) cancelAnimationFrame(frame.current);
     };
-  }, [targetRef, updateThumb]);
+  }, [targetRef, paint, schedule]);
 
-  const handleTrackClick = (e: React.MouseEvent) => {
-    if (e.target === thumbRef.current || thumbRef.current?.contains(e.target as Node)) return;
+  /** Clicar na trilha leva o quadro até aquele ponto, com rolagem suave. */
+  const handleTrackPointerDown = (e: React.PointerEvent) => {
+    if (e.target === thumbRef.current) return;
+    const target = targetRef.current;
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    if (!target || !track || !thumb) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left - thumb.offsetWidth / 2) / Math.max(1, rect.width - thumb.offsetWidth);
+    const maxScroll = target.scrollWidth - target.clientWidth;
+    target.scrollTo({ left: Math.max(0, Math.min(1, ratio)) * maxScroll, behavior: 'smooth' });
+  };
+
+  const handleThumbPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     const target = targetRef.current;
     const track = trackRef.current;
     if (!target || !track) return;
-    const rect = track.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const maxScroll = Math.max(0, target.scrollWidth - target.clientWidth);
-    const ratio = clickX / track.clientWidth;
-    target.scrollLeft = ratio * maxScroll;
-  };
-
-  const handleThumbMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    const target = targetRef.current;
-    if (!target) return;
+    const thumb = e.currentTarget;
+    thumb.setPointerCapture(e.pointerId);
+    thumb.dataset.dragging = 'true';
     const startX = e.clientX;
     const startScroll = target.scrollLeft;
-    const maxScroll = Math.max(0, target.scrollWidth - target.clientWidth);
-    const trackWidth = trackRef.current?.clientWidth || target.clientWidth;
+    const maxScroll = target.scrollWidth - target.clientWidth;
+    const usable = Math.max(1, track.clientWidth - thumb.offsetWidth);
+    let pending = 0;
+    let nextLeft = startScroll;
 
-    const onMove = (ev: MouseEvent) => {
-      if (!dragging.current) return;
-      const deltaX = ev.clientX - startX;
-      const scrollDelta = (deltaX / trackWidth) * maxScroll;
-      target.scrollLeft = Math.max(0, Math.min(maxScroll, startScroll + scrollDelta));
+    const onMove = (ev: PointerEvent) => {
+      nextLeft = Math.max(0, Math.min(maxScroll, startScroll + ((ev.clientX - startX) / usable) * maxScroll));
+      if (!pending) pending = requestAnimationFrame(() => { pending = 0; target.scrollLeft = nextLeft; });
     };
-
     const onUp = () => {
-      dragging.current = false;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      delete thumb.dataset.dragging;
+      thumb.removeEventListener('pointermove', onMove);
+      thumb.removeEventListener('pointerup', onUp);
+      thumb.removeEventListener('pointercancel', onUp);
     };
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    thumb.addEventListener('pointermove', onMove);
+    thumb.addEventListener('pointerup', onUp);
+    thumb.addEventListener('pointercancel', onUp);
   };
 
   return (
     <div
       ref={trackRef}
-      className={cn(
-        "shrink-0 w-full h-7 rounded-full bg-muted/80 border border-border/60 cursor-pointer relative select-none",
-        className
-      )}
-      onClick={handleTrackClick}
+      className={cn('group shrink-0 w-full h-2.5 rounded-full bg-muted relative select-none cursor-pointer', className)}
+      onPointerDown={handleTrackPointerDown}
       aria-hidden="true"
     >
       <div
         ref={thumbRef}
-        className="absolute top-1 h-5 rounded-full bg-primary/70 hover:bg-primary/95 active:bg-primary transition-colors shadow-sm"
-        style={{ width: thumbWidth, left: thumbLeft }}
-        onMouseDown={handleThumbMouseDown}
+        className="absolute left-0 top-0 h-full rounded-full bg-primary/45 hover:bg-primary/70 data-[dragging=true]:bg-primary/80 cursor-grab data-[dragging=true]:cursor-grabbing will-change-transform"
+        onPointerDown={handleThumbPointerDown}
       />
     </div>
   );

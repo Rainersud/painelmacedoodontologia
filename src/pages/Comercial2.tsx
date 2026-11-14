@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { describeError } from '@/lib/errors';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
+import { useDragToPan } from '@/hooks/useDragToPan';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
@@ -1017,6 +1018,7 @@ const Comercial2 = () => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const boardScrollRef = useRef<HTMLDivElement>(null);
+  useDragToPan(boardScrollRef);
   const [selectedOpp, setSelectedOpp] = useState<UpsellOpportunity | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -1287,13 +1289,12 @@ const Comercial2 = () => {
             </div>
 
             {/* Top custom scrollbar */}
-            <KanbanScrollbar targetRef={boardScrollRef} className="mb-1" />
+            <KanbanScrollbar targetRef={boardScrollRef} className="mb-2" />
 
             {/* Kanban Board */}
             <div
               ref={boardScrollRef}
-              className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scroll-container-x-thick"
-              style={{ willChange: 'scroll-position' }}
+              className="flex-1 min-h-0 md:min-h-0 overflow-x-auto overflow-y-auto md:overflow-y-hidden scrollbar-hide overscroll-x-contain"
             >
               <div className="flex gap-3 min-w-max md:h-full pb-3 px-1">
                 {(searchQuery.trim() ? UPSELL_STAGES.filter(s => getOppsByStatus(s.key).length > 0) : UPSELL_STAGES).map((stage) => {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { normalizeStatus } from '@/lib/metrics/stages';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
+import { useDragToPan } from '@/hooks/useDragToPan';
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +64,7 @@ function KanbanBoard({
 }: KanbanBoardProps) {
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
+  useDragToPan(bottomScrollRef);
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
   // Desenha os cards aos poucos: colunas com centenas de leads travavam o navegador
   const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
@@ -137,13 +139,12 @@ function KanbanBoard({
       </div>
 
       {/* Top custom scrollbar */}
-      <KanbanScrollbar targetRef={bottomScrollRef} className="mb-1" />
+      <KanbanScrollbar targetRef={bottomScrollRef} className="mb-2" />
 
       {/* Kanban content */}
       <div
         ref={bottomScrollRef}
-        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scroll-container-x-thick"
-        style={{ willChange: 'scroll-position' }}
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide overscroll-x-contain"
       >
         <div ref={innerRef} className="flex gap-3 min-w-max h-full pb-2 px-1">
           {leading}
@@ -197,7 +198,7 @@ function KanbanBoard({
                 ) : (
                 <div
                   className={cn(
-                    "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full",
+                    "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full [content-visibility:auto] [contain-intrinsic-size:256px_600px]",
                   )}
                   onDragOver={(e) => handleDragOver(e, stage.key)}
                   onDragLeave={handleDragLeave}
@@ -760,7 +761,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
         {/* Loss Analysis Panel */}
         {!isFollowUpMode && (
           <div className="mt-6">
-            <LossAnalysisPanel />
+            <LossAnalysisPanel onOpenLead={(id) => { const l = leadsById.get(id); if (l) handleOpenDetail(l); }} />
           </div>
         )}
       </div>

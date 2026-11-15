@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
-import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,9 +41,7 @@ import {
 
 export default function Relatorios({ embedded = false }: { embedded?: boolean } = {}) {
   return (
-    <PeriodFilterProvider>
       <RelatoriosContent embedded={embedded} />
-    </PeriodFilterProvider>
   );
 }
 
@@ -173,8 +170,6 @@ function RelatoriosContent({ embedded }: { embedded: boolean }) {
           </div>
 
         </div>
-
-        <MasterPeriodFilter />
 
         {/* KPI Summary */}
         <div className="grid gap-4 md:grid-cols-5">

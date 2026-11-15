@@ -1,9 +1,9 @@
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useState, useMemo, Fragment } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,8 +15,6 @@ import {
   Calendar as CalendarIcon, 
   MessageSquare,
   CheckSquare,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   User,
   RefreshCw,
@@ -39,7 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { format, startOfDay, addDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { TASK_TYPE_CONFIG, PRIORITY_CONFIG, type Task } from '@/types/crm';
@@ -347,8 +345,9 @@ function TaskItem({
 }
 
 const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
+  // período = filtro de data global (canto superior direito)
+  const { range, anchor: selectedDate, period } = usePeriodFilter();
+  const viewMode: 'day' | 'week' | 'month' = period === 'hoje' ? 'day' : period === 'semana' ? 'week' : 'month';
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   
@@ -368,46 +367,27 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
   const filteredTasks = useMemo(() => {
     if (!allTasks) return [];
-    
-    if (viewMode === 'day') {
-      return allTasks.filter(t => isSameDay(new Date(t.scheduled_at), selectedDate));
-    }
-    
-    if (viewMode === 'week') {
-      const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
-      return allTasks.filter(t => {
-        const date = new Date(t.scheduled_at);
-        return date >= start && date <= end;
-      });
-    }
-    
-    const month = selectedDate.getMonth();
-    const year = selectedDate.getFullYear();
     return allTasks.filter(t => {
       const date = new Date(t.scheduled_at);
-      return date.getMonth() === month && date.getFullYear() === year;
+      return date >= range.start && date <= range.end;
     });
-  }, [allTasks, selectedDate, viewMode]);
+  }, [allTasks, range.start, range.end]);
 
-  // No dia de hoje, os retornos em atraso de dias anteriores aparecem junto com os do dia
-  const showingToday = viewMode === 'day' && isSameDay(selectedDate, new Date());
+  // Com hoje dentro do período escolhido, os retornos em atraso de antes do período aparecem junto
+  const nowMs = Date.now();
+  const showingToday = range.start.getTime() <= nowMs && nowMs <= range.end.getTime();
   const overdueTasks = useMemo(() => {
     if (!allTasks || !showingToday) return [];
-    const today = startOfDay(new Date()).getTime();
+    const before = range.start.getTime();
     return allTasks
-      .filter(t => t.status === 'pendente' && new Date(t.scheduled_at).getTime() < today)
+      .filter(t => t.status === 'pendente' && new Date(t.scheduled_at).getTime() < before)
       .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
-  }, [allTasks, showingToday]);
+  }, [allTasks, showingToday, range.start]);
   const todayPending = filteredTasks.filter(t => t.status === 'pendente');
   const pendingTasks = [...overdueTasks, ...todayPending];
   const completedTasks = filteredTasks.filter(t => t.status === 'concluido');
   const rescheduledTasks = filteredTasks.filter(t => t.status === 'reagendado');
 
-  const daysWithTasks = useMemo(() => {
-    if (!allTasks) return [];
-    return allTasks.map(t => startOfDay(new Date(t.scheduled_at)));
-  }, [allTasks]);
 
   const handleComplete = (taskId: string, response: string) => {
     updateTask.mutate({ id: taskId, updates: { status: 'concluido', response } });
@@ -415,11 +395,6 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
   const handleReopen = (taskId: string) => {
     updateTask.mutate({ id: taskId, updates: { status: 'pendente' } });
-  };
-
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const days = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 30;
-    setSelectedDate(prev => addDays(prev, direction === 'next' ? days : -days));
   };
 
   const weekDays = useMemo(() => {
@@ -434,26 +409,6 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar + Controls */}
         <div className="space-y-4">
-          <Card className="monday-card">
-            <CardContent className="pt-4">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                locale={ptBR}
-                modifiers={{ hasTask: daysWithTasks }}
-                modifiersStyles={{
-                  hasTask: {
-                    fontWeight: 'bold',
-                    textDecoration: 'underline',
-                    textDecorationColor: 'hsl(var(--primary))',
-                  },
-                }}
-                className="rounded-md"
-              />
-            </CardContent>
-          </Card>
-
           <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Resumo</CardTitle>
@@ -486,26 +441,8 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
           <Card className="monday-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate('prev')}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <CardTitle className="text-lg">
-                    {viewMode === 'day' && format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
-                    {viewMode === 'week' && `Semana de ${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "d MMM", { locale: ptBR })}`}
-                    {viewMode === 'month' && format(selectedDate, "MMMM yyyy", { locale: ptBR })}
-                  </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateDate('next')}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="day" className="text-xs h-6 px-2">Dia</TabsTrigger>
-                    <TabsTrigger value="week" className="text-xs h-6 px-2">Semana</TabsTrigger>
-                    <TabsTrigger value="month" className="text-xs h-6 px-2">Mês</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <CardTitle className="text-lg">{range.label}</CardTitle>
+                <span className="text-xs text-muted-foreground">Mude a data no filtro do topo</span>
               </div>
             </CardHeader>
             <CardContent>

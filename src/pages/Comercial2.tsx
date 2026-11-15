@@ -19,7 +19,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
-import { defaultReturnDate, summarize, LTV_PERIODS, ltvActivity, ltvPeriodRange, type LtvPeriod } from '@/lib/ltv';
+import { defaultReturnDate, summarize, ltvActivity } from '@/lib/ltv';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { useLTVData } from '@/hooks/useLTVData';
 import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
 
@@ -956,12 +957,13 @@ const Comercial2 = () => {
   const metrics = useUpsellMetrics();
   const ltvData = useLTVData();
   const ltv = useMemo(() => summarize(ltvData.patients), [ltvData.patients]);
-  const [period, setPeriod] = useState<LtvPeriod>('mes');
-  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
-  const activity = useMemo(() => {
-    const r = ltvPeriodRange(period);
-    return ltvActivity(ltvData.patients, ltvData.payments, r.start, r.end);
-  }, [period, ltvData.patients, ltvData.payments]);
+  // período dos indicadores = filtro de data global (canto superior direito)
+  const { range: gRange, current: periodCurrent } = useGlobalPeriodText();
+  const periodDef = { current: periodCurrent };
+  const activity = useMemo(
+    () => ltvActivity(ltvData.patients, ltvData.payments, gRange.start, gRange.end),
+    [gRange.start, gRange.end, ltvData.patients, ltvData.payments],
+  );
   const patientByOpp = useMemo(() => new Map(ltvData.patients.map(p => [p.oppId, p])), [ltvData.patients]);
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
@@ -1079,29 +1081,12 @@ const Comercial2 = () => {
             <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
             <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
           </TabsList>
-          <div className="inline-flex rounded-lg bg-muted p-1" role="radiogroup" aria-label="Período dos indicadores">
-            {LTV_PERIODS.map(p => (
-              <button
-                key={p.key}
-                type="button"
-                role="radio"
-                aria-checked={period === p.key}
-                onClick={() => setPeriod(p.key)}
-                className={cn(
-                  'rounded-md px-3.5 py-1.5 text-xs font-medium transition-colors',
-                  period === p.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
         </div>
         <TabsContent value="financeiro" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <FinancialDashboard period={period} />
+          <FinancialDashboard />
         </TabsContent>
         <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <LTVRecurrencePanel period={period} onOpenLead={(oppId) => {
+          <LTVRecurrencePanel onOpenLead={(oppId) => {
             const opp = opportunities?.find(o => o.id === oppId);
             if (opp) {
               setSelectedOpp(opp);

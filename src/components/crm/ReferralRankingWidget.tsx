@@ -1,27 +1,19 @@
-import { useState } from 'react';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReferralRanking, useReferralDashboard, type ReferrerRanking } from '@/hooks/useReferrals';
 import { Users, Loader2, Trophy, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const PERIOD_OPTIONS = [
-  { value: '30', label: 'Mês atual' },
-  { value: '90', label: 'Últimos 3 meses' },
-  { value: '180', label: 'Últimos 6 meses' },
-  { value: '365', label: 'Últimos 12 meses' },
-  { value: 'all', label: 'Todo o período' },
-];
 
 interface ReferralRankingWidgetProps {
   onLeadClick?: (leadId: string, name?: string) => void;
 }
 
 export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProps) {
-  const [period, setPeriod] = useState('30');
-  const periodDays = period === 'all' ? undefined : parseInt(period);
-  const { data: ranking, isLoading } = useReferralRanking(periodDays);
+  // período = filtro de data global (canto superior direito)
+  const { range } = usePeriodFilter();
+  const { data: ranking, isLoading } = useReferralRanking({ start: range.start, end: range.end });
   const { data: dashData } = useReferralDashboard();
 
   const formatCurrency = (v: number) =>
@@ -40,16 +32,7 @@ export function ReferralRankingWidget({ onLeadClick }: ReferralRankingWidgetProp
             <Trophy className="h-5 w-5 text-warning-strong" />
             <CardTitle className="text-base font-semibold">Ranking de Indicações</CardTitle>
           </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map(o => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
         </div>
         {/* Summary metric */}
         <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-primary/5">

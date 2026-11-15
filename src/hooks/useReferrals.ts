@@ -207,16 +207,15 @@ export interface ReferrerRanking {
   revenue: number;
 }
 
-export function useReferralRanking(periodDays?: number) {
+/** Ranking de quem mais indicou no período (filtro de data global); sem período, todo o histórico. */
+export function useReferralRanking(range?: { start: Date; end: Date }) {
   return useQuery({
-    queryKey: ['referral-ranking', periodDays],
+    queryKey: ['referral-ranking', range?.start.toISOString(), range?.end.toISOString()],
     queryFn: async (): Promise<ReferrerRanking[]> => {
       let query = supabase.from('referrals').select('*');
-      
-      if (periodDays) {
-        const since = new Date();
-        since.setDate(since.getDate() - periodDays);
-        query = query.gte('created_at', since.toISOString());
+
+      if (range) {
+        query = query.gte('created_at', range.start.toISOString()).lte('created_at', range.end.toISOString());
       }
 
       const { data: referrals, error } = await allPages(query.order('id'));

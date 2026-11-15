@@ -3,7 +3,8 @@ import { CalendarClock, Info, Loader2, Repeat, TrendingUp, Users, Wallet } from 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { ENTRY_TREATMENT_LABELS, LTV_PERIODS, LTV_STAGES, ltvActivity, ltvPeriodRange, segmentBy, summarize, type LtvPatient, type LtvPeriod } from '@/lib/ltv';
+import { ENTRY_TREATMENT_LABELS, LTV_STAGES, ltvActivity, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { ARRIVAL_SOURCE_LABELS } from '@/lib/metrics/stages';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useGlobalCAC } from '@/hooks/useRevenueProjection';
@@ -36,26 +37,26 @@ function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; labe
 
 interface LTVRecurrencePanelProps {
   /** Filtro Dia / Semana / Mês do topo do Comercial 2 */
-  period: LtvPeriod;
   /** Abre a oportunidade do LTV (id do card do Comercial 2). */
   onOpenLead?: (oppId: string) => void;
 }
 
 /** LTV Inteligente: quanto cada paciente vale ao longo do tempo e como a recompra evolui. */
-export function LTVRecurrencePanel({ period, onOpenLead }: LTVRecurrencePanelProps) {
+export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
   const { patients, payments, isLoading } = useLTVData();
   const { data: cacData } = useGlobalCAC();
   const [segmentDim, setSegmentDim] = useState<SegmentDim>('tratamento');
   const [openStage, setOpenStage] = useState<string | null>(null);
 
-  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
+  // período = filtro de data global (canto superior direito)
+  const { range: r, current, previous } = useGlobalPeriodText();
+  const periodDef = { current, previous };
   const { now: act, prev: prevAct } = useMemo(() => {
-    const r = ltvPeriodRange(period);
     return {
       now: ltvActivity(patients, payments, r.start, r.end),
       prev: ltvActivity(patients, payments, r.prevStart, r.prevEnd),
     };
-  }, [period, patients, payments]);
+  }, [r.start, r.end, r.prevStart, r.prevEnd, patients, payments]);
   const vsPrev = (cur: number, before: number) => (before > 0 ? `${cur >= before ? '+' : ''}${Math.round(((cur - before) / before) * 100)}% vs ${periodDef.previous}` : `${periodDef.previous}: ${formatCurrency(before)}`);
 
   const s = useMemo(() => summarize(patients), [patients]);

@@ -1,3 +1,5 @@
+import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useState, useMemo } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { AdIntegrationsCard } from '@/components/traffic/AdIntegrationsCard';
@@ -309,7 +311,8 @@ function TrafficReconciliation({ month, creatives }: { month: Date; creatives: A
 }
 
 export default function FunilTrafego({ embedded = false }: { embedded?: boolean } = {}) {
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  // mês = filtro de data global (canto superior direito)
+  const { month: selectedMonth, exact } = useGlobalMonth();
   const { creatives, consolidated, bestCreative, worstCreative, isLoading, addCreative, updateCreative, deleteCreative } = useAdCreatives(selectedMonth);
   const [viewMode, setViewMode] = useState<'individual' | 'consolidated'>('consolidated');
   const [selectedCreative, setSelectedCreative] = useState<string | null>(null);
@@ -374,15 +377,7 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
             <p className="text-xs text-muted-foreground">Análise inteligente por criativo</p>
           </div>
           <div className="flex items-center gap-2">
-            <Input
-              type="month"
-              className="w-40 text-xs"
-              value={format(selectedMonth, 'yyyy-MM')}
-              onChange={e => {
-                const [y, m] = e.target.value.split('-');
-                setSelectedMonth(new Date(Number(y), Number(m) - 1, 1));
-              }}
-            />
+            <MonthNotice month={selectedMonth} exact={exact} />
             <CreativeFormDialog
               onSave={handleAdd}
               trigger={<Button size="sm"><Plus className="h-4 w-4 mr-1" /> Criativo</Button>}

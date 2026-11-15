@@ -1,3 +1,4 @@
+import { PeriodFilterProvider } from "@/components/dashboard/PeriodFilterContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -78,6 +79,7 @@ const App = () => (
         <RealtimeProvider>
         <ErrorBoundary>
           <TooltipProvider>
+          <PeriodFilterProvider>
           <LeadDetailProvider>
             <Toaster />
             <Sonner />
@@ -118,6 +120,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </LeadDetailProvider>
+          </PeriodFilterProvider>
           </TooltipProvider>
         </ErrorBoundary>
         </RealtimeProvider>

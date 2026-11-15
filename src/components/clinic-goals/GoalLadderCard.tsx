@@ -11,6 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMetaSettings } from '@/hooks/useMetaSettings';
 import { usePlanoIncentivo, type CountKey } from '@/hooks/usePlanoIncentivo';
+import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
@@ -79,7 +82,11 @@ const RATE_FIELDS = [
  */
 export function GoalLadderCard() {
   const { data: settings, isLoading } = useMetaSettings();
-  const { data: plano } = usePlanoIncentivo(useMemo(() => new Date(), []));
+  // realizado = mês da data escolhida no filtro global
+  const { month: globalMonth } = useGlobalMonth();
+  const monthKey = `${globalMonth.getFullYear()}-${globalMonth.getMonth()}`;
+  const planoMonth = useMemo(() => new Date(globalMonth.getFullYear(), globalMonth.getMonth(), 15), [monthKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data: plano } = usePlanoIncentivo(planoMonth);
   const { user, canManage: isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const s = (settings ?? {}) as MetaSettingsMap;
@@ -227,7 +234,7 @@ export function GoalLadderCard() {
                     <th className="font-medium py-2 px-3 text-right">Mês</th>
                     <th className="font-medium py-2 px-3 text-right">Semana</th>
                     <th className="font-medium py-2 px-3 text-right">Dia útil</th>
-                    <th className="font-medium py-2 pl-3 text-right">Realizado no mês</th>
+                    <th className="font-medium py-2 pl-3 text-right capitalize">Realizado · {format(planoMonth, 'MMM yyyy', { locale: ptBR })}</th>
                   </tr>
                 </thead>
                 <tbody>

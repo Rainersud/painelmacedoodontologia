@@ -13,11 +13,11 @@ import {
 } from '@/lib/metrics';
 
 /** Intervalo amplo para a busca (o recorte exato é feito por buildRange). */
-function buildPeriodForCalendar(period: Period, customRange?: CustomYearRange) {
+function buildPeriodForCalendar(period: Period, customRange: CustomYearRange | undefined, anchor: Date) {
   if (period === 'ano' && customRange?.from && customRange?.to) {
-    return buildPeriod('personalizado', new Date(), customRange);
+    return buildPeriod('personalizado', anchor, customRange);
   }
-  return buildPeriod(period, new Date());
+  return buildPeriod(period, anchor);
 }
 
 export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
@@ -80,8 +80,11 @@ function countBiz(start: Date, end: Date, cal: CalendarCfg) {
   return eachDayOfInterval({ start, end }).filter(cal.isBusinessDay).length;
 }
 
-function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg): PeriodRange {
-  const now = new Date();
+function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg, anchor: Date): PeriodRange {
+  // `anchor` escolhe o período (filtro global); o ritmo conta só os dias que já passaram de verdade
+  const now = anchor;
+  const real = new Date();
+  const elapsedEnd = (start: Date, end: Date) => (real > end ? end : real < start ? start : real);
   if (period === 'hoje') {
     const start = startOfDay(now);
     const end = endOfDay(now);
@@ -105,7 +108,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
     const prev = subWeeks(now, 1);
     const days = eachDayOfInterval({ start, end });
     const totalBusinessDays = countBiz(start, end, cal);
-    const businessDays = countBiz(start, now > end ? end : now, cal);
+    const businessDays = real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal);
     return {
       start, end,
       prevStart: startOfWeek(prev, { weekStartsOn: 1 }),
@@ -135,7 +138,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
       return { start: mStart, end: mEnd };
     });
     const totalBusinessDays = countBiz(start, end, cal);
-    const businessDays = countBiz(start, now > end ? end : now, cal);
+    const businessDays = real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal);
     return {
       start, end,
       prevStart, prevEnd,
@@ -150,7 +153,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
   return {
     start, end,
     prevStart: startOfMonth(prev), prevEnd: endOfMonth(prev),
-    businessDays: countBiz(start, now, cal),
+    businessDays: real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal),
     totalBusinessDays: countBiz(start, end, cal),
     buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
   };
@@ -168,17 +171,17 @@ const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 /** Comparação escolhida no filtro mestre (ex.: mesmo período do ano passado). */
 export interface PanelComparison { prevStart: Date; prevEnd: Date }
 
-export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange, compare?: PanelComparison) {
+export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange, compare?: PanelComparison, anchor: Date = new Date()) {
   return useQuery({
-    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString(), compare?.prevStart.toISOString(), compare?.prevEnd.toISOString()],
+    queryKey: ['clinic-goals-panel', period, anchor.toDateString(), customRange?.from?.toISOString(), customRange?.to?.toISOString(), compare?.prevStart.toISOString(), compare?.prevEnd.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
       // Calendário, metas e números pela camada única de indicadores.
-      const base = buildPeriodForCalendar(period, customRange);
+      const base = buildPeriodForCalendar(period, customRange, anchor);
       const fetchStart = compare && compare.prevStart < base.previous.start ? compare.prevStart : base.previous.start;
       const data = await fetchMetricsData({ start: fetchStart, end: base.end });
       const { calendar: bizCal, settings: s } = data;
       const cal: CalendarCfg = { isBusinessDay: bizCal.isBusinessDay, monthlyBusinessDays: businessDaysPerMonth(s) };
-      const range = buildRange(period, customRange, cal);
+      const range = buildRange(period, customRange, cal, anchor);
       if (compare) {
         range.prevStart = compare.prevStart;
         range.prevEnd = compare.prevEnd;

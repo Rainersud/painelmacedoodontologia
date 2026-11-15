@@ -1,6 +1,4 @@
 import { PageShell } from '@/components/layout/PageShell';
-import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
-import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { GoalLadderCard } from '@/components/clinic-goals/GoalLadderCard';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
@@ -20,9 +18,7 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
 
   return (
     <PageShell embedded={embedded} title="Metas da Clínica">
-      <PeriodFilterProvider>
         <div className="space-y-6">
-          <MasterPeriodFilter />
           <GoalLadderCard />
           <ClinicGoalsPanel afterRevenue={<RevenueForecastWidget />} />
           <ROIAnalyticsWidget />
@@ -31,7 +27,6 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
             <LossReasonsWidget />
           </div>
         </div>
-      </PeriodFilterProvider>
     </PageShell>
   );
 }

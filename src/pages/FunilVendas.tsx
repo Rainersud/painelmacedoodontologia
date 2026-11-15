@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Filter, Lightbulb, XCircle } from 'lucide-react';
 import { PageShell } from '@/components/layout/PageShell';
-import { PeriodFilterProvider, usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
-import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn } from '@/lib/utils';
 import { fetchMetricsData, monthlyGoal, periodGoal, summarize } from '@/lib/metrics';
@@ -183,7 +182,6 @@ function FunnelContent() {
               <p className="text-xs text-muted-foreground truncate">{range.label} · comparando com {range.prevLabel}</p>
             </div>
           </div>
-          <MasterPeriodFilter inline />
         </div>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
           <Kpi label="Novos leads" value={String(a.leads)} sub="recebidos no período" meta={String(t.leads)} progress={(a.leads / Math.max(1, t.leads)) * 100} />
@@ -240,9 +238,7 @@ export default function FunilVendas({ embedded = false }: { embedded?: boolean }
   useLiveRefresh();
   return (
     <PageShell embedded={embedded} title="Funil de Vendas">
-      <PeriodFilterProvider>
         <FunnelContent />
-      </PeriodFilterProvider>
     </PageShell>
   );
 }

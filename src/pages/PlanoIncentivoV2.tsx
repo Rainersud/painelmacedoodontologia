@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import {
-  addDays, addMonths, addWeeks, endOfDay, endOfMonth, endOfWeek, format, startOfDay, startOfMonth, startOfWeek,
-} from 'date-fns';
+import { addDays, format } from 'date-fns';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 import {
-  CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Copy, Plane, Settings, Trophy, XCircle,
+  CalendarCheck, CheckCircle2, Circle, Clock, Copy, Plane, Settings, Trophy, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageShell } from '@/components/layout/PageShell';
@@ -40,25 +39,6 @@ const WEEK_STATE: Record<WeekState, { label: string; cls: string; Icon: React.El
   em_andamento: { label: 'Em andamento', cls: 'border-warning/40 bg-warning/10 text-warning-strong', Icon: Clock },
   futura: { label: 'A começar', cls: 'border-border bg-muted/40 text-muted-foreground', Icon: Circle },
 };
-
-const PERIODS: { value: IncentivePeriod; label: string }[] = [
-  { value: 'dia', label: 'Dia' },
-  { value: 'semana', label: 'Semana' },
-  { value: 'mes', label: 'Mês' },
-];
-
-function rangeOf(period: IncentivePeriod, ref: Date) {
-  if (period === 'dia') return { start: startOfDay(ref), end: endOfDay(ref) };
-  if (period === 'semana') return { start: startOfWeek(ref, { weekStartsOn: 1 }), end: endOfWeek(ref, { weekStartsOn: 1 }) };
-  return { start: startOfMonth(ref), end: endOfMonth(ref) };
-}
-
-function periodLabel(period: IncentivePeriod, ref: Date) {
-  const r = rangeOf(period, ref);
-  if (period === 'dia') return format(ref, "EEE, dd 'de' MMM", { locale: ptBR });
-  if (period === 'semana') return `${dm(r.start)} a ${dm(r.end)}`;
-  return format(ref, 'MMMM yyyy', { locale: ptBR });
-}
 
 /** Anel de progresso de uma meta. */
 function GoalRing({ g, color }: { g: GoalResult; color: string }) {
@@ -288,15 +268,18 @@ function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange
 export default function PlanoIncentivoV2({ embedded = false }: { embedded?: boolean } = {}) {
   useLiveRefresh();
   const { canManage } = useAuth();
-  const [period, setPeriod] = useState<IncentivePeriod>('mes');
-  const [ref, setRef] = useState(() => new Date());
+  // período = filtro de data global (canto superior direito)
+  const { period: globalPeriod, range: globalRange, anchor, customRange } = usePeriodFilter();
   const [editing, setEditing] = useState(false);
-  const range = useMemo(() => rangeOf(period, ref), [period, ref]);
+  const period: IncentivePeriod = customRange?.from ? 'mes' : globalPeriod === 'hoje' ? 'dia' : globalPeriod === 'semana' ? 'semana' : 'mes';
+  const range = useMemo(() => ({ start: globalRange.start, end: globalRange.end }), [globalRange.start, globalRange.end]);
   // mês do bônus: o da data escolhida (na semana, o mês da quinta-feira)
-  const bonusMonth = useMemo(() => (period === 'semana' ? addDays(range.start, 3) : ref), [period, range.start, ref]);
+  const bonusMonth = useMemo(
+    () => (globalPeriod === 'semana' ? addDays(range.start, 3) : customRange?.from ?? anchor),
+    [globalPeriod, range.start, customRange?.from, anchor],
+  );
   const { data, isLoading } = usePlanoIncentivo(bonusMonth, period, range);
   const total = (data?.groups ?? []).reduce((sum, g) => sum + g.total, 0);
-  const move = (dir: 1 | -1) => setRef(r => (period === 'dia' ? addDays(r, dir) : period === 'semana' ? addWeeks(r, dir) : addMonths(r, dir)));
   const settings = data?.settings ?? { weeklyValue: 100, tripValue: 5000, tripMonths: 6 };
 
   return (
@@ -308,20 +291,7 @@ export default function PlanoIncentivoV2({ embedded = false }: { embedded?: bool
             <p className="text-sm text-muted-foreground">Metas de cada responsável, tiradas do faturamento e do ticket médio do objetivo central.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-lg border bg-card p-1" role="group" aria-label="Período">
-              {PERIODS.map(p => (
-                <Button key={p.value} size="sm" variant={period === p.value ? 'default' : 'ghost'} className="h-8 px-3"
-                  aria-pressed={period === p.value} onClick={() => setPeriod(p.value)}>
-                  {p.label}
-                </Button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Período anterior" onClick={() => move(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-              <span className="min-w-[140px] text-center text-sm font-medium capitalize">{periodLabel(period, ref)}</span>
-              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Próximo período" onClick={() => move(1)}><ChevronRight className="h-4 w-4" /></Button>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setRef(new Date())}>Hoje</Button>
+            <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{globalRange.label}</span>
             {canManage && data && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}><Settings className="h-4 w-4" />Regras</Button>
             )}

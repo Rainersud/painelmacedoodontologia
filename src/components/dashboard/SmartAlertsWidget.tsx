@@ -1,12 +1,10 @@
 import { useOpenLead } from '@/contexts/LeadDetailContext';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import {
   AlertTriangle,
   Zap,
@@ -14,14 +12,10 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
-  CalendarIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { startOfDay, endOfDay, startOfWeek, startOfMonth, startOfYear, format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useSmartAlerts, SmartAlert, SmartAlertLevel } from '@/hooks/useSmartAlerts';
 
-type Period = 'hoje' | 'semana' | 'mes' | 'ano' | 'custom';
 
 const columnConfig: Record<SmartAlertLevel, {
   title: string;
@@ -179,37 +173,14 @@ export function SmartAlertsWidget() {
   const { alerts, counts } = useSmartAlerts();
   const navigate = useNavigate();
   const openLead = useOpenLead();
-  const [period, setPeriod] = useState<Period>('mes');
-  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  // período = filtro de data global (canto superior direito)
+  const { range } = usePeriodFilter();
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    let start: Date;
-    let end: Date | null = null;
-
-    if (period === 'custom') {
-      if (!customRange.from) return alerts;
-      start = startOfDay(customRange.from);
-      end = endOfDay(customRange.to ?? customRange.from);
-    } else if (period === 'hoje') start = startOfDay(now);
-    else if (period === 'semana') start = startOfWeek(now, { weekStartsOn: 1 });
-    else if (period === 'ano') start = startOfYear(now);
-    else start = startOfMonth(now);
-
-    return alerts.filter((a) => {
-      // mantém alertas cujo "início do estágio" está dentro do período visualizado
-      if (!a.stageEnteredAt) return true;
-      if (a.stageEnteredAt < start) return false;
-      if (end && a.stageEnteredAt > end) return false;
-      return true;
-    });
-  }, [alerts, period, customRange]);
-
-  const rangeLabel =
-    customRange.from
-      ? `${format(customRange.from, 'dd/MM/yy', { locale: ptBR })}${customRange.to ? ` – ${format(customRange.to, 'dd/MM/yy', { locale: ptBR })}` : ''}`
-      : 'Selecionar data';
+  const filtered = useMemo(() => alerts.filter((a) => {
+    // mantém alertas cujo "início do estágio" está dentro do período escolhido
+    if (!a.stageEnteredAt) return true;
+    return a.stageEnteredAt >= range.start && a.stageEnteredAt <= range.end;
+  }), [alerts, range.start, range.end]);
 
   const byLevel = useMemo(
     () => ({
@@ -257,60 +228,7 @@ export function SmartAlertsWidget() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="hoje" className="h-6 text-xs px-3">Hoje</TabsTrigger>
-                <TabsTrigger value="semana" className="h-6 text-xs px-3">Semana</TabsTrigger>
-                <TabsTrigger value="mes" className="h-6 text-xs px-3">Mês</TabsTrigger>
-                <TabsTrigger value="ano" className="h-6 text-xs px-3">Ano</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={period === 'custom' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 gap-1.5 px-2 text-xs"
-                >
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  {period === 'custom' ? rangeLabel : 'Selecionar data'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={2}
-                  locale={ptBR}
-                  defaultMonth={customRange.from}
-                  selected={{ from: customRange.from, to: customRange.to }}
-                  onSelect={(r: any) => {
-                    setCustomRange({ from: r?.from, to: r?.to });
-                    if (r?.from) setPeriod('custom');
-                    if (r?.from && r?.to) setCalendarOpen(false);
-                  }}
-                  className="p-3 pointer-events-auto"
-                />
-                {customRange.from && (
-                  <div className="border-t p-2 flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        setCustomRange({});
-                        setPeriod('mes');
-                        setCalendarOpen(false);
-                      }}
-                    >
-                      Limpar
-                    </Button>
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
-          </div>
+          <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1 self-start sm:self-auto">{range.label}</span>
         </div>
       </div>
 

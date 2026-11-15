@@ -5,7 +5,6 @@ import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useC
 import { useLTVData } from '@/hooks/useLTVData';
 import { summarize } from '@/lib/ltv';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
 import { Fragment, type ReactNode } from 'react';
@@ -108,9 +107,9 @@ function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
 
 /** `afterRevenue`: bloco mostrado entre o faturamento do período e o funil (ex.: Previsão de Faturamento). */
 export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } = {}) {
-  const { period, setPeriod, customRange, setCustomRange, range } = useLocalPeriod('mes');
+  const { period, customRange, range, anchor } = useLocalPeriod('mes');
   const prevLabel = range.prevLabel ?? 'período anterior';
-  const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd });
+  const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd }, anchor);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const ltvData = useLTVData();
   const ltv = ltvData.isLoading ? null : summarize(ltvData.patients);
@@ -138,13 +137,7 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
                 </p>
               )}
             </div>
-            <WidgetPeriodTabs
-              value={period}
-              onChange={(p) => setPeriod(p as Period)}
-              size="sm"
-              customRange={customRange}
-              onCustomRangeChange={setCustomRange}
-            />
+            <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
           </div>
 
           {isLoading && <div className="h-24 rounded-md bg-muted/60 animate-pulse" />}
@@ -152,7 +145,7 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
             <div className="space-y-3">
               <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
                 <p className="text-balance">
-                  <span className="block text-sm text-muted-foreground">Faturamento {PERIOD_NOUN[period]}</span>
+                  <span className="block text-sm text-muted-foreground">Faturamento {/^(Hoje|Esta semana|Este mês|Este ano)$/.test(range.label) ? PERIOD_NOUN[period] : `em ${range.label}`}</span>
                   <span className="text-4xl sm:text-5xl font-bold tracking-tight leading-none">
                     {formatWhole(revenue.current)}
                   </span>

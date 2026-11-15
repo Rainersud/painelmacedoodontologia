@@ -7,7 +7,6 @@ import { PieChart as PieIcon, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { SOURCE_CONFIG } from '@/types/crm';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import type { Lead } from '@/types/crm';
@@ -33,7 +32,6 @@ export function LeadOriginsWidget() {
             <PieIcon className="h-5 w-5 text-primary" />
             Origem dos Leads
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
       </CardHeader>
       <CardContent>
@@ -95,7 +93,6 @@ export function LossReasonsWidget() {
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Perdas por Motivo
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
         <p className="text-xs text-muted-foreground">Categorias inteligentes · quantidade · % · valor estimado perdido</p>
       </CardHeader>

@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { chartAxis, chartGrid, chartLegend, chartTooltipProps } from '@/lib/chartStyle';
-import { cashByMonth, cashInRange, ltvToReceiveByMonth, LTV_PERIODS, ltvPeriodRange, type LtvPeriod } from '@/lib/ltv';
+import { cashByMonth, cashInRange, ltvToReceiveByMonth } from '@/lib/ltv';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useOpenLead } from '@/contexts/LeadDetailContext';
 
@@ -47,13 +48,14 @@ function Kpi({ label, value, sub, help, delta }: { label: string; value: string;
 }
 
 /** Financeiro do LTV: o caixa das recompras, separado do front e somado ao faturamento da clínica. */
-export function FinancialDashboard({ period }: { period: LtvPeriod }) {
+export function FinancialDashboard() {
   const { patients, payments, isLoading } = useLTVData();
   const openLead = useOpenLead();
 
   const nameByLead = useMemo(() => new Map(patients.map(p => [p.leadId, p.name])), [patients]);
-  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
-  const r = ltvPeriodRange(period);
+  // período = filtro de data global (canto superior direito)
+  const { range: r, current, previous } = useGlobalPeriodText();
+  const periodDef = { current, previous };
   const cur = cashInRange(payments, r.start, r.end);
   const prev = cashInRange(payments, r.prevStart, r.prevEnd);
   const delta = prev.ltv > 0 ? ((cur.ltv - prev.ltv) / prev.ltv) * 100 : null;

@@ -1,18 +1,19 @@
-import { useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
-import { format, addMonths, subMonths } from 'date-fns';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
+import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useSalesMetrics, type SaleTypeMetrics } from '@/hooks/useSalesMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [month, setMonth] = useState(new Date());
+  // mês = filtro de data global (canto superior direito)
+  const { month, exact } = useGlobalMonth();
   const { data, isLoading } = useSalesMetrics(month);
 
   if (isLoading) {
@@ -65,19 +66,8 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   return (
     <PageShell embedded={embedded} title="Métricas de Vendas">
       <div className="space-y-6 pb-8">
-        {/* Month selector */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setMonth(m => subMonths(m, 1))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-[140px] text-center capitalize">
-              {format(month, 'MMMM yyyy', { locale: ptBR })}
-            </span>
-            <Button variant="outline" size="icon" onClick={() => setMonth(m => addMonths(m, 1))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <MonthNotice month={month} exact={exact} />
         </div>
 
         {/* Alerts */}

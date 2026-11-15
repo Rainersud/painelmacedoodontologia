@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { GlobalDateFilter } from './GlobalDateFilter';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -30,7 +31,8 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                <div className="hidden lg:flex relative">
+                <GlobalDateFilter />
+                <div className="hidden xl:flex relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     placeholder="Buscar leads, agendamentos..." 

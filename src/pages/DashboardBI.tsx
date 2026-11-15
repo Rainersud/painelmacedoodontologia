@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useBIDashboard, type BIPeriodFilter } from '@/hooks/useBIDashboard';
+import { useBIDashboard } from '@/hooks/useBIDashboard';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { cn } from '@/lib/utils';
 import {
   DollarSign,
@@ -63,8 +62,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [period, setPeriod] = useState<BIPeriodFilter>('mes');
-  const { data, isLoading } = useBIDashboard(period);
+  // período = filtro de data global (canto superior direito)
+  const { range } = usePeriodFilter();
+  const { data, isLoading } = useBIDashboard('mes', { start: range.start, end: range.end });
 
   const kpiCards = data
     ? [
@@ -73,7 +73,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
           value: data.kpis.faturamentoRecebido,
           icon: DollarSign,
           color: biColors.green,
-          subtitle: 'Mês atual (caixa)',
+          subtitle: `${range.label} (caixa)`,
         },
         {
           title: 'Faturamento Previsto',
@@ -141,15 +141,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
               Visão 360° da clínica — receita, LTV, CAC e performance
             </p>
           </div>
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as BIPeriodFilter)}>
-            <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="mes" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mês</TabsTrigger>
-              <TabsTrigger value="trimestre" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Trimestre</TabsTrigger>
-              <TabsTrigger value="semestre" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Semestre</TabsTrigger>
-              <TabsTrigger value="ano" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Ano</TabsTrigger>
-              <TabsTrigger value="todos" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Tudo</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
         </div>
 
         {/* KPI Cards */}

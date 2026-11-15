@@ -14,6 +14,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { Label } from '@/components/ui/label';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -245,7 +246,11 @@ function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange
   const field = (k: string, label: string, type = 'number') => (
     <div className="space-y-1.5">
       <Label htmlFor={`regra-${k}`} className="text-xs">{label}</Label>
-      <Input id={`regra-${k}`} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+      {k === 'weeklyValue' || k === 'tripValue' ? (
+        <CurrencyInput id={`regra-${k}`} value={Number(form[k]) || 0} onChange={v => setForm(f => ({ ...f, [k]: String(v) }))} />
+      ) : (
+        <Input id={`regra-${k}`} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+      )}
     </div>
   );
   return (

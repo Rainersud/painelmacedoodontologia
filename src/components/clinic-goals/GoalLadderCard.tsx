@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,11 +97,9 @@ export function GoalLadderCard() {
   const days = businessDaysPerMonth(s);
 
   // edição direta do faturamento e do ticket: a escada mostra o resultado antes de salvar
-  const [fat, setFat] = useState('');
-  const [ticket, setTicket] = useState('');
-  useEffect(() => { setFat(String(ladder.faturamento)); setTicket(String(ladder.ticket)); }, [ladder.faturamento, ladder.ticket]);
-  const fatN = Number(fat);
-  const ticketN = Number(ticket);
+  const [fatN, setFat] = useState(0);
+  const [ticketN, setTicket] = useState(0);
+  useEffect(() => { setFat(ladder.faturamento); setTicket(ladder.ticket); }, [ladder.faturamento, ladder.ticket]);
   const draftValid = fatN > 0 && ticketN > 0;
   const changed = draftValid && (fatN !== ladder.faturamento || ticketN !== ladder.ticket);
   const draft: MetaSettingsMap = changed ? { ...s, meta_faturamento: fatN, meta_ticket_medio: ticketN } : s;
@@ -188,14 +187,14 @@ export function GoalLadderCard() {
               <div className="space-y-1">
                 <Label htmlFor="obj-fat" className="text-xs text-muted-foreground">Faturamento do mês (R$)</Label>
                 {isAdmin ? (
-                  <Input id="obj-fat" type="number" min={0} step={1000} value={fat} onChange={e => setFat(e.target.value)}
+                  <CurrencyInput id="obj-fat" value={fatN} onChange={setFat}
                     className="h-11 text-2xl font-bold tabular-nums bg-card" />
                 ) : <p className="text-3xl font-bold tabular-nums">{BRL(ladder.faturamento)}</p>}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="obj-ticket" className="text-xs text-muted-foreground">Ticket médio (R$)</Label>
                 {isAdmin ? (
-                  <Input id="obj-ticket" type="number" min={0} step={50} value={ticket} onChange={e => setTicket(e.target.value)}
+                  <CurrencyInput id="obj-ticket" value={ticketN} onChange={setTicket}
                     className="h-10 text-lg font-semibold tabular-nums bg-card" />
                 ) : <p className="text-xl font-semibold tabular-nums">{BRL(ladder.ticket)}</p>}
               </div>
@@ -209,7 +208,7 @@ export function GoalLadderCard() {
                     <Button size="sm" onClick={saveObjective} disabled={saving} className="flex-1">
                       {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Salvar objetivo
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setFat(String(ladder.faturamento)); setTicket(String(ladder.ticket)); }}>
+                    <Button size="sm" variant="ghost" onClick={() => { setFat(ladder.faturamento); setTicket(ladder.ticket); }}>
                       Desfazer
                     </Button>
                   </div>
@@ -295,8 +294,13 @@ export function GoalLadderCard() {
               {RATE_FIELDS.map(([k, label]) => (
                 <div key={k} className="space-y-1">
                   <Label htmlFor={`goal-${k}`} className="text-xs">{label}</Label>
-                  <Input id={`goal-${k}`} type="number" min={0} value={form[k] ?? ''}
-                    onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+                  {k === 'meta_cpl' || k === 'meta_cac' ? (
+                    <CurrencyInput id={`goal-${k}`} value={Number(form[k]) || 0}
+                      onChange={v => setForm(f => ({ ...f, [k]: String(v) }))} />
+                  ) : (
+                    <Input id={`goal-${k}`} type="number" min={0} value={form[k] ?? ''}
+                      onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+                  )}
                 </div>
               ))}
             </div>

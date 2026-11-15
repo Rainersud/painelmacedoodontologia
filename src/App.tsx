@@ -77,7 +77,7 @@ function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <AuthProvider>
         <RealtimeProvider>
         <ErrorBoundary>

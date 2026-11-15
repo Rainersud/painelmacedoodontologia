@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
  * A conta nasce sem acesso; o administrador define a função em Configurações → Usuários.
  */
 export default function Cadastro() {
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -32,20 +32,27 @@ export default function Cadastro() {
     if (password.length < 8) { setError('A senha precisa ter pelo menos 8 caracteres.'); return; }
     if (password !== confirm) { setError('As duas senhas não são iguais.'); return; }
     setBusy(true);
-    const { data, error: err } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { data: { full_name: name.trim() }, emailRedirectTo: `${window.location.origin}/` },
-    });
-    setBusy(false);
-    if (err) {
-      setError(/registered|exists/i.test(err.message)
-        ? 'Já existe uma conta com este e-mail. Use "Entrar" ou "Esqueci minha senha".'
-        : 'Não foi possível criar a conta agora. Tente de novo em instantes.');
-      return;
+    try {
+      // conta criada já confirmada (sem e-mail de confirmação) e "Aguardando liberação"
+      const { data, error: fnErr } = await supabase.functions.invoke('self-signup', {
+        body: { full_name: name.trim(), email: email.trim(), password },
+      });
+      if (fnErr || data?.error) {
+        let msg = data?.error as string | undefined;
+        if (!msg && fnErr && 'context' in fnErr) {
+          try { msg = (await (fnErr as { context: Response }).context.json())?.error; } catch { /* sem corpo */ }
+        }
+        setError(msg || 'Não foi possível criar a conta agora. Tente de novo em instantes.');
+        return;
+      }
+      const { error: loginErr } = await signIn(email.trim(), password);
+      if (loginErr) { setCheckEmail(true); return; }
+      navigate('/', { replace: true });
+    } catch {
+      setError('Não foi possível criar a conta agora. Confira sua internet e tente de novo.');
+    } finally {
+      setBusy(false);
     }
-    if (data.session) navigate('/', { replace: true });
-    else setCheckEmail(true);
   };
 
   if (checkEmail) {
@@ -53,9 +60,9 @@ export default function Cadastro() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="monday-card w-full max-w-sm p-8 text-center space-y-3">
           <MailCheck className="h-8 w-8 mx-auto text-primary" aria-hidden />
-          <h1 className="text-xl font-semibold">Confirme seu e-mail</h1>
+          <h1 className="text-xl font-semibold">Conta criada</h1>
           <p className="text-sm text-muted-foreground">
-            Enviamos um link para <strong>{email.trim()}</strong>. Depois de confirmar, entre com seu e-mail e senha.
+            Entre com <strong>{email.trim()}</strong> e a senha que você criou.
             Seu acesso fica liberado quando o administrador definir sua função.
           </p>
           <Button asChild variant="outline"><Link to="/login">Ir para entrar</Link></Button>

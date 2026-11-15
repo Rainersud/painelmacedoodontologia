@@ -64,7 +64,7 @@ async function invokeManageUsers(action: string, params: any = {}) {
 export default function UserManagementPanel() {
   const { isAdmin, setPreviewAs } = useAuth();
   const navigate = useNavigate();
-  const signupLink = `${window.location.origin}/cadastro`;
+  const signupLink = `${window.location.origin}${import.meta.env.BASE_URL}cadastro`;
   const viewAs = (perfil: Perfil, name: string) => { setPreviewAs({ perfil, name }); navigate('/'); };
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);

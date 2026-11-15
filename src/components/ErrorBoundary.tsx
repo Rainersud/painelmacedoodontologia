@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     } catch {
       // Ignore
     }
-    window.location.href = '/login';
+    window.location.href = `${import.meta.env.BASE_URL}login`;
   };
 
   render() {

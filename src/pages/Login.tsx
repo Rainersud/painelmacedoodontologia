@@ -30,7 +30,7 @@ export default function Login() {
     try {
       if (resetMode) {
         const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/redefinir-senha`,
+          redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}redefinir-senha`,
         });
         if (err) throw err;
         toast.success('Enviamos um link para criar uma nova senha. Confira seu e-mail.');

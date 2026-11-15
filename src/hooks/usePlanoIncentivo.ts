@@ -44,7 +44,7 @@ export interface PlanoIncentivoData {
   monthActuals: Record<CountKey, number>;
 }
 
-const ORIGINS = new Set(['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling']);
+const ORIGINS = new Set(['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling', 'resgate']);
 
 /**
  * `month`: mês do bônus (semanas, dobrado e viagem). `period` + `range`: o recorte do filtro

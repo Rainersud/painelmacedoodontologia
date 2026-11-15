@@ -32,6 +32,7 @@ export const ARRIVAL_SOURCE_LABELS: Record<string, string> = {
   prospeccao_ativa: 'Prospecção ativa',
   indicacao_parceria: 'Indicação de parceria',
   social_selling: 'Social selling',
+  resgate: 'Resgate',
 };
 
 export function leadOrigin(lead: { lead_arrival_source?: string | null }): string {

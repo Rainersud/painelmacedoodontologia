@@ -614,10 +614,11 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <SelectItem value="prospeccao_ativa">Prospecção Ativa</SelectItem>
                       <SelectItem value="indicacao_parceria">Indicação de Parceria</SelectItem>
                       <SelectItem value="social_selling">Social Selling</SelectItem>
+                      <SelectItem value="resgate">Resgate</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] text-muted-foreground">
-                    Alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+                    Alimenta o ROI Inteligente, as metas e o plano de incentivo. "Resgate" conta como resgate na data em que for marcado.
                   </p>
                 </div>
               </div>

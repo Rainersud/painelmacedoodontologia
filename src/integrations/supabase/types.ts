@@ -1965,6 +1965,7 @@ export type Database = {
         | "prospeccao_ativa"
         | "indicacao_parceria"
         | "social_selling"
+        | "resgate"
       lead_source:
         | "whatsapp"
         | "telefone"
@@ -2182,6 +2183,7 @@ export const Constants = {
         "prospeccao_ativa",
         "indicacao_parceria",
         "social_selling",
+        "resgate",
       ],
       lead_source: [
         "whatsapp",

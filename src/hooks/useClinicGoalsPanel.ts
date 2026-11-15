@@ -7,6 +7,7 @@ import {
   eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   attendances, bookedAppointments, buildPeriod, expectedPace, paceStatus, businessDaysPerMonth, fetchMetricsData, inRange, monthlyGoal,
   newLeads, periodGoal, periodProportion, sales as salesOf, summarize, type GoalKey,
@@ -178,7 +179,13 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       // Calendário, metas e números pela camada única de indicadores.
       const base = buildPeriodForCalendar(period, customRange, anchor);
       const fetchStart = compare && compare.prevStart < base.previous.start ? compare.prevStart : base.previous.start;
-      const data = await fetchMetricsData({ start: fetchStart, end: base.end });
+      const [data, rescuedRes] = await Promise.all([
+        fetchMetricsData({ start: fetchStart, end: base.end }),
+        // Resgates: leads marcados "Resgate" em "Como o lead chegou?" (data do resgate)
+        supabase.from('leads').select('rescued_at').not('rescued_at', 'is', null)
+          .gte('rescued_at', fetchStart.toISOString()).lte('rescued_at', base.end.toISOString()),
+      ]);
+      const rescuedRows = (rescuedRes.data ?? []) as { rescued_at: string }[];
       const { calendar: bizCal, settings: s } = data;
       const cal: CalendarCfg = { isBusinessDay: bizCal.isBusinessDay, monthlyBusinessDays: businessDaysPerMonth(s) };
       const range = buildRange(period, customRange, cal, anchor);
@@ -331,6 +338,11 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       const tgtAgend = prop('agendamentos');
       const tgtComp = prop('comparecimentos');
       const tgtVendas = prop('vendas');
+      const tgtResg = prop('resgates');
+      const resgIn = (r: { start: Date; end: Date }) => rescuedRows.filter(x => inRange(x.rescued_at, r)).length;
+      const resgCount = resgIn(cur);
+      const prevResg = resgIn(prevR);
+      const trendResg = trendOf(rescuedRows as any[], 'rescued_at');
       const tgtFat = prop('faturamento');
 
       const metrics: PanelMetric[] = [
@@ -359,6 +371,16 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
             targetDisplay: `${monthly.taxaAgendamento}%`,
             status: rateStatus(taxaAgendamento, monthly.taxaAgendamento),
           },
+        },
+        {
+          key: 'resgates', label: 'Resgates',
+          current: resgCount, target: tgtResg,
+          percentage: Math.min(100, Math.round((resgCount / Math.max(1, tgtResg)) * 100)),
+          display: String(resgCount), targetDisplay: String(tgtResg),
+          healthyGoal: goalCount(null, tgtResg, resgCount, 'resgates'),
+          status: statusOf(resgCount, tgtResg),
+          delta: delta(resgCount, prevResg),
+          trend: trendResg, unit: 'count',
         },
         {
           key: 'comparecimentos', label: 'Comparecimentos',

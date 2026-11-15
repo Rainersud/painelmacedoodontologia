@@ -60,6 +60,7 @@ export const ARRIVAL_SOURCE_OPTIONS = [
   { value: 'prospeccao_ativa', label: 'Prospecção Ativa' },
   { value: 'indicacao_parceria', label: 'Indicação de Parceria' },
   { value: 'social_selling', label: 'Social Selling' },
+  { value: 'resgate', label: 'Resgate' },
 ] as const;
 
 const TREATMENT_OPTIONS = [
@@ -229,7 +230,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              Esta origem alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+              Esta origem alimenta o ROI Inteligente, as metas e o plano de incentivo.
             </p>
           </div>
 

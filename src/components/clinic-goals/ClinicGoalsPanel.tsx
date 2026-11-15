@@ -16,7 +16,7 @@ const formatWhole = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`
 const PERIOD_NOUN: Record<Period, string> = { hoje: 'hoje', semana: 'nesta semana', mes: 'neste mês', ano: 'no período' };
 
 /** Etapas do funil, na ordem em que o paciente passa por elas. */
-const FUNNEL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas'];
+const FUNNEL_KEYS = ['leads', 'agendamentos', 'resgates', 'comparecimentos', 'vendas'];
 /** Indicadores de eficiência, mostrados em lista compacta. */
 const EFFICIENCY_KEYS = ['ticket_medio', 'tempo_resposta', 'cpl', 'cac', 'roas', 'roi', 'investimento', 'ltv'];
 
@@ -179,10 +179,14 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
 
       {afterRevenue}
 
-      {/* Funil: as quatro etapas em sequência */}
+      {/* Metas chave: as etapas em sequência, com os resgates */}
       <Card className="monday-card overflow-hidden">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-border">
-          {isLoading && Array.from({ length: 4 }).map((_, i) => (
+        <div className="flex items-baseline justify-between gap-2 px-5 pt-4">
+          <h3 className="text-sm font-semibold tracking-wide">METAS CHAVE</h3>
+          <span className="text-xs text-muted-foreground">{range.label}</span>
+        </div>
+        <div className="grid sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 xl:divide-x divide-border">
+          {isLoading && Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-44 m-4 rounded-md bg-muted/60 animate-pulse" />
           ))}
           {funnel.map((m, i) => (
@@ -190,7 +194,7 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
               <FunnelStep m={m} prevLabel={prevLabel} />
               {i < funnel.length - 1 && (
                 <ChevronRight
-                  className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10"
+                  className="hidden xl:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10"
                   aria-hidden
                 />
               )}

@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ClipboardList, Lock, Table2 } from 'lucide-react';
+import { ChevronDown, ClipboardList, LifeBuoy, ListChecks, Lock, Table2 } from 'lucide-react';
 import { canOpenPath } from '@/lib/access';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -100,6 +100,8 @@ const managementNavItems: NavItemDef[] = [
 const ascensionNavItems: NavItemDef[] = [
   { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: ClipboardList, module: 'ascension' },
   { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Table2, module: 'ascension' },
+  { title: 'Suporte', url: '/ascension?aba=suporte', icon: LifeBuoy, module: 'ascension' },
+  { title: 'Tarefas', url: '/ascension?aba=tarefas', icon: ListChecks, module: 'ascension' },
 ];
 
 const adminNavItems: NavItemDef[] = [

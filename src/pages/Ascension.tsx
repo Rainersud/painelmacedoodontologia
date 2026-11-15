@@ -1,9 +1,11 @@
 import { lazy } from 'react';
-import { ClipboardList, Table2 } from 'lucide-react';
+import { ClipboardList, Table2, LifeBuoy, ListChecks } from 'lucide-react';
 import { HubPage, type HubSection } from '@/components/layout/HubPage';
 
 const AscensionAcompanhamento = lazy(() => import('./AscensionAcompanhamento'));
 const AscensionControle = lazy(() => import('./AscensionControle'));
+const AscensionSuporte = lazy(() => import('./AscensionSuporte'));
+const AscensionTarefas = lazy(() => import('./AscensionTarefas'));
 
 const SECTIONS: HubSection[] = [
   {
@@ -13,6 +15,14 @@ const SECTIONS: HubSection[] = [
   {
     key: 'controle', title: 'Planilha de Controle Geral', icon: Table2, module: 'ascension', Component: AscensionControle,
     description: 'Leads de cada mês com origem, agendamento, comparecimento e fechamento; métricas por origem e por dia. Baixe em XLSX.',
+  },
+  {
+    key: 'suporte', title: 'Suporte', icon: LifeBuoy, module: 'ascension', Component: AscensionSuporte,
+    description: 'Guia da CRC: scripts de primeiro contato, régua dos não agendados, comparecimento, faltosos e Comercial 2, com busca e quebra de objeção.',
+  },
+  {
+    key: 'tarefas', title: 'Tarefas', icon: ListChecks, module: 'ascension', Component: AscensionTarefas,
+    description: 'Rotina diária da CRC: marque o que foi feito, veja quantos pacientes esperam cada tarefa e o histórico do mês.',
   },
 ];
 

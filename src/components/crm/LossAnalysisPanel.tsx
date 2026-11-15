@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { chartTooltipProps } from '@/lib/chartStyle';
 import { ptBR } from 'date-fns/locale';
 import { ExternalLink, Image as ImageIcon, MessageCircle, Mic, Search, TrendingDown, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -198,7 +200,6 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
       return { label: format(start, 'MMM', { locale: ptBR }), n };
     });
   }, [data, globalRange.end]);
-  const monthMax = Math.max(1, ...months.map(m => m.n));
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -229,15 +230,15 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Perdas no período</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{isLoading ? '–' : losses.length}</p>
+          <p className="hero-number text-3xl mt-1">{isLoading ? '–' : losses.length}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Valor em orçamentos perdidos</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{isLoading ? '–' : formatCurrency(lostValue)}</p>
+          <p className="hero-number text-3xl mt-1">{isLoading ? '–' : formatCurrency(lostValue)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Taxa de perda</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{lossRate === null ? '–' : `${Math.round(lossRate * 100)}%`}</p>
+          <p className="hero-number text-3xl mt-1">{lossRate === null ? '–' : `${Math.round(lossRate * 100)}%`}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{losses.length} perdas · {salesCount} vendas</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
@@ -253,14 +254,22 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
         <Bars title="Por origem" rows={byOrigin} active={filter?.kind === 'origem' ? filter.value : undefined} onPick={pick('origem')} />
         <div className="rounded-xl border bg-card p-4">
           <h4 className="text-sm font-semibold mb-3">Últimos 6 meses</h4>
-          <div className="flex items-end gap-2 h-28" role="img" aria-label={months.map(m => `${m.label}: ${m.n}`).join(', ')}>
-            {months.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${m.label}: ${m.n} perdas`}>
-                <span className="text-[11px] tabular-nums text-muted-foreground">{m.n || ''}</span>
-                <div className="w-full rounded-t-md bg-primary/70" style={{ height: `${(m.n / monthMax) * 100}%`, minHeight: m.n ? 4 : 0 }} />
-                <span className="text-[11px] text-muted-foreground capitalize">{m.label}</span>
-              </div>
-            ))}
+          <div className="h-28" role="img" aria-label={months.map(m => `${m.label}: ${m.n}`).join(', ')}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={months} margin={{ top: 14, right: 6, left: 6, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="loss-trend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} interval={0} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => [`${v} perdas`, '']} />
+                <Area type="monotone" dataKey="n" stroke="hsl(var(--destructive))" strokeWidth={2.25} fill="url(#loss-trend)"
+                  dot={{ r: 3, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: 'hsl(var(--destructive))' }} isAnimationActive={false}
+                  label={{ position: 'top', fontSize: 11, fill: 'hsl(var(--muted-foreground))', formatter: (v: number) => (v ? v : '') }} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

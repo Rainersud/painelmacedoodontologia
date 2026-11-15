@@ -29,7 +29,7 @@ function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; labe
           <TooltipContent className="max-w-64">{help}</TooltipContent>
         </Tooltip>
       </div>
-      <p className="text-2xl font-bold tabular-nums mt-1.5 leading-none">{value}</p>
+      <p className="hero-number text-3xl mt-1.5 leading-none">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground mt-1.5">{sub}</p>}
     </div>
   );
@@ -238,7 +238,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
                 { label: 'Sem data', value: s.returns.noDate, tone: '' },
               ].map(r => (
                 <div key={r.label} className="rounded-lg bg-muted/40 p-2.5">
-                  <dd className={cn('text-xl font-bold tabular-nums', r.tone)}>{r.value}</dd>
+                  <dd className={cn('hero-number text-2xl', r.tone)}>{r.value}</dd>
                   <dt className="text-[11px] text-muted-foreground">{r.label}</dt>
                 </div>
               ))}

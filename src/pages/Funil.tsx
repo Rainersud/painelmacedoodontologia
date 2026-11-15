@@ -205,8 +205,8 @@ function KanbanBoard({
                   onDrop={(e) => handleDrop(e, stage.key)}
                 >
                   <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border transition-all duration-200",
-                    isFollowUp ? 'border-warning/30' : 'border-border',
+                    "flex flex-col min-h-0 h-full rounded-2xl bg-muted/40 border transition-all duration-200",
+                    isFollowUp ? 'border-warning/30' : 'border-border/60',
                     isDropTarget && 'ring-2 ring-primary ring-offset-2'
                   )}>
                     {/* Cabeçalho da coluna (mesmo formato do CRC) */}

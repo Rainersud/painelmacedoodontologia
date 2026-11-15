@@ -1274,7 +1274,7 @@ const Comercial2 = () => {
                       onDrop={(e) => !isLocked && handleDrop(e, stage.key)}
                     >
                       <div className={cn(
-                        "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
+                        "flex flex-col min-h-0 h-full rounded-2xl bg-muted/40 border border-border/60 transition-all duration-200",
                         isDropping && !isLocked && 'ring-2 ring-primary ring-offset-2',
                         isLocked && 'border-warning/30 bg-warning/5'
                       )}>

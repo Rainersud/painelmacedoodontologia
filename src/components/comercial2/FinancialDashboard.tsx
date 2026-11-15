@@ -33,7 +33,7 @@ function Kpi({ label, value, sub, help, delta }: { label: string; value: string;
           <TooltipContent className="max-w-64">{help}</TooltipContent>
         </Tooltip>
       </div>
-      <p className="text-2xl font-bold tabular-nums mt-1.5 leading-none">{value}</p>
+      <p className="hero-number text-3xl mt-1.5 leading-none">{value}</p>
       <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
         {delta !== undefined && delta !== null && (
           <span className={cn('inline-flex items-center font-medium', delta >= 0 ? 'text-success' : 'text-destructive')}>

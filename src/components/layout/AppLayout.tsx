@@ -34,13 +34,6 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               
               <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                 <GlobalDateFilter />
-                <div className="hidden xl:flex relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar leads, agendamentos..." 
-                    className="w-48 xl:w-64 pl-9 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                  />
-                </div>
 
                 <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9">
                   <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />

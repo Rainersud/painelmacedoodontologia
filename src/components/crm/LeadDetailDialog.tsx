@@ -513,10 +513,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     <Gift className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Indicação</span>
                   </TabsTrigger>
-                  <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Retorno</span>
-                  </TabsTrigger>
+                  {access.perfil !== 'comparecimento' && (
+                    <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Retorno</span>
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="funnel" className="text-xs sm:text-sm gap-1">
                     <Clock className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Funil</span>
@@ -1265,7 +1267,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </TabsContent>
 
             {/* Task Tab */}
-            <TabsContent value="task" className="space-y-4 m-0">
+            {access.perfil !== 'comparecimento' && <TabsContent value="task" className="space-y-4 m-0">
               <div className="space-y-2">
                 <Label htmlFor="task_title">Título do retorno</Label>
                 <Input
@@ -1323,7 +1325,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {createTask.isPending ? 'Criando retorno...' : 'Criar retorno'}
                 </Button>
               </div>
-            </TabsContent>
+            </TabsContent>}
 
             {/* Triagem: o administrador e o acesso Comparecimento editam em qualquer etapa;
                 os demais, só com o lead em "Compareceu" */}
@@ -1337,7 +1339,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
             {/* Referral Tab */}
             <TabsContent value="referral" className="m-0">
-              <fieldset disabled={readOnlyData} className="min-w-0"><ReferralSection leadId={lead.id} leadName={lead.name} /></fieldset>
+              <ReferralSection leadId={lead.id} leadName={lead.name} />
             </TabsContent>
 
             {/* Funnel History Tab */}

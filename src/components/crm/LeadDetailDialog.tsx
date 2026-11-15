@@ -1,3 +1,4 @@
+import { CLINICA_OPTIONS } from '@/lib/clinicas';
 import { useState, useEffect, useRef } from 'react';
 import { toLocalInputValue } from '@/lib/datetime';
 import { describeError } from '@/lib/errors';
@@ -102,6 +103,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     loss_reason: '',
     lead_arrival_source: '' as string,
     campaign: '',
+    clinica: '' as string,
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -138,6 +140,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         loss_reason: (lead as any).loss_reason || '',
         lead_arrival_source: (lead as any).lead_arrival_source || '',
         campaign: lead.campaign || '',
+        clinica: (lead as { clinica?: string | null }).clinica || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -274,6 +277,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       (updates as any).lead_arrival_source = formData.lead_arrival_source;
     }
     updates.campaign = formData.campaign.trim() || null;
+    (updates as { clinica?: string | null }).clinica = formData.clinica || null;
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
@@ -623,10 +627,26 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                 </div>
               </div>
 
-              <CampaignInput
-                value={formData.campaign}
-                onChange={(v) => setFormData(prev => ({ ...prev, campaign: v }))}
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampaignInput
+                  value={formData.campaign}
+                  onChange={(v) => setFormData(prev => ({ ...prev, campaign: v }))}
+                />
+                <div className="space-y-2">
+                  <Label htmlFor="lead_clinica">Clínica</Label>
+                  <Select
+                    value={formData.clinica || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, clinica: v }))}
+                    key={formData.clinica || 'empty-clinica'}
+                  >
+                    <SelectTrigger id="lead_clinica"><SelectValue placeholder="Selecione a clínica" /></SelectTrigger>
+                    <SelectContent>
+                      {CLINICA_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">Vai para a Planilha de Controle Geral (ASCENSION).</p>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>

@@ -21,6 +21,7 @@ import { MovedToCRC } from "@/components/layout/MovedToCRC";
 import { HomeRedirect, MovedTo } from "@/components/layout/MovedTo";
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Perfil = lazy(() => import("./pages/Perfil"));
+const Ascension = lazy(() => import("./pages/Ascension"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const Objetivos = lazy(() => import("./pages/Objetivos"));
 const DadosMetricas = lazy(() => import("./pages/DadosMetricas"));
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="/cac" element={<MovedTo path="/dados" tab="cac" />} />
                 <Route path="/metricas-vendas" element={<MovedTo path="/dados" tab="vendas" />} />
                 <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
+                <Route path="/ascension" element={<ProtectedRoute><Ascension /></ProtectedRoute>} />
                 <Route path="/funil-trafego" element={<MovedTo path="/dados" tab="trafego" />} />
                 <Route path="/central-funis" element={<MovedTo path="/dados" tab="funil" />} />
                 <Route path="/funil-vendas" element={<MovedTo path="/dados" tab="funil" />} />

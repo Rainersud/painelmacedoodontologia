@@ -44,6 +44,7 @@ const DEFAULT_AGENT_PERMISSIONS = [
   { module: 'plano_incentivo', can_view: true, can_edit: false },
   { module: 'alertas', can_view: true, can_edit: false },
   { module: 'relatorios', can_view: true, can_edit: false },
+  { module: 'ascension', can_view: true, can_edit: true },
   { module: 'perfil', can_view: true, can_edit: true },
 ];
 

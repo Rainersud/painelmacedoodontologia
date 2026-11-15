@@ -22,6 +22,7 @@ export const MODULE_KEYS = {
   plano_incentivo: 'plano_incentivo',
   alertas: 'alertas',
   relatorios: 'relatorios',
+  ascension: 'ascension',
   configuracoes: 'configuracoes',
   perfil: 'perfil',
 } as const;
@@ -41,6 +42,7 @@ export const MODULE_LABELS: Record<string, string> = {
   relatorios: 'Relatórios',
   configuracoes: 'Configurações',
   perfil: 'Perfil',
+  ascension: 'ASCENSION (planilhas)',
 };
 
 export function usePermissions() {

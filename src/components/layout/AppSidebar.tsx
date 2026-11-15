@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ClipboardList, Table2 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -96,6 +96,11 @@ const managementNavItems: NavItemDef[] = [
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
 ];
 
+// ASCENSION: as planilhas da clínica, alimentadas pelo painel
+const ascensionNavItems: NavItemDef[] = [
+  { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: ClipboardList, module: 'ascension' },
+  { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Table2, module: 'ascension' },
+];
 
 const adminNavItems: NavItemDef[] = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
@@ -110,6 +115,7 @@ export function AppSidebar() {
   const groupForPath = (path: string): string => {
     if (adminNavItems.some((i) => i.url === path)) return 'admin';
     if (managementNavItems.some((i) => i.url === path)) return 'gestao';
+    if (path === '/ascension') return 'ascension';
     if (mainNavItems.some((i) => i.url === path)) return 'principal';
     return 'principal';
   };
@@ -123,7 +129,11 @@ export function AppSidebar() {
 
 
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    const [p, q] = path.split('?');
+    if (location.pathname !== p) return false;
+    return !q || new URLSearchParams(location.search).get('aba') === new URLSearchParams(q).get('aba');
+  };
   const menuCounts = useMenuCounts();
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
@@ -171,6 +181,7 @@ export function AppSidebar() {
 
   const visibleMain = filterVisible(mainNavItems);
   const visibleMgmt = filterVisible(managementNavItems);
+  const visibleAscension = filterVisible(ascensionNavItems);
 
   return (
     <Sidebar className="border-r-0">
@@ -211,6 +222,21 @@ export function AppSidebar() {
             onToggle={() => setOpenGroup(openGroup === 'gestao' ? null : 'gestao')}
           >
             {visibleMgmt.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
+        )}
+
+        {visibleAscension.length > 0 && (
+          <CollapsibleGroup
+            label="ASCENSION"
+            className="mt-2"
+            count={visibleAscension.length}
+            current={currentTitle(visibleAscension)}
+            open={openGroup === 'ascension'}
+            onToggle={() => setOpenGroup(openGroup === 'ascension' ? null : 'ascension')}
+          >
+            {visibleAscension.map((item) => (
               <NavItem key={item.title} item={item} />
             ))}
           </CollapsibleGroup>

@@ -698,6 +698,7 @@ export type Database = {
           attendance_discount_status: string
           budget_value: number | null
           campaign: string | null
+          clinica: string | null
           closed_at: string | null
           completed_at: string | null
           contact_attempts: number
@@ -742,6 +743,7 @@ export type Database = {
           attendance_discount_status?: string
           budget_value?: number | null
           campaign?: string | null
+          clinica?: string | null
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number
@@ -786,6 +788,7 @@ export type Database = {
           attendance_discount_status?: string
           budget_value?: number | null
           campaign?: string | null
+          clinica?: string | null
           closed_at?: string | null
           completed_at?: string | null
           contact_attempts?: number

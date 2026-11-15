@@ -343,7 +343,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
 
       {inline && readOnly && (
         <div className="mx-4 sm:mx-6 mt-2 mb-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-warning-strong">
-          A ficha de triagem está em modo leitura. Edição liberada apenas quando o status do lead for "Compareceu".
+          A ficha de triagem está em modo leitura. Para editar, o lead precisa estar em "Compareceu".
         </div>
       )}
 
@@ -576,6 +576,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold">PAGMAIS</Label>
                     <CurrencyInput
+                      allowAnyone
                       value={form.credit_pagmais_value || 0}
                       onChange={(v) => updateField('credit_pagmais_value', v)}
                       placeholder="Valor liberado"
@@ -586,6 +587,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold">MAIORAL</Label>
                     <CurrencyInput
+                      allowAnyone
                       value={form.credit_maioral_value || 0}
                       onChange={(v) => updateField('credit_maioral_value', v)}
                       placeholder="Valor liberado"

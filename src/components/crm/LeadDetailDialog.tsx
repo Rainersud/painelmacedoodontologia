@@ -1325,15 +1325,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
               </div>
             </TabsContent>
 
-            {/* Triage Tab - always visible, editable only when status = compareceu */}
+            {/* Triagem: o administrador e o acesso Comparecimento editam em qualquer etapa;
+                os demais, só com o lead em "Compareceu" */}
             <TabsContent value="triage" className="m-0">
-              <fieldset disabled={readOnlyData} className="min-w-0">
               <TriageFormDialog
                 lead={lead}
                 inline
-                readOnly={statusForView !== 'compareceu'}
+                readOnly={!(access.isAdmin || access.perfil === 'comparecimento') && statusForView !== 'compareceu'}
               />
-              </fieldset>
             </TabsContent>
 
             {/* Referral Tab */}

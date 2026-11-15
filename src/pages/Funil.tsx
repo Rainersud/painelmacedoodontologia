@@ -653,7 +653,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
           stages={(() => {
-            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || !!globalRange || smartCategory !== 'all';
+            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || smartCategory !== 'all';
             if (!anyFilterActive) return boardStages;
             return boardStages.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}

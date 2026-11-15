@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
@@ -66,13 +67,12 @@ function GoalRing({ g, color }: { g: GoalResult; color: string }) {
   );
 }
 
-function PersonCard({ g, data, period }: { g: IncentiveGroup; data: PlanoIncentivoData; period: IncentivePeriod }) {
+function PersonCard({ g, data, noun }: { g: IncentiveGroup; data: PlanoIncentivoData; noun: string }) {
   const color = PERSON_COLOR[g.group];
   const { tripMonths, tripValue, weeklyValue } = data.settings;
   const role = BONUS_GROUPS.find(b => b.key === g.group)?.label ?? g.label;
   const allHit = g.periodGoals.length > 0 && g.periodGoals.every(x => x.hit);
   const missing = g.periodGoals.filter(x => !x.hit && x.target > 0);
-  const noun = period === 'dia' ? 'no dia' : period === 'semana' ? 'na semana' : 'no mês';
   return (
     <Card className="monday-card overflow-hidden flex flex-col">
       <div className="h-1" style={{ background: color }} />
@@ -152,7 +152,7 @@ function PersonCard({ g, data, period }: { g: IncentiveGroup; data: PlanoIncenti
   );
 }
 
-function TeamChart({ data, period }: { data: PlanoIncentivoData; period: IncentivePeriod }) {
+function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string }) {
   const config: ChartConfig = Object.fromEntries(data.groups.map(g => [g.group, { label: g.owner, color: PERSON_COLOR[g.group] }]));
   const rows = (data.groups[0]?.series ?? []).map((p, i) => ({
     label: p.label,
@@ -165,7 +165,7 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: Incenti
     <Card className="monday-card">
       <CardContent className="p-5 space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-semibold">Desempenho da equipe {period === 'mes' ? 'por semana' : 'por dia'}</h3>
+          <h3 className="text-sm font-semibold">Desempenho da equipe por {data.seriesUnit === 'mes' ? 'mês' : data.seriesUnit} · {period}</h3>
           <p className="text-xs text-muted-foreground">% médio das metas de cada responsável · a linha marca 100% (meta batida)</p>
         </div>
         <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
@@ -270,6 +270,7 @@ export default function PlanoIncentivoV2({ embedded = false }: { embedded?: bool
   const { canManage } = useAuth();
   // período = filtro de data global (canto superior direito)
   const { period: globalPeriod, range: globalRange, anchor, customRange } = usePeriodFilter();
+  const { current: periodNoun } = useGlobalPeriodText();
   const [editing, setEditing] = useState(false);
   const period: IncentivePeriod = customRange?.from ? 'mes' : globalPeriod === 'hoje' ? 'dia' : globalPeriod === 'semana' ? 'semana' : 'mes';
   const range = useMemo(() => ({ start: globalRange.start, end: globalRange.end }), [globalRange.start, globalRange.end]);
@@ -327,9 +328,9 @@ export default function PlanoIncentivoV2({ embedded = false }: { embedded?: bool
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} period={period} />)}
+              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} noun={periodNoun} />)}
             </div>
-            <TeamChart data={data} period={period} />
+            <TeamChart data={data} period={globalRange.label} />
             <p className="text-xs text-muted-foreground">
               As metas do dia e da semana são proporcionais aos dias úteis. Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira.
               Indicações contam tudo que foi apontado no Comercial 1, CRC e Comercial 2 (cada pessoa indicada conta uma vez).

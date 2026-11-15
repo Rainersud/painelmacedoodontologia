@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { addDays, addMonths, endOfDay, endOfMonth, format, isAfter, startOfDay, startOfMonth, startOfWeek } from 'date-fns';
+import {
+  addDays, addMonths, differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, endOfDay, endOfMonth, format, isAfter,
+  startOfDay, startOfMonth, startOfWeek,
+} from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { allPages } from '@/lib/paging';
@@ -42,6 +45,54 @@ export interface PlanoIncentivoData {
   groups: IncentiveGroup[];
   /** realizado no mês selecionado (calendário), para a escada */
   monthActuals: Record<CountKey, number>;
+  /** como o gráfico de desempenho foi cortado */
+  seriesUnit: ChartUnit;
+}
+
+export type ChartUnit = 'dia' | 'semana' | 'mes';
+
+/**
+ * Corta o período escolhido em partes para o gráfico. Usa só o intervalo do filtro (nada de
+ * semanas de outro mês): até 14 dias = dias úteis; até 62 dias = semanas (seg–dom, cortadas
+ * nas pontas do período); mais = meses.
+ */
+export function chartParts(sel: Week, isBusinessDay: (d: Date) => boolean, now = new Date()) {
+  const days = differenceInCalendarDays(sel.end, sel.start) + 1;
+  const isNow = (r: Week) => r.start <= now && now <= r.end;
+  if (days <= 14) {
+    const list = eachDayOfInterval({ start: sel.start, end: sel.end });
+    const business = list.filter(isBusinessDay);
+    return {
+      unit: 'dia' as ChartUnit,
+      items: (business.length ? business : list).map(d => {
+        const r = { start: startOfDay(d), end: endOfDay(d) };
+        return { label: format(d, 'EEE dd/MM', { locale: ptBR }), range: r, current: isNow(r) };
+      }),
+    };
+  }
+  if (days <= 62) {
+    const items: { label: string; range: Week; current: boolean }[] = [];
+    let cursor = startOfWeek(sel.start, { weekStartsOn: 1 });
+    while (cursor <= sel.end) {
+      const r = {
+        start: cursor < sel.start ? sel.start : cursor,
+        end: endOfDay(addDays(cursor, 6)) > sel.end ? sel.end : endOfDay(addDays(cursor, 6)),
+      };
+      // pedaço só de fim de semana (ex.: domingo 01/11) não tem meta: fica fora do gráfico
+      if (eachDayOfInterval(r).some(isBusinessDay)) {
+        items.push({ label: `${format(r.start, 'dd/MM')}–${format(r.end, 'dd/MM')}`, range: r, current: isNow(r) });
+      }
+      cursor = addDays(cursor, 7);
+    }
+    return { unit: 'semana' as ChartUnit, items };
+  }
+  return {
+    unit: 'mes' as ChartUnit,
+    items: eachMonthOfInterval({ start: sel.start, end: sel.end }).map(m => {
+      const r = { start: m < sel.start ? sel.start : startOfMonth(m), end: endOfMonth(m) > sel.end ? sel.end : endOfMonth(m) };
+      return { label: format(m, 'MMM/yy', { locale: ptBR }), range: r, current: isNow(r) };
+    }),
+  };
 }
 
 const ORIGINS = new Set(['indicacao_pac', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling', 'resgate']);
@@ -131,16 +182,10 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
       const now = new Date();
       const ownerOf = new Map((owners.data ?? []).map(o => [o.grupo, o.nome]));
 
-      // partes do período para o gráfico: semanas do mês, ou os dias úteis da semana
-      const parts: { label: string; range: Week; current: boolean }[] = period === 'mes'
-        ? weeks.map((w, i) => ({ label: `Sem ${i + 1}`, range: w, current: w.start <= now && now <= w.end }))
-        : Array.from({ length: 7 }, (_, i) => addDays(weekOfSel, i))
-          .filter(d => data.calendar.isBusinessDay(d))
-          .map(d => ({
-            label: format(d, 'EEE dd', { locale: ptBR }),
-            range: { start: startOfDay(d), end: endOfDay(d) },
-            current: period === 'dia' ? startOfDay(d).getTime() === startOfDay(sel.start).getTime() : startOfDay(d).getTime() === startOfDay(now).getTime(),
-          }));
+      // Partes do gráfico = exatamente o período do filtro de data global, cortado em
+      // dias (até 2 semanas), semanas (até ~2 meses) ou meses (mais que isso).
+      const parts = chartParts(sel, data.calendar.isBusinessDay, now);
+      const seriesUnit = parts.unit;
       const avgPct = (goals: GoalResult[]) => {
         const valid = goals.filter(g => g.target > 0);
         if (!valid.length) return 0;
@@ -164,7 +209,7 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
           streak,
           tripEarned: streak >= tripMonths,
           periodGoals: def.goals.map(k => goal(k, sel)),
-          series: parts.map(p => ({ label: p.label, pct: avgPct(def.goals.map(k => goal(k, p.range))), current: p.current })),
+          series: parts.items.map(p => ({ label: p.label, pct: avgPct(def.goals.map(k => goal(k, p.range))), current: p.current })),
         };
       });
 
@@ -173,7 +218,7 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
         'resgates', 'indicacoes', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling'];
       const monthActuals = Object.fromEntries(keys.map(k => [k, count(k, mr)])) as Record<CountKey, number>;
 
-      return { weeks, settings, groups, monthActuals };
+      return { weeks, settings, groups, monthActuals, seriesUnit };
     },
   });
 }

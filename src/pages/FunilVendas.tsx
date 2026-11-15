@@ -5,7 +5,10 @@ import { PageShell } from '@/components/layout/PageShell';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn } from '@/lib/utils';
-import { fetchMetricsData, monthlyGoal, periodGoal, summarize } from '@/lib/metrics';
+import { eachDayOfInterval, eachMonthOfInterval, endOfDay, endOfMonth, format, startOfDay, startOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { fetchMetricsData, monthlyGoal, periodGoal, revenue, summarize } from '@/lib/metrics';
+import { GoalCurve, GoalCurveLegend } from '@/components/charts/SmoothCharts';
 import { funnelInsights, funnelRates, type FunnelNumbers, type InsightTone } from '@/lib/funnelInsights';
 
 const brl = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
@@ -34,9 +37,22 @@ function useFunnelData() {
         ticket: monthlyGoal(s, 'ticket_medio'),
       };
       const now = new Date();
+      // Curva do faturamento acumulado no período contra o ritmo da meta (dias úteis)
+      const days = (cur.end.getTime() - cur.start.getTime()) / 86400000;
+      const parts = days <= 62
+        ? eachDayOfInterval(cur).map(d => ({ start: startOfDay(d), end: endOfDay(d), label: format(d, 'dd/MM') }))
+        : eachMonthOfInterval(cur).map(m => ({ start: startOfMonth(m), end: endOfMonth(m), label: format(m, 'MMM/yy', { locale: ptBR }) }));
+      const bizTotal = Math.max(1, calendar.countBusinessDays(cur.start, cur.end));
+      let acc = 0;
+      const curve = parts.map(p => {
+        acc += revenue(data.payments, p);
+        const goal = Math.round((target.faturamento * calendar.countBusinessDays(cur.start, p.end)) / bizTotal);
+        return { label: p.label, value: p.start <= now ? acc : (undefined as unknown as number), goal };
+      });
       const total = calendar.countBusinessDays(cur.start, cur.end);
       const elapsed = calendar.countBusinessDays(cur.start, now > cur.end ? cur.end : now);
       return {
+        curve,
         actual: toNumbers(cur),
         previous: toNumbers(prev),
         target,
@@ -57,7 +73,7 @@ function Kpi({ label, value, sub, meta, progress }: { label: string; value: stri
   return (
     <div className="flex flex-col rounded-xl border bg-muted/30 p-4 min-w-0">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl xl:text-3xl font-bold tabular-nums leading-none">{value}</p>
+      <p className="mt-2 hero-number text-3xl leading-none">{value}</p>
       <p className="mt-2 text-xs text-muted-foreground min-h-[2rem]">{sub}</p>
       {meta && (
         <div className="mt-auto pt-2 space-y-1.5">
@@ -119,7 +135,7 @@ function FunnelDrawing({ stages }: { stages: FunnelStage[] }) {
               }}
             >
               <p className="text-[11px] font-semibold tracking-wide text-white/85">{st.label}</p>
-              <p className="text-3xl sm:text-4xl font-bold tabular-nums leading-tight">{st.value}</p>
+              <p className="hero-number text-3xl sm:text-4xl leading-tight">{st.value}</p>
               <p className="text-[11px] text-white/75">{st.sub}</p>
             </div>
             <div className="flex flex-col justify-center gap-1 text-xs">
@@ -164,6 +180,7 @@ function FunnelContent() {
   }
   const { a, t, r, metaConversao, insights } = view;
   const tr = data.targetRates;
+  const { curve, pace } = data;
   const stages = [
     { label: 'Novos leads', value: a.leads, sub: 'entraram no funil' },
     { label: 'Agendamentos', value: a.agendamentos, sub: 'consultas marcadas', rate: r.agendamento, meta: tr.agendamento, rateLabel: 'agendaram' },
@@ -181,6 +198,21 @@ function FunnelContent() {
               <h2 id="funil-periodo" className="text-base font-semibold leading-tight">Funil do período</h2>
               <p className="text-xs text-muted-foreground truncate">{range.label} · comparando com {range.prevLabel}</p>
             </div>
+          </div>
+        </div>
+        <div className="grid gap-5 lg:grid-cols-[minmax(220px,1fr)_2.6fr] items-center mb-5">
+          <div>
+            <p className="text-sm text-muted-foreground">Faturamento</p>
+            <p className="hero-number text-5xl leading-none mt-1">{brl(a.faturamento)}</p>
+            <p className="mt-2 text-sm text-muted-foreground">de {brl(t.faturamento)} · {t.faturamento > 0 ? Math.round((a.faturamento / t.faturamento) * 100) : 0}% da meta</p>
+            <span className={cn('mt-3 inline-flex rounded-full px-3 py-1 text-xs font-medium',
+              a.faturamento >= t.faturamento * pace ? 'bg-success/10 text-success' : 'bg-warning/15 text-warning-strong')}>
+              {a.faturamento >= t.faturamento * pace ? 'No ritmo da meta' : 'Abaixo do ritmo da meta'}
+            </span>
+          </div>
+          <div className="space-y-2 min-w-0">
+            <GoalCurve points={curve} height={190} format={brl} />
+            <GoalCurveLegend />
           </div>
         </div>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">

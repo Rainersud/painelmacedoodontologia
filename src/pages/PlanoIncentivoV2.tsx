@@ -4,7 +4,7 @@ import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from 'recharts';
 import {
   CalendarCheck, CheckCircle2, Circle, Clock, Copy, Plane, Settings, Trophy, XCircle,
 } from 'lucide-react';
@@ -89,7 +89,7 @@ function PersonCard({ g, data, noun }: { g: IncentiveGroup; data: PlanoIncentivo
           </div>
           <div className="text-right shrink-0">
             <p className="text-[11px] text-muted-foreground">Bônus do mês</p>
-            <p className="text-xl font-bold tabular-nums">{brl(g.total)}</p>
+            <p className="hero-number text-2xl leading-tight">{brl(g.total)}</p>
           </div>
         </div>
 
@@ -169,19 +169,20 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string 
           <p className="text-xs text-muted-foreground">% médio das metas de cada responsável · a linha marca 100% (meta batida)</p>
         </div>
         <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
-          <BarChart data={rows} barGap={2} barCategoryGap="22%">
+          <LineChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="label" tickLine={false} axisLine={false} className="capitalize" />
             <YAxis tickLine={false} axisLine={false} width={40} domain={[0, top]} ticks={ticks} tickFormatter={v => `${v}%`} />
             <ReferenceLine y={100} stroke="hsl(var(--success))" strokeDasharray="4 4" />
-            <ChartTooltip cursor={{ fillOpacity: 0.4 }} content={<ChartTooltipContent formatter={(v, name) => (
+            <ChartTooltip cursor={{ stroke: 'hsl(var(--border))' }} content={<ChartTooltipContent formatter={(v, name) => (
               <span className="flex w-full justify-between gap-3"><span>{config[String(name)]?.label}</span><b className="tabular-nums">{v}%</b></span>
             )} />} />
             <ChartLegend content={<ChartLegendContent />} />
             {data.groups.map(g => (
-              <Bar key={g.group} dataKey={g.group} fill={`var(--color-${g.group})`} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+              <Line key={g.group} type="monotone" dataKey={g.group} stroke={`var(--color-${g.group})`} strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: `var(--color-${g.group})` }} activeDot={{ r: 5 }} isAnimationActive={false} />
             ))}
-          </BarChart>
+          </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>
@@ -305,7 +306,7 @@ export default function PlanoIncentivoV2({ embedded = false }: { embedded?: bool
               <span className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"><Trophy className="h-6 w-6 text-primary" aria-hidden /></span>
               <div>
                 <p className="text-xs text-muted-foreground">Bônus da equipe em {format(bonusMonth, 'MMMM', { locale: ptBR })}</p>
-                <p className="text-3xl font-bold tabular-nums">{brl(total)}</p>
+                <p className="hero-number text-4xl leading-tight">{brl(total)}</p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">

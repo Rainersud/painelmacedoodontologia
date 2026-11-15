@@ -17,6 +17,60 @@ import { PROJETOS, checkKey } from '@/lib/ascension/projetos';
 import { buildAcompanhamentoWorkbook, downloadWorkbook } from '@/lib/ascension/exportXlsx';
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { chartAxis, chartGrid, chartTooltipProps } from '@/lib/chartStyle';
+
+const SERIES = [
+  { key: 'leads', label: 'Leads', color: 'hsl(var(--primary))' },
+  { key: 'agendados', label: 'Agendados', color: 'hsl(var(--chart-2))' },
+  { key: 'comparecimentos', label: 'Comparecimentos', color: 'hsl(var(--chart-3))' },
+] as const;
+
+/** Curvas do dia a dia: leads, agendados e comparecimentos (o que a planilha mostra em números). */
+function DailyCurves({ rows, dash }: { rows: DailyRow[]; dash: DashboardCells }) {
+  const data = rows.map(r => ({ label: format(r.date, 'dd/MM'), leads: r.leads, agendados: r.agendados, comparecimentos: r.comparecimentos }));
+  return (
+    <Card className="monday-card">
+      <CardContent className="p-5 grid gap-5 lg:grid-cols-[minmax(200px,1fr)_3fr] items-center">
+        <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
+          {[['Leads', dash.leads], ['Agendados', dash.agendamentos], ['Comparecimentos', dash.comparecimentos]].map(([l, v]) => (
+            <div key={l as string}>
+              <p className="text-xs text-muted-foreground">{l}</p>
+              <p className="hero-number text-4xl leading-tight">{int(v as number)}</p>
+            </div>
+          ))}
+        </div>
+        <div className="min-w-0 space-y-2">
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  {SERIES.map(sr => (
+                    <linearGradient key={sr.key} id={`asc-${sr.key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={sr.color} stopOpacity={sr.key === 'leads' ? 0.2 : 0.08} />
+                      <stop offset="100%" stopColor={sr.color} stopOpacity={0} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid {...chartGrid} />
+                <XAxis dataKey="label" {...chartAxis} interval="preserveStartEnd" minTickGap={24} />
+                <YAxis {...chartAxis} allowDecimals={false} width={36} />
+                <Tooltip {...chartTooltipProps} />
+                {SERIES.map(sr => (
+                  <Area key={sr.key} type="monotone" dataKey={sr.key} name={sr.label} stroke={sr.color} strokeWidth={2.25}
+                    fill={`url(#asc-${sr.key})`} dot={false} isAnimationActive={false} />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            {SERIES.map(sr => <span key={sr.key} className="flex items-center gap-1.5"><span className="h-[3px] w-4 rounded" style={{ background: sr.color }} />{sr.label}</span>)}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const brl = (v: number | null) => (v === null ? '' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }));
 const pct = (v: number | null) => (v === null ? '' : `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`);
@@ -229,7 +283,12 @@ export default function AscensionAcompanhamento({ embedded = false }: { embedded
             <TabsTrigger value="projeto">Projeto Ascension</TabsTrigger>
           </TabsList>
           <TabsContent value="diario" className="mt-3">
-            {isLoading || !data ? <div className="h-64 rounded-lg bg-muted/50 animate-pulse" /> : <DailyTable rows={data.rows} dash={data.dashboard} />}
+            {isLoading || !data ? <div className="h-64 rounded-lg bg-muted/50 animate-pulse" /> : (
+              <div className="space-y-4">
+                <DailyCurves rows={data.rows} dash={data.dashboard} />
+                <DailyTable rows={data.rows} dash={data.dashboard} />
+              </div>
+            )}
             <p className="mt-2 text-[11px] text-muted-foreground">
               Investimento do dia = valor lançado em CAC & Financeiro, distribuído pelos dias úteis (as colunas por anúncio do Meta ficam vazias até ligar o Meta Ads).
               Oportunidade = orçamento de quem compareceu no dia. Entrada = o que o paciente pagou no dia em que fechou.

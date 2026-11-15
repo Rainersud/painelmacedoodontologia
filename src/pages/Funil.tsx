@@ -667,7 +667,15 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
           handleOpenDetail={handleOpenDetail}
-          leading={!isFollowUpMode ? <ReturnColumn leadsById={leadsById} onOpen={handleOpenDetail} /> : undefined}
+          leading={!isFollowUpMode ? (
+            access.perfil === 'comparecimento' ? (
+              // Retorno fica bloqueado para o acesso Comparecimento: em preto e branco, sem abrir
+              <div className="relative h-full grayscale opacity-45 pointer-events-none select-none" aria-disabled="true" title="Seu acesso não inclui Retorno">
+                <ReturnColumn leadsById={leadsById} onOpen={() => {}} />
+                <Lock className="absolute top-3 right-3 h-3.5 w-3.5 text-muted-foreground" aria-label="Sem acesso" />
+              </div>
+            ) : <ReturnColumn leadsById={leadsById} onOpen={handleOpenDetail} />
+          ) : undefined}
         />
 
         {/* Loss Analysis Panel */}

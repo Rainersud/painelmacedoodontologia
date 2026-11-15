@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, LockKeyhole } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -81,6 +81,9 @@ export default function Login() {
         <button type="button" className="w-full text-center text-sm text-primary hover:underline" onClick={() => { setResetMode(m => !m); setError(''); }}>
           {resetMode ? 'Voltar para entrar' : 'Esqueci minha senha'}
         </button>
+        {!resetMode && (
+          <p className="text-center text-sm text-muted-foreground">Primeiro acesso? <Link to="/cadastro" className="text-primary hover:underline">Criar meu acesso</Link></p>
+        )}
       </form>
     </div>
   );

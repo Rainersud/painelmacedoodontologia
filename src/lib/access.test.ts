@@ -29,7 +29,12 @@ describe('acessos por pessoa', () => {
     expect(canWorkStatus(a, 'agendou')).toBe(false);
     expect(a.canEditLeadData || a.canFinance || a.canEditGoals).toBe(false);
   });
-  it('sem perfil definido vale o mais restrito entre os de colaborador comum (atendimento)', () => {
-    expect(buildAccess(false, null).perfil).toBe('atendimento');
+  it('conta criada pelo link (ou sem perfil) fica sem acesso até ser liberada', () => {
+    for (const a of [buildAccess(false, null), buildAccess(false, 'pendente')]) {
+      expect(a.pending).toBe(true);
+      expect(canOpenPath(a, '/funil')).toBe(false);
+      expect(canOpenPath(a, '/objetivos')).toBe(false);
+      expect(canWorkStatus(a, 'compareceu')).toBe(false);
+    }
   });
 });

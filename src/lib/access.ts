@@ -10,9 +10,10 @@
 //
 // O bloqueio é na tela e nas ações (mutações); a trava no banco vem numa etapa seguinte.
 
-export type Perfil = 'completo' | 'atendimento' | 'comparecimento';
+export type Perfil = 'pendente' | 'completo' | 'atendimento' | 'comparecimento';
 
 export const PERFIL_LABELS: Record<Perfil, string> = {
+  pendente: 'Aguardando liberação (sem acesso)',
   completo: 'Completo (sem financeiro e metas)',
   atendimento: 'Atendimento — sem Compareceu / Não compareceu',
   comparecimento: 'Comparecimento — só Compareceu / Não compareceu',
@@ -23,6 +24,8 @@ export const COMPARECIMENTO_STATUSES = ['compareceu', 'faltou'] as const;
 
 export interface Access {
   perfil: Perfil | 'admin';
+  /** conta criada pelo link, ainda sem acesso liberado */
+  pending: boolean;
   isAdmin: boolean;
   /** lançar orçamento, pagamentos, custos, criativos, valor de venda */
   canFinance: boolean;
@@ -43,12 +46,18 @@ export interface Access {
 export function buildAccess(isAdmin: boolean, perfil: Perfil | null): Access {
   if (isAdmin) {
     return {
-      perfil: 'admin', isAdmin: true, canFinance: true, canEditGoals: true, canAdmin: true,
+      perfil: 'admin', pending: false, isAdmin: true, canFinance: true, canEditGoals: true, canAdmin: true,
       canEditLeadData: true, lockedStatuses: [], onlyStatuses: null, allowedPaths: null,
     };
   }
-  const p: Perfil = perfil ?? 'atendimento';
-  const base = { isAdmin: false, canFinance: false, canEditGoals: false, canAdmin: false } as const;
+  const p: Perfil = perfil ?? 'pendente';
+  const base = { pending: false, isAdmin: false, canFinance: false, canEditGoals: false, canAdmin: false } as const;
+  if (p === 'pendente') {
+    return {
+      ...base, pending: true, perfil: p, canEditLeadData: false,
+      lockedStatuses: [], onlyStatuses: [], allowedPaths: [],
+    };
+  }
   if (p === 'comparecimento') {
     return {
       ...base, perfil: p, canEditLeadData: false,

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { GlobalDateFilter } from './GlobalDateFilter';
+import { PreviewBanner } from './PreviewBanner';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+          <PreviewBanner />
           <header className="sticky top-0 z-10 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shrink-0">
             <div className="h-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0">

@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Loader2, Lock } from 'lucide-react';
+import { Clock, Loader2, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { canOpenPath } from '@/lib/access';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -23,6 +24,27 @@ export function LockedScreen({ title = 'Área sem acesso' }: { title?: string })
   );
 }
 
+/** Conta criada pelo link: espera o administrador liberar o acesso. */
+function PendingScreen() {
+  const { fullName, signOut, previewAs, setPreviewAs } = useAuth();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="monday-card w-full max-w-md p-8 text-center space-y-3">
+        <Clock className="h-8 w-8 mx-auto text-primary" aria-hidden />
+        <h1 className="text-xl font-semibold">Conta criada{fullName ? `, ${fullName.split(' ')[0]}` : ''}</h1>
+        <p className="text-sm text-muted-foreground">
+          Seu acesso ainda não foi liberado. Assim que o administrador definir sua função, é só entrar de novo ou recarregar esta página.
+        </p>
+        {previewAs ? (
+          <Button variant="outline" onClick={() => setPreviewAs(null)}>Sair da visualização</Button>
+        ) : (
+          <Button variant="outline" onClick={() => signOut()}>Sair</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Exige login; telas fora do acesso da pessoa aparecem bloqueadas. */
 function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) {
   const { user, loading, roleLoading, access } = useAuth();
@@ -36,6 +58,7 @@ function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) {
     );
   }
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  if (access.pending) return <PendingScreen />;
   if (requireAdmin && !access.canAdmin) return <LockedScreen />;
   if (!canOpenPath(access, location.pathname)) {
     // Comparecimento (Lidiane): a tela inicial vira o Comercial 1

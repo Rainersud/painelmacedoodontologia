@@ -18,6 +18,11 @@ interface AuthContextType {
   canManage: boolean;
   /** O que este usuário pode ver e fazer (lib/access). */
   access: Access;
+  /** É administrador de verdade (mesmo enquanto visualiza como outra pessoa). */
+  realIsAdmin: boolean;
+  /** Administrador visualizando o sistema como um colaborador */
+  previewAs: { perfil: Perfil; name: string } | null;
+  setPreviewAs: (p: { perfil: Perfil; name: string } | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +43,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roleLoading, setRoleLoading] = useState(true);
   const [fullName, setFullName] = useState('');
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [previewAs, setPreviewState] = useState<{ perfil: Perfil; name: string } | null>(() => {
+    try { return JSON.parse(sessionStorage.getItem('preview-as') || 'null'); } catch { return null; }
+  });
+  const setPreviewAs = (p: { perfil: Perfil; name: string } | null) => {
+    try { if (p) sessionStorage.setItem('preview-as', JSON.stringify(p)); else sessionStorage.removeItem('preview-as'); } catch { /* sem storage */ }
+    setPreviewState(p);
+  };
   const initialized = useRef(false);
 
   const fetchUserData = async (userId: string) => {
@@ -121,10 +133,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRole('agente');
     setFullName('');
     setPerfil(null);
+    setPreviewAs(null);
   };
 
-  const isAdmin = role === 'admin';
-  const access = React.useMemo(() => buildAccess(isAdmin, perfil), [isAdmin, perfil]);
+  const realIsAdmin = role === 'admin';
+  // "Visualizar como": o administrador vê e usa o sistema com o acesso do colaborador
+  const preview = realIsAdmin ? previewAs : null;
+  const isAdmin = realIsAdmin && !preview;
+  const access = React.useMemo(
+    () => (preview ? buildAccess(false, preview.perfil) : buildAccess(realIsAdmin, perfil)),
+    [preview, realIsAdmin, perfil],
+  );
   setCurrentAccess(access);
 
   const value: AuthContextType = {
@@ -140,6 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin,
     canManage: isAdmin,
     access,
+    realIsAdmin,
+    previewAs: preview,
+    setPreviewAs,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

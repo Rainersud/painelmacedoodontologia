@@ -3,7 +3,8 @@ import { CalendarClock, Info, Loader2, Repeat, TrendingUp, Users, Wallet } from 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { ENTRY_TREATMENT_LABELS, LTV_STAGES, ltvActivity, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { ENTRY_TREATMENT_LABELS, LTV_STAGES, ltvActivity, ltvSeries, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { ARRIVAL_SOURCE_LABELS } from '@/lib/metrics/stages';
 import { useLTVData } from '@/hooks/useLTVData';
@@ -14,7 +15,7 @@ type SegmentDim = 'tratamento' | 'origem';
 
 const pct = (v: number) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
-function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; label: string; value: string; sub?: string; help: string }) {
+function Kpi({ icon: Icon, label, value, sub, help , trend }: { icon: typeof Users; label: string; value: string; sub?: string; help: string ; trend?: number[] }) {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -31,6 +32,7 @@ function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; labe
       </div>
       <p className="hero-number text-3xl mt-1.5 leading-none">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground mt-1.5">{sub}</p>}
+      {trend && <div className="mt-2 -mx-1"><Sparkline data={trend} height={30} /></div>}
     </div>
   );
 }
@@ -57,6 +59,7 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
       prev: ltvActivity(patients, payments, r.prevStart, r.prevEnd),
     };
   }, [r.start, r.end, r.prevStart, r.prevEnd, patients, payments]);
+  const trend = useMemo(() => ltvSeries(patients, payments, r.start, r.end), [patients, payments, r.start, r.end]);
   const vsPrev = (cur: number, before: number) => (before > 0 ? `${cur >= before ? '+' : ''}${Math.round(((cur - before) / before) * 100)}% vs ${periodDef.previous}` : `${periodDef.previous}: ${formatCurrency(before)}`);
 
   const s = useMemo(() => summarize(patients), [patients]);
@@ -122,15 +125,15 @@ export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
       <section aria-labelledby="ltv-periodo" className="space-y-2">
         <h3 id="ltv-periodo" className="text-sm font-semibold text-muted-foreground">Movimento {periodDef.current}</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-          <Kpi icon={Wallet} label="Vendido no LTV" value={formatCurrency(act.sold)} sub={vsPrev(act.sold, prevAct.sold)}
+          <Kpi icon={Wallet} trend={trend.sold} label="Vendido no LTV" value={formatCurrency(act.sold)} sub={vsPrev(act.sold, prevAct.sold)}
             help="Pagamentos registrados nos cards do LTV no período (bruto, pagos e a receber)." />
-          <Kpi icon={Wallet} label="Recebido no LTV" value={formatCurrency(act.received)} sub={vsPrev(act.received, prevAct.received)}
+          <Kpi icon={Wallet} trend={trend.received} label="Recebido no LTV" value={formatCurrency(act.received)} sub={vsPrev(act.received, prevAct.received)}
             help="Pagamentos do LTV pagos no período, valor líquido. É o que entra no faturamento da meta." />
-          <Kpi icon={Repeat} label="Compraram no LTV" value={String(act.buyers)} sub={`${periodDef.previous}: ${prevAct.buyers}`}
+          <Kpi icon={Repeat} trend={trend.buyers} label="Compraram no LTV" value={String(act.buyers)} sub={`${periodDef.previous}: ${prevAct.buyers}`}
             help="Pacientes com pagamento registrado no LTV no período." />
-          <Kpi icon={TrendingUp} label="Ticket médio no LTV" value={formatCurrency(act.ticket)} sub={`${periodDef.previous}: ${formatCurrency(prevAct.ticket)}`}
+          <Kpi icon={TrendingUp} trend={trend.ticket} label="Ticket médio no LTV" value={formatCurrency(act.ticket)} sub={`${periodDef.previous}: ${formatCurrency(prevAct.ticket)}`}
             help="Vendido no LTV no período ÷ pacientes que compraram no LTV no período." />
-          <Kpi icon={Users} label="Entraram no LTV" value={String(act.newPatients)} sub={`${periodDef.previous}: ${prevAct.newPatients}`}
+          <Kpi icon={Users} trend={trend.newPatients} label="Entraram no LTV" value={String(act.newPatients)} sub={`${periodDef.previous}: ${prevAct.newPatients}`}
             help="Pacientes com venda realizada no front no período: entram sozinhos no Comercial 2." />
           <Kpi icon={CalendarClock} label="Retornos" value={String(act.returnsDue)} sub="com data no período, sem agendamento"
             help="Pacientes com data de retorno dentro do período que ainda não foram marcados como agendados." />

@@ -1,3 +1,5 @@
+import { MetricSpark } from '@/components/charts/SmoothCharts';
+import type { SeriesKey } from '@/lib/metrics';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStrategicInsights } from '@/hooks/useStrategicInsights';
@@ -54,10 +56,11 @@ export function LeadOriginsWidget() {
             <div className="space-y-2 max-h-[220px] overflow-y-auto">
               {(data?.origins || []).map((o) => (
                 <div key={o.source} className="flex items-center justify-between text-xs p-2 rounded-md bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ background: originColor(o.source) }} />
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="h-3 w-3 rounded-full shrink-0" style={{ background: originColor(o.source) }} />
                     <span className="font-medium">{SOURCE_CONFIG[o.source as keyof typeof SOURCE_CONFIG]?.label || o.source}</span>
                   </div>
+                  <div className="w-16 shrink-0 mx-2"><MetricSpark metric={o.source as SeriesKey} height={22} /></div>
                   <div className="text-right">
                     <p className="font-semibold">{o.count} leads · {o.conversao}%</p>
                     <p className="text-[10px] text-muted-foreground">{formatCurrency(o.receita)} · ROI {o.roi}%</p>

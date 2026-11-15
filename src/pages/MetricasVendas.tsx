@@ -1,3 +1,6 @@
+import { endOfMonth, startOfMonth } from 'date-fns';
+import { MetricSpark } from '@/components/charts/SmoothCharts';
+import type { DateRange, SeriesKey } from '@/lib/metrics';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +17,7 @@ import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/char
 const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   // mês = filtro de data global (canto superior direito)
   const { month, exact } = useGlobalMonth();
+  const monthRange = { start: startOfMonth(month), end: endOfMonth(month) };
   const { data, isLoading } = useSalesMetrics(month);
 
   if (isLoading) {
@@ -87,10 +91,10 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
         {/* Executive Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard label="Total Vendas" value={String(general.salesCount)} />
-          <SummaryCard label="Vendas 1 Etapa" value={String(oneStep.salesCount)} subtitle={general.salesCount > 0 ? `${((oneStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
-          <SummaryCard label="Vendas 2 Etapas" value={String(twoStep.salesCount)} subtitle={general.salesCount > 0 ? `${((twoStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
-          <SummaryCard label="Faturamento Total" value={formatCurrency(general.totalRevenue)} />
+          <SummaryCard label="Total Vendas" value={String(general.salesCount)} spark="vendas" range={monthRange} />
+          <SummaryCard spark="conversao" range={monthRange} label="Vendas 1 Etapa" value={String(oneStep.salesCount)} subtitle={general.salesCount > 0 ? `${((oneStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
+          <SummaryCard spark="taxaFechamento" range={monthRange} label="Vendas 2 Etapas" value={String(twoStep.salesCount)} subtitle={general.salesCount > 0 ? `${((twoStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
+          <SummaryCard label="Faturamento Total" value={formatCurrency(general.totalRevenue)} spark="faturamento" range={monthRange} />
         </div>
 
         {/* Side by side metrics */}
@@ -171,13 +175,14 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   );
 };
 
-function SummaryCard({ label, value, subtitle }: { label: string; value: string; subtitle?: string }) {
+function SummaryCard({ label, value, subtitle, spark, range }: { label: string; value: string; subtitle?: string; spark?: SeriesKey; range?: DateRange }) {
   return (
     <Card className="monday-card">
       <CardContent className="p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold mt-1">{value}</p>
+        <p className="hero-number text-3xl mt-1">{value}</p>
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        {spark && <div className="mt-2 -mx-1"><MetricSpark metric={spark} height={30} range={range} /></div>}
       </CardContent>
     </Card>
   );

@@ -15,6 +15,7 @@ import {
   startOfWeek, subDays, subMonths, subWeeks,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { seriesParts } from '@/lib/metrics/series';
 
 export const LTV_STAGES = [
   { key: 'comprou_1', ltvPurchases: 0, label: 'Comprou no front', short: 'Front' },
@@ -419,4 +420,25 @@ export function ltvActivity(patients: LtvPatient[], payments: LtvPaymentRow[], s
     newPatients: patients.filter(p => inside(p.soldAt, start, end)).length,
     returnsDue: patients.filter(p => !p.returnScheduled && inside(p.nextReturn, start, end)).length,
   };
+}
+
+/**
+ * Séries do LTV para os mini gráficos: o período em dias (até ~2 meses) ou meses, só até hoje.
+ * Contagens/valores por parte; ticket e participação acumulados até a parte.
+ */
+export function ltvSeries(patients: LtvPatient[], payments: LtvPaymentRow[], start: Date, end: Date, now = new Date()) {
+  const parts = seriesParts({ start, end }).filter(p => p.start <= now);
+  const out = { sold: [] as number[], received: [] as number[], buyers: [] as number[], ticket: [] as number[], newPatients: [] as number[], share: [] as number[] };
+  parts.forEach(p => {
+    const a = ltvActivity(patients, payments, p.start, p.end);
+    const acc = ltvActivity(patients, payments, start, p.end);
+    const cash = cashInRange(payments, start, p.end);
+    out.sold.push(a.sold);
+    out.received.push(a.received);
+    out.buyers.push(a.buyers);
+    out.ticket.push(acc.ticket);
+    out.newPatients.push(a.newPatients);
+    out.share.push(cash.total ? (cash.ltv / cash.total) * 100 : 0);
+  });
+  return out;
 }

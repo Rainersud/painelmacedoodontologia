@@ -1,3 +1,4 @@
+import { MetricSpark } from '@/components/charts/SmoothCharts';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
 import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useState, useMemo } from 'react';
@@ -313,6 +314,7 @@ function TrafficReconciliation({ month, creatives }: { month: Date; creatives: A
 export default function FunilTrafego({ embedded = false }: { embedded?: boolean } = {}) {
   // mês = filtro de data global (canto superior direito)
   const { month: selectedMonth, exact } = useGlobalMonth();
+  const monthRange = useMemo(() => ({ start: startOfMonth(selectedMonth), end: endOfMonth(selectedMonth) }), [selectedMonth.getFullYear(), selectedMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
   const { creatives, consolidated, bestCreative, worstCreative, isLoading, addCreative, updateCreative, deleteCreative } = useAdCreatives(selectedMonth);
   const [viewMode, setViewMode] = useState<'individual' | 'consolidated'>('consolidated');
   const [selectedCreative, setSelectedCreative] = useState<string | null>(null);
@@ -395,29 +397,33 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Investimento</p>
-                <p className="text-sm font-bold">{formatCurrency(consolidated.totalInvestment)}</p>
+                <p className="hero-number text-xl">{formatCurrency(consolidated.totalInvestment)}</p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="investimento" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Faturamento</p>
-                <p className="text-sm font-bold text-success">{formatCurrency(consolidated.totalRevenue)}</p>
+                <p className="hero-number text-xl text-success">{formatCurrency(consolidated.totalRevenue)}</p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="faturamento" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">ROI</p>
-                <p className={cn('text-sm font-bold', consolidatedMetrics.roi >= 0 ? 'text-success' : 'text-destructive')}>
+                <p className={cn('hero-number text-xl', consolidatedMetrics.roi >= 0 ? 'text-success' : 'text-destructive')}>
                   {consolidatedMetrics.roi.toFixed(1)}%
                 </p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="roi" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Lucro</p>
-                <p className={cn('text-sm font-bold', consolidatedMetrics.isProfitable ? 'text-success' : 'text-destructive')}>
+                <p className={cn('hero-number text-xl', consolidatedMetrics.isProfitable ? 'text-success' : 'text-destructive')}>
                   {formatCurrency(consolidatedMetrics.profit)}
                 </p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="roas" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
           </div>

@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { chartAxis, chartGrid, chartLegend, chartTooltipProps } from '@/lib/chartStyle';
-import { cashByMonth, cashInRange, ltvToReceiveByMonth } from '@/lib/ltv';
+import { cashByMonth, cashInRange, ltvSeries, ltvToReceiveByMonth } from '@/lib/ltv';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useOpenLead } from '@/contexts/LeadDetailContext';
@@ -19,7 +20,7 @@ const METHOD: Record<string, string> = {
 const LTV_COLOR = 'hsl(var(--primary))';
 const FRONT_COLOR = 'hsl(var(--primary) / 0.35)';
 
-function Kpi({ label, value, sub, help, delta }: { label: string; value: string; sub?: string; help: string; delta?: number | null }) {
+function Kpi({ label, value, sub, help, delta, trend }: { label: string; value: string; sub?: string; help: string; delta?: number | null; trend?: number[] }) {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -43,6 +44,7 @@ function Kpi({ label, value, sub, help, delta }: { label: string; value: string;
         )}
         {sub && <span>{sub}</span>}
       </div>
+      {trend && <div className="mt-2 -mx-1"><Sparkline data={trend} height={30} /></div>}
     </div>
   );
 }
@@ -56,6 +58,7 @@ export function FinancialDashboard() {
   // período = filtro de data global (canto superior direito)
   const { range: r, current, previous } = useGlobalPeriodText();
   const periodDef = { current, previous };
+  const trend = useMemo(() => ltvSeries(patients, payments, r.start, r.end), [patients, payments, r.start, r.end]);
   const cur = cashInRange(payments, r.start, r.end);
   const prev = cashInRange(payments, r.prevStart, r.prevEnd);
   const delta = prev.ltv > 0 ? ((cur.ltv - prev.ltv) / prev.ltv) * 100 : null;
@@ -91,13 +94,13 @@ export function FinancialDashboard() {
       </div>
 
       <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
-        <Kpi label={`Recebido no LTV ${periodDef.current}`} value={formatCurrency(cur.ltv)} delta={delta}
+        <Kpi trend={trend.received} label={`Recebido no LTV ${periodDef.current}`} value={formatCurrency(cur.ltv)} delta={delta}
           sub={delta === null ? `${periodDef.previous}: ${formatCurrency(prev.ltv)}` : `vs ${periodDef.previous}`}
           help="Pagamentos do LTV com status pago, valor líquido (já sem taxas), pela data do pagamento." />
-        <Kpi label={`Participação no faturamento ${periodDef.current}`} value={`${share.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+        <Kpi trend={trend.share} label={`Participação no faturamento ${periodDef.current}`} value={`${share.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
           sub={`de ${formatCurrency(cur.total)} recebidos pela clínica`}
           help="Recebido no LTV ÷ tudo o que a clínica recebeu no período (front + LTV). É o mesmo faturamento usado na meta." />
-        <Kpi label={`Vendido no LTV ${periodDef.current}`} value={formatCurrency(soldInPeriod)}
+        <Kpi trend={trend.sold} label={`Vendido no LTV ${periodDef.current}`} value={formatCurrency(soldInPeriod)}
           sub="registrado no período (pago + a receber)"
           help="Valor bruto dos pagamentos do LTV registrados no período, inclusive parcelas que ainda vão vencer." />
         <Kpi label="A receber do LTV" value={formatCurrency(pendingTotal)}

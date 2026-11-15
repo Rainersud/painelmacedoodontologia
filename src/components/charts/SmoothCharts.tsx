@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { useMetricSeries } from '@/hooks/useMetricSeries';
 import { Area, AreaChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { chartAxis, chartGrid, chartTooltipProps } from '@/lib/chartStyle';
 
@@ -10,7 +11,7 @@ import { chartAxis, chartGrid, chartTooltipProps } from '@/lib/chartStyle';
 const BRAND = 'hsl(var(--primary))';
 const MUTED = 'hsl(var(--muted-foreground))';
 
-export interface GoalCurvePoint { label: string; value: number; goal?: number }
+export interface GoalCurvePoint { label: string; value: number; goal?: number; projection?: number }
 
 /** Curva acumulada contra a meta (ex.: faturamento do mês dia a dia). */
 export function GoalCurve({
@@ -39,10 +40,12 @@ export function GoalCurve({
           <YAxis {...chartAxis} tickFormatter={compact} width={44} />
           <Tooltip
             {...chartTooltipProps}
-            formatter={(v: number, name: string) => [format(v), name === 'goal' ? goalLabel : valueLabel]}
+            formatter={(v: number, name: string) => [format(v), name === 'goal' ? goalLabel : name === 'projection' ? 'Projeção' : valueLabel]}
           />
           <Area type="monotone" dataKey="value" stroke={BRAND} strokeWidth={2.5} fill={`url(#fill-${id})`}
             dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }} isAnimationActive={false} />
+          <Line type="monotone" dataKey="projection" stroke={BRAND} strokeOpacity={0.55} strokeWidth={2} strokeDasharray="2 4" dot={false}
+            activeDot={false} isAnimationActive={false} connectNulls />
           <Line type="linear" dataKey="goal" stroke={MUTED} strokeWidth={1.5} strokeDasharray="5 5" dot={false}
             activeDot={false} isAnimationActive={false} />
         </ComposedChart>
@@ -82,4 +85,18 @@ export function GoalCurveLegend({ valueLabel = 'Realizado', goalLabel = 'Ritmo d
       <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-muted-foreground" />{goalLabel}</span>
     </div>
   );
+}
+
+/**
+ * Mini gráfico de um indicador do painel, já ligado ao filtro de data global.
+ * Ex.: <MetricSpark metric="leads" />, <MetricSpark metric="taxaFechamento" />.
+ */
+export function MetricSpark({ metric, height = 32, tone, range }: {
+  metric: import('@/lib/metrics').SeriesKey;
+  height?: number;
+  tone?: 'brand' | 'muted' | 'danger';
+  range?: import('@/lib/metrics').DateRange;
+}) {
+  const { data } = useMetricSeries(range);
+  return <Sparkline data={data?.[metric] ?? []} height={height} tone={tone} />;
 }

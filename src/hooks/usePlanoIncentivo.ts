@@ -47,6 +47,8 @@ export interface PlanoIncentivoData {
   monthActuals: Record<CountKey, number>;
   /** como o gráfico de desempenho foi cortado */
   seriesUnit: ChartUnit;
+  /** dia a dia do mês (até hoje), com a mesma contagem do realizado — para os mini gráficos */
+  monthSeries: Record<CountKey, number[]>;
 }
 
 export type ChartUnit = 'dia' | 'semana' | 'mes';
@@ -217,8 +219,11 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
       const keys: CountKey[] = ['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento',
         'resgates', 'indicacoes', 'prospeccao_ativa', 'indicacao_parceria', 'social_selling'];
       const monthActuals = Object.fromEntries(keys.map(k => [k, count(k, mr)])) as Record<CountKey, number>;
+      const monthDays = eachDayOfInterval({ start: mr.start, end: mr.end > now ? endOfDay(now) : mr.end })
+        .map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
+      const monthSeries = Object.fromEntries(keys.map(k => [k, monthDays.map(d => count(k, d))])) as Record<CountKey, number[]>;
 
-      return { weeks, settings, groups, monthActuals, seriesUnit };
+      return { weeks, settings, groups, monthActuals, seriesUnit, monthSeries };
     },
   });
 }

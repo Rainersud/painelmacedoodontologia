@@ -1,6 +1,6 @@
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
 import { MonthNotice } from '@/components/layout/MonthNotice';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,8 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, RadialBarChart, RadialBar,
 } from 'recharts';
-import { format, startOfMonth } from 'date-fns';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { MetricSpark } from '@/components/charts/SmoothCharts';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { chartGrid, chartAxis, SERIES, SERIES_OTHER } from '@/lib/chartStyle';
@@ -49,6 +50,7 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
   // mês = filtro de data global (canto superior direito)
   const { month: globalMonth, exact } = useGlobalMonth();
   const selectedMonth = startOfMonth(globalMonth);
+  const monthRange = useMemo(() => ({ start: selectedMonth, end: endOfMonth(selectedMonth) }), [selectedMonth.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
   const { isAdmin } = useAuth();
   const { costs, totalByCategory, totalCosts, isLoading, addCost, updateCost, deleteCost } = useAcquisitionCosts(selectedMonth);
   const { data: metrics, isLoading: metricsLoading } = useCACMetrics(selectedMonth);
@@ -151,8 +153,9 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                 <DollarSign className="h-4 w-4 text-destructive" />
                 <span className="text-xs text-muted-foreground font-medium">CAC</span>
               </div>
-              <p className="text-2xl font-bold">{formatCurrency(metrics?.cac || 0)}</p>
+              <p className="hero-number text-3xl">{formatCurrency(metrics?.cac || 0)}</p>
               <p className="text-xs text-muted-foreground mt-1">Custo por cliente</p>
+              <div className="mt-2 -mx-1"><MetricSpark metric="cac" height={30} range={monthRange} /></div>
             </CardContent>
           </Card>
           <Card className="monday-card">
@@ -161,8 +164,9 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                 <TrendingUp className="h-4 w-4 text-primary" />
                 <span className="text-xs text-muted-foreground font-medium">Ticket Médio</span>
               </div>
-              <p className="text-2xl font-bold">{formatCurrency(metrics?.ticketMedio || 0)}</p>
+              <p className="hero-number text-3xl">{formatCurrency(metrics?.ticketMedio || 0)}</p>
               <p className="text-xs text-muted-foreground mt-1">Receita por venda</p>
+              <div className="mt-2 -mx-1"><MetricSpark metric="ticket" height={30} range={monthRange} /></div>
             </CardContent>
           </Card>
           <Card className="monday-card">
@@ -174,10 +178,11 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                 }
                 <span className="text-xs text-muted-foreground font-medium">Lucro/Venda</span>
               </div>
-              <p className={cn("text-2xl font-bold", (metrics?.lucroPorVenda || 0) >= 0 ? "text-success" : "text-destructive")}>
+              <p className={cn("hero-number text-3xl", (metrics?.lucroPorVenda || 0) >= 0 ? "text-success" : "text-destructive")}>
                 {formatCurrency(metrics?.lucroPorVenda || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Líquido por cliente</p>
+              <div className="mt-2 -mx-1"><MetricSpark metric="roi" height={30} range={monthRange} /></div>
             </CardContent>
           </Card>
           <Card className="monday-card">
@@ -186,10 +191,11 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-xs text-muted-foreground font-medium">Clientes</span>
               </div>
-              <p className="text-2xl font-bold">{metrics?.salesCount || 0}</p>
+              <p className="hero-number text-3xl">{metrics?.salesCount || 0}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 De {metrics?.totalLeads || 0} leads ({(metrics?.conversionRate || 0).toFixed(1)}%)
               </p>
+              <div className="mt-2 -mx-1"><MetricSpark metric="conversao" height={30} range={monthRange} /></div>
             </CardContent>
           </Card>
         </div>
@@ -253,7 +259,7 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                       </RadialBarChart>
                     </ResponsiveContainer>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
-                      <p className={cn("text-2xl font-bold", gaugePercent >= 0 ? "text-success" : "text-destructive")}>
+                      <p className={cn("hero-number text-3xl", gaugePercent >= 0 ? "text-success" : "text-destructive")}>
                         {gaugePercent >= 0 ? '+' : ''}{gaugePercent.toFixed(0)}%
                       </p>
                       <p className="text-xs text-muted-foreground">margem</p>

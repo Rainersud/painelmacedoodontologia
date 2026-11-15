@@ -15,6 +15,9 @@ import { CONTROLE_ORIGENS, type ControleRow, type OrigemRow, type SimNao } from 
 import { buildControleWorkbook, downloadWorkbook, sheetName, type ControleMonth } from '@/lib/ascension/exportXlsx';
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { chartAxis, chartGrid, chartTooltipProps } from '@/lib/chartStyle';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 
 const brl = (v: number | null) => (v === null ? '' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }));
 const pct0 = (v: number | null) => (v === null ? '' : `${Math.round(v * 100)}%`);
@@ -29,8 +32,12 @@ const SN_CLS: Record<SimNao, string> = {
 };
 const Sn = ({ v }: { v: SimNao }) => (v ? <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold', SN_CLS[v])}>{v}</span> : null);
 
-function OriginTable({ origens, total }: { origens: OrigemRow[]; total: OrigemRow }) {
-  const head = ['Categoria', 'Qtd. geral', 'Agendamentos', 'CV. AG.', 'Comparecimentos', 'CV. CP.', 'Fechamentos', 'CV. FCH.', 'Ticket médio', 'Oport. de vendas', 'Vendas'];
+function OriginTable({ origens, total, m }: { origens: OrigemRow[]; total: OrigemRow; m: ControleMonth }) {
+  const head = ['Categoria', 'Qtd. geral', 'Agendamentos', 'CV. AG.', 'Comparecimentos', 'CV. CP.', 'Fechamentos', 'CV. FCH.', 'Ticket médio', 'Oport. de vendas', 'Vendas', 'Tendência'];
+  const today = new Date();
+  const days = m.dias.filter(d => d.data <= today).map(d => d.data);
+  // leads que entraram por dia em cada origem (para o mini gráfico)
+  const trend = (cat: string | null) => days.map(d => m.rows.filter(r => (cat === null || r.origem === cat) && isSameDay(r.data, d)).length);
   const row = (o: OrigemRow, strong = false) => (
     <tr key={o.categoria} className={cn('border-b last:border-0', strong && 'bg-muted font-semibold')}>
       <td className="px-3 py-1.5 whitespace-nowrap">{o.categoria}</td>
@@ -43,13 +50,14 @@ function OriginTable({ origens, total }: { origens: OrigemRow[]; total: OrigemRo
       <td className="px-3 py-1.5 text-right">{brl(o.ticket)}</td>
       <td className="px-3 py-1.5 text-right">{brl(o.oportunidade)}</td>
       <td className="px-3 py-1.5 text-right">{brl(o.vendas)}</td>
+      <td className="px-3 py-1 w-28"><Sparkline data={trend(strong ? null : o.categoria)} height={22} tone={o.qtd ? 'brand' : 'muted'} /></td>
     </tr>
   );
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full text-xs tabular-nums">
         <thead>
-          <tr><th colSpan={11} className="bg-[#cc0000] text-white py-1.5 text-center font-bold tracking-wide">MÉTRICAS GERAIS</th></tr>
+          <tr><th colSpan={12} className="bg-[#cc0000] text-white py-1.5 text-center font-bold tracking-wide">MÉTRICAS GERAIS</th></tr>
           <tr className="bg-[#f4cccc] text-[#1a1a1a]">{head.map((h, i) => <th key={h} className={cn('px-3 py-1.5 font-semibold whitespace-nowrap', i ? 'text-right' : 'text-left')}>{h}</th>)}</tr>
         </thead>
         <tbody>
@@ -57,6 +65,39 @@ function OriginTable({ origens, total }: { origens: OrigemRow[]; total: OrigemRo
           {row(total, true)}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function DaysCurves({ m }: { m: ControleMonth }) {
+  const today = new Date();
+  const data = m.dias.filter(d => d.data <= today).map(d => ({ label: format(d.data, 'dd/MM'), leads: d.leads, agend: d.agendamentosDia, comp: d.comparecimentos }));
+  const S = [
+    { k: 'leads', label: 'Leads', c: 'hsl(var(--primary))' },
+    { k: 'agend', label: 'Agendamentos p/ o dia', c: 'hsl(var(--chart-2))' },
+    { k: 'comp', label: 'Comparecimentos', c: 'hsl(var(--chart-3))' },
+  ];
+  return (
+    <div className="rounded-2xl border bg-card p-4 mb-3 space-y-2">
+      <div className="h-[180px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs>{S.map(x => (
+              <linearGradient key={x.k} id={`cg-${x.k}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={x.c} stopOpacity={x.k === 'leads' ? 0.2 : 0.08} /><stop offset="100%" stopColor={x.c} stopOpacity={0} />
+              </linearGradient>))}
+            </defs>
+            <CartesianGrid {...chartGrid} />
+            <XAxis dataKey="label" {...chartAxis} interval="preserveStartEnd" minTickGap={24} />
+            <YAxis {...chartAxis} allowDecimals={false} width={32} />
+            <Tooltip {...chartTooltipProps} />
+            {S.map(x => <Area key={x.k} type="monotone" dataKey={x.k} name={x.label} stroke={x.c} strokeWidth={2.25} fill={`url(#cg-${x.k})`} dot={false} isAnimationActive={false} />)}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        {S.map(x => <span key={x.k} className="flex items-center gap-1.5"><span className="h-[3px] w-4 rounded" style={{ background: x.c }} />{x.label}</span>)}
+      </div>
     </div>
   );
 }
@@ -209,12 +250,12 @@ export default function AscensionControle({ embedded = false }: { embedded?: boo
             </TabsList>
             <TabsContent value="leads" className="mt-3"><LeadsTable rows={active.rows} /></TabsContent>
             <TabsContent value="origens" className="mt-3">
-              <OriginTable origens={active.origens} total={active.total} />
+              <OriginTable origens={active.origens} total={active.total} m={active} />
               <p className="mt-2 text-[11px] text-muted-foreground">
                 Origens = "Como o lead chegou?". Fechamentos contam "Fechou? = SIM" (a planilha original contava a coluna Compareceu nesse campo).
               </p>
             </TabsContent>
-            <TabsContent value="dias" className="mt-3"><DaysTable m={active} /></TabsContent>
+            <TabsContent value="dias" className="mt-3"><DaysCurves m={active} /><DaysTable m={active} /></TabsContent>
           </Tabs>
         )}
       </div>

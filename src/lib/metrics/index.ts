@@ -7,3 +7,4 @@ export * from './rules';
 export * from './goals';
 export * from './fetch';
 export * from './campaigns';
+export * from './series';

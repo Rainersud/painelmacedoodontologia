@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
 import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from 'recharts';
@@ -97,6 +98,15 @@ function PersonCard({ g, data, noun }: { g: IncentiveGroup; data: PlanoIncentivo
           {g.periodGoals.map(x => <GoalRing key={x.key} g={x} color={color} />)}
         </div>
 
+        {g.series.length > 1 && (
+          <div>
+            <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+              <span>% das metas no período</span>
+              <span className="tabular-nums">{g.series[g.series.length - 1]?.pct ?? 0}% na última parte</span>
+            </div>
+            <Sparkline data={g.series.map(x => x.pct)} height={40} />
+          </div>
+        )}
         <p className={cn('rounded-lg px-3 py-2 text-xs text-center min-h-[48px] flex items-center justify-center', allHit ? 'bg-success/10 text-success font-medium' : 'bg-muted/60 text-muted-foreground')}>
           {allHit
             ? `Todas as metas batidas ${noun}.`

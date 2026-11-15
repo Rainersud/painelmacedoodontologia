@@ -1,3 +1,4 @@
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -92,7 +93,7 @@ export default function Reunioes() {
   const toColor = (st: string) => (st === 'healthy' ? 'green' : st === 'warning' ? 'yellow' : 'red');
   const goalsProgress = (monthPanel?.metrics ?? [])
     .filter(m => GOAL_KEYS.includes(m.key))
-    .map(m => ({ type: m.key, label: m.label, current: m.display, target: m.targetDisplay, percentage: m.percentage, status: toColor(m.status) }));
+    .map(m => ({ type: m.key, label: m.label, current: m.display, target: m.targetDisplay, percentage: m.percentage, status: toColor(m.status), trend: m.trend }));
   const weekGoals = (weekPanel?.metrics ?? []).filter(m => ['leads', 'agendamentos', 'comparecimentos', 'vendas'].includes(m.key));
   const incentiveData = weekPanel ? {
     goals: weekGoals.map(m => ({ bonusEarned: m.current >= m.target })),
@@ -366,7 +367,10 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
                       </Badge>
                     </div>
                   </div>
-                  <Progress value={g.percentage} className="h-2" />
+                  <div className="grid grid-cols-[1fr_96px] items-center gap-3">
+                    <Progress value={g.percentage} className="h-2" />
+                    <Sparkline data={g.trend ?? []} height={24} />
+                  </div>
                 </div>
               ))}
             </div>

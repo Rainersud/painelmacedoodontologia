@@ -12,7 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMetaSettings } from '@/hooks/useMetaSettings';
 import { usePlanoIncentivo, type CountKey } from '@/hooks/usePlanoIncentivo';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
-import { format } from 'date-fns';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { MetricSpark, Sparkline } from '@/components/charts/SmoothCharts';
 import { ptBR } from 'date-fns/locale';
 import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { describeError } from '@/lib/errors';
@@ -87,6 +88,7 @@ export function GoalLadderCard() {
   const monthKey = `${globalMonth.getFullYear()}-${globalMonth.getMonth()}`;
   const planoMonth = useMemo(() => new Date(globalMonth.getFullYear(), globalMonth.getMonth(), 15), [monthKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data: plano } = usePlanoIncentivo(planoMonth);
+  const monthRange = useMemo(() => ({ start: startOfMonth(planoMonth), end: endOfMonth(planoMonth) }), [planoMonth]);
   const { user, canManage: isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const s = (settings ?? {}) as MetaSettingsMap;
@@ -235,6 +237,7 @@ export function GoalLadderCard() {
                     <th className="font-medium py-2 px-3 text-right">Semana</th>
                     <th className="font-medium py-2 px-3 text-right">Dia útil</th>
                     <th className="font-medium py-2 pl-3 text-right capitalize">Realizado · {format(planoMonth, 'MMM yyyy', { locale: ptBR })}</th>
+                    <th className="font-medium py-2 pl-3 w-28">Tendência</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -261,6 +264,11 @@ export function GoalLadderCard() {
                               <span className={cn('block text-[11px]', (pct ?? 0) >= 100 ? 'text-success' : 'text-muted-foreground')}>{pct}%</span>
                             </>
                           )}
+                        </td>
+                        <td className="py-2 pl-3 w-28">
+                          {r.actual && plano
+                            ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={26} />
+                            : <MetricSpark metric="investimento" height={26} range={monthRange} />}
                         </td>
                       </tr>
                     );

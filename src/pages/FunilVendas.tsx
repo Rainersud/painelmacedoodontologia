@@ -7,8 +7,8 @@ import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn } from '@/lib/utils';
 import { eachDayOfInterval, eachMonthOfInterval, endOfDay, endOfMonth, format, startOfDay, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { fetchMetricsData, monthlyGoal, periodGoal, revenue, summarize } from '@/lib/metrics';
-import { GoalCurve, GoalCurveLegend } from '@/components/charts/SmoothCharts';
+import { fetchMetricsData, monthlyGoal, periodGoal, revenue, summarize, type SeriesKey } from '@/lib/metrics';
+import { GoalCurve, GoalCurveLegend, MetricSpark } from '@/components/charts/SmoothCharts';
 import { funnelInsights, funnelRates, type FunnelNumbers, type InsightTone } from '@/lib/funnelInsights';
 
 const brl = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
@@ -68,13 +68,14 @@ function useFunnelData() {
   });
 }
 
-function Kpi({ label, value, sub, meta, progress }: { label: string; value: string; sub: string; meta?: string; progress?: number }) {
+function Kpi({ label, value, sub, meta, progress, spark }: { label: string; value: string; sub: string; meta?: string; progress?: number; spark?: SeriesKey }) {
   const p = progress === undefined ? undefined : Math.max(0, Math.min(100, progress));
   return (
     <div className="flex flex-col rounded-xl border bg-muted/30 p-4 min-w-0">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 hero-number text-3xl leading-none">{value}</p>
       <p className="mt-2 text-xs text-muted-foreground min-h-[2rem]">{sub}</p>
+      {spark && <div className="mt-1 -mx-1"><MetricSpark metric={spark} height={30} /></div>}
       {meta && (
         <div className="mt-auto pt-2 space-y-1.5">
           <div className="flex items-center justify-between gap-2 text-[11px]">
@@ -139,6 +140,7 @@ function FunnelDrawing({ stages }: { stages: FunnelStage[] }) {
               <p className="text-[11px] text-white/75">{st.sub}</p>
             </div>
             <div className="flex flex-col justify-center gap-1 text-xs">
+              <MetricSpark metric={(['leads', 'agendamentos', 'comparecimentos', 'vendas'] as const)[i] ?? 'vendas'} height={26} />
               <p className="text-muted-foreground">Meta <b className="text-foreground tabular-nums">{st.target}</b></p>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden" role="progressbar" aria-label={`${st.label}: progresso da meta`} aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
                 <div className={cn('h-full rounded-full', progress >= 100 ? 'bg-success' : 'bg-primary')} style={{ width: `${progress}%` }} />
@@ -216,13 +218,13 @@ function FunnelContent() {
           </div>
         </div>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
-          <Kpi label="Novos leads" value={String(a.leads)} sub="recebidos no período" meta={String(t.leads)} progress={(a.leads / Math.max(1, t.leads)) * 100} />
-          <Kpi label="Agendamentos" value={String(a.agendamentos)} sub={`${pct(r.agendamento)} dos leads (meta ${tr.agendamento}%)`} meta={String(t.agendamentos)} progress={(a.agendamentos / Math.max(1, t.agendamentos)) * 100} />
-          <Kpi label="Comparecimentos" value={String(a.comparecimentos)} sub={`${pct(r.comparecimento)} dos agendados (meta ${tr.comparecimento}%)`} meta={String(t.comparecimentos)} progress={(a.comparecimentos / Math.max(1, t.comparecimentos)) * 100} />
-          <Kpi label="Vendas realizadas" value={String(a.vendas)} sub={`${pct(r.fechamento)} dos comparecimentos (meta ${tr.fechamento}%)`} meta={String(t.vendas)} progress={(a.vendas / Math.max(1, t.vendas)) * 100} />
-          <Kpi label="Conversão" value={pct(r.conversao)} sub="de lead para venda" meta={pct(metaConversao)} progress={(r.conversao / Math.max(0.01, metaConversao)) * 100} />
-          <Kpi label="Ticket médio" value={brl(a.ticket)} sub={`${a.vendas} venda(s) no período`} meta={brl(t.ticket)} progress={(a.ticket / Math.max(1, t.ticket)) * 100} />
-          <Kpi label="Faturamento" value={brl(a.faturamento)} sub={a.faturamento >= t.faturamento ? 'meta batida' : `faltam ${brl(t.faturamento - a.faturamento)}`} meta={brl(t.faturamento)} progress={(a.faturamento / Math.max(1, t.faturamento)) * 100} />
+          <Kpi spark="leads" label="Novos leads" value={String(a.leads)} sub="recebidos no período" meta={String(t.leads)} progress={(a.leads / Math.max(1, t.leads)) * 100} />
+          <Kpi spark="agendamentos" label="Agendamentos" value={String(a.agendamentos)} sub={`${pct(r.agendamento)} dos leads (meta ${tr.agendamento}%)`} meta={String(t.agendamentos)} progress={(a.agendamentos / Math.max(1, t.agendamentos)) * 100} />
+          <Kpi spark="comparecimentos" label="Comparecimentos" value={String(a.comparecimentos)} sub={`${pct(r.comparecimento)} dos agendados (meta ${tr.comparecimento}%)`} meta={String(t.comparecimentos)} progress={(a.comparecimentos / Math.max(1, t.comparecimentos)) * 100} />
+          <Kpi spark="vendas" label="Vendas realizadas" value={String(a.vendas)} sub={`${pct(r.fechamento)} dos comparecimentos (meta ${tr.fechamento}%)`} meta={String(t.vendas)} progress={(a.vendas / Math.max(1, t.vendas)) * 100} />
+          <Kpi spark="conversao" label="Conversão" value={pct(r.conversao)} sub="de lead para venda" meta={pct(metaConversao)} progress={(r.conversao / Math.max(0.01, metaConversao)) * 100} />
+          <Kpi spark="ticket" label="Ticket médio" value={brl(a.ticket)} sub={`${a.vendas} venda(s) no período`} meta={brl(t.ticket)} progress={(a.ticket / Math.max(1, t.ticket)) * 100} />
+          <Kpi spark="faturamento" label="Faturamento" value={brl(a.faturamento)} sub={a.faturamento >= t.faturamento ? 'meta batida' : `faltam ${brl(t.faturamento - a.faturamento)}`} meta={brl(t.faturamento)} progress={(a.faturamento / Math.max(1, t.faturamento)) * 100} />
         </div>
       </section>
 

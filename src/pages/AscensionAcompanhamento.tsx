@@ -18,6 +18,7 @@ import { buildAcompanhamentoWorkbook, downloadWorkbook } from '@/lib/ascension/e
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { chartAxis, chartGrid, chartTooltipProps } from '@/lib/chartStyle';
 
 const SERIES = [
@@ -141,11 +142,28 @@ function DailyTable({ rows, dash }: { rows: DailyRow[]; dash: DashboardCells }) 
 }
 
 /** Aba "Dashboard": as mesmas caixas da planilha (rótulo preto, valor dourado), em forma de funil. */
-function DashboardSheet({ d, label }: { d: DashboardCells; label: string }) {
+function DashboardSheet({ d, label, rows }: { d: DashboardCells; label: string; rows: DailyRow[] }) {
+  // curvas: contagens dia a dia; custos e taxas acumulados até o dia (terminam no número do quadro)
+  const cum = (num: keyof DailyRow, den: keyof DailyRow) => {
+    let a = 0; let b = 0;
+    return rows.filter(r => r.date <= new Date()).map(r => { a += r[num] as number; b += r[den] as number; return b ? a / b : 0; });
+  };
+  const daily = (k: keyof DailyRow) => rows.filter(r => r.date <= new Date()).map(r => r[k] as number);
+  const T: Record<string, number[]> = {
+    Investimento: daily('investimento'), 'Custo por Lead': cum('investimento', 'leads'), Leads: daily('leads'),
+    'Custo Agendamento': cum('investimento', 'agendados'), Agendamento: daily('agendados'), 'Taxa Agendamento': cum('agendados', 'leads'),
+    'Custo Comparecimento': cum('investimento', 'comparecimentos'), Comparecimento: daily('comparecimentos'), 'Taxa Comparecimento': cum('comparecimentos', 'agendados'),
+    'Custo fechamento': cum('investimento', 'fechados'), Fechamentos: daily('fechados'), 'Taxa Fechamentos': cum('fechados', 'comparecimentos'),
+    Oportunidade: daily('oportunidade'), Faturamento: daily('fechamentosValor'), Entrada: daily('entrada'), 'Ticket médio': cum('fechamentosValor', 'fechados'),
+    'TKM (oportunidade ÷ comparecimento)': cum('oportunidade', 'comparecimentos'), 'Tx de entrada': cum('entrada', 'fechamentosValor'),
+  };
   const Box = ({ title, value, wide }: { title: string; value: string; wide?: boolean }) => (
-    <div className={cn('rounded-lg overflow-hidden border text-center', wide && 'sm:col-span-2')}>
+    <div className={cn('rounded-xl overflow-hidden border text-center', wide && 'sm:col-span-2')}>
       <p className="bg-foreground text-background text-xs font-medium py-1.5 px-2">{title}</p>
-      <p className="bg-[#ebb949]/90 text-[#1f1a0a] text-lg font-bold py-3 tabular-nums">{value || '—'}</p>
+      <div className="bg-[#ebb949]/90 text-[#1f1a0a] pt-2.5">
+        <p className="hero-number text-2xl">{value || '—'}</p>
+        <div className="px-2"><Sparkline data={T[title] ?? []} height={28} /></div>
+      </div>
     </div>
   );
   const stages: [string, string, string, string, string, string][] = [
@@ -295,7 +313,7 @@ export default function AscensionAcompanhamento({ embedded = false }: { embedded
             </p>
           </TabsContent>
           <TabsContent value="dashboard" className="mt-3">
-            {isLoading || !data ? <div className="h-64 rounded-lg bg-muted/50 animate-pulse" /> : <DashboardSheet d={data.dashboard} label={range.label} />}
+            {isLoading || !data ? <div className="h-64 rounded-lg bg-muted/50 animate-pulse" /> : <DashboardSheet d={data.dashboard} label={range.label} rows={data.rows} />}
           </TabsContent>
           <TabsContent value="projeto" className="mt-3">
             <ChecklistSheet month={checklistMonth} />

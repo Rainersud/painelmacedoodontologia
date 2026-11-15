@@ -1,3 +1,4 @@
+import { FinanceOnly } from '@/components/access/FinanceOnly';
 import { LeadName } from '@/components/crm/LeadName';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { describeError } from '@/lib/errors';
@@ -653,14 +654,14 @@ function EditableDetailContent({
         </div>
 
         {/* Botão Registrar Pagamento */}
-        <Button
+        <FinanceOnly><Button
           onClick={() => setPaymentDialogOpen(true)}
           className="w-full gap-2"
           variant={totalPaidStage > 0 ? 'outline' : 'default'}
         >
           <CreditCard className="h-4 w-4" />
           {totalPaidStage > 0 ? 'Registrar Novo Pagamento' : 'Registrar Pagamento'}
-        </Button>
+        </Button></FinanceOnly>
 
         {/* Boletos pendentes - confirmar pagamento */}
         {pendingBoletos.length > 0 && (
@@ -673,7 +674,7 @@ function EditableDetailContent({
                   <span className="text-muted-foreground ml-1">— {formatCurrency(boleto.net_value)}</span>
                   {boleto.due_date && <span className="text-muted-foreground ml-1">vence {format(new Date(boleto.due_date + 'T12:00:00'), 'dd/MM/yyyy')}</span>}
                 </div>
-                <Button
+                <FinanceOnly><Button
                   size="sm"
                   variant="outline"
                   className="h-6 text-[9px] px-2 border-success/30 text-success hover:bg-success/10"
@@ -681,7 +682,7 @@ function EditableDetailContent({
                   disabled={confirmBoleto.isPending}
                 >
                   <CheckCircle2 className="h-3 w-3 mr-0.5" /> Confirmar
-                </Button>
+                </Button></FinanceOnly>
               </div>
             ))}
           </div>
@@ -746,14 +747,14 @@ function EditableDetailContent({
                         )}
                         <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
                       </div>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary hover:bg-primary/10" title="Editar valor"
+                      <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary hover:bg-primary/10" title="Editar valor"
                         onClick={() => { setEditingPaymentId(p.id); setEditingPaymentValue(p.gross_value); }}>
                         <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning-strong hover:bg-warning/10" title="Reverter pagamento"
+                      </Button></FinanceOnly>
+                      <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning-strong hover:bg-warning/10" title="Reverter pagamento"
                         onClick={() => revertPayment.mutate(p.id)} disabled={revertPayment.isPending}>
                         <Undo2 className="h-3 w-3" />
-                      </Button>
+                      </Button></FinanceOnly>
                       {deletePaymentConfirm === p.id ? (
                         <div className="flex items-center gap-0.5">
                           <Button size="sm" variant="destructive" className="h-6 text-[8px] px-1.5"
@@ -765,10 +766,10 @@ function EditableDetailContent({
                           </Button>
                         </div>
                       ) : (
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10" title="Excluir pagamento"
+                        <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10" title="Excluir pagamento"
                           onClick={() => setDeletePaymentConfirm(p.id)}>
                           <Trash2 className="h-3 w-3" />
-                        </Button>
+                        </Button></FinanceOnly>
                       )}
                     </div>
                   </div>

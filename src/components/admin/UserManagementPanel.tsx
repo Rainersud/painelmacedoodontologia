@@ -1,3 +1,4 @@
+import { PERFIL_LABELS, type Perfil } from '@/lib/access';
 import { useState } from 'react';
 import { describeError } from '@/lib/errors';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +28,7 @@ interface UserWithDetails {
   is_active: boolean;
   banned: boolean;
   permissions: Array<{ module: string; can_view: boolean; can_edit: boolean }>;
+  perfil?: Perfil;
 }
 
 const ALL_MODULES = Object.keys(MODULE_LABELS);
@@ -73,6 +75,7 @@ export default function UserManagementPanel() {
   const [newPassword, setNewPassword] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'agente'>('agente');
+  const [newPerfil, setNewPerfil] = useState<Perfil>('atendimento');
   const [resetPassword, setResetPassword] = useState('');
 
   const { data: users = [], isLoading } = useQuery<UserWithDetails[]>({
@@ -84,6 +87,17 @@ export default function UserManagementPanel() {
     enabled: isAdmin,
   });
 
+  const updatePerfil = useMutation({
+    mutationFn: async ({ userId, perfil }: { userId: string; perfil: Perfil }) => {
+      await invokeManageUsers('update_user', { user_id: userId, perfil });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managed-users'] });
+      toast.success('Acesso atualizado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const createUser = useMutation({
     mutationFn: async () => {
       await invokeManageUsers('create_user', {
@@ -92,6 +106,7 @@ export default function UserManagementPanel() {
         full_name: newName,
         phone: newPhone,
         role: newRole,
+        perfil: newPerfil,
         permissions: newRole === 'agente' ? DEFAULT_AGENT_PERMISSIONS : [],
       });
     },
@@ -250,6 +265,18 @@ export default function UserManagementPanel() {
                     </SelectContent>
                   </Select>
                 </div>
+                {newRole === 'agente' && (
+                  <div className="space-y-2">
+                    <Label>Acesso</Label>
+                    <Select value={newPerfil} onValueChange={(v: Perfil) => setNewPerfil(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PERFIL_LABELS) as Perfil[]).map(k => <SelectItem key={k} value={k}>{PERFIL_LABELS[k]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Colaboradores só visualizam financeiro e metas; a Administração fica oculta.</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button onClick={() => createUser.mutate()} disabled={createUser.isPending || !newName || !newEmail || !newPassword}>
@@ -272,6 +299,7 @@ export default function UserManagementPanel() {
                   <TableHead>Usuário</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Função</TableHead>
+                  <TableHead>Acesso</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -313,20 +341,22 @@ export default function UserManagementPanel() {
                       </Select>
                     </TableCell>
                     <TableCell>
+                      {user.role === 'admin' ? <span className="text-xs text-muted-foreground">Tudo</span> : (
+                        <Select value={user.perfil ?? 'atendimento'} onValueChange={(v) => updatePerfil.mutate({ userId: user.user_id, perfil: v as Perfil })}>
+                          <SelectTrigger className="w-[230px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(PERFIL_LABELS) as Perfil[]).map(k => <SelectItem key={k} value={k}>{PERFIL_LABELS[k]}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={user.banned || user.is_active === false ? 'destructive' : 'default'} className="text-xs">
                         {user.banned || user.is_active === false ? 'Inativo' : 'Ativo'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openPermissions(user)}
-                          title="Permissões"
-                        >
-                          <Settings2 className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

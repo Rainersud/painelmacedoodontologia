@@ -76,7 +76,9 @@ interface LeadDetailDialogProps {
 }
 
 export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogProps) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, access } = useAuth();
+  // quem não pode editar os dados do card só visualiza (fieldset desabilita todos os campos)
+  const readOnlyData = !access.canEditLeadData;
   const queryClient = useQueryClient();
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
@@ -533,6 +535,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
+              <fieldset disabled={readOnlyData} className={cn('space-y-4 min-w-0', readOnlyData && 'opacity-80')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lead_name">Nome</Label>
@@ -658,6 +661,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
+              </fieldset>
             </TabsContent>
 
             {/* Status Tab */}
@@ -885,6 +889,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
                       </p>
                       <CurrencyInput
+                        disabled={!access.canFinance}
                         value={budgetValue}
                         onChange={(value) => setBudgetValue(value)}
                         onBlur={() => {
@@ -906,14 +911,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       </h4>
                       {/* total do orçamento, quanto já foi pago, o que está em aberto e o histórico */}
                       <PaymentSummary leadId={lead.id} total={budgetValue || lead.budget_value || lead.treatment_value || 0} />
-                      <Button
+                      {access.canFinance && <Button
                         variant="outline"
                         className="w-full border-success/30 text-success hover:bg-success/10"
                         onClick={() => setPaymentOpen(true)}
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
                         Registrar pagamento
-                      </Button>
+                      </Button>}
                     </div>
                   </>
                 );
@@ -1322,16 +1327,18 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
 
             {/* Triage Tab - always visible, editable only when status = compareceu */}
             <TabsContent value="triage" className="m-0">
+              <fieldset disabled={readOnlyData} className="min-w-0">
               <TriageFormDialog
                 lead={lead}
                 inline
                 readOnly={statusForView !== 'compareceu'}
               />
+              </fieldset>
             </TabsContent>
 
             {/* Referral Tab */}
             <TabsContent value="referral" className="m-0">
-              <ReferralSection leadId={lead.id} leadName={lead.name} />
+              <fieldset disabled={readOnlyData} className="min-w-0"><ReferralSection leadId={lead.id} leadName={lead.name} /></fieldset>
             </TabsContent>
 
             {/* Funnel History Tab */}

@@ -1,3 +1,4 @@
+import { assertGoals } from '@/lib/access';
 import { useMemo, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
@@ -201,6 +202,7 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string 
 }
 
 async function saveSetting(key: string, value: number) {
+  assertGoals('as regras do plano');
   const { data: existing } = await supabase.from('meta_settings').select('id').eq('setting_key', key).maybeSingle();
   const { error } = existing
     ? await supabase.from('meta_settings').update({ setting_value: value, updated_at: new Date().toISOString() }).eq('id', existing.id)
@@ -228,6 +230,7 @@ function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange
         if (!Number.isFinite(v) || v <= 0) throw new Error('Use números maiores que zero.');
         await saveSetting(BONUS_SETTINGS[k].key, v);
       }
+      assertGoals('os responsáveis do plano');
       for (const def of BONUS_GROUPS) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
         const { error } = await (supabase as any).from('bonus_responsaveis')

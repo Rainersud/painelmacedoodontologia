@@ -15,6 +15,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const Login = lazy(() => import("./pages/Login"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
 const Funil = lazy(() => import("./pages/Funil"));
 const CRC = lazy(() => import("./pages/CRC"));
 import { MovedToCRC } from "@/components/layout/MovedToCRC";
@@ -87,6 +88,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/redefinir-senha" element={<RedefinirSenha />} />
                 <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
                 <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
                 <Route path="/dados" element={<ProtectedRoute><DadosMetricas /></ProtectedRoute>} />

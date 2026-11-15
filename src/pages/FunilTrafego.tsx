@@ -1,3 +1,4 @@
+import { FinanceOnly } from '@/components/access/FinanceOnly';
 import { MetricSpark } from '@/components/charts/SmoothCharts';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
 import { MonthNotice } from '@/components/layout/MonthNotice';
@@ -380,10 +381,10 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
           </div>
           <div className="flex items-center gap-2">
             <MonthNotice month={selectedMonth} exact={exact} />
-            <CreativeFormDialog
+            <FinanceOnly><CreativeFormDialog
               onSave={handleAdd}
               trigger={<Button size="sm"><Plus className="h-4 w-4 mr-1" /> Criativo</Button>}
-            />
+            /></FinanceOnly>
           </div>
         </div>
 
@@ -506,14 +507,14 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
                               <a href={safeUrl(c.link_url) ?? "#"} target="_blank" rel="noopener noreferrer nofollow"><ExternalLink className="h-3 w-3" /></a>
                             </Button>
                           )}
-                          <CreativeFormDialog
+                          <FinanceOnly><CreativeFormDialog
                             creative={c}
                             onSave={handleUpdate}
                             trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit2 className="h-3 w-3" /></Button>}
-                          />
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCreative.mutate(c.id)}>
+                          /></FinanceOnly>
+                          <FinanceOnly><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCreative.mutate(c.id)}>
                             <Trash2 className="h-3 w-3" />
-                          </Button>
+                          </Button></FinanceOnly>
                         </div>
                       </div>
                     </CardHeader>
@@ -574,10 +575,10 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
               <Megaphone className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
               <h3 className="text-base font-semibold text-foreground">Nenhum criativo cadastrado</h3>
               <p className="text-sm text-muted-foreground mt-1">Adicione seu primeiro criativo para começar a análise de tráfego pago.</p>
-              <CreativeFormDialog
+              <FinanceOnly><CreativeFormDialog
                 onSave={handleAdd}
                 trigger={<Button className="mt-4"><Plus className="h-4 w-4 mr-1" /> Adicionar Criativo</Button>}
-              />
+              /></FinanceOnly>
             </CardContent>
           </Card>
         )}

@@ -1,3 +1,4 @@
+import { FinanceOnly } from '@/components/access/FinanceOnly';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
 import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useMemo, useState } from 'react';
@@ -328,9 +329,9 @@ export default function CACDashboard({ embedded = false }: { embedded?: boolean 
                 setShowAddDialog(open);
                 if (!open) { setEditingCost(null); setForm({ category: '', description: '', amount: 0 }); }
               }}>
-                <DialogTrigger asChild>
+                <FinanceOnly><DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Adicionar</Button>
-                </DialogTrigger>
+                </DialogTrigger></FinanceOnly>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{editingCost ? 'Editar Despesa' : 'Nova Despesa'}</DialogTitle>

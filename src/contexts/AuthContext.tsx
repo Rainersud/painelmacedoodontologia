@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { buildAccess, setCurrentAccess, type Access, type Perfil } from '@/lib/access';
 
 interface AuthContextType {
   user: User | null;
@@ -13,8 +14,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
-  /** Pode ajustar metas e regras: o admin ou, enquanto o painel não tem login, quem estiver usando. */
+  /** Pode ajustar metas e regras (só o admin). */
   canManage: boolean;
+  /** O que este usuário pode ver e fazer (lib/access). */
+  access: Access;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<'admin' | 'agente'>('agente');
   const [roleLoading, setRoleLoading] = useState(true);
   const [fullName, setFullName] = useState('');
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
   const initialized = useRef(false);
 
   const fetchUserData = async (userId: string) => {
@@ -52,6 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .single();
       setFullName(profile?.full_name || '');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
+      const { data: acc } = await (supabase as any).from('user_access').select('perfil').eq('user_id', userId).maybeSingle();
+      setPerfil((acc?.perfil as Perfil) ?? null);
     } catch {
       setRole('agente');
     } finally {
@@ -112,7 +120,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setRole('agente');
     setFullName('');
+    setPerfil(null);
   };
+
+  const isAdmin = role === 'admin';
+  const access = React.useMemo(() => buildAccess(isAdmin, perfil), [isAdmin, perfil]);
+  setCurrentAccess(access);
 
   const value: AuthContextType = {
     user,
@@ -124,8 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
-    isAdmin: role === 'admin',
-    canManage: !user || role === 'admin',
+    isAdmin,
+    canManage: isAdmin,
+    access,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

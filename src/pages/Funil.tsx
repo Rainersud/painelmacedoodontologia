@@ -1,3 +1,5 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { canWorkStatus } from '@/lib/access';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { normalizeStatus } from '@/lib/metrics/stages';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
@@ -14,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react';
+import { Lock, Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -65,6 +67,7 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   useDragToPan(bottomScrollRef);
+  const { access } = useAuth();
   const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
   // Desenha os cards aos poucos: colunas com centenas de leads travavam o navegador
   const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
@@ -156,6 +159,8 @@ function KanbanBoard({
             const isFirstFollowUp = stage.key === 'followup_1';
             const isLastFollowUp = stage.key === 'followup_14';
             const isCollapsed = collapsed.has(stage.key);
+            // coluna fora do acesso desta pessoa: em preto e branco, cards só para olhar de fora
+            const locked = !canWorkStatus(access, stage.key);
 
             return (
               <div key={stage.key} className="flex gap-2 h-full">
@@ -180,6 +185,7 @@ function KanbanBoard({
                     title={`${stage.label} — clique para expandir`}
                     className={cn(
                       "w-10 flex-shrink-0 h-full rounded-xl bg-card border shadow-sm flex flex-col items-center gap-2 py-2 hover:bg-accent transition-colors",
+                      locked && 'grayscale opacity-50',
                       isFollowUp ? 'border-warning/30' : 'border-border/50',
                       isDropTarget && 'ring-2 ring-primary ring-offset-2'
                     )}
@@ -199,7 +205,9 @@ function KanbanBoard({
                 <div
                   className={cn(
                     "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full [content-visibility:auto] [contain-intrinsic-size:256px_600px]",
+                    locked && 'grayscale opacity-50',
                   )}
+                  title={locked ? 'Seu acesso não inclui esta coluna' : undefined}
                   onDragOver={(e) => handleDragOver(e, stage.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.key)}
@@ -227,6 +235,7 @@ function KanbanBoard({
                         >
                           {stage.label}
                         </span>
+                        {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-label="Sem acesso" />}
                         {isFollowUp && (
                           <FollowUpCopyPopover stageKey={stage.key} />
                         )}
@@ -284,11 +293,11 @@ function KanbanBoard({
                               rendered.push(
                                 <div
                                   key={lead.id}
-                                  draggable
+                                  draggable={!locked}
                                   onDragStart={(e) => handleDragStart(e, lead)}
                                   onDragEnd={handleDragEnd}
                                   className={cn(
-                                    "cursor-grab active:cursor-grabbing",
+                                    locked ? 'cursor-not-allowed pointer-events-none' : "cursor-grab active:cursor-grabbing",
                                     draggedLeadId === lead.id && 'opacity-40'
                                   )}
                                 >
@@ -370,6 +379,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   const leadsById = useMemo(() => new Map((leads ?? []).map(l => [l.id, l])), [leads]);
   const updateStatus = useUpdateLeadStatus();
   
+  const { access } = useAuth();
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dropTargetStatus, setDropTargetStatus] = useState<LeadStatus | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -381,7 +391,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     const leadId = searchParams.get('leadId');
     if (leadId && leads && leads.length > 0) {
       const lead = leads.find(l => l.id === leadId);
-      if (lead) {
+      if (lead && canWorkStatus(access, lead.status)) {
         setSelectedLead(lead);
         setDialogOpen(true);
         // Clean up the URL param
@@ -389,7 +399,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
         setSearchParams(searchParams, { replace: true });
       }
     }
-  }, [leads, searchParams, setSearchParams]);
+  }, [leads, searchParams, setSearchParams, access]);
 
   useEffect(() => {
     if (!selectedLead?.id || !leads) return;
@@ -489,10 +499,11 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
 
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
+    if (!canWorkStatus(access, lead.status)) { e.preventDefault(); return; }
     setDraggedLeadId(lead.id);
     e.dataTransfer.setData('text/plain', lead.id);
     e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  }, [access]);
 
   const handleDragOver = useCallback((e: React.DragEvent, stageKey: LeadStatus) => {
     e.preventDefault();
@@ -514,6 +525,11 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     
     const leadId = e.dataTransfer.getData('text/plain');
     const lead = leads?.find(l => l.id === leadId);
+    if (lead && !canWorkStatus(access, lead.status)) { setDraggedLeadId(null); setDropTargetStatus(null); return; }
+    if (lead && newStatus === 'fechado' && !access.canFinance) {
+      toast.error('Fechar venda envolve pagamento: peça ao administrador.');
+      setDraggedLeadId(null); setDropTargetStatus(null); return;
+    }
     
     if (lead && lead.status !== newStatus) {
       if (newStatus === 'fechado') {
@@ -562,7 +578,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     
     setDraggedLeadId(null);
     setDropTargetStatus(null);
-  }, [leads, updateStatus]);
+  }, [leads, updateStatus, access]);
 
   const handleScheduleConfirm = useCallback((scheduledAt: string) => {
     if (!pendingScheduleLead) return;
@@ -584,9 +600,10 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   }, []);
 
   const handleOpenDetail = useCallback((lead: Lead) => {
+    if (!canWorkStatus(access, lead.status)) { toast.info('Seu acesso não inclui esta coluna.'); return; }
     setSelectedLead(lead);
     setDialogOpen(true);
-  }, []);
+  }, [access]);
 
   const getLeadsByStatus = useCallback((status: LeadStatus) => {
     // "consulta_agendada" (telas antigas) aparece na coluna "Agendado" (agendou)
@@ -621,10 +638,10 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
               {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
             </p>
             <div className="flex items-center gap-2">
-              <Button onClick={() => setAddLeadOpen(true)} size="sm">
+              {access.canEditLeadData && <Button onClick={() => setAddLeadOpen(true)} size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Lead
-              </Button>
+              </Button>}
             </div>
           </div>
           <div className="flex items-center gap-2">

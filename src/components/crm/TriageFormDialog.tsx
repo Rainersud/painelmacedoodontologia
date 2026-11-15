@@ -426,6 +426,7 @@ export function TriageFormDialog({ lead, open, onOpenChange, inline = false, rea
                   <div className="space-y-1">
                     <Label className="text-xs">Renda familiar aproximada (por mês)</Label>
                     <CurrencyInput
+                      allowAnyone
                       value={Number(((form.spin_answers as Record<string, string> | undefined) || {})[FAMILY_INCOME_KEY]) || 0}
                       onChange={v => updateField('spin_answers', { ...((form.spin_answers as Record<string, string> | undefined) || {}), [FAMILY_INCOME_KEY]: String(v) })}
                       placeholder="R$ 0,00"

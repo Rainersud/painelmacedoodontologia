@@ -4,7 +4,6 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 
 import {
   Sidebar,
@@ -28,7 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ClipboardList, Table2 } from 'lucide-react';
+import { ChevronDown, ClipboardList, Lock, Table2 } from 'lucide-react';
+import { canOpenPath } from '@/lib/access';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -109,8 +109,7 @@ const adminNavItems: NavItemDef[] = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fullName, role, isAdmin, signOut } = useAuth();
-  const { canView } = usePermissions();
+  const { fullName, role, signOut, access } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
   const groupForPath = (path: string): string => {
     if (adminNavItems.some((i) => i.url === path)) return 'admin';
@@ -137,8 +136,9 @@ export function AppSidebar() {
   const menuCounts = useMenuCounts();
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
-  const filterVisible = (items: NavItemDef[]) =>
-    items.filter(item => isAdmin || (item.modules ?? [item.module]).some(m => canView(m)));
+  // Todos os itens aparecem; os que o acesso não inclui ficam em preto e branco, com cadeado
+  const filterVisible = (items: NavItemDef[]) => items;
+  const allowed = (item: NavItemDef) => canOpenPath(access, item.url.split('?')[0]);
   const currentTitle = (items: NavItemDef[]) => items.find(i => isActive(i.url))?.title;
 
   const handleSignOut = async () => {
@@ -146,7 +146,19 @@ export function AppSidebar() {
     navigate('/login');
   };
 
-  const NavItem = ({ item }: { item: NavItemDef }) => (
+  const NavItem = ({ item }: { item: NavItemDef }) => !allowed(item) ? (
+    <SidebarMenuItem>
+      <div
+        className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium grayscale opacity-45 cursor-not-allowed select-none text-sidebar-foreground/70"
+        aria-disabled="true"
+        title="Seu acesso não inclui esta área"
+      >
+        <item.icon className="h-5 w-5 shrink-0" aria-hidden />
+        <span>{item.title}</span>
+        <Lock className="ml-auto h-3.5 w-3.5" aria-label="Sem acesso" />
+      </div>
+    </SidebarMenuItem>
+  ) : (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive(item.url)} className="h-auto">
         <NavLink
@@ -242,7 +254,7 @@ export function AppSidebar() {
           </CollapsibleGroup>
         )}
 
-        {(isAdmin || canView('configuracoes')) && (
+        {access.canAdmin && (
           <CollapsibleGroup
             label="Administração"
             className="mt-2"

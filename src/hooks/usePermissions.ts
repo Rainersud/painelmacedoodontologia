@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface ModulePermission {
@@ -45,37 +43,27 @@ export const MODULE_LABELS: Record<string, string> = {
   ascension: 'ASCENSION (planilhas)',
 };
 
+const FINANCE_MODULES = new Set(['credito_liberado']);
+const GOAL_MODULES = new Set(['metas_clinica', 'bonus_metas', 'plano_incentivo']);
+const MODULE_PATH: Record<string, string> = { funil: '/funil', perfil: '/perfil', configuracoes: '/configuracoes' };
+
+/** Permissões por módulo, derivadas do perfil de acesso (lib/access). */
 export function usePermissions() {
-  const { user, isAdmin } = useAuth();
-
-  const { data: permissions = [], isLoading } = useQuery({
-    queryKey: ['user-permissions', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('user_permissions')
-        .select('*')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data as ModulePermission[];
-    },
-    enabled: !!user?.id && !isAdmin,
-  });
-
-  // Acesso aberto: sem usuário autenticado, libera todos os módulos
-  const openAccess = !user?.id;
+  const { isAdmin, access } = useAuth();
 
   const canView = (module: string): boolean => {
-    if (isAdmin || openAccess) return true;
-    const perm = permissions.find(p => p.module === module);
-    return perm?.can_view ?? false;
+    if (access.isAdmin) return true;
+    if (module === 'configuracoes') return false;
+    if (access.allowedPaths) return access.allowedPaths.includes(MODULE_PATH[module] ?? '__');
+    return true;
   };
 
   const canEdit = (module: string): boolean => {
-    if (isAdmin || openAccess) return true;
-    const perm = permissions.find(p => p.module === module);
-    return perm?.can_edit ?? false;
+    if (!canView(module)) return false;
+    if (FINANCE_MODULES.has(module)) return access.canFinance;
+    if (GOAL_MODULES.has(module)) return access.canEditGoals;
+    return true;
   };
 
-  return { permissions, isLoading, canView, canEdit, isAdmin };
+  return { permissions: [] as ModulePermission[], isLoading: false, canView, canEdit, isAdmin };
 }

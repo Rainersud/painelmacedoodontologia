@@ -1,3 +1,4 @@
+import { assertFinance } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +52,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
 
   const addCost = useMutation({
     mutationFn: async (cost: { category: string; description?: string; amount: number; reference_month: string }) => {
+      assertFinance();
       const { error } = await supabase
         .from('acquisition_costs' as any)
         .insert({ ...cost, created_by: user?.id } as any);
@@ -65,6 +67,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
 
   const updateCost = useMutation({
     mutationFn: async ({ id, ...data }: { id: string; category?: string; description?: string; amount?: number }) => {
+      assertFinance();
       const { error } = await supabase
         .from('acquisition_costs' as any)
         .update(data as any)
@@ -80,6 +83,7 @@ export function useAcquisitionCosts(referenceMonth?: Date) {
 
   const deleteCost = useMutation({
     mutationFn: async (id: string) => {
+      assertFinance();
       const { error } = await supabase
         .from('acquisition_costs' as any)
         .delete()

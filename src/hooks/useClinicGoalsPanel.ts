@@ -6,6 +6,7 @@ import {
   startOfYear, endOfYear, subYears,
   eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -60,6 +61,7 @@ export interface ClinicGoalsPanelData {
   metrics: PanelMetric[];
   insights: string[];
   projectedRevenue: number;
+  bucketLabels: string[];
 }
 
 interface PeriodRange {
@@ -573,6 +575,9 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         metrics,
         insights,
         projectedRevenue,
+        // rótulos das partes do período (para as curvas): horas, dias ou meses
+        bucketLabels: range.buckets.map(b =>
+          period === 'hoje' ? format(b.start, "HH'h'") : period === 'ano' ? format(b.start, 'MMM', { locale: ptBR }) : format(b.start, 'dd/MM')),
       };
     },
     refetchInterval: 60_000,

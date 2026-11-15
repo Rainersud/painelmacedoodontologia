@@ -1,6 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVData } from '@/hooks/useLTVData';
 import { summarize } from '@/lib/ltv';
@@ -8,6 +7,7 @@ import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
 import { Fragment, type ReactNode } from 'react';
+import { GoalCurve, GoalCurveLegend, Sparkline } from '@/components/charts/SmoothCharts';
 import { ChevronRight, Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
@@ -88,9 +88,10 @@ function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
         <StatusTag status={m.status} />
       </div>
       <p className="flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold leading-none tracking-tight">{m.display}</span>
+        <span className="hero-number text-4xl leading-none">{m.display}</span>
         <span className="text-sm text-muted-foreground">de {m.targetDisplay}</span>
       </p>
+      <Sparkline data={m.trend} height={36} tone={m.status === 'critical' && m.delta < 0 ? 'danger' : 'brand'} />
       <PaceBar percentage={m.percentage} expected={m.expectedPercentage} status={m.status} />
       <div className="space-y-1 text-xs">
         {m.rate && (
@@ -142,17 +143,20 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
 
           {isLoading && <div className="h-24 rounded-md bg-muted/60 animate-pulse" />}
           {revenue && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-                <p className="text-balance">
-                  <span className="block text-sm text-muted-foreground">Faturamento {/^(Hoje|Esta semana|Este mês|Este ano)$/.test(range.label) ? PERIOD_NOUN[period] : `em ${range.label}`}</span>
-                  <span className="text-4xl sm:text-5xl font-bold tracking-tight leading-none">
-                    {formatWhole(revenue.current)}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Faturamento {/^(Hoje|Esta semana|Este mês|Este ano)$/.test(range.label) ? PERIOD_NOUN[period] : `em ${range.label}`}</p>
+                  <p className="hero-number text-5xl sm:text-6xl leading-none mt-1">{formatWhole(revenue.current)}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    de {formatWhole(revenue.target)} · <Delta m={revenue} prevLabel={prevLabel} />
+                  </p>
+                </div>
+                <div className="flex flex-col items-start sm:items-end gap-1.5 text-sm">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                    revenue.status === 'healthy' ? 'bg-success/10 text-success' : revenue.status === 'warning' ? 'bg-warning/15 text-warning-strong' : 'bg-destructive/10 text-destructive')}>
+                    {revenue.status === 'healthy' ? 'No ritmo' : revenue.status === 'warning' ? 'Atenção ao ritmo' : 'Abaixo do ritmo'}
                   </span>
-                  <span className="ml-2 text-lg text-muted-foreground">de {formatWhole(revenue.target)}</span>
-                </p>
-                <div className="flex flex-col items-start sm:items-end gap-1 text-sm">
-                  <StatusTag status={revenue.status} />
                   {period === 'mes' && data && data.projectedRevenue > 0 && (
                     <span className="text-muted-foreground">
                       No ritmo atual, o mês fecha em <span className="font-semibold text-foreground">{formatWhole(data.projectedRevenue)}</span>
@@ -160,18 +164,26 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
                   )}
                 </div>
               </div>
-              <PaceBar
-                percentage={revenue.percentage}
-                expected={revenue.expectedPercentage}
-                status={revenue.status}
-                className="[&>div:first-child]:h-3"
-              />
-              <p className="text-xs text-muted-foreground">
-                {revenue.expectedPercentage !== undefined && (
-                  <>A marca na barra mostra onde o faturamento deveria estar hoje ({revenue.expectedPercentage}% da meta). </>
-                )}
-                <Delta m={revenue} prevLabel={prevLabel} />
-              </p>
+              {data && revenue.trend.length > 1 && (() => {
+                // curva acumulada do período contra o ritmo da meta (linha tracejada)
+                const now = Date.now();
+                let acc = 0;
+                const n = revenue.trend.length;
+                const points = revenue.trend.map((v, i) => {
+                  acc += v;
+                  return { label: data.bucketLabels[i] ?? String(i + 1), value: acc, goal: Math.round((revenue.target * (i + 1)) / n) };
+                });
+                // não desenha o realizado no futuro (dias que ainda não chegaram)
+                const elapsed = range.end.getTime() <= now ? n
+                  : Math.max(1, Math.min(n, Math.ceil(((now - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * n)));
+                const shown = points.map((p, i) => (i < elapsed ? p : { ...p, value: undefined as unknown as number }));
+                return (
+                  <div className="space-y-2">
+                    <GoalCurve points={shown} height={210} format={v => formatWhole(v)} />
+                    <GoalCurveLegend />
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>
@@ -230,7 +242,7 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
                     <td className="text-right text-muted-foreground px-3 py-2.5 hidden sm:table-cell">{m.targetDisplay}</td>
                     <td className="px-3 py-1.5 hidden md:table-cell">
                       {m.trend.length > 1 && (
-                        <Sparkline data={m.trend} height={22} strokeClassName="stroke-chart-1" fillClassName="fill-chart-1/10" />
+                        <Sparkline data={m.trend} height={22} />
                       )}
                     </td>
                     <td className="px-5 py-2.5"><StatusTag status={m.status} paced={false} /></td>

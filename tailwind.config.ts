@@ -106,6 +106,8 @@ export default {
       fontFamily: {
         sans: ['Schibsted Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         display: ['Schibsted Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // números de destaque (o número herói de cada tela)
+        hero: ['Fraunces', 'Georgia', 'serif'],
       },
     },
   },

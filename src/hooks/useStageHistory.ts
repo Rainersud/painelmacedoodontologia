@@ -8,6 +8,8 @@ export interface StageHistoryEntry {
   entered_at: string;
   exited_at: string | null;
   duration_seconds: number | null;
+  /** quem moveu o lead para esta etapa */
+  changed_by?: string | null;
 }
 
 export function useStageHistory(leadId: string | undefined) {

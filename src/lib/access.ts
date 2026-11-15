@@ -16,11 +16,13 @@ export const PERFIL_LABELS: Record<Perfil, string> = {
   pendente: 'Aguardando liberação (sem acesso)',
   completo: 'Completo (sem financeiro e metas)',
   atendimento: 'Atendimento — sem Compareceu / Não compareceu',
-  comparecimento: 'Comparecimento — só Compareceu / Não compareceu',
+  comparecimento: 'Comparecimento — Agendado, Compareceu e Não compareceu',
 };
 
 /** Colunas do Comercial 1 que separam os dois perfis. */
 export const COMPARECIMENTO_STATUSES = ['compareceu', 'faltou'] as const;
+/** Lidiane também trabalha o Agendado: é de lá que ela move para Compareceu / Não compareceu. */
+export const COMPARECIMENTO_WORK_STATUSES = ['agendou', 'compareceu', 'faltou'] as const;
 
 export interface Access {
   perfil: Perfil | 'admin';
@@ -61,7 +63,7 @@ export function buildAccess(isAdmin: boolean, perfil: Perfil | null): Access {
   if (p === 'comparecimento') {
     return {
       ...base, perfil: p, canEditLeadData: false,
-      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_STATUSES], allowedPaths: ['/funil', '/perfil'],
+      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_WORK_STATUSES], allowedPaths: ['/funil', '/perfil'],
     };
   }
   return {

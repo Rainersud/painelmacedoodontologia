@@ -1,3 +1,4 @@
+import { useTeamNames, authorLabel } from '@/hooks/useTeamNames';
 import { ptBR } from 'date-fns/locale';
 import { formatBR, distanceBR } from '@/lib/datetime';
 import { useLeadTimeline, TimelineEvent } from '@/hooks/useLeadTimeline';
@@ -48,7 +49,7 @@ function getConfig(type: string) {
   return typeConfig[type] || { icon: Clock, color: 'bg-muted text-muted-foreground border-muted', label: type };
 }
 
-function TimelineItem({ event, isLast }: { event: TimelineEvent; isLast: boolean }) {
+function TimelineItem({ event, isLast, author }: { event: TimelineEvent; isLast: boolean; author: string | null }) {
   const config = getConfig(event.type);
   const Icon = config.icon;
 
@@ -69,8 +70,10 @@ function TimelineItem({ event, isLast }: { event: TimelineEvent; isLast: boolean
         <div className="flex items-start justify-between gap-2">
           <div>
             <span className="text-sm font-medium">{config.label}</span>
-            {event.agentName && (
-              <span className="text-xs text-muted-foreground ml-2">por {event.agentName}</span>
+            {(author || event.agentName) ? (
+              <span className="text-xs text-muted-foreground ml-2">por <strong className="font-medium text-foreground">{author ?? event.agentName}</strong></span>
+            ) : (
+              <span className="text-xs text-muted-foreground/70 ml-2">autor não registrado</span>
             )}
           </div>
           <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
@@ -111,6 +114,7 @@ interface LeadTimelineProps {
 
 export function LeadTimeline({ leadId }: LeadTimelineProps) {
   const { data: events, isLoading } = useLeadTimeline(leadId);
+  const { data: team } = useTeamNames();
 
   if (isLoading) {
     return (
@@ -145,7 +149,7 @@ export function LeadTimeline({ leadId }: LeadTimelineProps) {
         Histórico do Lead ({events.length} {events.length === 1 ? 'registro' : 'registros'})
       </h4>
       {events.map((event, i) => (
-        <TimelineItem key={event.id} event={event} isLast={i === events.length - 1} />
+        <TimelineItem key={event.id} event={event} isLast={i === events.length - 1} author={authorLabel(team, event.agentId)} />
       ))}
     </div>
   );

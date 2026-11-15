@@ -19,14 +19,16 @@ describe('acessos por pessoa', () => {
     expect(a.canFinance || a.canEditGoals || a.canAdmin).toBe(false);
     expect(a.canEditLeadData).toBe(true);
   });
-  it('Lidiane (comparecimento): só Comercial 1, só as duas colunas, sem editar o card', () => {
+  it('Lidiane (comparecimento): só Comercial 1, só Agendado / Compareceu / Não compareceu, sem editar o card', () => {
     const a = buildAccess(false, 'comparecimento');
     expect(canOpenPath(a, '/funil')).toBe(true);
     expect(canOpenPath(a, '/objetivos')).toBe(false);
     expect(canOpenPath(a, '/crc')).toBe(false);
     expect(canWorkStatus(a, 'compareceu')).toBe(true);
     expect(canWorkStatus(a, 'faltou')).toBe(true);
-    expect(canWorkStatus(a, 'agendou')).toBe(false);
+    expect(canWorkStatus(a, 'agendou')).toBe(true);
+    expect(canWorkStatus(a, 'novo_lead')).toBe(false);
+    expect(canWorkStatus(a, 'quase_cliente')).toBe(false);
     expect(a.canEditLeadData || a.canFinance || a.canEditGoals).toBe(false);
   });
   it('conta criada pelo link (ou sem perfil) fica sem acesso até ser liberada', () => {

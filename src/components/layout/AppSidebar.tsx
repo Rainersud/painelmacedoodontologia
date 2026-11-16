@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import {
   Filter, Target, Settings, LogOut, UserCircle, CalendarCheck, BarChart3, HeartHandshake, Headphones, type LucideIcon,
 } from 'lucide-react';
@@ -27,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ClipboardList, LifeBuoy, ListChecks, Lock, Table2 } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, ListTodo, Lock, MessageSquareQuote, Sheet } from 'lucide-react';
 import { canOpenPath } from '@/lib/access';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -96,13 +97,24 @@ const managementNavItems: NavItemDef[] = [
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
 ];
 
-// ASCENSION: as planilhas da clínica, alimentadas pelo painel
-const ascensionNavItems: NavItemDef[] = [
-  { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: ClipboardList, module: 'ascension' },
-  { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Table2, module: 'ascension' },
-  { title: 'SCRIPTS CRC', url: '/ascension?aba=suporte', icon: LifeBuoy, module: 'ascension' },
-  { title: 'Tarefas', url: '/ascension?aba=tarefas', icon: ListChecks, module: 'ascension' },
+// ASCENSION: material da CRC e as planilhas da clínica (alimentadas pelo painel)
+const ascensionSections: { label: string; items: NavItemDef[] }[] = [
+  {
+    label: 'Material CRC',
+    items: [
+      { title: 'Scripts CRC', url: '/ascension?aba=suporte', icon: MessageSquareQuote, module: 'ascension' },
+      { title: 'Tarefas CRC', url: '/ascension?aba=tarefas', icon: ListTodo, module: 'ascension' },
+    ],
+  },
+  {
+    label: 'Planilhas',
+    items: [
+      { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: FileSpreadsheet, module: 'ascension' },
+      { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Sheet, module: 'ascension' },
+    ],
+  },
 ];
+const ascensionNavItems: NavItemDef[] = ascensionSections.flatMap(sec => sec.items);
 
 const adminNavItems: NavItemDef[] = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
@@ -250,8 +262,11 @@ export function AppSidebar() {
             open={openGroup === 'ascension'}
             onToggle={() => setOpenGroup(openGroup === 'ascension' ? null : 'ascension')}
           >
-            {visibleAscension.map((item) => (
-              <NavItem key={item.title} item={item} />
+            {ascensionSections.map(sec => (
+              <Fragment key={sec.label}>
+                <li className="px-3 pt-2 pb-0.5 text-[11px] font-semibold text-sidebar-muted" role="presentation">{sec.label}</li>
+                {filterVisible(sec.items).map(item => <NavItem key={item.title} item={item} />)}
+              </Fragment>
             ))}
           </CollapsibleGroup>
         )}

@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { ClipboardList, Table2, LifeBuoy, ListChecks } from 'lucide-react';
+import { FileSpreadsheet, ListTodo, MessageSquareQuote, Sheet } from 'lucide-react';
 import { HubPage, type HubSection } from '@/components/layout/HubPage';
 
 const AscensionAcompanhamento = lazy(() => import('./AscensionAcompanhamento'));
@@ -9,20 +9,20 @@ const AscensionTarefas = lazy(() => import('./AscensionTarefas'));
 
 const SECTIONS: HubSection[] = [
   {
-    key: 'acompanhamento', title: 'Acompanhamento', icon: ClipboardList, module: 'ascension', Component: AscensionAcompanhamento,
-    description: 'Rainer das Neves Macedo: acompanhamento diário, Dashboard do período e Projeto Ascension. Preenchido pelo sistema; baixe em XLSX.',
+    key: 'suporte', title: 'Scripts CRC', icon: MessageSquareQuote, module: 'ascension', Component: AscensionSuporte,
+    description: 'Material CRC: scripts de primeiro contato, régua dos não agendados, comparecimento, faltosos e Comercial 2, com busca e quebra de objeção.',
   },
   {
-    key: 'controle', title: 'Planilha de Controle Geral', icon: Table2, module: 'ascension', Component: AscensionControle,
-    description: 'Leads de cada mês com origem, agendamento, comparecimento e fechamento; métricas por origem e por dia. Baixe em XLSX.',
+    key: 'tarefas', title: 'Tarefas CRC', icon: ListTodo, module: 'ascension', Component: AscensionTarefas,
+    description: 'Material CRC: rotina diária, PROJETO - CRC e PROJETO - COMERCIAL 2 num lugar só, marcados por dia.',
   },
   {
-    key: 'suporte', title: 'SCRIPTS CRC', icon: LifeBuoy, module: 'ascension', Component: AscensionSuporte,
-    description: 'Guia da CRC: scripts de primeiro contato, régua dos não agendados, comparecimento, faltosos e Comercial 2, com busca e quebra de objeção.',
+    key: 'acompanhamento', title: 'Acompanhamento', icon: FileSpreadsheet, module: 'ascension', Component: AscensionAcompanhamento,
+    description: 'Planilha: Rainer das Neves Macedo, acompanhamento diário, Dashboard do período e Projeto Ascension. Preenchida pelo sistema; baixe em XLSX.',
   },
   {
-    key: 'tarefas', title: 'Tarefas', icon: ListChecks, module: 'ascension', Component: AscensionTarefas,
-    description: 'Rotina diária da CRC: marque o que foi feito, veja quantos pacientes esperam cada tarefa e o histórico do mês.',
+    key: 'controle', title: 'Planilha de Controle Geral', icon: Sheet, module: 'ascension', Component: AscensionControle,
+    description: 'Planilha: leads de cada mês com origem, agendamento, comparecimento e fechamento; métricas por origem e por dia. Baixe em XLSX.',
   },
 ];
 
@@ -32,7 +32,7 @@ export default function Ascension() {
     <HubPage
       path="/ascension"
       title="ASCENSION"
-      intro="As planilhas de Acompanhamento e de Controle Geral, preenchidas sozinhas com o que é lançado no Comercial 1, CRC, Comercial 2 e CAC. O período segue o filtro de data do topo; o botão Baixar XLSX gera o arquivo com as mesmas abas e fórmulas."
+      intro="Material CRC (scripts e tarefas) e as planilhas de Acompanhamento e Controle Geral, preenchidas sozinhas com o que é lançado no Comercial 1, CRC, Comercial 2 e CAC."
       sections={SECTIONS}
     />
   );

@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useTeamNames } from '@/hooks/useTeamNames';
 import { useCrcContagens, useCrcTarefas, useToggleCrcTarefa } from '@/hooks/useCrcTarefas';
 import { ROTINA_CRC, TOTAL_TAREFAS, type Contagem } from '@/lib/ascension/crcGuide';
+import { PROJETOS, checkKey } from '@/lib/ascension/projetos';
+import { useAscensionChecks, useToggleAscensionCheck } from '@/hooks/useAscension';
 
 const CONTAGEM_LABEL: Record<Contagem, (n: number) => string> = {
   leads_hoje: n => `${n} ${n === 1 ? 'lead novo' : 'leads novos'}`,
@@ -27,6 +29,8 @@ export default function AscensionTarefas() {
   const toggle = useToggleCrcTarefa(dia);
   const { data: contagens } = useCrcContagens(dia);
   const { data: team } = useTeamNames();
+  const { data: checks } = useAscensionChecks(dia);
+  const togglePj = useToggleAscensionCheck(dia);
 
   const d = getDate(dia);
   const doDia = marcas?.[d] ?? {};
@@ -56,7 +60,7 @@ export default function AscensionTarefas() {
           </div>
           <div className="flex-1 min-w-[200px] space-y-1.5">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm"><span className="hero-number text-3xl text-primary mr-1.5">{feitas}</span>de {TOTAL_TAREFAS} tarefas concluídas</p>
+              <p className="text-sm"><span className="hero-number text-3xl text-primary mr-1.5">{feitas}</span>de {TOTAL_TAREFAS} tarefas da rotina diária</p>
               <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', pct === 100 ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground')}>{pct}%</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
@@ -109,6 +113,36 @@ export default function AscensionTarefas() {
             </ul>
           </section>
         ))}
+
+        {PROJETOS.filter(pj => pj.key === 'crc' || pj.key === 'comercial2').map(pj => {
+          const feitosPj = pj.itens.filter((_, i) => checks?.has(checkKey(pj.key, i, d))).length;
+          return (
+            <section key={pj.key} className="monday-card p-4 sm:p-5 space-y-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold">{pj.titulo === 'PROJETO' ? 'PROJETO - CRC' : pj.titulo}</h3>
+                  <p className="text-xs text-muted-foreground">Mesmas marcações do Projeto Ascension da planilha de Acompanhamento.</p>
+                </div>
+                <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', feitosPj === pj.itens.length ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground')}>
+                  {feitosPj} de {pj.itens.length}
+                </span>
+              </div>
+              <ul className="divide-y">
+                {pj.itens.map((item, i) => {
+                  const on = !!checks?.has(checkKey(pj.key, i, d));
+                  const id = `pj-${pj.key}-${i}`;
+                  return (
+                    <li key={i} className="flex items-start gap-3 py-3">
+                      <Checkbox id={id} checked={on} className="mt-0.5 h-5 w-5"
+                        onCheckedChange={v => togglePj.mutate({ projeto: pj.key, item: i, dia: d, marcado: v === true })} />
+                      <label htmlFor={id} className={cn('text-sm cursor-pointer', on && 'text-muted-foreground line-through decoration-muted-foreground/50')}>{item}</label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
       </div>
 
       <aside className="space-y-4">

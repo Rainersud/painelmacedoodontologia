@@ -100,7 +100,7 @@ const managementNavItems: NavItemDef[] = [
 const ascensionNavItems: NavItemDef[] = [
   { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: ClipboardList, module: 'ascension' },
   { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Table2, module: 'ascension' },
-  { title: 'Suporte', url: '/ascension?aba=suporte', icon: LifeBuoy, module: 'ascension' },
+  { title: 'SCRIPTS CRC', url: '/ascension?aba=suporte', icon: LifeBuoy, module: 'ascension' },
   { title: 'Tarefas', url: '/ascension?aba=tarefas', icon: ListChecks, module: 'ascension' },
 ];
 

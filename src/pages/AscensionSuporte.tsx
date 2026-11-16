@@ -166,7 +166,7 @@ function GuiaRapido({ onOpen }: { onOpen: (titulo: string, ids: string[]) => voi
   );
 }
 
-/** ASCENSION → Suporte: guia da CRC com scripts pesquisáveis e quebra de objeção. */
+/** ASCENSION → SCRIPTS CRC: guia da CRC com scripts pesquisáveis e quebra de objeção. */
 export default function AscensionSuporte() {
   const [params] = useSearchParams();
   const alvo = params.get('script');

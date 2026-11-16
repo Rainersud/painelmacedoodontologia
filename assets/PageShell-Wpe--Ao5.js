@@ -1,0 +1,1 @@
+import{J as r}from"./vendor-CGpgTK_G.js";import{ae as e}from"./index-aQtQqHDc.js";function p({embedded:o,title:a,children:t}){return o?r.jsx(r.Fragment,{children:t}):r.jsx(e,{title:a,children:t})}export{p as P};

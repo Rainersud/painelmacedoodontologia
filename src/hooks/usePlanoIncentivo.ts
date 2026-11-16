@@ -55,6 +55,8 @@ export interface PlanoIncentivoData {
   periodSeries: Record<CountKey, number[]>;
   /** dias úteis do recorte (para a meta proporcional) */
   periodBizDays: number;
+  /** dias úteis do mês do calendário (base da proporção) */
+  monthBizDays: number;
 }
 
 export type ChartUnit = 'dia' | 'semana' | 'mes';
@@ -237,8 +239,9 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
         : eachDayOfInterval({ start: sel.start, end: selEnd }).map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
       const periodSeries = Object.fromEntries(keys.map(k => [k, periodParts.map(p => count(k, p))])) as Record<CountKey, number[]>;
       const periodBizDays = data.calendar.countBusinessDays(sel.start, sel.end);
+      const monthBizDays = Math.max(1, data.calendar.countBusinessDays(mr.start, mr.end));
 
-      return { weeks, settings, groups, monthActuals, seriesUnit, monthSeries, periodActuals, periodSeries, periodBizDays };
+      return { weeks, settings, groups, monthActuals, seriesUnit, monthSeries, periodActuals, periodSeries, periodBizDays, monthBizDays };
     },
   });
 }

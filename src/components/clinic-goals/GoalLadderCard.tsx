@@ -79,7 +79,7 @@ function ladderRows(l: GoalLadder, s: MetaSettingsMap, owner: (k: string) => str
 
 type Plano = ReturnType<typeof usePlanoIncentivo>['data'];
 /** recorte do filtro de data: nome, dias úteis e datas */
-type Periodo = { label: string; bizDays: number; range: { start: Date; end: Date } };
+type Periodo = { label: string; bizDays: number; range: { start: Date; end: Date }; share: number };
 
 function Progress({ pct }: { pct: number }) {
   const p = Math.max(0, Math.min(100, pct));
@@ -105,7 +105,7 @@ function StepCard({ r, days, changed, plano, periodo, index, compact }: {
   r: Row; days: number; changed: boolean; plano: Plano; periodo: Periodo; index?: number; compact?: boolean;
 }) {
   const actual = r.actual && plano ? plano.periodActuals[r.actual] : undefined;
-  const meta = (r.month * periodo.bizDays) / days;
+  const meta = r.month * periodo.share;
   const pct = actual !== undefined && meta > 0 ? (actual / meta) * 100 : undefined;
   return (
     <div className={cn('h-full rounded-2xl border bg-card p-3.5 flex flex-col gap-2', index === 1 && 'border-primary/40 bg-primary/5')}>
@@ -213,7 +213,7 @@ function LadderTable({ rows, days, changed, plano, periodo }: {
         <tbody>
           {rows.map((r, i) => {
             const actual = r.actual && plano ? plano.periodActuals[r.actual] : undefined;
-            const meta = (r.month * periodo.bizDays) / days;
+            const meta = r.month * periodo.share;
             const pct = actual !== undefined && meta > 0 ? Math.round((actual / meta) * 100) : undefined;
             return (
               <tr key={r.label} className={cn('border-b last:border-0', r.group && 'border-t-2 border-t-border')}>
@@ -278,7 +278,11 @@ export function GoalLadderCard() {
   const s = (settings ?? {}) as MetaSettingsMap;
   const ladder = useMemo(() => deriveGoalLadder(s), [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   const days = businessDaysPerMonth(s);
-  const periodo: Periodo = { label: gRange.label, bizDays: plano?.periodBizDays ?? days, range: sel };
+  // meta do período = meta do mês × (dias úteis do período ÷ dias úteis do mês); o mês inteiro dá a própria meta
+  const periodo: Periodo = {
+    label: gRange.label, bizDays: plano?.periodBizDays ?? days, range: sel,
+    share: plano ? plano.periodBizDays / plano.monthBizDays : 1,
+  };
 
   // edição direta do faturamento e do ticket: a escada mostra o resultado antes de salvar
   const [fatN, setFat] = useState(0);
@@ -412,9 +416,9 @@ export function GoalLadderCard() {
               </div>
 
               <MonthProgress
-                faturamentoMeta={(shown.faturamento * periodo.bizDays) / days}
+                faturamentoMeta={shown.faturamento * periodo.share}
                 faturamentoReal={plano?.periodActuals.faturamento}
-                vendasMeta={(shown.vendas * periodo.bizDays) / days}
+                vendasMeta={shown.vendas * periodo.share}
                 vendasReal={plano?.periodActuals.vendas}
                 serie={plano?.periodSeries.faturamento ?? []}
                 mes={periodo.label}
@@ -478,7 +482,7 @@ export function GoalLadderCard() {
                 <LadderTable rows={rows} days={days} changed={changed} plano={plano} periodo={periodo} />
               )}
               <p className="text-[11px] text-muted-foreground">
-                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Realizado, % e curvas seguem o filtro de data ({periodo.label}); a meta do período é proporcional aos {periodo.bizDays} dias úteis dele.
+                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Realizado, % e curvas seguem o filtro de data ({periodo.label}); a meta do período é a do mês proporcional aos {periodo.bizDays} dias úteis dele.
                 Origens contam o campo "Como o lead chegou?". O Plano de Incentivo, o painel e as Reuniões usam estes números.
               </p>
             </div>

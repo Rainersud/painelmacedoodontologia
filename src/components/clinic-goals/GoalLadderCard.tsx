@@ -303,7 +303,8 @@ export function GoalLadderCard() {
   // meta do período = meta do mês × (dias úteis do período ÷ dias úteis do mês); o mês inteiro dá a própria meta
   const periodo: Periodo = {
     label: gRange.label, bizDays: plano?.periodBizDays ?? days, range: sel,
-    share: plano ? plano.periodBizDays / plano.monthBizDays : 1,
+    // dia sem expediente (domingo, feriado): usa a meta de 1 dia útil, para não mostrar "de 0"
+    share: plano ? Math.max(1, plano.periodBizDays) / plano.monthBizDays : 1,
   };
 
   // edição direta do faturamento e do ticket: a escada mostra o resultado antes de salvar

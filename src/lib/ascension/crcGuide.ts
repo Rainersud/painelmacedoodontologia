@@ -111,6 +111,7 @@ export const SCRIPTS: Script[] = [
     fonte: 'Os dois',
     falas: [
       { rotulo: 'Mensagem pós-ligação', texto: 'Olá, [Nome], tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você se interessou em [tratamento]. Tentei falar com você por telefone hoje, mas imagino que seu dia esteja corrido no trabalho, sem problemas! O meu foco aqui é te ajudar. Para adiantarmos por aqui pelo WhatsApp: hoje você já usa algum tipo de prótese ou seria o seu primeiro tratamento?' },
+      { rotulo: 'Variação (Manual)', texto: 'Olá, [Nome], tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você se interessou no nosso anúncio sobre implantes. Tentei falar com você por telefone hoje, mas imagino que você esteja na correria do trabalho, não tem problema nenhum! O meu foco é te ajudar. Para a gente ir adiantando por aqui pelo WhatsApp mesmo: hoje você já usa algum tipo de prótese ou seria o seu primeiro tratamento?' },
       { rotulo: 'Se visualizar e não responder em algumas horas (urgência amigável)', texto: '[Nome], consegui aqui uma condição especial e um horário exclusivo reservado para você, mas só consigo segurar até hoje. Me avisa se faz sentido para você para eu não liberar essa vaga para outro paciente.' },
     ],
   },
@@ -143,7 +144,7 @@ export const SCRIPTS: Script[] = [
     id: 'na-quinzenal',
     etapa: 'nao_agendados',
     titulo: 'Resgate quinzenal de leads frios',
-    quando: 'A cada 15 dias, para toda a base de não agendados.',
+    quando: 'Depois de 10 a 15 dias do Dia 3 e, a partir daí, a cada 15 dias para toda a base de não agendados.',
     canal: ['WhatsApp'],
     objecoes: ['nao_e_momento', 'sumiu'],
     fonte: 'Manual',
@@ -188,6 +189,7 @@ export const SCRIPTS: Script[] = [
     falas: [
       { rotulo: 'Lembrete matinal (texto)', texto: 'Bom dia, [Nome]! Hoje é o seu dia. Sua avaliação está confirmada para às [Horário]. Tudo já está preparado para te receber! Se precisar de ajuda com localização ou estacionamento, me avise, tá bem?' },
       { rotulo: 'Confirmação ativa (até 11h, ligação ou áudio)', texto: 'Oi, [Nome]! Aqui é a [Seu Nome]. Só passando para confirmar a sua vinda hoje às [Horário]. Está tudo certo por aí ou você precisa de alguma ajuda com rota ou estacionamento?' },
+      { rotulo: 'Confirmação ativa — versão curta', texto: 'Oi, [Nome]! Passando para confirmar sua vinda hoje às [Horário]. Está tudo certo por aí ou precisa de alguma ajuda?' },
     ],
   },
   {
@@ -198,7 +200,8 @@ export const SCRIPTS: Script[] = [
     canal: ['WhatsApp'],
     fonte: 'Os dois',
     falas: [
-      { texto: 'Oi, [Nome]! Falta apenas 1 hora para a sua consulta às [Horário]. Estamos te esperando com sala e equipe prontas!' },
+      { rotulo: 'Guia Tático', texto: 'Oi, [Nome]! Falta apenas 1 hora para a sua consulta às [Horário]. Estamos te esperando com sala e equipe prontas!' },
+      { rotulo: 'Variação (Manual)', texto: 'Oi, [Nome]! Falta 1 hora para a sua consulta. Estamos te esperando com tudo pronto, ok?' },
     ],
   },
 
@@ -213,6 +216,7 @@ export const SCRIPTS: Script[] = [
     fonte: 'Os dois',
     falas: [
       { rotulo: 'Áudio', texto: 'Oi, [Nome do Paciente], tudo bem? Aqui é a [Seu Nome] da clínica. Percebi que você ainda não conseguiu chegar para o seu horário com a Dra. [Nome da Dra.]. Aconteceu algum imprevisto no caminho? Está tudo bem com você?' },
+      { rotulo: 'Variação por mensagem (Manual)', texto: 'Oi, [Nome]! Tudo bem? Percebi que você não conseguiu chegar para a nossa avaliação com a Dra. [Nome da Dra.] hoje. Aconteceu algum imprevisto com você no caminho? Me avisa aqui se está tudo bem!' },
       { rotulo: 'Quando o paciente responder', texto: 'Sem problemas, [Nome]! Vamos resolver o seu reagendamento para você não perder essa oportunidade. Fica melhor para você vir amanhã às 10h ou na quinta-feira às 15h?' },
     ],
   },
@@ -337,7 +341,7 @@ export const REGUAS: { titulo: string; passos: { quando: string; oque: string }[
       { quando: 'Dia 1', oque: '3 ligações + mensagem com pergunta aberta' },
       { quando: 'Dia 2', oque: '1 ligação + prova social' },
       { quando: 'Dia 3', oque: '1 ligação + desapego elegante' },
-      { quando: 'A cada 15 dias', oque: 'Nutrição leve' },
+      { quando: 'Após 10 a 15 dias', oque: 'Nutrição leve, a cada 15 dias' },
     ],
   },
   {
@@ -348,6 +352,7 @@ export const REGUAS: { titulo: string; passos: { quando: string; oque: string }[
       { quando: 'Dia, até 11h', oque: 'Lembrete + confirmação ativa' },
       { quando: '–1h', oque: 'Reforço da espera' },
       { quando: '+20–30 min', oque: 'Se faltar: preocupação genuína' },
+      { quando: 'Lembre', oque: 'Confirmação não é cobrança fria; é construção de valor e quebra de inseguranças.' },
     ],
   },
   {

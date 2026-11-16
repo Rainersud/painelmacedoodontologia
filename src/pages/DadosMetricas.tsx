@@ -1,8 +1,7 @@
 import { lazy } from 'react';
-import { BarChart3, FileText, Filter, LineChart, Megaphone, Wallet } from 'lucide-react';
+import { BarChart3, FileText, LineChart, Megaphone, Wallet } from 'lucide-react';
 import { HubPage, type HubSection } from '@/components/layout/HubPage';
 
-const FunilVendas = lazy(() => import('./FunilVendas'));
 const FunilTrafego = lazy(() => import('./FunilTrafego'));
 const CACDashboard = lazy(() => import('./CACDashboard'));
 const MetricasVendas = lazy(() => import('./MetricasVendas'));
@@ -14,8 +13,6 @@ const SECTIONS: HubSection[] = [
     description: 'Investimento até a venda por criativo. Pronto para conectar Meta Ads e Google Ads.' },
   { key: 'bi', title: 'Dashboard BI', icon: BarChart3, module: 'bi', Component: DashboardBI,
     description: 'Visão 360° de receita, LTV, CAC e projeções.' },
-  { key: 'funil', title: 'Funil de vendas', icon: Filter, module: 'central_funis', Component: FunilVendas,
-    description: 'Novos leads, agendamento, comparecimento, venda, conversão, ticket e faturamento, com insights.' },
   { key: 'vendas', title: 'Métricas de vendas', icon: LineChart, module: 'metricas_vendas', Component: MetricasVendas,
     description: 'Vendas em 1 e 2 etapas, faturamento, ticket e desempenho por atendente.' },
   { key: 'cac', title: 'CAC & Financeiro', icon: Wallet, module: 'cac', Component: CACDashboard,

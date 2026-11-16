@@ -94,7 +94,7 @@ const App = () => (
                 <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
                 <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
                 <Route path="/dados" element={<ProtectedRoute><DadosMetricas /></ProtectedRoute>} />
-                <Route path="/call-center" element={<MovedTo path="/dados" tab="funil" />} />
+                <Route path="/call-center" element={<MovedTo path="/dados" tab="trafego" />} />
                 <Route path="/crm" element={<Navigate to="/" replace />} />
                 <Route path="/funil" element={<ProtectedRoute><Funil /></ProtectedRoute>} />
                 <Route path="/indicacoes" element={<MovedToCRC tab="indicacoes" />} />
@@ -113,8 +113,8 @@ const App = () => (
                 <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
                 <Route path="/ascension" element={<ProtectedRoute><Ascension /></ProtectedRoute>} />
                 <Route path="/funil-trafego" element={<MovedTo path="/dados" tab="trafego" />} />
-                <Route path="/central-funis" element={<MovedTo path="/dados" tab="funil" />} />
-                <Route path="/funil-vendas" element={<MovedTo path="/dados" tab="funil" />} />
+                <Route path="/central-funis" element={<MovedTo path="/objetivos" tab="metas" />} />
+                <Route path="/funil-vendas" element={<MovedTo path="/objetivos" tab="metas" />} />
                 <Route path="/comercial-2" element={<ProtectedRoute><Comercial2 /></ProtectedRoute>} />
                 <Route path="/crc" element={<ProtectedRoute><CRC /></ProtectedRoute>} />
                 <Route path="/follow-up" element={<MovedToCRC tab="follow-up" />} />

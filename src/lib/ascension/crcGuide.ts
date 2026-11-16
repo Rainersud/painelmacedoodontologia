@@ -453,6 +453,17 @@ export const ROTINA_CRC: { bloco: string; tarefas: TarefaCRC[] }[] = [
     tarefas: [
       { id: 12, texto: 'Mensagem de acolhimento para quem passou em avaliação hoje', script: 'c2-dia0', contagem: 'consultas_hoje' },
       { id: 13, texto: 'Follow-ups do dia: dia combinado, +2, +5, +8 e mensagem matadora', script: 'c2-d2' },
+      { id: 18, texto: 'Enviar mensagem de boas-vindas e agradecimento aos pacientes por escolher a clínica para realizar o tratamento e acompanhá-los. Fazer as anotações no sistema.' },
+      { id: 19, texto: 'Fazer acompanhamento dos pacientes que não fecharam tratamento no dia da avaliação. Realizar cadência de follow-up com os leads não fechados. Deixar anotado no sistema o que foi conversado com o paciente.', script: 'c2-dia0' },
+      { id: 20, texto: 'Pacientes de 3 a 6 meses sem comparecimento: entrar em contato e fazer o agendamento. Verificar sempre no sistema ou na ficha do paciente.' },
+      { id: 21, texto: 'Fazer cobranças caso o paciente esteja inadimplente' },
+    ],
+  },
+  {
+    bloco: 'Desenvolvimento',
+    tarefas: [
+      { id: 16, texto: 'Assistir 1h de aula da Trilha' },
+      { id: 17, texto: 'Fazer resumo das aulas assistidas' },
     ],
   },
   {
@@ -460,6 +471,7 @@ export const ROTINA_CRC: { bloco: string; tarefas: TarefaCRC[] }[] = [
     tarefas: [
       { id: 14, texto: 'Registrar objeções, dores e detalhes familiares nas anotações de cada paciente' },
       { id: 15, texto: 'Disparo quinzenal para os leads frios (quando for o dia)', script: 'na-quinzenal' },
+      { id: 22, texto: 'Enviar como está fazendo o follow-up com quem não agendou ou faltou' },
     ],
   },
 ];

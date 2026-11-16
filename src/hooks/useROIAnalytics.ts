@@ -48,6 +48,7 @@ const ARRIVAL_LABELS: Record<string, string> = {
   prospeccao_ativa: 'Prospecção Ativa',
   indicacao_parceria: 'Indicação de Parceria',
   social_selling: 'Social Selling',
+  resgate: 'Resgate',
 };
 
 export function useROIAnalytics(rangeOverride?: PeriodRange) {
@@ -61,11 +62,15 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
       const endDate = range.end.toISOString().split('T')[0];
 
       const period = { start: range.start, end: range.end };
-      const [data, adsRes, profilesRes] = await Promise.all([
+      const [data, adsRes, profilesRes, rescuedRes] = await Promise.all([
         fetchMetricsData(period),
         supabase.from('ad_creatives').select('name, platform, investment, revenue, sales').eq('is_active', true).gte('reference_month', startDate).lte('reference_month', endDate),
         supabase.from('profiles').select('user_id, full_name'),
+        // Resgates do período: lead antigo marcado "Resgate" em "Como o lead chegou?"
+        supabase.from('leads').select('id, lead_arrival_source, rescued_at')
+          .gte('rescued_at', range.start.toISOString()).lte('rescued_at', range.end.toISOString()),
       ]);
+      const rescued = (rescuedRes.data ?? []) as { id: string; lead_arrival_source: string | null }[];
 
       const { calendar, costs } = data;
       const payments = data.payments.filter(p => p.status === 'pago' && inRange(p.paid_at, period));
@@ -90,7 +95,8 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
 
       // POR ORIGEM — origem oficial (lead_arrival_source). Vendas e receita pela regra única.
       // O investimento em anúncios é dividido entre as origens pagas, na proporção dos leads.
-      const leadById = new Map(data.leads.map(l => [l.id, l]));
+      const leadById = new Map<string, { lead_arrival_source?: string | null }>(data.leads.map(l => [l.id, l]));
+      rescued.forEach(r => { if (!leadById.has(r.id)) leadById.set(r.id, r); });
       const booked = bookedAppointments(data.appointments, period);
       const attended = attendances(data.appointments, period);
       const originAgg: Record<string, { receita: number; vendas: number; leads: number; agendamentos: number; comparecimentos: number }> = {};
@@ -102,7 +108,9 @@ export function useROIAnalytics(rangeOverride?: PeriodRange) {
         const l = id ? leadById.get(id) : undefined;
         return l ? leadOrigin(l) : 'passou_na_frente';
       };
-      leads.forEach(l => { ensure(leadOrigin(l)).leads += 1; });
+      leads.forEach(l => { if (leadOrigin(l) !== 'resgate') ensure(leadOrigin(l)).leads += 1; });
+      // Resgate entra na data do resgate (o lead já existia), não na data do cadastro
+      rescued.forEach(() => { ensure('resgate').leads += 1; });
       booked.forEach(a => { ensure(originOfLead(a.lead_id)).agendamentos += 1; });
       attended.forEach(a => { ensure(originOfLead(a.lead_id)).comparecimentos += 1; });
       sales(data.leads, period).forEach(l => { ensure(leadOrigin(l)).vendas += 1; });

@@ -1,0 +1,467 @@
+// Guia da CRC (ASCENSION → Suporte), montado a partir de dois PDFs do Rainer (15/11/2026):
+// "Manual Oficial de Materiais e Scripts de Abordagem" e
+// "Guia Tático Operacional — Scripts Padronizados de Primeiro Contato e Follow-up".
+// Quando os dois PDFs trazem versões diferentes do mesmo script, as duas ficam como variações.
+
+export type Etapa = 'primeiro_contato' | 'nao_agendados' | 'comparecimento' | 'faltosos' | 'comercial2';
+export type Canal = 'Ligação' | 'WhatsApp' | 'Áudio' | 'Vídeo';
+export type Objecao =
+  | 'preco' | 'orcamento' | 'sem_resposta' | 'sumiu' | 'decisor' | 'medo' | 'nao_e_momento' | 'faltou';
+
+export const ETAPAS: { key: Etapa; label: string; desc: string }[] = [
+  { key: 'primeiro_contato', label: 'Primeiro contato', desc: 'Comercial 1: abertura, qualificação e agendamento' },
+  { key: 'nao_agendados', label: 'Não agendados', desc: 'Régua de 3 dias e resgate quinzenal' },
+  { key: 'comparecimento', label: 'Comparecimento', desc: 'Blindagem pré-consulta: –48h, –24h, dia, –1h' },
+  { key: 'faltosos', label: 'Faltosos', desc: 'Quem não compareceu: primeiras 24h' },
+  { key: 'comercial2', label: 'Comercial 2', desc: 'Follow-up de alto ticket depois da avaliação' },
+];
+
+export const OBJECOES: { key: Objecao; label: string; dica: string }[] = [
+  { key: 'preco', label: '"Quanto custa?"', dica: 'Nunca passe valor solto. Acolha, explique que depende da avaliação do osso e puxe para ligação ou consulta.' },
+  { key: 'orcamento', label: '"Não cabe no meu bolso"', dica: 'Mostre que a avaliação existe para achar a opção dentro da realidade dele; use caso parecido que coube no orçamento.' },
+  { key: 'decisor', label: '"Preciso falar com a família"', dica: 'Convide o decisor para vir junto, com café e bonificação para o acompanhante, e dê duas opções de horário.' },
+  { key: 'medo', label: 'Medo da cirurgia / dor', dica: 'Autoridade: vídeo curto do cirurgião explicando a técnica guiada, rápida, segura e sem dor.' },
+  { key: 'sem_resposta', label: 'Não atende / não responde', dica: 'Siga a régua: 3 ligações no Dia 1, prova social no Dia 2, desapego elegante no Dia 3.' },
+  { key: 'sumiu', label: 'Parou de responder depois da avaliação', dica: 'Escassez real com a dor anotada (Dia +8) e, depois, a mensagem de vulnerabilidade.' },
+  { key: 'nao_e_momento', label: '"Agora não é o momento"', dica: 'Tire a pressão (desapego elegante) e volte com a mensagem quinzenal.' },
+  { key: 'faltou', label: 'Faltou à consulta', dica: 'Preocupação genuína em 20–30 min e reagendamento com duas opções em até 24h. Nunca cobrança.' },
+];
+
+export interface Script {
+  id: string;
+  etapa: Etapa;
+  titulo: string;
+  /** quando usar / gatilho */
+  quando: string;
+  canal: Canal[];
+  objecoes?: Objecao[];
+  /** falas: cada item é um bloco a copiar */
+  falas: { rotulo?: string; texto: string }[];
+  /** orientação interna (não é para o paciente) */
+  acao?: string;
+  /** de qual material veio */
+  fonte: 'Manual' | 'Guia Tático' | 'Os dois';
+}
+
+export const SCRIPTS: Script[] = [
+  // ---------------- Primeiro contato ----------------
+  {
+    id: 'spin-abertura',
+    etapa: 'primeiro_contato',
+    titulo: 'Ligação ativa de abertura (SPIN Selling)',
+    quando: 'Assim que o lead entrar, em até 5 minutos. Ligue antes de mandar qualquer texto.',
+    canal: ['Ligação'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Abertura (rapport)', texto: 'Alô, [Nome do Paciente]? Tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você teve interesse no nosso anúncio sobre [tratamento] e fiz questão de te ligar para te ouvir e entender de perto como podemos te ajudar. Me conta uma coisa: você já utiliza algum tipo de prótese atualmente ou seria o seu primeiro tratamento?' },
+      { rotulo: 'Situação e problema (se já usa prótese)', texto: 'Entendi, [Nome]... E há quanto tempo você usa essa prótese? Ela tem te machucado ou ficado folgada na hora de comer alimentos mais firmes?' },
+      { rotulo: 'Implicação emocional', texto: 'E me diz com sinceridade: isso já te fez deixar de sorrir em fotos de família ou evitar almoçar fora com amigos por vergonha ou medo de a prótese soltar?' },
+      { rotulo: 'Necessidade e agendamento (dupla opção)', texto: 'Compreendo perfeitamente, [Nome]. O nosso foco principal aqui é devolver a sua liberdade definitiva de mastigar e sorrir sem nenhum medo. O doutor especialista reservou alguns horários exclusivos para analisar a sua estrutura óssea e montar o seu planejamento. Para você, fica melhor vir no bloco da manhã, às 09h30, ou no bloco da tarde, às 14h30?' },
+    ],
+    acao: 'Nunca pergunte "que horas você prefere?" ou "deseja agendar?". Sempre duas opções de dia ou horário, no máximo em 48 horas.',
+  },
+  {
+    id: 'spin-abertura-b',
+    etapa: 'primeiro_contato',
+    titulo: 'Ligação ativa de abertura — variação (dentadura / dentes moles)',
+    quando: 'Mesma situação da abertura; versão do Manual, boa para quem usa dentadura ou tem dentes amolecidos.',
+    canal: ['Ligação'],
+    fonte: 'Manual',
+    falas: [
+      { rotulo: 'Abertura', texto: 'Alô, [Nome do Paciente]? Tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você se interessou no nosso anúncio sobre a transformação do sorriso com implantes fixos... Mas antes de qualquer coisa, eu fiz questão de te ligar para te ouvir um pouquinho e entender a sua história e como nós podemos te ajudar! Me conta uma coisa: hoje você já usa algum tipo de prótese móvel ou dentadura, ou você tem dentes que estão te incomodando e amolecidos?' },
+      { rotulo: 'Tempo de uso / dor', texto: 'Entendi, [Nome]... E há quanto tempo você usa essa dentadura?' },
+      { rotulo: 'Implicação emocional', texto: 'E isso tem te atrapalhado na hora de mastigar coisas mais firmes ou na hora de sorrir e tirar fotos com a família?' },
+      { rotulo: 'Agendamento (dupla opção)', texto: 'Com certeza nós conseguimos te ajudar a resolver isso de forma definitiva e com muito conforto! Para a Dra. avaliar a sua estrutura óssea e te mostrar as possibilidades que cabem perfeitamente no seu bolso, eu consigo reservar um horário exclusivo para você amanhã às 10h ou na quinta-feira às 15h30. Qual fica mais confortável para você?' },
+    ],
+  },
+  {
+    id: 'preco-whatsapp',
+    etapa: 'primeiro_contato',
+    titulo: '"Quanto custa?" pelo WhatsApp',
+    quando: 'O lead pergunta preço por mensagem. Acolha e puxe para a ligação.',
+    canal: ['WhatsApp'],
+    objecoes: ['preco', 'orcamento'],
+    fonte: 'Manual',
+    falas: [
+      { texto: 'Olá, [Nome]! Tudo bem? Entendo perfeitamente a sua dúvida, saber o investimento é super importante mesmo! Fique muito tranquilo que nós temos condições de pagamento muito facilitadas que cabem no seu orçamento. Porém, como se trata de um procedimento cirúrgico de saúde, o doutor precisa avaliar detalhes específicos — como a espessura e a altura do osso — para determinar o tipo e o tamanho exato do implante ideal para você. Estou te ligando agora em 1 minutinho só para entender o seu caso e já verificar a sua viabilidade, atende aí rapidinho!' },
+    ],
+    acao: 'Nunca passe valores soltos de protocolo ou implante antes da consulta.',
+  },
+  {
+    id: 'preco-ligacao',
+    etapa: 'primeiro_contato',
+    titulo: '"Quanto custa?" na ligação',
+    quando: 'O paciente insiste no valor durante a conversa.',
+    canal: ['Ligação', 'WhatsApp'],
+    objecoes: ['preco'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Olha, [Nome], eu entendo perfeitamente que saber o investimento é muito importante para você! Mas, para te passar um orçamento técnico exato e responsável, o cirurgião precisa avaliar a espessura e altura do seu osso para saber o tipo de implante e se há necessidade de enxerto. Se passarmos um número sem exame, podemos te passar algo incorreto. Por isso, o doutor liberou a consulta de planejamento para vermos isso de perto. Fica melhor para você amanhã de manhã ou à tarde?' },
+    ],
+  },
+
+  // ---------------- Não agendados ----------------
+  {
+    id: 'na-dia1',
+    etapa: 'nao_agendados',
+    titulo: 'Dia 1 — mensagem depois da 3ª ligação',
+    quando: 'Fez 3 tentativas de ligação em turnos diferentes (manhã, tarde, início da noite) e ninguém atendeu.',
+    canal: ['WhatsApp'],
+    objecoes: ['sem_resposta'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Mensagem pós-ligação', texto: 'Olá, [Nome], tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você se interessou em [tratamento]. Tentei falar com você por telefone hoje, mas imagino que seu dia esteja corrido no trabalho, sem problemas! O meu foco aqui é te ajudar. Para adiantarmos por aqui pelo WhatsApp: hoje você já usa algum tipo de prótese ou seria o seu primeiro tratamento?' },
+      { rotulo: 'Variação (Manual)', texto: 'Olá, [Nome], tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]! Vi que você se interessou no nosso anúncio sobre implantes. Tentei falar com você por telefone hoje, mas imagino que você esteja na correria do trabalho, não tem problema nenhum! O meu foco é te ajudar. Para a gente ir adiantando por aqui pelo WhatsApp mesmo: hoje você já usa algum tipo de prótese ou seria o seu primeiro tratamento?' },
+      { rotulo: 'Se visualizar e não responder em algumas horas (urgência amigável)', texto: '[Nome], consegui aqui uma condição especial e um horário exclusivo reservado para você, mas só consigo segurar até hoje. Me avisa se faz sentido para você para eu não liberar essa vaga para outro paciente.' },
+    ],
+  },
+  {
+    id: 'na-dia2',
+    etapa: 'nao_agendados',
+    titulo: 'Dia 2 — reaquecimento com prova social',
+    quando: '1 ligação pela manhã; se não atender, envie foto de Antes/Depois ou vídeo de depoimento.',
+    canal: ['Ligação', 'WhatsApp'],
+    objecoes: ['sem_resposta'],
+    fonte: 'Os dois',
+    falas: [
+      { texto: '[Enviar foto de Antes e Depois ou vídeo de depoimento de caso parecido] Enquanto você vê esse resultado incrível que entregamos aqui na clínica, me fala: faz sentido para você agendarmos uma avaliação para cuidarmos do seu caso também?' },
+    ],
+  },
+  {
+    id: 'na-dia3',
+    etapa: 'nao_agendados',
+    titulo: 'Dia 3 — desapego elegante',
+    quando: 'Última tentativa de ligação; se não atender, envie o encerramento temporário.',
+    canal: ['Ligação', 'WhatsApp'],
+    objecoes: ['sem_resposta', 'nao_e_momento'],
+    fonte: 'Os dois',
+    falas: [
+      { texto: 'Oi, [Nome]! Percebo que talvez não seja o seu melhor momento agora e está tudo bem! Vou deixar o seu contato salvo aqui no sistema e te mando uma mensagem mais para a frente, combinado? A clínica continua inteiramente à sua disposição!' },
+    ],
+    acao: 'Etiquetar como "Não Agendado" e colocar na esteira quinzenal.',
+  },
+  {
+    id: 'na-quinzenal',
+    etapa: 'nao_agendados',
+    titulo: 'Resgate quinzenal de leads frios',
+    quando: 'Depois de 10 a 15 dias do Dia 3 e, a partir daí, a cada 15 dias para toda a base de não agendados.',
+    canal: ['WhatsApp'],
+    objecoes: ['nao_e_momento', 'sumiu'],
+    fonte: 'Manual',
+    falas: [
+      { texto: 'Oi, [Nome]! Só passando para saber se ainda faz sentido para você conversarmos sobre o seu tratamento de implantes? Estamos com horários bem especiais esta semana e à sua inteira disposição!' },
+    ],
+  },
+
+  // ---------------- Comparecimento ----------------
+  {
+    id: 'comp-48h',
+    etapa: 'comparecimento',
+    titulo: '–48h — expectativa e quebra da barreira do preço',
+    quando: 'Dois dias antes da consulta: texto + vídeo institucional.',
+    canal: ['WhatsApp', 'Vídeo'],
+    objecoes: ['orcamento', 'preco'],
+    fonte: 'Os dois',
+    falas: [
+      { texto: 'Olá, [Nome do Paciente]! Reservamos uma sala exclusiva para você. Sabemos que o investimento pode gerar dúvidas, e é justamente na avaliação que conseguimos entender o seu caso e te mostrar as melhores possibilidades dentro da sua realidade.\nSeu horário: [Data], às [Horário]\nLocalização: [Link do Maps]\nVeja como é a nossa clínica: [Link do vídeo institucional]' },
+    ],
+  },
+  {
+    id: 'comp-24h',
+    etapa: 'comparecimento',
+    titulo: '–24h — vídeo de autoridade da avaliadora',
+    quando: 'Um dia antes: vídeo de 15 a 30s da Dra. chamando pelo nome; 10 a 15 minutos depois, um depoimento.',
+    canal: ['WhatsApp', 'Vídeo'],
+    objecoes: ['medo'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Vídeo da Dra.', texto: 'Oi, [Nome]! Tudo bem? Aqui é a Dra. [Nome da Dra.]. Amanhã vamos analisar o seu caso com toda a calma para te apresentar o melhor planejamento. Gravei este vídeo rápido para você: [Enviar vídeo curto de 15 a 30s da doutora]' },
+      { rotulo: '10 a 15 minutos depois', texto: 'Queremos te mostrar também a transformação de um paciente que chegou aqui com a mesma dúvida que você! [Enviar foto de antes e depois ou depoimento]' },
+    ],
+  },
+  {
+    id: 'comp-dia',
+    etapa: 'comparecimento',
+    titulo: 'Dia da consulta — lembrete e confirmação ativa',
+    quando: 'Manhã da consulta: lembrete por texto e confirmação por ligação ou áudio até as 11h.',
+    canal: ['WhatsApp', 'Ligação', 'Áudio'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Lembrete matinal (texto)', texto: 'Bom dia, [Nome]! Hoje é o seu dia. Sua avaliação está confirmada para às [Horário]. Tudo já está preparado para te receber! Se precisar de ajuda com localização ou estacionamento, me avise, tá bem?' },
+      { rotulo: 'Confirmação ativa (até 11h, ligação ou áudio)', texto: 'Oi, [Nome]! Aqui é a [Seu Nome]. Só passando para confirmar a sua vinda hoje às [Horário]. Está tudo certo por aí ou você precisa de alguma ajuda com rota ou estacionamento?' },
+      { rotulo: 'Confirmação ativa — versão curta', texto: 'Oi, [Nome]! Passando para confirmar sua vinda hoje às [Horário]. Está tudo certo por aí ou precisa de alguma ajuda?' },
+    ],
+  },
+  {
+    id: 'comp-1h',
+    etapa: 'comparecimento',
+    titulo: '–1h — reforço da espera',
+    quando: 'Falta 1 hora e o paciente não respondeu à confirmação.',
+    canal: ['WhatsApp'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Guia Tático', texto: 'Oi, [Nome]! Falta apenas 1 hora para a sua consulta às [Horário]. Estamos te esperando com sala e equipe prontas!' },
+      { rotulo: 'Variação (Manual)', texto: 'Oi, [Nome]! Falta 1 hora para a sua consulta. Estamos te esperando com tudo pronto, ok?' },
+    ],
+  },
+
+  // ---------------- Faltosos ----------------
+  {
+    id: 'falta-30min',
+    etapa: 'faltosos',
+    titulo: '20 a 30 min depois do horário — preocupação genuína',
+    quando: 'O paciente não chegou. Áudio caloroso, com sorriso na voz; nunca cobrança.',
+    canal: ['Áudio', 'WhatsApp'],
+    objecoes: ['faltou'],
+    fonte: 'Os dois',
+    falas: [
+      { rotulo: 'Áudio', texto: 'Oi, [Nome do Paciente], tudo bem? Aqui é a [Seu Nome] da clínica. Percebi que você ainda não conseguiu chegar para o seu horário com a Dra. [Nome da Dra.]. Aconteceu algum imprevisto no caminho? Está tudo bem com você?' },
+      { rotulo: 'Variação por mensagem (Manual)', texto: 'Oi, [Nome]! Tudo bem? Percebi que você não conseguiu chegar para a nossa avaliação com a Dra. [Nome da Dra.] hoje. Aconteceu algum imprevisto com você no caminho? Me avisa aqui se está tudo bem!' },
+      { rotulo: 'Quando o paciente responder', texto: 'Sem problemas, [Nome]! Vamos resolver o seu reagendamento para você não perder essa oportunidade. Fica melhor para você vir amanhã às 10h ou na quinta-feira às 15h?' },
+    ],
+  },
+  {
+    id: 'falta-24h',
+    etapa: 'faltosos',
+    titulo: 'Reagendamento em até 24h',
+    quando: 'No dia seguinte à falta, enquanto o contexto ainda está vivo.',
+    canal: ['Ligação', 'WhatsApp'],
+    objecoes: ['faltou'],
+    fonte: 'Manual',
+    falas: [
+      { texto: 'Olá, Seu [Nome]! Tudo bem? Aqui é a [Seu Nome] da clínica [Nome da Clínica]. Nós vimos que o senhor tinha uma consulta marcada ontem com a Dra., mas não pôde comparecer. Ficamos preocupados com o senhor. Como eu já conheço a sua história e sei o quanto o senhor quer transformar o seu sorriso, eu conversei com a Dra. e reservei uma vaga exclusiva amanhã às 14h ou na sexta às 16h para te encaixar. Qual horário fica melhor para o senhor?' },
+    ],
+  },
+
+  // ---------------- Comercial 2 ----------------
+  {
+    id: 'c2-dia0',
+    etapa: 'comercial2',
+    titulo: 'Dia da consulta — saída do paciente (primeiras 24h)',
+    quando: 'Logo depois da avaliação. Não fale de dinheiro nem de decisão de terceiros.',
+    canal: ['WhatsApp'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Oi, [Nome]! Aqui é a [Seu Nome] da clínica [Nome da Clínica]. Foi um prazer enorme te receber hoje! A gente conversou sobre o seu caso e o quanto esse tratamento vai transformar a sua rotina e a sua mastigação, né? Me conta uma coisa com sinceridade: você gostou da avaliação da Dra. [Nome da Dra.]? Ficou qualquer dúvida sobre o plano de tratamento que ela te apresentou?' },
+    ],
+  },
+  {
+    id: 'c2-combinado-decisor',
+    etapa: 'comercial2',
+    titulo: 'Dia combinado — alinhamento com o decisor',
+    quando: 'O paciente precisava conversar com esposo, filho ou família.',
+    canal: ['Ligação', 'WhatsApp'],
+    objecoes: ['decisor'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Oi, [Nome], aqui é a [Seu Nome] da clínica [Nome da Clínica]. Estou te ligando porque combinamos de você conversar com a pessoa que vai te ajudar a tomar a decisão. Deu tempo de vocês conversarem? O que acharam? Vamos fazer o seguinte: venham tomar um café comigo aqui na clínica para eu explicar pessoalmente os detalhes para vocês dois. Consegui inclusive a bonificação de uma limpeza para o seu acompanhante vir conhecer a estrutura! Fica melhor para vocês na quarta às 14h ou na quinta às 16h?' },
+    ],
+  },
+  {
+    id: 'c2-combinado-sem-resposta',
+    etapa: 'comercial2',
+    titulo: 'Dia combinado — paciente não atendeu',
+    quando: 'Você tentou ligar nas datas combinadas e não conseguiu falar.',
+    canal: ['WhatsApp'],
+    objecoes: ['sem_resposta', 'decisor'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Oi, [Nome], tudo bem? Tentei te ligar algumas vezes e não consegui, imagino que o seu dia esteja corrido. O motivo do meu contato é para saber como foi chegar em casa com tantas informações e se você conseguiu passar esses detalhes para a sua família?' },
+    ],
+  },
+  {
+    id: 'c2-d2',
+    etapa: 'comercial2',
+    titulo: 'Dia +2 — prova social (caso parecido)',
+    quando: 'Para destravar o medo financeiro com alguém de dor parecida que conseguiu fazer.',
+    canal: ['WhatsApp'],
+    objecoes: ['orcamento'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: '[Enviar foto de Antes e Depois do caso citado] Oi, [Nome], acabamos de entregar mais um sonho realizado aqui na clínica, de um caso bem parecido com o que planejamos para você: o caso da Dona Maria. Ela também achava que o tratamento não caberia no orçamento dela, mas conseguimos ajustar as parcelas de uma forma que coube perfeitamente no bolso, e hoje ela está sorrindo com total liberdade! Queremos muito fazer parte dessa mudança na sua vida. Consegui segurar uma condição especial para o seu plano. Posso agendar o seu retorno para quarta ou quinta-feira?' },
+    ],
+    acao: 'Troque "Dona Maria" por um caso real e parecido com o do paciente.',
+  },
+  {
+    id: 'c2-d5',
+    etapa: 'comercial2',
+    titulo: 'Dia +5 a +6 — autoridade (vídeo do cirurgião)',
+    quando: 'Para quebrar a insegurança com a cirurgia ou o procedimento.',
+    canal: ['WhatsApp', 'Vídeo'],
+    objecoes: ['medo'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Oi, [Nome]! Aqui é a [Seu Nome] novamente. O Dr. [Nome do Cirurgião] gravou este vídeo curto pensando exatamente na sua história, explicando como a nossa técnica com cirurgia guiada é rápida, segura e sem dor: [Inserir vídeo de até 30s do profissional explicando o procedimento] É exatamente essa segurança e esse resultado que queremos entregar para você! Quer que eu veja os melhores horários para o seu retorno esta semana?' },
+    ],
+  },
+  {
+    id: 'c2-d8',
+    etapa: 'comercial2',
+    titulo: 'Dia +8 — escassez real e a dor anotada',
+    quando: 'Para levar à decisão, lembrando a dor exata registrada nas anotações do paciente.',
+    canal: ['WhatsApp', 'Ligação'],
+    objecoes: ['sumiu', 'nao_e_momento'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Oi, [Nome], tudo bem? As nossas vagas cirúrgicas aqui na clínica são realmente limitadas e eu deixei uma vaga reservada até hoje para você, porque me comovi de verdade com a sua história. Eu me lembro com carinho de quando você me disse que [dor emocional anotada no sistema, ex.: sentia vergonha de sorrir nas fotos] e isso mexeu muito comigo. Você ainda tem interesse em realizar o seu tratamento conosco ou posso liberar essa vaga e a condição para outro paciente que está aguardando na lista?' },
+    ],
+  },
+  {
+    id: 'c2-matadora',
+    etapa: 'comercial2',
+    titulo: 'Mensagem matadora — vulnerabilidade',
+    quando: 'Dias depois, para o paciente que parou de responder.',
+    canal: ['WhatsApp'],
+    objecoes: ['sumiu'],
+    fonte: 'Guia Tático',
+    falas: [
+      { texto: 'Espero que você esteja bem, [Nome]. Você passou em avaliação aqui com a gente e, por algum motivo, ainda não iniciou o seu tratamento. Eu queria muito te pedir desculpas se em algum momento eu fiz algo que você não tenha gostado, ou se te atendi de uma maneira que você não concordou. Meu único objetivo sempre foi te ajudar a recuperar o seu sorriso e a sua confiança. Você poderia me ajudar me dizendo com toda a sinceridade onde foi que eu errei com você, para que eu não cometa esse erro novamente com outros pacientes? Ficarei muito grata com a sua ajuda.' },
+    ],
+  },
+];
+
+export const PRINCIPIOS: { titulo: string; texto: string }[] = [
+  { titulo: 'Ligação antes de mensagem', texto: 'A ligação por voz conecta até 10 vezes mais que a mensagem fria. Sempre tente ligar antes do texto: 3 tentativas no 1º dia (manhã, tarde e início da noite).' },
+  { titulo: 'Regra dos 5 minutos', texto: 'Lead do tráfego pago recebe o primeiro contato em até 5 minutos. Depois disso a janela esfria e a concorrência atende primeiro.' },
+  { titulo: 'Agendamento em até 48h', texto: 'Trave a avaliação para o mesmo dia ou no máximo em 48 horas. Agendamentos com mais de 4 dias são o maior gargalo de faltas.' },
+  { titulo: 'Sempre dupla opção', texto: 'Nada de "que horas você prefere?" ou "deseja agendar?". Conduza com duas alternativas de dia ou horário.' },
+];
+
+export const METAS_BANCADA: { valor: string; texto: string }[] = [
+  { valor: '8+', texto: 'leads por dia para a CRC 1' },
+  { valor: '50%', texto: 'mínimo de agendamento' },
+  { valor: '40–60%', texto: 'de comparecimento' },
+  { valor: '20%', texto: 'do faturamento bruto vindo do Comercial 2' },
+];
+
+export const REGUAS: { titulo: string; passos: { quando: string; oque: string }[] }[] = [
+  {
+    titulo: 'Régua dos não agendados',
+    passos: [
+      { quando: 'Dia 1', oque: '3 ligações + mensagem com pergunta aberta' },
+      { quando: 'Dia 2', oque: '1 ligação + prova social' },
+      { quando: 'Dia 3', oque: '1 ligação + desapego elegante' },
+      { quando: 'Após 10 a 15 dias', oque: 'Nutrição leve, a cada 15 dias' },
+    ],
+  },
+  {
+    titulo: 'Jornada do comparecimento',
+    passos: [
+      { quando: '–48h', oque: 'Texto + vídeo institucional' },
+      { quando: '–24h', oque: 'Vídeo da Dra. + depoimento' },
+      { quando: 'Dia, até 11h', oque: 'Lembrete + confirmação ativa' },
+      { quando: '–1h', oque: 'Reforço da espera' },
+      { quando: '+20–30 min', oque: 'Se faltar: preocupação genuína' },
+      { quando: 'Lembre', oque: 'Confirmação não é cobrança fria; é construção de valor e quebra de inseguranças.' },
+    ],
+  },
+  {
+    titulo: 'GPS do follow-up (Comercial 2)',
+    passos: [
+      { quando: 'Dia da consulta', oque: 'Acolhimento, sem falar de dinheiro' },
+      { quando: 'Dia combinado', oque: 'Alinhamento com o decisor' },
+      { quando: 'Dia +2', oque: 'Prova social' },
+      { quando: 'Dia +5', oque: 'Autoridade' },
+      { quando: 'Dia +8', oque: 'Escassez e dor' },
+      { quando: 'Depois', oque: 'Mensagem matadora' },
+    ],
+  },
+];
+
+export const CHECKLIST_MESA: string[] = [
+  'Auditoria diária: registre objeções, dores relatadas e detalhes familiares nas anotações do paciente.',
+  'Personalização: use o primeiro nome e o contexto real do paciente; nada de disparo robótico.',
+  'Alterne formatos: áudios curtos com sorriso na voz, vídeos de até 30s dos doutores e fotos de prova social.',
+];
+
+// ---------------- campos para preencher os scripts ----------------
+
+export interface Preenchimento { paciente: string; crc: string; clinica: string; dra: string; data: string; horario: string; tratamento: string }
+
+const SUBST: [RegExp, keyof Preenchimento][] = [
+  [/\[Nome do Paciente\]/g, 'paciente'],
+  [/\[Nome\]/g, 'paciente'],
+  [/\[Seu Nome\]/g, 'crc'],
+  [/\[Nome da CRC\]/g, 'crc'],
+  [/\[Nome da Clínica\]/g, 'clinica'],
+  [/\[Nome da Dra\.\]/g, 'dra'],
+  [/\[Data\]/g, 'data'],
+  [/\[Horário\]/g, 'horario'],
+  [/\[tratamento\]/g, 'tratamento'],
+];
+
+/** Troca os campos [Nome], [Seu Nome]… pelos valores preenchidos (os vazios ficam como estão). */
+export function preencher(texto: string, p: Partial<Preenchimento>): string {
+  let out = texto;
+  for (const [re, k] of SUBST) {
+    const v = p[k]?.trim();
+    if (v) out = out.replace(re, v);
+  }
+  return out;
+}
+
+const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/** Busca por palavras (sem acento), em título, quando usar, falas, objeções e etapa. */
+export function buscarScripts(scripts: Script[], termo: string, etapa: Etapa | 'todas', objecao: Objecao | null): Script[] {
+  const palavras = norm(termo).split(/\s+/).filter(Boolean);
+  return scripts.filter(s => {
+    if (etapa !== 'todas' && s.etapa !== etapa) return false;
+    if (objecao && !s.objecoes?.includes(objecao)) return false;
+    if (!palavras.length) return true;
+    const alvo = norm([
+      s.titulo, s.quando, s.acao ?? '', s.canal.join(' '),
+      ETAPAS.find(e => e.key === s.etapa)?.label ?? '',
+      ...(s.objecoes ?? []).map(o => OBJECOES.find(x => x.key === o)?.label ?? ''),
+      ...s.falas.map(f => `${f.rotulo ?? ''} ${f.texto}`),
+    ].join(' '));
+    return palavras.every(p => alvo.includes(p));
+  });
+}
+
+// ---------------- rotina diária da CRC (ASCENSION → Tarefas) ----------------
+
+export type Contagem = 'leads_hoje' | 'consultas_hoje' | 'consultas_amanha' | 'consultas_48h' | 'faltas_ontem';
+
+export interface TarefaCRC { id: number; texto: string; script?: string; contagem?: Contagem }
+
+/** ids numéricos estáveis: são gravados em ascension_checklists (projeto 'crc_tarefas'). */
+export const ROTINA_CRC: { bloco: string; tarefas: TarefaCRC[] }[] = [
+  {
+    bloco: 'Abertura do dia',
+    tarefas: [
+      { id: 1, texto: 'Ligar em até 5 minutos para cada lead novo', script: 'spin-abertura', contagem: 'leads_hoje' },
+      { id: 2, texto: 'Lembrete matinal para as consultas de hoje', script: 'comp-dia', contagem: 'consultas_hoje' },
+      { id: 3, texto: 'Confirmação ativa (ligação ou áudio) das consultas de hoje até as 11h', script: 'comp-dia', contagem: 'consultas_hoje' },
+      { id: 4, texto: 'Enviar –24h (vídeo da Dra. + depoimento) para as consultas de amanhã', script: 'comp-24h', contagem: 'consultas_amanha' },
+      { id: 5, texto: 'Enviar –48h (texto + vídeo institucional) para as consultas de depois de amanhã', script: 'comp-48h', contagem: 'consultas_48h' },
+    ],
+  },
+  {
+    bloco: 'Ao longo do dia',
+    tarefas: [
+      { id: 6, texto: 'Régua Dia 1: 3 ligações (manhã, tarde, início da noite) e mensagem pós-ligação', script: 'na-dia1' },
+      { id: 7, texto: 'Régua Dia 2: ligação matinal e prova social', script: 'na-dia2' },
+      { id: 8, texto: 'Régua Dia 3: última ligação, desapego elegante e etiqueta "Não Agendado"', script: 'na-dia3' },
+      { id: 9, texto: 'Mensagem de –1h para quem não respondeu à confirmação', script: 'comp-1h', contagem: 'consultas_hoje' },
+      { id: 10, texto: 'Faltou? Áudio de preocupação 20 a 30 min depois do horário', script: 'falta-30min' },
+      { id: 11, texto: 'Reagendar os faltosos de ontem (até 24h)', script: 'falta-24h', contagem: 'faltas_ontem' },
+    ],
+  },
+  {
+    bloco: 'Comercial 2',
+    tarefas: [
+      { id: 12, texto: 'Mensagem de acolhimento para quem passou em avaliação hoje', script: 'c2-dia0', contagem: 'consultas_hoje' },
+      { id: 13, texto: 'Follow-ups do dia: dia combinado, +2, +5, +8 e mensagem matadora', script: 'c2-d2' },
+    ],
+  },
+  {
+    bloco: 'Fechamento do dia',
+    tarefas: [
+      { id: 14, texto: 'Registrar objeções, dores e detalhes familiares nas anotações de cada paciente' },
+      { id: 15, texto: 'Disparo quinzenal para os leads frios (quando for o dia)', script: 'na-quinzenal' },
+    ],
+  },
+];
+
+export const TOTAL_TAREFAS = ROTINA_CRC.reduce((n, b) => n + b.tarefas.length, 0);

@@ -1,3 +1,4 @@
+import { assertGoals } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { describeError } from '@/lib/errors';
@@ -29,6 +30,7 @@ export function useUpdateMetaSetting() {
 
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: number }) => {
+      assertGoals();
       if (!isAdmin) throw new Error('Apenas administradores podem alterar metas');
 
       const { error } = await supabase

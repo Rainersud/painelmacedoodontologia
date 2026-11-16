@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const TABLES = ['leads', 'appointments', 'payments', 'referrals', 'upsell_opportunities', 'acquisition_costs', 'meta_settings'];
+const TABLES = ['leads', 'appointments', 'payments', 'referrals', 'upsell_opportunities', 'acquisition_costs', 'meta_settings', 'ascension_checklists'];
 
 /**
  * Tempo real para as telas de gestão: qualquer mudança feita no Comercial 1, CRC ou

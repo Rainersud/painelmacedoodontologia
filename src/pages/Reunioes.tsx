@@ -1,3 +1,4 @@
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,7 +21,7 @@ import { useMeetings, useMeetingActionPlans, useMeetingAnnotations, useMeetingTr
 import { useCACMetrics } from '@/hooks/useAcquisitionCosts';
 import { useSalesMetrics } from '@/hooks/useSalesMetrics';
 import { useClinicGoalsPanel } from '@/hooks/useClinicGoalsPanel';
-import { useWeeklyBonus } from '@/hooks/useWeeklyBonus';
+import { usePlanoIncentivo } from '@/hooks/usePlanoIncentivo';
 import { useReferralDashboard } from '@/hooks/useReferrals';
 import { formatCurrency } from '@/lib/currency';
 import { safeUrl, isValidHttpUrl } from '@/lib/sanitize';
@@ -29,8 +30,7 @@ import { toast } from 'sonner';
 const METRIC_OPTIONS = [
   { value: 'indicacoes', label: 'Indicações' },
   { value: 'metas', label: 'Metas da Clínica' },
-  { value: 'bonus', label: 'Bônus por Metas' },
-  { value: 'incentivo', label: 'Plano de Incentivo' },
+  { value: 'incentivo', label: 'Plano de Incentivo Inteligente' },
   { value: 'cac', label: 'CAC & Financeiro' },
   { value: 'vendas', label: 'Métricas de Vendas' },
   { value: 'financeiro', label: 'Financeiro Geral' },
@@ -85,15 +85,15 @@ export default function Reunioes() {
   const { data: monthPanel } = useClinicGoalsPanel('mes');
   const { data: weekPanel } = useClinicGoalsPanel('semana');
   const [bonusMonth] = useState(() => new Date());
-  const { data: teamBonus } = useWeeklyBonus(bonusMonth);
-  // semana corrente de cada grupo (Ariane / Lidiane): R$ por semana batida
+  const { data: teamBonus } = usePlanoIncentivo(bonusMonth);
+  // semana corrente de cada responsável (Rainer / Ariane / Lidiane): R$ por semana batida
   const now = Date.now();
   const thisWeek = (teamBonus?.groups ?? []).map(g => g.weeks.find(w => w.week.start.getTime() <= now && now <= w.week.end.getTime()));
   const GOAL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas', 'faturamento', 'ticket_medio'];
   const toColor = (st: string) => (st === 'healthy' ? 'green' : st === 'warning' ? 'yellow' : 'red');
   const goalsProgress = (monthPanel?.metrics ?? [])
     .filter(m => GOAL_KEYS.includes(m.key))
-    .map(m => ({ type: m.key, label: m.label, current: m.display, target: m.targetDisplay, percentage: m.percentage, status: toColor(m.status) }));
+    .map(m => ({ type: m.key, label: m.label, current: m.display, target: m.targetDisplay, percentage: m.percentage, status: toColor(m.status), trend: m.trend }));
   const weekGoals = (weekPanel?.metrics ?? []).filter(m => ['leads', 'agendamentos', 'comparecimentos', 'vendas'].includes(m.key));
   const incentiveData = weekPanel ? {
     goals: weekGoals.map(m => ({ bonusEarned: m.current >= m.target })),
@@ -367,7 +367,10 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
                       </Badge>
                     </div>
                   </div>
-                  <Progress value={g.percentage} className="h-2" />
+                  <div className="grid grid-cols-[1fr_96px] items-center gap-3">
+                    <Progress value={g.percentage} className="h-2" />
+                    <Sparkline data={g.trend ?? []} height={24} />
+                  </div>
                 </div>
               ))}
             </div>

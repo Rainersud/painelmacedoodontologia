@@ -1,3 +1,4 @@
+import { assertFinance } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,6 +91,7 @@ export function useAdCreatives(referenceMonth?: Date) {
 
   const addCreative = useMutation({
     mutationFn: async (creative: Partial<AdCreative>) => {
+      assertFinance();
       const { error } = await supabase
         .from('ad_creatives' as any)
         .insert({ ...creative, created_by: user?.id } as any);
@@ -104,6 +106,7 @@ export function useAdCreatives(referenceMonth?: Date) {
 
   const updateCreative = useMutation({
     mutationFn: async ({ id, ...data }: Partial<AdCreative> & { id: string }) => {
+      assertFinance();
       const { error } = await supabase
         .from('ad_creatives' as any)
         .update(data as any)
@@ -119,6 +122,7 @@ export function useAdCreatives(referenceMonth?: Date) {
 
   const deleteCreative = useMutation({
     mutationFn: async (id: string) => {
+      assertFinance();
       const { error } = await supabase
         .from('ad_creatives' as any)
         .delete()

@@ -1,3 +1,4 @@
+import { FinanceOnly } from '@/components/access/FinanceOnly';
 import { LeadName } from '@/components/crm/LeadName';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { describeError } from '@/lib/errors';
@@ -19,7 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { LTVRecurrencePanel } from '@/components/comercial2/LTVRecurrencePanel';
-import { defaultReturnDate, summarize, LTV_PERIODS, ltvActivity, ltvPeriodRange, type LtvPeriod } from '@/lib/ltv';
+import { defaultReturnDate, summarize, ltvActivity } from '@/lib/ltv';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { useLTVData } from '@/hooks/useLTVData';
 import { FinancialDashboard } from '@/components/comercial2/FinancialDashboard';
 
@@ -652,14 +654,14 @@ function EditableDetailContent({
         </div>
 
         {/* Botão Registrar Pagamento */}
-        <Button
+        <FinanceOnly><Button
           onClick={() => setPaymentDialogOpen(true)}
           className="w-full gap-2"
           variant={totalPaidStage > 0 ? 'outline' : 'default'}
         >
           <CreditCard className="h-4 w-4" />
           {totalPaidStage > 0 ? 'Registrar Novo Pagamento' : 'Registrar Pagamento'}
-        </Button>
+        </Button></FinanceOnly>
 
         {/* Boletos pendentes - confirmar pagamento */}
         {pendingBoletos.length > 0 && (
@@ -672,7 +674,7 @@ function EditableDetailContent({
                   <span className="text-muted-foreground ml-1">— {formatCurrency(boleto.net_value)}</span>
                   {boleto.due_date && <span className="text-muted-foreground ml-1">vence {format(new Date(boleto.due_date + 'T12:00:00'), 'dd/MM/yyyy')}</span>}
                 </div>
-                <Button
+                <FinanceOnly><Button
                   size="sm"
                   variant="outline"
                   className="h-6 text-[9px] px-2 border-success/30 text-success hover:bg-success/10"
@@ -680,7 +682,7 @@ function EditableDetailContent({
                   disabled={confirmBoleto.isPending}
                 >
                   <CheckCircle2 className="h-3 w-3 mr-0.5" /> Confirmar
-                </Button>
+                </Button></FinanceOnly>
               </div>
             ))}
           </div>
@@ -745,14 +747,14 @@ function EditableDetailContent({
                         )}
                         <p className="font-medium text-success">{formatCurrency(p.net_value)}</p>
                       </div>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary hover:bg-primary/10" title="Editar valor"
+                      <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary hover:bg-primary/10" title="Editar valor"
                         onClick={() => { setEditingPaymentId(p.id); setEditingPaymentValue(p.gross_value); }}>
                         <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning-strong hover:bg-warning/10" title="Reverter pagamento"
+                      </Button></FinanceOnly>
+                      <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-warning-strong hover:bg-warning/10" title="Reverter pagamento"
                         onClick={() => revertPayment.mutate(p.id)} disabled={revertPayment.isPending}>
                         <Undo2 className="h-3 w-3" />
-                      </Button>
+                      </Button></FinanceOnly>
                       {deletePaymentConfirm === p.id ? (
                         <div className="flex items-center gap-0.5">
                           <Button size="sm" variant="destructive" className="h-6 text-[8px] px-1.5"
@@ -764,10 +766,10 @@ function EditableDetailContent({
                           </Button>
                         </div>
                       ) : (
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10" title="Excluir pagamento"
+                        <FinanceOnly><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10" title="Excluir pagamento"
                           onClick={() => setDeletePaymentConfirm(p.id)}>
                           <Trash2 className="h-3 w-3" />
-                        </Button>
+                        </Button></FinanceOnly>
                       )}
                     </div>
                   </div>
@@ -956,12 +958,13 @@ const Comercial2 = () => {
   const metrics = useUpsellMetrics();
   const ltvData = useLTVData();
   const ltv = useMemo(() => summarize(ltvData.patients), [ltvData.patients]);
-  const [period, setPeriod] = useState<LtvPeriod>('mes');
-  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
-  const activity = useMemo(() => {
-    const r = ltvPeriodRange(period);
-    return ltvActivity(ltvData.patients, ltvData.payments, r.start, r.end);
-  }, [period, ltvData.patients, ltvData.payments]);
+  // período dos indicadores = filtro de data global (canto superior direito)
+  const { range: gRange, current: periodCurrent } = useGlobalPeriodText();
+  const periodDef = { current: periodCurrent };
+  const activity = useMemo(
+    () => ltvActivity(ltvData.patients, ltvData.payments, gRange.start, gRange.end),
+    [gRange.start, gRange.end, ltvData.patients, ltvData.payments],
+  );
   const patientByOpp = useMemo(() => new Map(ltvData.patients.map(p => [p.oppId, p])), [ltvData.patients]);
   const updateStatus = useUpdateUpsellStatus();
   const updateOpp = useUpdateUpsellOpportunity();
@@ -1079,29 +1082,12 @@ const Comercial2 = () => {
             <TabsTrigger value="ltv" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> LTV Inteligente</TabsTrigger>
             <TabsTrigger value="financeiro" className="gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Financeiro</TabsTrigger>
           </TabsList>
-          <div className="inline-flex rounded-lg bg-muted p-1" role="radiogroup" aria-label="Período dos indicadores">
-            {LTV_PERIODS.map(p => (
-              <button
-                key={p.key}
-                type="button"
-                role="radio"
-                aria-checked={period === p.key}
-                onClick={() => setPeriod(p.key)}
-                className={cn(
-                  'rounded-md px-3.5 py-1.5 text-xs font-medium transition-colors',
-                  period === p.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
         </div>
         <TabsContent value="financeiro" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <FinancialDashboard period={period} />
+          <FinancialDashboard />
         </TabsContent>
         <TabsContent value="ltv" className="flex-1 overflow-y-auto max-h-[calc(100vh-10rem)]">
-          <LTVRecurrencePanel period={period} onOpenLead={(oppId) => {
+          <LTVRecurrencePanel onOpenLead={(oppId) => {
             const opp = opportunities?.find(o => o.id === oppId);
             if (opp) {
               setSelectedOpp(opp);
@@ -1289,7 +1275,7 @@ const Comercial2 = () => {
                       onDrop={(e) => !isLocked && handleDrop(e, stage.key)}
                     >
                       <div className={cn(
-                        "flex flex-col min-h-0 h-full rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200",
+                        "flex flex-col min-h-0 h-full rounded-2xl bg-muted/40 border border-border/60 transition-all duration-200",
                         isDropping && !isLocked && 'ring-2 ring-primary ring-offset-2',
                         isLocked && 'border-warning/30 bg-warning/5'
                       )}>

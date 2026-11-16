@@ -8,6 +8,8 @@ export interface TimelineEvent {
   metadata?: Record<string, unknown>;
   createdAt: Date;
   agentName?: string;
+  /** quem fez a ação (usuário logado) */
+  agentId?: string | null;
   oldValue?: string | null;
   newValue?: string | null;
 }
@@ -39,6 +41,7 @@ export function useLeadTimeline(leadId: string) {
           oldValue: log.old_value,
           newValue: log.new_value,
           agentName: undefined, // filled below
+          agentId: log.agent_id,
         });
       });
 
@@ -56,6 +59,7 @@ export function useLeadTimeline(leadId: string) {
           type: 'interaction',
           content: i.content || `Interação: ${i.type}`,
           metadata: { interactionType: i.type, duration: i.duration_seconds },
+          agentId: i.user_id,
           createdAt: new Date(i.created_at),
         });
       });
@@ -75,6 +79,7 @@ export function useLeadTimeline(leadId: string) {
           type: 'appointment',
           content: `Consulta: ${apt.treatment_type || 'Avaliação'} — ${status}`,
           metadata: { status, scheduledAt: apt.scheduled_at },
+          agentId: apt.agent_id,
           createdAt: new Date(apt.created_at),
         });
       });
@@ -92,6 +97,7 @@ export function useLeadTimeline(leadId: string) {
           id: `wpp-${msg.id}`,
           type: msg.direction === 'inbound' ? 'whatsapp_inbound' : 'whatsapp_outbound',
           content: msg.content || 'Mensagem de mídia',
+          agentId: msg.agent_id,
           createdAt: new Date(msg.created_at),
         });
       });
@@ -110,7 +116,24 @@ export function useLeadTimeline(leadId: string) {
           type: call.call_type === 'inbound' ? 'call_inbound' : 'call_outbound',
           content: call.notes || `Ligação ${call.result || 'realizada'}`,
           metadata: { duration: call.duration_seconds, result: call.result },
+          agentId: call.agent_id,
           createdAt: new Date(call.created_at),
+        });
+      });
+
+      // 6. Registros do CRC (situação, contato, notas, anexos, movimentações)
+      const { data: crc } = await supabase
+        .from('crc_entries')
+        .select('id, board, kind, body, file_name, created_at, created_by')
+        .eq('lead_id', leadId);
+      const CRC_KIND: Record<string, string> = { situacao: 'Situação', contato: 'Contato', nota: 'Nota', anexo: 'Anexo', movimento: 'Movimentação' };
+      crc?.forEach((c) => {
+        events.push({
+          id: `crc-${c.id}`,
+          type: 'note',
+          content: `CRC · ${CRC_KIND[c.kind] ?? c.kind}: ${c.body || c.file_name || ''}`.trim(),
+          createdAt: new Date(c.created_at),
+          agentId: c.created_by,
         });
       });
 

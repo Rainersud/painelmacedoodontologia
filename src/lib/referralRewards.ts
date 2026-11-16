@@ -1,3 +1,4 @@
+import { assertGoals } from '@/lib/access';
 // Programa de recompensas por indicação — regra única para a ficha de triagem e a aba Indicação.
 // Níveis por quantidade de indicações; o prêmio é em reais (não há mais % sobre tratamento).
 // O valor de cada prêmio fica em meta_settings (premio_indicacao_5 / _10 / _15) e o
@@ -76,6 +77,7 @@ export function useSaveReferralPrize() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: number }) => {
+      assertGoals('os prêmios de indicação');
       const { data: existing, error: readErr } = await supabase
         .from('meta_settings').select('id').eq('setting_key', key).maybeSingle();
       if (readErr) throw readErr;

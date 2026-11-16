@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { buildAccess, setCurrentAccess, type Access, type Perfil } from '@/lib/access';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +14,15 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
+  /** Pode ajustar metas e regras (só o admin). */
+  canManage: boolean;
+  /** O que este usuário pode ver e fazer (lib/access). */
+  access: Access;
+  /** É administrador de verdade (mesmo enquanto visualiza como outra pessoa). */
+  realIsAdmin: boolean;
+  /** Administrador visualizando o sistema como um colaborador */
+  previewAs: { perfil: Perfil; name: string } | null;
+  setPreviewAs: (p: { perfil: Perfil; name: string } | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<'admin' | 'agente'>('agente');
   const [roleLoading, setRoleLoading] = useState(true);
   const [fullName, setFullName] = useState('');
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [previewAs, setPreviewState] = useState<{ perfil: Perfil; name: string } | null>(() => {
+    try { return JSON.parse(sessionStorage.getItem('preview-as') || 'null'); } catch { return null; }
+  });
+  const setPreviewAs = (p: { perfil: Perfil; name: string } | null) => {
+    try { if (p) sessionStorage.setItem('preview-as', JSON.stringify(p)); else sessionStorage.removeItem('preview-as'); } catch { /* sem storage */ }
+    setPreviewState(p);
+  };
   const initialized = useRef(false);
 
   const fetchUserData = async (userId: string) => {
@@ -50,6 +68,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .single();
       setFullName(profile?.full_name || '');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
+      const { data: acc } = await (supabase as any).from('user_access').select('perfil').eq('user_id', userId).maybeSingle();
+      setPerfil((acc?.perfil as Perfil) ?? null);
     } catch {
       setRole('agente');
     } finally {
@@ -110,7 +132,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setRole('agente');
     setFullName('');
+    setPerfil(null);
+    setPreviewAs(null);
   };
+
+  const realIsAdmin = role === 'admin';
+  // "Visualizar como": o administrador vê e usa o sistema com o acesso do colaborador
+  const preview = realIsAdmin ? previewAs : null;
+  const isAdmin = realIsAdmin && !preview;
+  const access = React.useMemo(
+    () => (preview ? buildAccess(false, preview.perfil) : buildAccess(realIsAdmin, perfil)),
+    [preview, realIsAdmin, perfil],
+  );
+  setCurrentAccess(access);
 
   const value: AuthContextType = {
     user,
@@ -122,7 +156,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
-    isAdmin: role === 'admin',
+    isAdmin,
+    canManage: isAdmin,
+    access,
+    realIsAdmin,
+    previewAs: preview,
+    setPreviewAs,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

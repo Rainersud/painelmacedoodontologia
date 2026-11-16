@@ -1,352 +1,361 @@
+import { assertGoals } from '@/lib/access';
 import { useMemo, useState } from 'react';
+import { addDays, format } from 'date-fns';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
+import { Sparkline } from '@/components/charts/SmoothCharts';
+import { ptBR } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
+import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from 'recharts';
+import {
+  CalendarCheck, CheckCircle2, Circle, Clock, Copy, Plane, Settings, Trophy, XCircle,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Sparkline } from '@/components/dashboard/Sparkline';
-import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
-import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/crm/CurrencyInput';
+import { Label } from '@/components/ui/label';
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useMetaSettings } from '@/hooks/useMetaSettings';
-import { createBusinessCalendar, periodProportion, type HolidayRow } from '@/lib/metrics';
-import {
-  startOfDay, endOfDay,
-  startOfWeek, endOfWeek,
-  startOfMonth, endOfMonth,
-  eachDayOfInterval, format, getDay,
-} from 'date-fns';
-import {
-  Users, CalendarCheck, UserCheck, Trophy, Heart, Zap, TrendingUp, Target,
-} from 'lucide-react';
+import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import { BONUS_GROUPS, BONUS_SETTINGS, type BonusGroup, type GoalResult, type WeekState } from '@/lib/bonus';
+import { usePlanoIncentivo, type IncentiveGroup, type IncentivePeriod, type PlanoIncentivoData } from '@/hooks/usePlanoIncentivo';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
-type StatusColor = 'azul' | 'verde' | 'vermelho';
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const dm = (d: Date) => format(d, 'dd/MM');
 
-const statusToColor = (s: PanelMetric['status']): StatusColor =>
-  s === 'healthy' ? 'azul' : s === 'warning' ? 'verde' : 'vermelho';
-
-const colorClasses: Record<StatusColor, { bar: string; text: string; bg: string; ring: string; label: string }> = {
-  // mesmas cores de status do painel inteiro (src/components/metrics/status.ts)
-  azul:     { bar: 'bg-success',     text: 'text-success',        bg: 'bg-success/10',     ring: 'ring-success/30',     label: 'Saudável' },
-  verde:    { bar: 'bg-warning',     text: 'text-warning-strong', bg: 'bg-warning/15',     ring: 'ring-warning/30',     label: 'Atenção' },
-  vermelho: { bar: 'bg-destructive', text: 'text-destructive',    bg: 'bg-destructive/10', ring: 'ring-destructive/30', label: 'Crítico' },
+/** Cor fixa de cada responsável (identidade, igual no card, no gráfico e na legenda). */
+const PERSON_COLOR: Record<BonusGroup, string> = {
+  comercial: 'hsl(var(--chart-2))',
+  atendimento: 'hsl(var(--chart-1))',
+  indicacoes: 'hsl(var(--chart-3))',
 };
 
-interface DisplayGoal {
-  key: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  current: number;
-  target: number;
-  remaining: number;
-  percentage: number;
-  status: StatusColor;
-  primaryDisplay: string;
-  metaSaudavel: string;
-  rateInfo?: string;
-  trend: number[];
+const WEEK_STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
+  batida: { label: 'Batida', cls: 'border-success/40 bg-success/10 text-success', Icon: CheckCircle2 },
+  nao_batida: { label: 'Não batida', cls: 'border-destructive/30 bg-destructive/5 text-destructive', Icon: XCircle },
+  em_andamento: { label: 'Em andamento', cls: 'border-warning/40 bg-warning/10 text-warning-strong', Icon: Clock },
+  futura: { label: 'A começar', cls: 'border-border bg-muted/40 text-muted-foreground', Icon: Circle },
+};
+
+/** Anel de progresso de uma meta. */
+function GoalRing({ g, color }: { g: GoalResult; color: string }) {
+  const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+  const r = 30;
+  const c = 2 * Math.PI * r;
+  const stroke = g.hit ? 'hsl(var(--success))' : color;
+  return (
+    <div className="flex flex-col items-center gap-1.5 min-w-0">
+      <div className="relative h-[76px] w-[76px]">
+        <svg viewBox="0 0 76 76" className="h-full w-full -rotate-90" aria-hidden>
+          <circle cx="38" cy="38" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
+          <circle cx="38" cy="38" r={r} fill="none" stroke={stroke} strokeWidth="7" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} className="transition-[stroke-dashoffset] duration-500" />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {g.hit ? <CheckCircle2 className="h-5 w-5 text-success" aria-hidden /> : <span className="text-base font-bold tabular-nums">{pct}%</span>}
+        </div>
+      </div>
+      <p className="text-xs font-medium text-center leading-tight">{g.label}</p>
+      <p className="text-[11px] text-muted-foreground tabular-nums">
+        <b className="text-foreground">{g.current}</b> de {g.target}
+      </p>
+    </div>
+  );
 }
 
-function buildPeriodRange(period: Period) {
-  const now = new Date();
-  if (period === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
-  if (period === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-  return { start: startOfMonth(now), end: endOfMonth(now) };
+function PersonCard({ g, data, noun }: { g: IncentiveGroup; data: PlanoIncentivoData; noun: string }) {
+  const color = PERSON_COLOR[g.group];
+  const { tripMonths, tripValue, weeklyValue } = data.settings;
+  const role = BONUS_GROUPS.find(b => b.key === g.group)?.label ?? g.label;
+  const allHit = g.periodGoals.length > 0 && g.periodGoals.every(x => x.hit);
+  const missing = g.periodGoals.filter(x => !x.hit && x.target > 0);
+  return (
+    <Card className="monday-card overflow-hidden flex flex-col">
+      <div className="h-1" style={{ background: color }} />
+      <CardContent className="p-5 flex-1 flex flex-col gap-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{ background: color }} aria-hidden>
+              {g.owner.slice(0, 1).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="text-base font-semibold truncate">{g.owner}</p>
+              <p className="text-xs text-muted-foreground">{role}</p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[11px] text-muted-foreground">Bônus do mês</p>
+            <p className="hero-number text-2xl leading-tight">{brl(g.total)}</p>
+          </div>
+        </div>
+
+        <div className={cn('grid gap-2', g.periodGoals.length >= 3 ? 'grid-cols-3' : g.periodGoals.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+          {g.periodGoals.map(x => <GoalRing key={x.key} g={x} color={color} />)}
+        </div>
+
+        {g.series.length > 1 && (
+          <div>
+            <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+              <span>% das metas no período</span>
+              <span className="tabular-nums">{g.series[g.series.length - 1]?.pct ?? 0}% na última parte</span>
+            </div>
+            <Sparkline data={g.series.map(x => x.pct)} height={40} />
+          </div>
+        )}
+        <p className={cn('rounded-lg px-3 py-2 text-xs text-center min-h-[48px] flex items-center justify-center', allHit ? 'bg-success/10 text-success font-medium' : 'bg-muted/60 text-muted-foreground')}>
+          {allHit
+            ? `Todas as metas batidas ${noun}.`
+            : `Faltam ${missing.map(x => `${x.target - x.current} ${x.label.toLowerCase()}`).join(' · ')} ${noun}.`}
+        </p>
+
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <p className="text-xs font-medium">Semanas do mês</p>
+            <p className="text-[11px] text-muted-foreground">{brl(weeklyValue)} por semana batida</p>
+          </div>
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${g.weeks.length}, minmax(0, 1fr))` }}>
+            {g.weeks.map((w, i) => {
+              const st = WEEK_STATE[w.state];
+              return (
+                <div key={i} className={cn('rounded-lg border px-1.5 py-2 text-center', st.cls)}
+                  title={`Semana ${i + 1} (${dm(w.week.start)} a ${dm(w.week.end)}): ${st.label}`}>
+                  <st.Icon className="h-4 w-4 mx-auto" aria-hidden />
+                  <p className="text-[11px] font-semibold mt-1">S{i + 1}</p>
+                  <p className="text-[10px] tabular-nums">{w.earned > 0 ? brl(w.earned) : dm(w.week.start)}</p>
+                  <span className="sr-only">{st.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between text-xs rounded-lg bg-muted/50 px-3 py-2">
+            <span className="flex items-center gap-1.5"><Copy className="h-3.5 w-3.5 text-muted-foreground" aria-hidden /> Bônus dobrado</span>
+            <b className={cn('tabular-nums', g.doubleBonus > 0 && 'text-success')}>
+              {g.doubleBonus > 0 ? `+ ${brl(g.doubleBonus)}` : g.doubleStillPossible ? `possível + ${brl(weeklyValue * g.weeks.length)}` : 'perdido este mês'}
+            </b>
+          </div>
+        </div>
+
+        <div className={cn('mt-auto rounded-lg border p-3 space-y-2', g.tripEarned && 'border-success/40 bg-success/5')}>
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 font-medium"><Plane className="h-3.5 w-3.5" style={{ color }} aria-hidden /> Viagem {brl(tripValue)}</span>
+            <b className="tabular-nums">{Math.min(g.streak, tripMonths)} de {tripMonths} meses</b>
+          </div>
+          <div className="flex gap-1">
+            {g.months.map(m => (
+              <div key={m.month.toISOString()} className="flex-1 text-center">
+                <div className="h-1.5 rounded-full" style={{ background: m.hit ? 'hsl(var(--success))' : m.complete ? 'hsl(var(--destructive) / 0.35)' : 'hsl(var(--muted))' }} />
+                <span className="text-[10px] text-muted-foreground capitalize">{format(m.month, 'MMM', { locale: ptBR })}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {g.tripEarned ? 'Viagem conquistada.' : `Faltam ${tripMonths - g.streak} ${tripMonths - g.streak === 1 ? 'mês seguido' : 'meses seguidos'} com as metas mensais batidas.`}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
-function useReferralsCount(period: Period) {
-  const { start, end } = buildPeriodRange(period);
-  return useQuery({
-    queryKey: ['plano-incentivo-referrals', period],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('referrals')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-      return count ?? 0;
-    },
-    refetchInterval: 60_000,
+function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string }) {
+  const config: ChartConfig = Object.fromEntries(data.groups.map(g => [g.group, { label: g.owner, color: PERSON_COLOR[g.group] }]));
+  const rows = (data.groups[0]?.series ?? []).map((p, i) => ({
+    label: p.label,
+    ...Object.fromEntries(data.groups.map(g => [g.group, Math.max(0, g.series[i]?.pct ?? 0)])),
+  }));
+  const peak = Math.max(100, ...rows.flatMap(r => data.groups.map(g => Number((r as Record<string, unknown>)[g.group]) || 0)));
+  const top = Math.ceil(peak / 25) * 25;
+  const ticks = Array.from({ length: top / 25 + 1 }, (_, i) => i * 25);
+  return (
+    <Card className="monday-card">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold">Desempenho da equipe por {data.seriesUnit === 'mes' ? 'mês' : data.seriesUnit} · {period}</h3>
+          <p className="text-xs text-muted-foreground">% médio das metas de cada responsável · a linha marca 100% (meta batida)</p>
+        </div>
+        <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
+          <LineChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} className="capitalize" />
+            <YAxis tickLine={false} axisLine={false} width={40} domain={[0, top]} ticks={ticks} tickFormatter={v => `${v}%`} />
+            <ReferenceLine y={100} stroke="hsl(var(--success))" strokeDasharray="4 4" />
+            <ChartTooltip cursor={{ stroke: 'hsl(var(--border))' }} content={<ChartTooltipContent formatter={(v, name) => (
+              <span className="flex w-full justify-between gap-3"><span>{config[String(name)]?.label}</span><b className="tabular-nums">{v}%</b></span>
+            )} />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            {data.groups.map(g => (
+              <Line key={g.group} type="monotone" dataKey={g.group} stroke={`var(--color-${g.group})`} strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: `var(--color-${g.group})` }} activeDot={{ r: 5 }} isAnimationActive={false} />
+            ))}
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+async function saveSetting(key: string, value: number) {
+  assertGoals('as regras do plano');
+  const { data: existing } = await supabase.from('meta_settings').select('id').eq('setting_key', key).maybeSingle();
+  const { error } = existing
+    ? await supabase.from('meta_settings').update({ setting_value: value, updated_at: new Date().toISOString() }).eq('id', existing.id)
+    : await supabase.from('meta_settings').insert({ setting_key: key, setting_value: value });
+  if (error) throw error;
+}
+
+function RulesDialog({ open, onOpenChange, data }: { open: boolean; onOpenChange: (o: boolean) => void; data: PlanoIncentivoData }) {
+  const qc = useQueryClient();
+  const ownerOf = (k: BonusGroup) => data.groups.find(g => g.group === k)?.owner ?? '';
+  const [form, setForm] = useState<Record<string, string>>({
+    weeklyValue: String(data.settings.weeklyValue),
+    tripValue: String(data.settings.tripValue),
+    tripMonths: String(data.settings.tripMonths),
+    comercial: ownerOf('comercial'),
+    atendimento: ownerOf('atendimento'),
+    indicacoes: ownerOf('indicacoes'),
   });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      for (const k of ['weeklyValue', 'tripValue', 'tripMonths'] as const) {
+        const v = Number(form[k]);
+        if (!Number.isFinite(v) || v <= 0) throw new Error('Use números maiores que zero.');
+        await saveSetting(BONUS_SETTINGS[k].key, v);
+      }
+      assertGoals('os responsáveis do plano');
+      for (const def of BONUS_GROUPS) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tabela nova ainda fora dos tipos gerados
+        const { error } = await (supabase as any).from('bonus_responsaveis')
+          .upsert({ grupo: def.key, nome: form[def.key].trim() || def.defaultOwner, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+      await qc.invalidateQueries({ queryKey: ['plano-incentivo'] });
+      toast.success('Regras salvas');
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(`As regras não foram salvas. ${describeError(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const field = (k: string, label: string, type = 'number') => (
+    <div className="space-y-1.5">
+      <Label htmlFor={`regra-${k}`} className="text-xs">{label}</Label>
+      {k === 'weeklyValue' || k === 'tripValue' ? (
+        <CurrencyInput id={`regra-${k}`} value={Number(form[k]) || 0} onChange={v => setForm(f => ({ ...f, [k]: String(v) }))} />
+      ) : (
+        <Input id={`regra-${k}`} type={type} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+      )}
+    </div>
+  );
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Regras do plano de incentivo</DialogTitle>
+          <DialogDescription>
+            As metas de cada responsável vêm do objetivo central (faturamento + ticket médio) em Metas da clínica.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {field('weeklyValue', 'Bônus por semana (R$)')}
+          {field('tripValue', 'Viagem (R$)')}
+          {field('tripMonths', 'Meses seguidos')}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {field('comercial', 'Leads e vendas', 'text')}
+          {field('atendimento', 'Agend., comp. e resgates', 'text')}
+          {field('indicacoes', 'Indicações', 'text')}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar regras'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
-
-function useReferralsTrend(period: Period) {
-  const { start, end } = buildPeriodRange(period);
-  return useQuery({
-    queryKey: ['plano-incentivo-referrals-trend', period],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('referrals')
-        .select('created_at')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-      const days = eachDayOfInterval({ start, end });
-      return days.map(d => {
-        const dStart = startOfDay(d).getTime();
-        const dEnd = endOfDay(d).getTime();
-        return (data ?? []).filter((r: any) => {
-          const t = new Date(r.created_at).getTime();
-          return t >= dStart && t <= dEnd;
-        }).length;
-      });
-    },
-    refetchInterval: 60_000,
-  });
-}
-
-function useBusinessDaysProportion(period: Period) {
-  return useQuery({
-    queryKey: ['plano-incentivo-bizdays', period],
-    queryFn: async () => {
-      // Mesma proporção das outras metas: dias úteis do período ÷ base mensal (camada única)
-      const [{ data: settingsRows }, { data: hols }] = await Promise.all([
-        supabase.from('meta_settings').select('setting_key, setting_value'),
-        supabase.from('clinic_holidays').select('holiday_date, is_recurring'),
-      ]);
-      const settings: Record<string, number> = {};
-      (settingsRows ?? []).forEach(r => { settings[r.setting_key] = Number(r.setting_value); });
-      const cal = createBusinessCalendar(Number(settings.working_days_bitmask ?? 62), (hols ?? []) as HolidayRow[]);
-      const range = buildPeriodRange(period);
-      return { periodBiz: cal.countBusinessDays(range.start, range.end), proportion: periodProportion(range, cal, settings) };
-    },
-  });
-}
-
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: 'hoje', label: 'Hoje' },
-  { value: 'semana', label: 'Semana' },
-  { value: 'mes', label: 'Mês' },
-];
 
 export default function PlanoIncentivoV2({ embedded = false }: { embedded?: boolean } = {}) {
-  const [period, setPeriod] = useState<Period>('mes');
-  const { data: panel, isLoading } = useClinicGoalsPanel(period);
-  const { data: referralsCount = 0 } = useReferralsCount(period);
-  const { data: referralsTrend = [] } = useReferralsTrend(period);
-  const { data: bizDays } = useBusinessDaysProportion(period);
-  const { data: metaSettings } = useMetaSettings();
-
-  const goals = useMemo<DisplayGoal[]>(() => {
-    if (!panel) return [];
-    const find = (k: string) => panel.metrics.find(m => m.key === k);
-    const leads = find('leads');
-    const agend = find('agendamentos');
-    const comp = find('comparecimentos');
-    const vendas = find('vendas');
-
-    const buildBase = (m: PanelMetric, icon: any, primaryDisplay?: string, rateInfo?: string): DisplayGoal => ({
-      key: m.key,
-      label: m.label,
-      icon,
-      current: m.current,
-      target: m.target,
-      remaining: Math.max(0, m.target - m.current),
-      percentage: m.percentage,
-      status: statusToColor(m.status),
-      primaryDisplay: primaryDisplay ?? m.display,
-      metaSaudavel: m.healthyGoal,
-      rateInfo,
-      trend: m.trend ?? [],
-    });
-
-    const out: DisplayGoal[] = [];
-    if (leads) out.push(buildBase(leads, Users));
-    if (agend) out.push(buildBase(agend, CalendarCheck,
-      `${agend.current} agendamentos`,
-      agend.rate ? `Taxa atual ${agend.rate.display} · meta ${agend.rate.targetDisplay}` : undefined));
-    if (comp) out.push(buildBase(comp, UserCheck,
-      `${comp.current} comparecimentos`,
-      comp.rate ? `Taxa atual ${comp.rate.display} · meta ${comp.rate.targetDisplay}` : undefined));
-    if (vendas) out.push(buildBase(vendas, Trophy,
-      `${vendas.current} vendas`,
-      vendas.rate ? `Taxa atual ${vendas.rate.display} · meta ${vendas.rate.targetDisplay}` : undefined));
-
-    // Indicação Pac
-    const monthlyIndic = Number(metaSettings?.meta_indicacoes ?? 200);
-    const proportion = bizDays?.proportion ?? 1;
-    const tgtIndic = proportion === 0 ? 0 : Math.max(1, Math.round(monthlyIndic * proportion));
-    const remaining = Math.max(0, tgtIndic - referralsCount);
-    const ratio = tgtIndic ? referralsCount / tgtIndic : 1;
-    const status: StatusColor = ratio >= 0.85 ? 'azul' : ratio >= 0.55 ? 'verde' : 'vermelho';
-    const periodSuffix = period === 'hoje' ? '/dia' : period === 'semana' ? '/semana' : '/mês';
-    out.push({
-      key: 'indicacoes',
-      label: 'Indicação Pac',
-      icon: Heart,
-      current: referralsCount,
-      target: tgtIndic,
-      remaining,
-      percentage: Math.min(100, Math.round(ratio * 100)),
-      status,
-      primaryDisplay: `${referralsCount} indicações`,
-      metaSaudavel: remaining > 0
-        ? `${tgtIndic} indicações${periodSuffix} · faltam ${remaining}`
-        : `${tgtIndic} indicações${periodSuffix} · meta atingida`,
-      trend: referralsTrend,
-    });
-
-    return out;
-  }, [panel, referralsCount, referralsTrend, bizDays, metaSettings, period]);
-
-  const totalGoals = goals.length;
-  const goalsHealthy = goals.filter(g => g.status === 'azul').length;
-  const goalsHit = goals.filter(g => g.current >= g.target).length;
-  const overallProgress = totalGoals
-    ? Math.round(goals.reduce((s, g) => s + g.percentage, 0) / totalGoals)
-    : 0;
+  useLiveRefresh();
+  const { canManage } = useAuth();
+  // período = filtro de data global (canto superior direito)
+  const { period: globalPeriod, range: globalRange, anchor, customRange } = usePeriodFilter();
+  const { current: periodNoun } = useGlobalPeriodText();
+  const [editing, setEditing] = useState(false);
+  const period: IncentivePeriod = customRange?.from ? 'mes' : globalPeriod === 'hoje' ? 'dia' : globalPeriod === 'semana' ? 'semana' : 'mes';
+  const range = useMemo(() => ({ start: globalRange.start, end: globalRange.end }), [globalRange.start, globalRange.end]);
+  // mês do bônus: o da data escolhida (na semana, o mês da quinta-feira)
+  const bonusMonth = useMemo(
+    () => (globalPeriod === 'semana' ? addDays(range.start, 3) : customRange?.from ?? anchor),
+    [globalPeriod, range.start, customRange?.from, anchor],
+  );
+  const { data, isLoading } = usePlanoIncentivo(bonusMonth, period, range);
+  const total = (data?.groups ?? []).reduce((sum, g) => sum + g.total, 0);
+  const settings = data?.settings ?? { weeklyValue: 100, tripValue: 5000, tripMonths: 6 };
 
   return (
     <PageShell embedded={embedded} title="Plano de Incentivo Inteligente">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Plano de Incentivo Inteligente</h2>
-            <p className="text-muted-foreground text-sm">
-              Metas oficiais da clínica · sincronizado com o Comercial 1 · proporcional aos dias úteis
+            <p className="text-sm text-muted-foreground">Metas de cada responsável, tiradas do faturamento e do ticket médio do objetivo central.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{globalRange.label}</span>
+            {canManage && data && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}><Settings className="h-4 w-4" />Regras</Button>
+            )}
+          </div>
+        </div>
+
+        <Card className="monday-card">
+          <CardContent className="p-5 grid gap-5 lg:grid-cols-[minmax(220px,1fr)_3fr] items-center">
+            <div className="flex items-center gap-4">
+              <span className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"><Trophy className="h-6 w-6 text-primary" aria-hidden /></span>
+              <div>
+                <p className="text-xs text-muted-foreground">Bônus da equipe em {format(bonusMonth, 'MMMM', { locale: ptBR })}</p>
+                <p className="hero-number text-4xl leading-tight">{brl(total)}</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { Icon: CalendarCheck, title: `${brl(settings.weeklyValue)} por semana`, text: 'quando a responsável bate todas as suas metas da semana' },
+                { Icon: Copy, title: 'Bônus dobrado', text: 'batendo todas as semanas do mês, recebe o valor das semanas de novo' },
+                { Icon: Plane, title: `Viagem de ${brl(settings.tripValue)}`, text: `${settings.tripMonths} meses seguidos com todas as metas mensais batidas` },
+              ].map(r => (
+                <div key={r.title} className="flex gap-3 rounded-xl border bg-muted/30 p-3">
+                  <r.Icon className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden />
+                  <div><p className="text-sm font-semibold">{r.title}</p><p className="text-xs text-muted-foreground">{r.text}</p></div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {isLoading || !data ? (
+          <div className="grid gap-6 xl:grid-cols-3">{[1, 2, 3].map(i => <div key={i} className="h-[560px] rounded-xl bg-muted/50 animate-pulse" />)}</div>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {data.groups.map(g => <PersonCard key={g.group} g={g} data={data} noun={periodNoun} />)}
+            </div>
+            <TeamChart data={data} period={globalRange.label} />
+            <p className="text-xs text-muted-foreground">
+              As metas do dia e da semana são proporcionais aos dias úteis. Semanas de segunda a domingo; a semana pertence ao mês da sua quinta-feira.
+              Indicações contam tudo que foi apontado no Comercial 1, CRC e Comercial 2 (cada pessoa indicada conta uma vez).
             </p>
-          </div>
-          <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
-            {PERIOD_OPTIONS.map(opt => (
-              <Button
-                key={opt.value}
-                size="sm"
-                variant={period === opt.value ? 'default' : 'ghost'}
-                onClick={() => setPeriod(opt.value)}
-                className="h-8"
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Resumo */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Progresso geral</p>
-                  <p className="text-2xl font-bold">{overallProgress}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Metas saudáveis</p>
-                  <p className="text-2xl font-bold">{goalsHealthy}/{totalGoals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Metas atingidas</p>
-                  <p className="text-2xl font-bold">{goalsHit}/{totalGoals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="monday-card">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                  <CalendarCheck className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Dias úteis ({PERIOD_OPTIONS.find(p=>p.value===period)?.label})</p>
-                  <p className="text-2xl font-bold">{bizDays?.periodBiz ?? '—'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Cards de metas */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {isLoading
-            ? [1, 2, 3, 4, 5].map(i => <div key={i} className="h-56 rounded-xl bg-muted/50 animate-pulse" />)
-            : goals.map(g => {
-                const cls = colorClasses[g.status];
-                const Icon = g.icon;
-                return (
-                  <Card key={g.key} className={cn('overflow-hidden ring-1', cls.ring)}>
-                    <div className={cn('h-1.5 w-full', cls.bar)} />
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={cn('h-11 w-11 rounded-xl flex items-center justify-center', cls.bg)}>
-                            <Icon className={cn('h-5 w-5', cls.text)} />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Meta saudável</p>
-                            <p className="font-semibold">{g.label}</p>
-                          </div>
-                        </div>
-                        <span className={cn('text-xs font-semibold px-2 py-1 rounded-full', cls.bg, cls.text)}>
-                          {cls.label}
-                        </span>
-                      </div>
-
-                      <div>
-                        <p className="text-3xl font-bold">{g.primaryDisplay}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{g.metaSaudavel}</p>
-                        {g.rateInfo && (
-                          <p className="text-xs text-muted-foreground mt-1">{g.rateInfo}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Progress value={g.percentage} className="h-2" />
-                        <div className="flex justify-between text-xs">
-                          <span className={cn('font-semibold', cls.text)}>{g.percentage}% atingido</span>
-                          {g.remaining > 0 ? (
-                            <span className="text-muted-foreground">faltam {g.remaining}</span>
-                          ) : (
-                            <span className="text-success font-semibold">meta atingida </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {g.trend.length > 1 && (
-                        <div className="pt-2 border-t">
-                          <p className="text-[10px] text-muted-foreground mb-1">Evolução</p>
-                          <Sparkline data={g.trend} />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-        </div>
-
-        {/* Insights */}
-        {panel && panel.insights.length > 0 && (
-          <Card className="monday-card">
-            <CardContent className="p-5 space-y-2">
-              <p className="text-sm font-semibold">Insights inteligentes</p>
-              <ul className="space-y-1.5">
-                {panel.insights.map((it, idx) => (
-                  <li key={idx} className="text-sm text-muted-foreground">{it}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+            {editing && <RulesDialog open={editing} onOpenChange={setEditing} data={data} />}
+          </>
         )}
       </div>
     </PageShell>

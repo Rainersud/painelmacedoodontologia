@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 
 export function RecentLeadsWidget() {
   const { period, setPeriod, range } = useLocalPeriod('hoje');
@@ -40,7 +39,6 @@ export function RecentLeadsWidget() {
             <Users className="h-5 w-5 text-primary" />
             Leads Recentes (Novos Leads · Comercial 1)
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} />
         </div>
       </CardHeader>
       <CardContent>

@@ -1,3 +1,4 @@
+import { assertFinance } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { allPages } from '@/lib/paging';
 import { supabase } from '@/integrations/supabase/client';
@@ -257,6 +258,7 @@ export function useRevertPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
+      assertFinance();
       const { error } = await supabase
         .from('payments')
         .update({ status: 'cancelado', paid_at: null })
@@ -278,6 +280,7 @@ export function useDeletePayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
+      assertFinance();
       const { error } = await supabase
         .from('payments')
         .delete()
@@ -299,6 +302,7 @@ export function useEditPayment() {
 
   return useMutation({
     mutationFn: async (data: { id: string; gross_value: number; net_value: number; fee_amount: number; fee_percentage: number }) => {
+      assertFinance();
       const { error } = await supabase
         .from('payments')
         .update({
@@ -325,6 +329,7 @@ export function useConfirmBoletoPayment() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
+      assertFinance();
       const { error } = await supabase
         .from('payments')
         .update({ status: 'pago', paid_at: new Date().toISOString() })

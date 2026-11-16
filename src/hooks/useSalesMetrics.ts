@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { SOLD_STATUS_LIST } from '@/lib/metrics';
+import { SOLD_STATUS_LIST, fetchMetricsData, newLeads, revenue } from '@/lib/metrics';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 export interface SaleTypeMetrics {
@@ -56,24 +56,18 @@ export function useSalesMetrics(referenceMonth?: Date) {
       const twoStepLeads = leads.filter(l => (l as any).sale_type === '2_etapas');
       const oneStepIds = oneStepLeads.map(l => l.id);
       const twoStepIds = twoStepLeads.map(l => l.id);
-      const allIds = leads.map(l => l.id);
 
       // Get payments for each group
-      const getRevenue = async (ids: string[]) => {
-        if (ids.length === 0) return 0;
-        const { data } = await supabase
-          .from('payments')
-          .select('net_value')
-          .eq('status', 'pago')
-          .in('lead_id', ids);
-        return (data || []).reduce((sum, p) => sum + (p.net_value || 0), 0);
+      // Faturamento = pagamentos recebidos no mês (a mesma regra do Funil, de Metas e do CAC)
+      const period = { start: monthStart, end: monthEnd };
+      const metricsData = await fetchMetricsData(period);
+      const revOf = (ids: string[]) => {
+        const set = new Set(ids);
+        return revenue(metricsData.payments.filter(p => p.lead_id && set.has(p.lead_id)), period);
       };
-
-      const [rev1, rev2, revAll] = await Promise.all([
-        getRevenue(oneStepIds),
-        getRevenue(twoStepIds),
-        getRevenue(allIds),
-      ]);
+      const rev1 = revOf(oneStepIds);
+      const rev2 = revOf(twoStepIds);
+      const revAll = revenue(metricsData.payments, period);
 
       // Total costs (shared across all sales proportionally)
       const { data: costsData } = await supabase
@@ -84,14 +78,8 @@ export function useSalesMetrics(referenceMonth?: Date) {
 
       const totalCosts = ((costsData || []) as any[]).reduce((sum, c) => sum + Number(c.amount), 0);
 
-      // Total leads in period
-      const { count: totalLeadCount } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
-
-      const totalLeads = totalLeadCount || 0;
+      // Novos leads do mês (cadastro no Comercial 1)
+      const totalLeads = newLeads(metricsData.leads, period).length;
       const totalSales = leads.length;
 
       // Proportional cost split

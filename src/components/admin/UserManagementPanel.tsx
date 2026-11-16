@@ -1,3 +1,4 @@
+import { PERFIL_LABELS, type Perfil } from '@/lib/access';
 import { useState } from 'react';
 import { describeError } from '@/lib/errors';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, Users, UserPlus, Key, Power, Settings2, Loader2, Trash2 } from 'lucide-react';
+import { Shield, Users, UserPlus, Key, Power, Settings2, Loader2, Trash2, Link2, Copy, Eye, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface UserWithDetails {
@@ -27,6 +30,7 @@ interface UserWithDetails {
   is_active: boolean;
   banned: boolean;
   permissions: Array<{ module: string; can_view: boolean; can_edit: boolean }>;
+  perfil?: Perfil;
 }
 
 const ALL_MODULES = Object.keys(MODULE_LABELS);
@@ -44,6 +48,7 @@ const DEFAULT_AGENT_PERMISSIONS = [
   { module: 'plano_incentivo', can_view: true, can_edit: false },
   { module: 'alertas', can_view: true, can_edit: false },
   { module: 'relatorios', can_view: true, can_edit: false },
+  { module: 'ascension', can_view: true, can_edit: true },
   { module: 'perfil', can_view: true, can_edit: true },
 ];
 
@@ -57,7 +62,10 @@ async function invokeManageUsers(action: string, params: any = {}) {
 }
 
 export default function UserManagementPanel() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, setPreviewAs } = useAuth();
+  const navigate = useNavigate();
+  const signupLink = `${window.location.origin}${import.meta.env.BASE_URL}cadastro`;
+  const viewAs = (perfil: Perfil, name: string) => { setPreviewAs({ perfil, name }); navigate('/'); };
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPermOpen, setIsPermOpen] = useState(false);
@@ -72,6 +80,7 @@ export default function UserManagementPanel() {
   const [newPassword, setNewPassword] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'agente'>('agente');
+  const [newPerfil, setNewPerfil] = useState<Perfil>('atendimento');
   const [resetPassword, setResetPassword] = useState('');
 
   const { data: users = [], isLoading } = useQuery<UserWithDetails[]>({
@@ -83,6 +92,17 @@ export default function UserManagementPanel() {
     enabled: isAdmin,
   });
 
+  const updatePerfil = useMutation({
+    mutationFn: async ({ userId, perfil }: { userId: string; perfil: Perfil }) => {
+      await invokeManageUsers('update_user', { user_id: userId, perfil });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managed-users'] });
+      toast.success('Acesso atualizado');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const createUser = useMutation({
     mutationFn: async () => {
       await invokeManageUsers('create_user', {
@@ -91,6 +111,7 @@ export default function UserManagementPanel() {
         full_name: newName,
         phone: newPhone,
         role: newRole,
+        perfil: newPerfil,
         permissions: newRole === 'agente' ? DEFAULT_AGENT_PERMISSIONS : [],
       });
     },
@@ -201,8 +222,49 @@ export default function UserManagementPanel() {
 
   if (!isAdmin) return null;
 
+  const pending = users.filter(u => u.role !== 'admin' && (u.perfil ?? 'pendente') === 'pendente');
+
   return (
     <div className="space-y-4">
+      <Card className="monday-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Link2 className="h-4 w-4 text-primary" /> Link de cadastro</CardTitle>
+          <CardDescription>
+            Envie este link para a colaboradora criar o próprio login e senha. A conta entra como "Aguardando liberação";
+            você escolhe a função e o acesso na lista abaixo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input readOnly value={signupLink} className="font-medium" onFocus={e => e.currentTarget.select()} aria-label="Link de cadastro" />
+            <Button
+              className="shrink-0 gap-2"
+              onClick={async () => {
+                try { await navigator.clipboard.writeText(signupLink); toast.success('Link copiado'); }
+                catch { toast.error('Não foi possível copiar; selecione o link e copie.'); }
+              }}
+            >
+              <Copy className="h-4 w-4" /> Copiar link
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Ver como fica cada acesso:</span>
+            {(['atendimento', 'comparecimento', 'completo'] as Perfil[]).map(k => (
+              <Button key={k} size="sm" variant="outline" className="gap-1.5" onClick={() => viewAs(k, PERFIL_LABELS[k].split(' — ')[0].split(' (')[0])}>
+                <Eye className="h-3.5 w-3.5" /> {PERFIL_LABELS[k].split(' — ')[0].split(' (')[0]}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {pending.length > 0 && (
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm flex items-center gap-2" role="status">
+          <Clock className="h-4 w-4 text-warning-strong shrink-0" />
+          <span><strong>{pending.length}</strong> {pending.length === 1 ? 'pessoa criou a conta e aguarda' : 'pessoas criaram a conta e aguardam'} liberação: escolha o acesso na coluna "Acesso".</span>
+        </div>
+      )}
+
       <Card className="monday-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -231,7 +293,7 @@ export default function UserManagementPanel() {
                 </div>
                 <div className="space-y-2">
                   <Label>Senha</Label>
-                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres" />
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone</Label>
@@ -249,6 +311,18 @@ export default function UserManagementPanel() {
                     </SelectContent>
                   </Select>
                 </div>
+                {newRole === 'agente' && (
+                  <div className="space-y-2">
+                    <Label>Acesso</Label>
+                    <Select value={newPerfil} onValueChange={(v: Perfil) => setNewPerfil(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PERFIL_LABELS) as Perfil[]).map(k => <SelectItem key={k} value={k}>{PERFIL_LABELS[k]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Colaboradores só visualizam financeiro e metas; a Administração fica oculta.</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button onClick={() => createUser.mutate()} disabled={createUser.isPending || !newName || !newEmail || !newPassword}>
@@ -271,6 +345,7 @@ export default function UserManagementPanel() {
                   <TableHead>Usuário</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Função</TableHead>
+                  <TableHead>Acesso</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -312,20 +387,33 @@ export default function UserManagementPanel() {
                       </Select>
                     </TableCell>
                     <TableCell>
+                      {user.role === 'admin' ? <span className="text-xs text-muted-foreground">Tudo</span> : (
+                        <Select value={user.perfil ?? 'pendente'} onValueChange={(v) => updatePerfil.mutate({ userId: user.user_id, perfil: v as Perfil })}>
+                          <SelectTrigger className={cn('w-[230px]', (user.perfil ?? 'pendente') === 'pendente' && 'border-warning text-warning-strong')}><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(PERFIL_LABELS) as Perfil[]).map(k => <SelectItem key={k} value={k}>{PERFIL_LABELS[k]}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={user.banned || user.is_active === false ? 'destructive' : 'default'} className="text-xs">
                         {user.banned || user.is_active === false ? 'Inativo' : 'Ativo'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openPermissions(user)}
-                          title="Permissões"
-                        >
-                          <Settings2 className="h-4 w-4" />
-                        </Button>
+                        {user.role !== 'admin' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => viewAs((user.perfil ?? 'pendente') as Perfil, user.full_name || user.email)}
+                            title="Ver como esta pessoa"
+                            aria-label={`Ver o sistema como ${user.full_name}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -349,7 +437,8 @@ export default function UserManagementPanel() {
                           variant="ghost"
                           size="sm"
                           onClick={() => { setSelectedUser(user); setIsDeleteOpen(true); }}
-                          title="Deletar usuário"
+                          title="Remover pessoa do sistema"
+                          aria-label={`Remover ${user.full_name}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -421,14 +510,14 @@ export default function UserManagementPanel() {
                 type="password"
                 value={resetPassword}
                 onChange={e => setResetPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               onClick={() => doResetPassword.mutate()}
-              disabled={doResetPassword.isPending || resetPassword.length < 6}
+              disabled={doResetPassword.isPending || resetPassword.length < 8}
             >
               {doResetPassword.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Alterar Senha
@@ -441,10 +530,11 @@ export default function UserManagementPanel() {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-destructive">Deletar Usuário</DialogTitle>
+            <DialogTitle className="text-destructive">Remover pessoa do sistema</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Tem certeza que deseja deletar o usuário <strong>{selectedUser?.full_name}</strong>? Esta ação não pode ser desfeita.
+            <strong>{selectedUser?.full_name}</strong> perde o login e sai da lista de usuários. Os leads, tarefas e históricos que ela registrou continuam no sistema.
+            Isso não pode ser desfeito; para só bloquear por um tempo, use o botão de desativar.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
@@ -456,7 +546,7 @@ export default function UserManagementPanel() {
               disabled={deleteUser.isPending}
             >
               {deleteUser.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Deletar
+              Remover pessoa
             </Button>
           </DialogFooter>
         </DialogContent>

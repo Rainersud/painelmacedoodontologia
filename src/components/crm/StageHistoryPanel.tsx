@@ -1,3 +1,4 @@
+import { useTeamNames, authorLabel } from '@/hooks/useTeamNames';
 import { useStageHistory } from '@/hooks/useStageHistory';
 import { FUNNEL_STAGES } from '@/types/crm';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ function formatDate(iso: string): string {
 
 export function StageHistoryPanel({ leadId }: StageHistoryPanelProps) {
   const { data: history, isLoading } = useStageHistory(leadId);
+  const { data: team } = useTeamNames();
 
   if (isLoading) {
     return <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>;
@@ -57,6 +59,7 @@ export function StageHistoryPanel({ leadId }: StageHistoryPanelProps) {
               <th className="text-left p-2 font-medium">Entrada</th>
               <th className="text-left p-2 font-medium">Saída</th>
               <th className="text-left p-2 font-medium">Tempo</th>
+              <th className="text-left p-2 font-medium">Quem moveu</th>
             </tr>
           </thead>
           <tbody>
@@ -80,6 +83,9 @@ export function StageHistoryPanel({ leadId }: StageHistoryPanelProps) {
                     )}>
                       {isActive ? 'aguardando': formatDuration(entry.duration_seconds)}
                     </Badge>
+                  </td>
+                  <td className="p-2">
+                    {authorLabel(team, entry.changed_by) ?? <span className="text-muted-foreground/70">não registrado</span>}
                   </td>
                 </tr>
               );

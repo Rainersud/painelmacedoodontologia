@@ -4,7 +4,6 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMenuCounts } from '@/hooks/useMenuCounts';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
 
 import {
   Sidebar,
@@ -28,7 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ClipboardList, LifeBuoy, ListChecks, Lock, Table2 } from 'lucide-react';
+import { canOpenPath } from '@/lib/access';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -91,11 +91,18 @@ const mainNavItems: NavItemDef[] = [
 
 // Gestão: tudo o que o Comercial alimenta (metas, dados e reuniões)
 const managementNavItems: NavItemDef[] = [
-  { title: 'Metas / Objetivos', url: '/objetivos', icon: Target, module: 'metas_clinica', modules: ['metas_clinica', 'bonus_metas', 'plano_incentivo'] },
+  { title: 'Metas / Objetivos', url: '/objetivos', icon: Target, module: 'metas_clinica', modules: ['metas_clinica', 'plano_incentivo'] },
   { title: 'Dados / Métricas', url: '/dados', icon: BarChart3, module: 'cac', modules: ['central_funis', 'funil_trafego', 'cac', 'metricas_vendas', 'relatorios', 'bi'] },
   { title: 'Reuniões Semanais', url: '/reunioes', icon: CalendarCheck, module: 'reunioes' },
 ];
 
+// ASCENSION: as planilhas da clínica, alimentadas pelo painel
+const ascensionNavItems: NavItemDef[] = [
+  { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: ClipboardList, module: 'ascension' },
+  { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Table2, module: 'ascension' },
+  { title: 'Suporte', url: '/ascension?aba=suporte', icon: LifeBuoy, module: 'ascension' },
+  { title: 'Tarefas', url: '/ascension?aba=tarefas', icon: ListChecks, module: 'ascension' },
+];
 
 const adminNavItems: NavItemDef[] = [
   { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
@@ -104,12 +111,12 @@ const adminNavItems: NavItemDef[] = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fullName, role, isAdmin, signOut } = useAuth();
-  const { canView } = usePermissions();
+  const { fullName, role, signOut, access } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
   const groupForPath = (path: string): string => {
     if (adminNavItems.some((i) => i.url === path)) return 'admin';
     if (managementNavItems.some((i) => i.url === path)) return 'gestao';
+    if (path === '/ascension') return 'ascension';
     if (mainNavItems.some((i) => i.url === path)) return 'principal';
     return 'principal';
   };
@@ -123,12 +130,17 @@ export function AppSidebar() {
 
 
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    const [p, q] = path.split('?');
+    if (location.pathname !== p) return false;
+    return !q || new URLSearchParams(location.search).get('aba') === new URLSearchParams(q).get('aba');
+  };
   const menuCounts = useMenuCounts();
   const initials = fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
-  const filterVisible = (items: NavItemDef[]) =>
-    items.filter(item => isAdmin || (item.modules ?? [item.module]).some(m => canView(m)));
+  // Todos os itens aparecem; os que o acesso não inclui ficam em preto e branco, com cadeado
+  const filterVisible = (items: NavItemDef[]) => items;
+  const allowed = (item: NavItemDef) => canOpenPath(access, item.url.split('?')[0]);
   const currentTitle = (items: NavItemDef[]) => items.find(i => isActive(i.url))?.title;
 
   const handleSignOut = async () => {
@@ -136,7 +148,19 @@ export function AppSidebar() {
     navigate('/login');
   };
 
-  const NavItem = ({ item }: { item: NavItemDef }) => (
+  const NavItem = ({ item }: { item: NavItemDef }) => !allowed(item) ? (
+    <SidebarMenuItem>
+      <div
+        className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium grayscale opacity-45 cursor-not-allowed select-none text-sidebar-foreground/70"
+        aria-disabled="true"
+        title="Seu acesso não inclui esta área"
+      >
+        <item.icon className="h-5 w-5 shrink-0" aria-hidden />
+        <span>{item.title}</span>
+        <Lock className="ml-auto h-3.5 w-3.5" aria-label="Sem acesso" />
+      </div>
+    </SidebarMenuItem>
+  ) : (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive(item.url)} className="h-auto">
         <NavLink
@@ -171,6 +195,7 @@ export function AppSidebar() {
 
   const visibleMain = filterVisible(mainNavItems);
   const visibleMgmt = filterVisible(managementNavItems);
+  const visibleAscension = filterVisible(ascensionNavItems);
 
   return (
     <Sidebar className="border-r-0">
@@ -216,7 +241,22 @@ export function AppSidebar() {
           </CollapsibleGroup>
         )}
 
-        {(isAdmin || canView('configuracoes')) && (
+        {visibleAscension.length > 0 && (
+          <CollapsibleGroup
+            label="ASCENSION"
+            className="mt-2"
+            count={visibleAscension.length}
+            current={currentTitle(visibleAscension)}
+            open={openGroup === 'ascension'}
+            onToggle={() => setOpenGroup(openGroup === 'ascension' ? null : 'ascension')}
+          >
+            {visibleAscension.map((item) => (
+              <NavItem key={item.title} item={item} />
+            ))}
+          </CollapsibleGroup>
+        )}
+
+        {access.canAdmin && (
           <CollapsibleGroup
             label="Administração"
             className="mt-2"

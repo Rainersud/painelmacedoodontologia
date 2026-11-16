@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { GlobalDateFilter } from './GlobalDateFilter';
+import { PreviewBanner } from './PreviewBanner';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,6 +22,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+          <PreviewBanner />
           <header className="sticky top-0 z-10 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shrink-0">
             <div className="h-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -30,13 +33,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               </div>
               
               <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                <div className="hidden lg:flex relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar leads, agendamentos..." 
-                    className="w-48 xl:w-64 pl-9 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                  />
-                </div>
+                <GlobalDateFilter />
 
                 <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9">
                   <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />

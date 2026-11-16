@@ -1,3 +1,4 @@
+import { CLINICA_OPTIONS } from '@/lib/clinicas';
 import { useState } from 'react';
 import { describeError } from '@/lib/errors';
 import {
@@ -60,6 +61,7 @@ export const ARRIVAL_SOURCE_OPTIONS = [
   { value: 'prospeccao_ativa', label: 'Prospecção Ativa' },
   { value: 'indicacao_parceria', label: 'Indicação de Parceria' },
   { value: 'social_selling', label: 'Social Selling' },
+  { value: 'resgate', label: 'Resgate' },
 ] as const;
 
 const TREATMENT_OPTIONS = [
@@ -80,6 +82,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     source: 'outro' as string,
     lead_arrival_source: undefined as string | undefined,
     interest_product: undefined as string | undefined,
+    clinica: undefined as string | undefined,
     notes: '',
   });
 
@@ -125,6 +128,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         status: (form.source === 'indicacao' ? 'indicacoes' : 'novo_lead') as any,
         sale_type: '1_etapa',
         interest_product: form.interest_product,
+        clinica: form.clinica ?? null,
         notes: form.notes.trim() || null,
         assigned_agent_id: user?.id || null,
       }).select('id').single();
@@ -148,7 +152,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['crm-leads'] });
       queryClient.invalidateQueries({ queryKey: ['funnel-leads'] });
       queryClient.invalidateQueries({ queryKey: ['strategic-origins'] });
-      setForm({ name: '', phone: '', source: 'outro', lead_arrival_source: undefined, interest_product: undefined, notes: '' });
+      setForm({ name: '', phone: '', source: 'outro', lead_arrival_source: undefined, interest_product: undefined, clinica: undefined, notes: '' });
       setDuplicates(null);
       onOpenChange(false);
 
@@ -229,7 +233,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              Esta origem alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+              Esta origem alimenta o ROI Inteligente, as metas e o plano de incentivo.
             </p>
           </div>
 
@@ -248,6 +252,16 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                     {opt.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Clínica</Label>
+            <Select value={form.clinica} onValueChange={(value) => setForm(prev => ({ ...prev, clinica: value }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione a clínica" /></SelectTrigger>
+              <SelectContent>
+                {CLINICA_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

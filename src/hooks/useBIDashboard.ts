@@ -72,11 +72,12 @@ function getDateRange(period: BIPeriodFilter): { start: Date; end: Date } | null
   }
 }
 
-export function useBIDashboard(period: BIPeriodFilter = 'todos') {
+/** `range`: período do filtro de data global; sem ele, usa o atalho `period` (padrão: todo o período). */
+export function useBIDashboard(period: BIPeriodFilter = 'todos', range?: { start: Date; end: Date }) {
   return useQuery({
-    queryKey: ['bi-dashboard', period],
+    queryKey: ['bi-dashboard', period, range?.start.toISOString(), range?.end.toISOString()],
     queryFn: async (): Promise<BIDashboardData> => {
-      const dateRange = getDateRange(period);
+      const dateRange = range ?? getDateRange(period);
 
       // 1. Paid payments (faturamento recebido)
       let paidQuery = supabase

@@ -1,3 +1,7 @@
+import { FinanceOnly } from '@/components/access/FinanceOnly';
+import { MetricSpark } from '@/components/charts/SmoothCharts';
+import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useState, useMemo } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { AdIntegrationsCard } from '@/components/traffic/AdIntegrationsCard';
@@ -309,7 +313,9 @@ function TrafficReconciliation({ month, creatives }: { month: Date; creatives: A
 }
 
 export default function FunilTrafego({ embedded = false }: { embedded?: boolean } = {}) {
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  // mês = filtro de data global (canto superior direito)
+  const { month: selectedMonth, exact } = useGlobalMonth();
+  const monthRange = useMemo(() => ({ start: startOfMonth(selectedMonth), end: endOfMonth(selectedMonth) }), [selectedMonth.getFullYear(), selectedMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
   const { creatives, consolidated, bestCreative, worstCreative, isLoading, addCreative, updateCreative, deleteCreative } = useAdCreatives(selectedMonth);
   const [viewMode, setViewMode] = useState<'individual' | 'consolidated'>('consolidated');
   const [selectedCreative, setSelectedCreative] = useState<string | null>(null);
@@ -374,19 +380,11 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
             <p className="text-xs text-muted-foreground">Análise inteligente por criativo</p>
           </div>
           <div className="flex items-center gap-2">
-            <Input
-              type="month"
-              className="w-40 text-xs"
-              value={format(selectedMonth, 'yyyy-MM')}
-              onChange={e => {
-                const [y, m] = e.target.value.split('-');
-                setSelectedMonth(new Date(Number(y), Number(m) - 1, 1));
-              }}
-            />
-            <CreativeFormDialog
+            <MonthNotice month={selectedMonth} exact={exact} />
+            <FinanceOnly><CreativeFormDialog
               onSave={handleAdd}
               trigger={<Button size="sm"><Plus className="h-4 w-4 mr-1" /> Criativo</Button>}
-            />
+            /></FinanceOnly>
           </div>
         </div>
 
@@ -400,29 +398,33 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Investimento</p>
-                <p className="text-sm font-bold">{formatCurrency(consolidated.totalInvestment)}</p>
+                <p className="hero-number text-xl">{formatCurrency(consolidated.totalInvestment)}</p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="investimento" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Faturamento</p>
-                <p className="text-sm font-bold text-success">{formatCurrency(consolidated.totalRevenue)}</p>
+                <p className="hero-number text-xl text-success">{formatCurrency(consolidated.totalRevenue)}</p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="faturamento" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">ROI</p>
-                <p className={cn('text-sm font-bold', consolidatedMetrics.roi >= 0 ? 'text-success' : 'text-destructive')}>
+                <p className={cn('hero-number text-xl', consolidatedMetrics.roi >= 0 ? 'text-success' : 'text-destructive')}>
                   {consolidatedMetrics.roi.toFixed(1)}%
                 </p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="roi" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
             <Card className="monday-card">
               <CardContent className="p-3 text-center">
                 <p className="text-[10px] text-muted-foreground font-semibold">Lucro</p>
-                <p className={cn('text-sm font-bold', consolidatedMetrics.isProfitable ? 'text-success' : 'text-destructive')}>
+                <p className={cn('hero-number text-xl', consolidatedMetrics.isProfitable ? 'text-success' : 'text-destructive')}>
                   {formatCurrency(consolidatedMetrics.profit)}
                 </p>
+                <div className="mt-1.5 -mx-1"><MetricSpark metric="roas" height={26} range={monthRange} /></div>
               </CardContent>
             </Card>
           </div>
@@ -505,14 +507,14 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
                               <a href={safeUrl(c.link_url) ?? "#"} target="_blank" rel="noopener noreferrer nofollow"><ExternalLink className="h-3 w-3" /></a>
                             </Button>
                           )}
-                          <CreativeFormDialog
+                          <FinanceOnly><CreativeFormDialog
                             creative={c}
                             onSave={handleUpdate}
                             trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Edit2 className="h-3 w-3" /></Button>}
-                          />
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCreative.mutate(c.id)}>
+                          /></FinanceOnly>
+                          <FinanceOnly><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCreative.mutate(c.id)}>
                             <Trash2 className="h-3 w-3" />
-                          </Button>
+                          </Button></FinanceOnly>
                         </div>
                       </div>
                     </CardHeader>
@@ -573,10 +575,10 @@ export default function FunilTrafego({ embedded = false }: { embedded?: boolean 
               <Megaphone className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
               <h3 className="text-base font-semibold text-foreground">Nenhum criativo cadastrado</h3>
               <p className="text-sm text-muted-foreground mt-1">Adicione seu primeiro criativo para começar a análise de tráfego pago.</p>
-              <CreativeFormDialog
+              <FinanceOnly><CreativeFormDialog
                 onSave={handleAdd}
                 trigger={<Button className="mt-4"><Plus className="h-4 w-4 mr-1" /> Adicionar Criativo</Button>}
-              />
+              /></FinanceOnly>
             </CardContent>
           </Card>
         )}

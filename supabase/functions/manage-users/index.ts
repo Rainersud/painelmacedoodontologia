@@ -118,14 +118,17 @@ Deno.serve(async (req) => {
             }))
         : []
 
+    const isPerfil = (v: unknown) => v === 'completo' || v === 'atendimento' || v === 'comparecimento'
+
     switch (action) {
       case 'create_user': {
-        const { email, password, full_name, phone, role, permissions } = params
+        const { email, password, full_name, phone, role, permissions, perfil } = params
 
         if (!isEmail(email)) return bad('E-mail inválido')
         if (!isPassword(password)) return bad('A senha deve ter no mínimo 8 caracteres')
         if (!isName(full_name)) return bad('Nome inválido')
         if (role !== undefined && !isRole(role)) return bad('Perfil inválido')
+        if (perfil !== undefined && !isPerfil(perfil)) return bad('Acesso inválido')
         if (phone !== undefined && phone !== null && (typeof phone !== 'string' || phone.length > 30)) return bad('Telefone inválido')
 
         // Create user in auth
@@ -135,23 +138,25 @@ Deno.serve(async (req) => {
           email_confirm: true,
           user_metadata: { full_name },
         })
-        if (createError) throw createError
+        if (createError) {
+          return bad(/already|registered|exists/i.test(createError.message) ? 'Já existe uma conta com este e-mail' : 'Não foi possível criar a conta')
+        }
 
 
         const userId = newUser.user.id
 
-        // Create profile
-        await adminClient.from('profiles').insert({
-          user_id: userId,
-          full_name,
-          phone: phone || null,
-        })
+        // Perfil e papel: o gatilho do banco (handle_new_user) pode já ter criado as linhas
+        const { data: prof } = await adminClient.from('profiles').select('id').eq('user_id', userId).maybeSingle()
+        if (prof) {
+          await adminClient.from('profiles').update({ full_name, phone: phone || null }).eq('user_id', userId)
+        } else {
+          await adminClient.from('profiles').insert({ user_id: userId, full_name, phone: phone || null })
+        }
+        await adminClient.from('user_roles').delete().eq('user_id', userId)
+        await adminClient.from('user_roles').insert({ user_id: userId, role: role || 'agente' })
 
-        // Assign role
-        await adminClient.from('user_roles').insert({
-          user_id: userId,
-          role: role || 'agente',
-        })
+        // Perfil de acesso (o que a pessoa vê e faz nas telas)
+        await adminClient.from('user_access').upsert({ user_id: userId, perfil: perfil || 'atendimento' })
 
         // Set permissions
         const permRows = sanitizePermissions(permissions).map((p) => ({ user_id: userId, ...p }))
@@ -165,13 +170,14 @@ Deno.serve(async (req) => {
       }
 
       case 'update_user': {
-        const { user_id, full_name, phone, is_active, role } = params
+        const { user_id, full_name, phone, is_active, role, perfil } = params
 
         if (!isUuid(user_id)) return bad('Usuário inválido')
         if (full_name !== undefined && !isName(full_name)) return bad('Nome inválido')
         if (phone !== undefined && phone !== null && (typeof phone !== 'string' || phone.length > 30)) return bad('Telefone inválido')
         if (is_active !== undefined && typeof is_active !== 'boolean') return bad('Status inválido')
         if (role !== undefined && !isRole(role)) return bad('Perfil inválido')
+        if (perfil !== undefined && !isPerfil(perfil)) return bad('Acesso inválido')
         if (user_id === caller.id && (is_active === false || role === 'agente')) {
           return bad('Você não pode remover o próprio acesso de administrador')
         }
@@ -188,6 +194,10 @@ Deno.serve(async (req) => {
           await adminClient.auth.admin.updateUserById(user_id, { ban_duration: '876000h' })
         } else if (is_active === true) {
           await adminClient.auth.admin.updateUserById(user_id, { ban_duration: 'none' })
+        }
+
+        if (perfil) {
+          await adminClient.from('user_access').upsert({ user_id, perfil, updated_at: new Date().toISOString() })
         }
 
         if (role) {
@@ -239,6 +249,7 @@ Deno.serve(async (req) => {
         const { data: profiles } = await adminClient.from('profiles').select('*').order('full_name')
         const { data: roles } = await adminClient.from('user_roles').select('*')
         const { data: permissions } = await adminClient.from('user_permissions').select('*')
+        const { data: accesses } = await adminClient.from('user_access').select('*')
 
         // Get auth users for email
         const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers()
@@ -250,6 +261,7 @@ Deno.serve(async (req) => {
             email: authUser?.email || '',
             role: roles?.find(r => r.user_id === p.user_id)?.role || 'agente',
             permissions: permissions?.filter(perm => perm.user_id === p.user_id) || [],
+            perfil: accesses?.find(a => a.user_id === p.user_id)?.perfil || 'atendimento',
             banned: authUser?.banned_until ? new Date(authUser.banned_until) > new Date() : false,
           }
         })
@@ -267,6 +279,7 @@ Deno.serve(async (req) => {
 
         // Delete from related tables first
         await adminClient.from('user_permissions').delete().eq('user_id', user_id)
+        await adminClient.from('user_access').delete().eq('user_id', user_id)
         await adminClient.from('user_roles').delete().eq('user_id', user_id)
         await adminClient.from('profiles').delete().eq('user_id', user_id)
 

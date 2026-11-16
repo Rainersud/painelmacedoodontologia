@@ -1,14 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Sparkline } from '@/components/dashboard/Sparkline';
 import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVData } from '@/hooks/useLTVData';
 import { summarize } from '@/lib/ltv';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { GoalCurve, GoalCurveLegend, Sparkline } from '@/components/charts/SmoothCharts';
 import { ChevronRight, Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
@@ -17,7 +16,7 @@ const formatWhole = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`
 const PERIOD_NOUN: Record<Period, string> = { hoje: 'hoje', semana: 'nesta semana', mes: 'neste mês', ano: 'no período' };
 
 /** Etapas do funil, na ordem em que o paciente passa por elas. */
-const FUNNEL_KEYS = ['leads', 'agendamentos', 'comparecimentos', 'vendas'];
+const FUNNEL_KEYS = ['leads', 'agendamentos', 'resgates', 'comparecimentos', 'vendas'];
 /** Indicadores de eficiência, mostrados em lista compacta. */
 const EFFICIENCY_KEYS = ['ticket_medio', 'tempo_resposta', 'cpl', 'cac', 'roas', 'roi', 'investimento', 'ltv'];
 
@@ -89,9 +88,10 @@ function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
         <StatusTag status={m.status} />
       </div>
       <p className="flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold leading-none tracking-tight">{m.display}</span>
+        <span className="hero-number text-4xl leading-none">{m.display}</span>
         <span className="text-sm text-muted-foreground">de {m.targetDisplay}</span>
       </p>
+      <Sparkline data={m.trend} height={36} tone={m.status === 'critical' && m.delta < 0 ? 'danger' : 'brand'} />
       <PaceBar percentage={m.percentage} expected={m.expectedPercentage} status={m.status} />
       <div className="space-y-1 text-xs">
         {m.rate && (
@@ -106,10 +106,11 @@ function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
   );
 }
 
-export function ClinicGoalsPanel() {
-  const { period, setPeriod, customRange, setCustomRange, range } = useLocalPeriod('mes');
+/** `afterRevenue`: bloco mostrado entre o faturamento do período e o funil (ex.: Previsão de Faturamento). */
+export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } = {}) {
+  const { period, customRange, range, anchor } = useLocalPeriod('mes');
   const prevLabel = range.prevLabel ?? 'período anterior';
-  const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd });
+  const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd }, anchor);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const ltvData = useLTVData();
   const ltv = ltvData.isLoading ? null : summarize(ltvData.patients);
@@ -137,28 +138,25 @@ export function ClinicGoalsPanel() {
                 </p>
               )}
             </div>
-            <WidgetPeriodTabs
-              value={period}
-              onChange={(p) => setPeriod(p as Period)}
-              size="sm"
-              customRange={customRange}
-              onCustomRangeChange={setCustomRange}
-            />
+            <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
           </div>
 
           {isLoading && <div className="h-24 rounded-md bg-muted/60 animate-pulse" />}
           {revenue && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-                <p className="text-balance">
-                  <span className="block text-sm text-muted-foreground">Faturamento {PERIOD_NOUN[period]}</span>
-                  <span className="text-4xl sm:text-5xl font-bold tracking-tight leading-none">
-                    {formatWhole(revenue.current)}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Faturamento {/^(Hoje|Esta semana|Este mês|Este ano)$/.test(range.label) ? PERIOD_NOUN[period] : `em ${range.label}`}</p>
+                  <p className="hero-number text-5xl sm:text-6xl leading-none mt-1">{formatWhole(revenue.current)}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    de {formatWhole(revenue.target)} · <Delta m={revenue} prevLabel={prevLabel} />
+                  </p>
+                </div>
+                <div className="flex flex-col items-start sm:items-end gap-1.5 text-sm">
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                    revenue.status === 'healthy' ? 'bg-success/10 text-success' : revenue.status === 'warning' ? 'bg-warning/15 text-warning-strong' : 'bg-destructive/10 text-destructive')}>
+                    {revenue.status === 'healthy' ? 'No ritmo' : revenue.status === 'warning' ? 'Atenção ao ritmo' : 'Abaixo do ritmo'}
                   </span>
-                  <span className="ml-2 text-lg text-muted-foreground">de {formatWhole(revenue.target)}</span>
-                </p>
-                <div className="flex flex-col items-start sm:items-end gap-1 text-sm">
-                  <StatusTag status={revenue.status} />
                   {period === 'mes' && data && data.projectedRevenue > 0 && (
                     <span className="text-muted-foreground">
                       No ritmo atual, o mês fecha em <span className="font-semibold text-foreground">{formatWhole(data.projectedRevenue)}</span>
@@ -166,27 +164,41 @@ export function ClinicGoalsPanel() {
                   )}
                 </div>
               </div>
-              <PaceBar
-                percentage={revenue.percentage}
-                expected={revenue.expectedPercentage}
-                status={revenue.status}
-                className="[&>div:first-child]:h-3"
-              />
-              <p className="text-xs text-muted-foreground">
-                {revenue.expectedPercentage !== undefined && (
-                  <>A marca na barra mostra onde o faturamento deveria estar hoje ({revenue.expectedPercentage}% da meta). </>
-                )}
-                <Delta m={revenue} prevLabel={prevLabel} />
-              </p>
+              {data && revenue.trend.length > 1 && (() => {
+                // curva acumulada do período contra o ritmo da meta (linha tracejada)
+                const now = Date.now();
+                let acc = 0;
+                const n = revenue.trend.length;
+                const points = revenue.trend.map((v, i) => {
+                  acc += v;
+                  return { label: data.bucketLabels[i] ?? String(i + 1), value: acc, goal: Math.round((revenue.target * (i + 1)) / n) };
+                });
+                // não desenha o realizado no futuro (dias que ainda não chegaram)
+                const elapsed = range.end.getTime() <= now ? n
+                  : Math.max(1, Math.min(n, Math.ceil(((now - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * n)));
+                const shown = points.map((p, i) => (i < elapsed ? p : { ...p, value: undefined as unknown as number }));
+                return (
+                  <div className="space-y-2">
+                    <GoalCurve points={shown} height={210} format={v => formatWhole(v)} />
+                    <GoalCurveLegend />
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Funil: as quatro etapas em sequência */}
+      {afterRevenue}
+
+      {/* Metas chave: as etapas em sequência, com os resgates */}
       <Card className="monday-card overflow-hidden">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-border">
-          {isLoading && Array.from({ length: 4 }).map((_, i) => (
+        <div className="flex items-baseline justify-between gap-2 px-5 pt-4">
+          <h3 className="text-sm font-semibold tracking-wide">METAS CHAVE</h3>
+          <span className="text-xs text-muted-foreground">{range.label}</span>
+        </div>
+        <div className="grid sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 xl:divide-x divide-border">
+          {isLoading && Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-44 m-4 rounded-md bg-muted/60 animate-pulse" />
           ))}
           {funnel.map((m, i) => (
@@ -194,7 +206,7 @@ export function ClinicGoalsPanel() {
               <FunnelStep m={m} prevLabel={prevLabel} />
               {i < funnel.length - 1 && (
                 <ChevronRight
-                  className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10"
+                  className="hidden xl:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10"
                   aria-hidden
                 />
               )}
@@ -230,7 +242,7 @@ export function ClinicGoalsPanel() {
                     <td className="text-right text-muted-foreground px-3 py-2.5 hidden sm:table-cell">{m.targetDisplay}</td>
                     <td className="px-3 py-1.5 hidden md:table-cell">
                       {m.trend.length > 1 && (
-                        <Sparkline data={m.trend} height={22} strokeClassName="stroke-chart-1" fillClassName="fill-chart-1/10" />
+                        <Sparkline data={m.trend} height={22} />
                       )}
                     </td>
                     <td className="px-5 py-2.5"><StatusTag status={m.status} paced={false} /></td>

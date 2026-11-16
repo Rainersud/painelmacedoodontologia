@@ -1,9 +1,6 @@
 import { PageShell } from '@/components/layout/PageShell';
-import { PeriodFilterProvider } from '@/components/dashboard/PeriodFilterContext';
-import { MasterPeriodFilter } from '@/components/dashboard/MasterPeriodFilter';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { GoalLadderCard } from '@/components/clinic-goals/GoalLadderCard';
-import { StrategicOriginsWidget } from '@/components/dashboard/StrategicOriginsWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
 import { RevenueForecastWidget } from '@/components/dashboard/StrategicInsightsWidget';
@@ -21,20 +18,15 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
 
   return (
     <PageShell embedded={embedded} title="Metas da Clínica">
-      <PeriodFilterProvider>
         <div className="space-y-6">
-          <MasterPeriodFilter />
           <GoalLadderCard />
-          <ClinicGoalsPanel />
-          <StrategicOriginsWidget />
+          <ClinicGoalsPanel afterRevenue={<RevenueForecastWidget />} />
           <ROIAnalyticsWidget />
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />
             <LossReasonsWidget />
           </div>
-          <RevenueForecastWidget />
         </div>
-      </PeriodFilterProvider>
     </PageShell>
   );
 }

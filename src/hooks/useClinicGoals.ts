@@ -1,3 +1,4 @@
+import { assertGoals } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { supabase } from '@/integrations/supabase/client';
@@ -222,6 +223,7 @@ export function useClinicGoals() {
 
   const updateGoal = useMutation({
     mutationFn: async ({ key, value, rate }: { key: string; value: number; rate?: number }) => {
+      assertGoals();
       // Map goal keys to setting keys
       const keyMap: Record<string, string> = {
         leads: 'meta_leads',
@@ -298,6 +300,7 @@ export function useClinicGoals() {
 
   const updateRate = useMutation({
     mutationFn: async ({ key, rate }: { key: string; rate: number }) => {
+      assertGoals();
       const rateKey = `taxa_${key}`;
       
       const { data: existing } = await supabase

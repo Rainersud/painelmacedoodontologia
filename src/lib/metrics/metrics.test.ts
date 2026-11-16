@@ -220,6 +220,15 @@ describe('metas', () => {
     const ladder = deriveGoalLadder(settings);
     expect(ladder.taxaComparecimento).toBe(40);
   });
+  it('resgates, indicações e origens saem dos leads da escada (objetivo central)', () => {
+    const real = { meta_faturamento: 100000, meta_ticket_medio: 3704 };
+    const l = deriveGoalLadder(real);
+    expect([l.vendas, l.comparecimentos, l.agendamentos, l.leads]).toEqual([27, 90, 225, 450]);
+    expect([l.resgates, l.indicacoes, l.prospeccao_ativa, l.indicacao_parceria, l.social_selling]).toEqual([12, 40, 120, 100, 100]);
+    const dobro = deriveGoalLadder({ ...real, meta_faturamento: 200000 });
+    expect(dobro.indicacoes).toBeGreaterThan(l.indicacoes * 1.9);
+    expect(monthlyGoal(real, 'indicacoes')).toBe(40);
+  });
   it('mês inteiro = meta mensal exata', () => {
     expect(periodProportion(nov, cal, settings)).toBe(1);
     expect(periodGoal(settings, 'leads', nov, cal)).toBe(420);

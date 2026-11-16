@@ -1,3 +1,5 @@
+import { MetricSpark } from '@/components/charts/SmoothCharts';
+import type { SeriesKey } from '@/lib/metrics';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStrategicInsights } from '@/hooks/useStrategicInsights';
@@ -7,7 +9,6 @@ import { PieChart as PieIcon, AlertTriangle } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { SOURCE_CONFIG } from '@/types/crm';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { useCRMLeads } from '@/hooks/useCRMLeads';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
 import type { Lead } from '@/types/crm';
@@ -33,7 +34,6 @@ export function LeadOriginsWidget() {
             <PieIcon className="h-5 w-5 text-primary" />
             Origem dos Leads
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
       </CardHeader>
       <CardContent>
@@ -56,10 +56,11 @@ export function LeadOriginsWidget() {
             <div className="space-y-2 max-h-[220px] overflow-y-auto">
               {(data?.origins || []).map((o) => (
                 <div key={o.source} className="flex items-center justify-between text-xs p-2 rounded-md bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ background: originColor(o.source) }} />
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="h-3 w-3 rounded-full shrink-0" style={{ background: originColor(o.source) }} />
                     <span className="font-medium">{SOURCE_CONFIG[o.source as keyof typeof SOURCE_CONFIG]?.label || o.source}</span>
                   </div>
+                  <div className="w-16 shrink-0 mx-2"><MetricSpark metric={o.source as SeriesKey} height={22} /></div>
                   <div className="text-right">
                     <p className="font-semibold">{o.count} leads · {o.conversao}%</p>
                     <p className="text-[10px] text-muted-foreground">{formatCurrency(o.receita)} · ROI {o.roi}%</p>
@@ -95,7 +96,6 @@ export function LossReasonsWidget() {
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Perdas por Motivo
           </CardTitle>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
         <p className="text-xs text-muted-foreground">Categorias inteligentes · quantidade · % · valor estimado perdido</p>
       </CardHeader>

@@ -3,7 +3,9 @@ import { CalendarClock, Info, Loader2, Repeat, TrendingUp, Users, Wallet } from 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { ENTRY_TREATMENT_LABELS, LTV_PERIODS, LTV_STAGES, ltvActivity, ltvPeriodRange, segmentBy, summarize, type LtvPatient, type LtvPeriod } from '@/lib/ltv';
+import { ENTRY_TREATMENT_LABELS, LTV_STAGES, ltvActivity, ltvSeries, segmentBy, summarize, type LtvPatient } from '@/lib/ltv';
+import { Sparkline } from '@/components/charts/SmoothCharts';
+import { useGlobalPeriodText } from '@/hooks/useGlobalPeriodText';
 import { ARRIVAL_SOURCE_LABELS } from '@/lib/metrics/stages';
 import { useLTVData } from '@/hooks/useLTVData';
 import { useGlobalCAC } from '@/hooks/useRevenueProjection';
@@ -13,7 +15,7 @@ type SegmentDim = 'tratamento' | 'origem';
 
 const pct = (v: number) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
-function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; label: string; value: string; sub?: string; help: string }) {
+function Kpi({ icon: Icon, label, value, sub, help , trend }: { icon: typeof Users; label: string; value: string; sub?: string; help: string ; trend?: number[] }) {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -28,34 +30,36 @@ function Kpi({ icon: Icon, label, value, sub, help }: { icon: typeof Users; labe
           <TooltipContent className="max-w-64">{help}</TooltipContent>
         </Tooltip>
       </div>
-      <p className="text-2xl font-bold tabular-nums mt-1.5 leading-none">{value}</p>
+      <p className="hero-number text-3xl mt-1.5 leading-none">{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground mt-1.5">{sub}</p>}
+      {trend && <div className="mt-2 -mx-1"><Sparkline data={trend} height={30} /></div>}
     </div>
   );
 }
 
 interface LTVRecurrencePanelProps {
   /** Filtro Dia / Semana / Mês do topo do Comercial 2 */
-  period: LtvPeriod;
   /** Abre a oportunidade do LTV (id do card do Comercial 2). */
   onOpenLead?: (oppId: string) => void;
 }
 
 /** LTV Inteligente: quanto cada paciente vale ao longo do tempo e como a recompra evolui. */
-export function LTVRecurrencePanel({ period, onOpenLead }: LTVRecurrencePanelProps) {
+export function LTVRecurrencePanel({ onOpenLead }: LTVRecurrencePanelProps) {
   const { patients, payments, isLoading } = useLTVData();
   const { data: cacData } = useGlobalCAC();
   const [segmentDim, setSegmentDim] = useState<SegmentDim>('tratamento');
   const [openStage, setOpenStage] = useState<string | null>(null);
 
-  const periodDef = LTV_PERIODS.find(p => p.key === period)!;
+  // período = filtro de data global (canto superior direito)
+  const { range: r, current, previous } = useGlobalPeriodText();
+  const periodDef = { current, previous };
   const { now: act, prev: prevAct } = useMemo(() => {
-    const r = ltvPeriodRange(period);
     return {
       now: ltvActivity(patients, payments, r.start, r.end),
       prev: ltvActivity(patients, payments, r.prevStart, r.prevEnd),
     };
-  }, [period, patients, payments]);
+  }, [r.start, r.end, r.prevStart, r.prevEnd, patients, payments]);
+  const trend = useMemo(() => ltvSeries(patients, payments, r.start, r.end), [patients, payments, r.start, r.end]);
   const vsPrev = (cur: number, before: number) => (before > 0 ? `${cur >= before ? '+' : ''}${Math.round(((cur - before) / before) * 100)}% vs ${periodDef.previous}` : `${periodDef.previous}: ${formatCurrency(before)}`);
 
   const s = useMemo(() => summarize(patients), [patients]);
@@ -121,15 +125,15 @@ export function LTVRecurrencePanel({ period, onOpenLead }: LTVRecurrencePanelPro
       <section aria-labelledby="ltv-periodo" className="space-y-2">
         <h3 id="ltv-periodo" className="text-sm font-semibold text-muted-foreground">Movimento {periodDef.current}</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-          <Kpi icon={Wallet} label="Vendido no LTV" value={formatCurrency(act.sold)} sub={vsPrev(act.sold, prevAct.sold)}
+          <Kpi icon={Wallet} trend={trend.sold} label="Vendido no LTV" value={formatCurrency(act.sold)} sub={vsPrev(act.sold, prevAct.sold)}
             help="Pagamentos registrados nos cards do LTV no período (bruto, pagos e a receber)." />
-          <Kpi icon={Wallet} label="Recebido no LTV" value={formatCurrency(act.received)} sub={vsPrev(act.received, prevAct.received)}
+          <Kpi icon={Wallet} trend={trend.received} label="Recebido no LTV" value={formatCurrency(act.received)} sub={vsPrev(act.received, prevAct.received)}
             help="Pagamentos do LTV pagos no período, valor líquido. É o que entra no faturamento da meta." />
-          <Kpi icon={Repeat} label="Compraram no LTV" value={String(act.buyers)} sub={`${periodDef.previous}: ${prevAct.buyers}`}
+          <Kpi icon={Repeat} trend={trend.buyers} label="Compraram no LTV" value={String(act.buyers)} sub={`${periodDef.previous}: ${prevAct.buyers}`}
             help="Pacientes com pagamento registrado no LTV no período." />
-          <Kpi icon={TrendingUp} label="Ticket médio no LTV" value={formatCurrency(act.ticket)} sub={`${periodDef.previous}: ${formatCurrency(prevAct.ticket)}`}
+          <Kpi icon={TrendingUp} trend={trend.ticket} label="Ticket médio no LTV" value={formatCurrency(act.ticket)} sub={`${periodDef.previous}: ${formatCurrency(prevAct.ticket)}`}
             help="Vendido no LTV no período ÷ pacientes que compraram no LTV no período." />
-          <Kpi icon={Users} label="Entraram no LTV" value={String(act.newPatients)} sub={`${periodDef.previous}: ${prevAct.newPatients}`}
+          <Kpi icon={Users} trend={trend.newPatients} label="Entraram no LTV" value={String(act.newPatients)} sub={`${periodDef.previous}: ${prevAct.newPatients}`}
             help="Pacientes com venda realizada no front no período: entram sozinhos no Comercial 2." />
           <Kpi icon={CalendarClock} label="Retornos" value={String(act.returnsDue)} sub="com data no período, sem agendamento"
             help="Pacientes com data de retorno dentro do período que ainda não foram marcados como agendados." />
@@ -237,7 +241,7 @@ export function LTVRecurrencePanel({ period, onOpenLead }: LTVRecurrencePanelPro
                 { label: 'Sem data', value: s.returns.noDate, tone: '' },
               ].map(r => (
                 <div key={r.label} className="rounded-lg bg-muted/40 p-2.5">
-                  <dd className={cn('text-xl font-bold tabular-nums', r.tone)}>{r.value}</dd>
+                  <dd className={cn('hero-number text-2xl', r.tone)}>{r.value}</dd>
                   <dt className="text-[11px] text-muted-foreground">{r.label}</dt>
                 </div>
               ))}

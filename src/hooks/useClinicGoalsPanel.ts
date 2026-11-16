@@ -6,18 +6,20 @@ import {
   startOfYear, endOfYear, subYears,
   eachDayOfInterval, eachHourOfInterval, eachMonthOfInterval, format, getDay,
 } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { CustomYearRange } from '@/components/dashboard/PeriodFilterContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   attendances, bookedAppointments, buildPeriod, expectedPace, paceStatus, businessDaysPerMonth, fetchMetricsData, inRange, monthlyGoal,
   newLeads, periodGoal, periodProportion, sales as salesOf, summarize, type GoalKey,
 } from '@/lib/metrics';
 
 /** Intervalo amplo para a busca (o recorte exato é feito por buildRange). */
-function buildPeriodForCalendar(period: Period, customRange?: CustomYearRange) {
+function buildPeriodForCalendar(period: Period, customRange: CustomYearRange | undefined, anchor: Date) {
   if (period === 'ano' && customRange?.from && customRange?.to) {
-    return buildPeriod('personalizado', new Date(), customRange);
+    return buildPeriod('personalizado', anchor, customRange);
   }
-  return buildPeriod(period, new Date());
+  return buildPeriod(period, anchor);
 }
 
 export type Period = 'hoje' | 'semana' | 'mes' | 'ano';
@@ -59,6 +61,7 @@ export interface ClinicGoalsPanelData {
   metrics: PanelMetric[];
   insights: string[];
   projectedRevenue: number;
+  bucketLabels: string[];
 }
 
 interface PeriodRange {
@@ -80,8 +83,11 @@ function countBiz(start: Date, end: Date, cal: CalendarCfg) {
   return eachDayOfInterval({ start, end }).filter(cal.isBusinessDay).length;
 }
 
-function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg): PeriodRange {
-  const now = new Date();
+function buildRange(period: Period, customRange: CustomYearRange | undefined, cal: CalendarCfg, anchor: Date): PeriodRange {
+  // `anchor` escolhe o período (filtro global); o ritmo conta só os dias que já passaram de verdade
+  const now = anchor;
+  const real = new Date();
+  const elapsedEnd = (start: Date, end: Date) => (real > end ? end : real < start ? start : real);
   if (period === 'hoje') {
     const start = startOfDay(now);
     const end = endOfDay(now);
@@ -105,7 +111,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
     const prev = subWeeks(now, 1);
     const days = eachDayOfInterval({ start, end });
     const totalBusinessDays = countBiz(start, end, cal);
-    const businessDays = countBiz(start, now > end ? end : now, cal);
+    const businessDays = real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal);
     return {
       start, end,
       prevStart: startOfWeek(prev, { weekStartsOn: 1 }),
@@ -135,7 +141,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
       return { start: mStart, end: mEnd };
     });
     const totalBusinessDays = countBiz(start, end, cal);
-    const businessDays = countBiz(start, now > end ? end : now, cal);
+    const businessDays = real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal);
     return {
       start, end,
       prevStart, prevEnd,
@@ -150,7 +156,7 @@ function buildRange(period: Period, customRange: CustomYearRange | undefined, ca
   return {
     start, end,
     prevStart: startOfMonth(prev), prevEnd: endOfMonth(prev),
-    businessDays: countBiz(start, now, cal),
+    businessDays: real < start ? 0 : countBiz(start, elapsedEnd(start, end), cal),
     totalBusinessDays: countBiz(start, end, cal),
     buckets: days.map(d => ({ start: startOfDay(d), end: endOfDay(d) })),
   };
@@ -168,17 +174,23 @@ const fmtBRLFull = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 /** Comparação escolhida no filtro mestre (ex.: mesmo período do ano passado). */
 export interface PanelComparison { prevStart: Date; prevEnd: Date }
 
-export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange, compare?: PanelComparison) {
+export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRange, compare?: PanelComparison, anchor: Date = new Date()) {
   return useQuery({
-    queryKey: ['clinic-goals-panel', period, customRange?.from?.toISOString(), customRange?.to?.toISOString(), compare?.prevStart.toISOString(), compare?.prevEnd.toISOString()],
+    queryKey: ['clinic-goals-panel', period, anchor.toDateString(), customRange?.from?.toISOString(), customRange?.to?.toISOString(), compare?.prevStart.toISOString(), compare?.prevEnd.toISOString()],
     queryFn: async (): Promise<ClinicGoalsPanelData> => {
       // Calendário, metas e números pela camada única de indicadores.
-      const base = buildPeriodForCalendar(period, customRange);
+      const base = buildPeriodForCalendar(period, customRange, anchor);
       const fetchStart = compare && compare.prevStart < base.previous.start ? compare.prevStart : base.previous.start;
-      const data = await fetchMetricsData({ start: fetchStart, end: base.end });
+      const [data, rescuedRes] = await Promise.all([
+        fetchMetricsData({ start: fetchStart, end: base.end }),
+        // Resgates: leads marcados "Resgate" em "Como o lead chegou?" (data do resgate)
+        supabase.from('leads').select('rescued_at').not('rescued_at', 'is', null)
+          .gte('rescued_at', fetchStart.toISOString()).lte('rescued_at', base.end.toISOString()),
+      ]);
+      const rescuedRows = (rescuedRes.data ?? []) as { rescued_at: string }[];
       const { calendar: bizCal, settings: s } = data;
       const cal: CalendarCfg = { isBusinessDay: bizCal.isBusinessDay, monthlyBusinessDays: businessDaysPerMonth(s) };
-      const range = buildRange(period, customRange, cal);
+      const range = buildRange(period, customRange, cal, anchor);
       if (compare) {
         range.prevStart = compare.prevStart;
         range.prevEnd = compare.prevEnd;
@@ -328,6 +340,11 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
       const tgtAgend = prop('agendamentos');
       const tgtComp = prop('comparecimentos');
       const tgtVendas = prop('vendas');
+      const tgtResg = prop('resgates');
+      const resgIn = (r: { start: Date; end: Date }) => rescuedRows.filter(x => inRange(x.rescued_at, r)).length;
+      const resgCount = resgIn(cur);
+      const prevResg = resgIn(prevR);
+      const trendResg = trendOf(rescuedRows as any[], 'rescued_at');
       const tgtFat = prop('faturamento');
 
       const metrics: PanelMetric[] = [
@@ -356,6 +373,16 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
             targetDisplay: `${monthly.taxaAgendamento}%`,
             status: rateStatus(taxaAgendamento, monthly.taxaAgendamento),
           },
+        },
+        {
+          key: 'resgates', label: 'Resgates',
+          current: resgCount, target: tgtResg,
+          percentage: Math.min(100, Math.round((resgCount / Math.max(1, tgtResg)) * 100)),
+          display: String(resgCount), targetDisplay: String(tgtResg),
+          healthyGoal: goalCount(null, tgtResg, resgCount, 'resgates'),
+          status: statusOf(resgCount, tgtResg),
+          delta: delta(resgCount, prevResg),
+          trend: trendResg, unit: 'count',
         },
         {
           key: 'comparecimentos', label: 'Comparecimentos',
@@ -548,6 +575,9 @@ export function useClinicGoalsPanel(period: Period, customRange?: CustomYearRang
         metrics,
         insights,
         projectedRevenue,
+        // rótulos das partes do período (para as curvas): horas, dias ou meses
+        bucketLabels: range.buckets.map(b =>
+          period === 'hoje' ? format(b.start, "HH'h'") : period === 'ano' ? format(b.start, 'MMM', { locale: ptBR }) : format(b.start, 'dd/MM')),
       };
     },
     refetchInterval: 60_000,

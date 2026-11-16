@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { monthWeeks, evaluateGroup, referralEvents, countIn, type GoalResult, type Week } from './bonus';
+import { monthWeeks, evaluateGroup, referralEvents, countIn, monthStreak, type GoalResult, type Week } from './bonus';
 
 const goal = (current: number, target: number): GoalResult => ({ key: 'x', label: 'x', current, target, hit: current >= target });
 
@@ -61,5 +61,19 @@ describe('bônus por metas — indicações de todo o painel, sem contar duas ve
     expect(ev).toHaveLength(3); // A, t2, B
     const week = monthWeeks(new Date(2026, 10, 1))[1]; // 09 a 15/11
     expect(countIn(ev, week)).toBe(3);
+  });
+});
+
+describe('bônus de viagem — meses seguidos', () => {
+  const m = (hit: boolean, complete = true) => ({ month: new Date(), hit, complete });
+  it('conta os meses batidos seguidos até o mais recente', () => {
+    expect(monthStreak([m(false), m(true), m(true), m(true)])).toBe(3);
+    expect(monthStreak([m(true), m(true), m(true), m(true), m(true), m(true)])).toBe(6);
+  });
+  it('mês em andamento ainda não batido não quebra a sequência', () => {
+    expect(monthStreak([m(true), m(true), m(false, false)])).toBe(2);
+  });
+  it('mês fechado sem bater zera a sequência', () => {
+    expect(monthStreak([m(true), m(true), m(false)])).toBe(0);
   });
 });

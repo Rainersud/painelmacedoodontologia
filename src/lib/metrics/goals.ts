@@ -20,7 +20,8 @@ export type GoalKey =
   | 'leads' | 'agendamentos' | 'comparecimentos' | 'vendas'
   | 'ticket_medio' | 'faturamento' | 'investimento'
   | 'taxa_agendamento' | 'taxa_comparecimento' | 'taxa_fechamento'
-  | 'cpl' | 'cac' | 'roi' | 'roas';
+  | 'cpl' | 'cac' | 'roi' | 'roas'
+  | 'resgates' | 'indicacoes' | 'prospeccao_ativa' | 'indicacao_parceria' | 'social_selling';
 
 interface GoalDef {
   /** chave em meta_settings (a que a tela de metas grava) */
@@ -47,7 +48,33 @@ export const GOAL_DEFS: Record<GoalKey, GoalDef> = {
   cac:                 { keys: ['meta_cac'], fallback: 300, proportional: false },
   roi:                 { keys: ['meta_roi'], fallback: 8, proportional: false },
   roas:                { keys: ['meta_roas_bruto'], fallback: 20, proportional: false },
+  // derivados da escada (% dos leads do mês, ver LADDER_SHARES)
+  resgates:            { keys: [], fallback: 0, proportional: true },
+  indicacoes:          { keys: [], fallback: 0, proportional: true },
+  prospeccao_ativa:    { keys: [], fallback: 0, proportional: true },
+  indicacao_parceria:  { keys: [], fallback: 0, proportional: true },
+  social_selling:      { keys: [], fallback: 0, proportional: true },
 };
+
+/**
+ * Metas que saem dos leads da escada: cada uma é uma fatia (%) dos leads do mês.
+ * Como os leads saem do faturamento ÷ ticket, mudar o objetivo central muda todas.
+ * Padrões calibrados em 14/11/2026 (R$ 100 mil, ticket R$ 3.704 → 450 leads):
+ * 12 resgates, 40 indicações, 120 de prospecção ativa, 100 de parceria e 100 de social selling.
+ */
+export const LADDER_SHARES = {
+  resgates:           { key: 'meta_pct_resgates', fallback: 2.66, label: 'Resgates' },
+  indicacoes:         { key: 'meta_pct_indicacoes', fallback: 8.88, label: 'Indicações coletadas' },
+  prospeccao_ativa:   { key: 'meta_pct_prospeccao_ativa', fallback: 26.66, label: 'Prospecção Ativa' },
+  indicacao_parceria: { key: 'meta_pct_indicacao_parceria', fallback: 22.22, label: 'Indicação de Parceria' },
+  social_selling:     { key: 'meta_pct_social_selling', fallback: 22.22, label: 'Social Selling' },
+} as const;
+export type LadderShareKey = keyof typeof LADDER_SHARES;
+
+export function ladderShare(settings: MetaSettingsMap, key: LadderShareKey): number {
+  const v = Number(settings[LADDER_SHARES[key].key]);
+  return Number.isFinite(v) && v > 0 ? v : LADDER_SHARES[key].fallback;
+}
 
 export const BUSINESS_DAYS_PER_MONTH_KEY = 'meta_dias_uteis_mes';
 export const DEFAULT_BUSINESS_DAYS_PER_MONTH = 20;
@@ -78,6 +105,11 @@ export interface GoalLadder {
   agendamentos: number;
   leads: number;
   investimento: number;
+  resgates: number;
+  indicacoes: number;
+  prospeccao_ativa: number;
+  indicacao_parceria: number;
+  social_selling: number;
 }
 
 /** A escada de metas do mês, a partir do faturamento + ticket médio e das taxas do funil. */
@@ -92,16 +124,24 @@ export function deriveGoalLadder(settings: MetaSettingsMap): GoalLadder {
   const comparecimentos = Math.ceil(vendas / (taxaFechamento / 100));
   const agendamentos = Math.ceil(comparecimentos / (taxaComparecimento / 100));
   const leads = Math.ceil(agendamentos / (taxaAgendamento / 100));
+  const share = (k: LadderShareKey) => Math.max(1, Math.round((leads * ladderShare(settings, k)) / 100));
   return {
     faturamento, ticket, taxaFechamento, taxaComparecimento, taxaAgendamento, cpl,
     vendas, comparecimentos, agendamentos, leads,
     investimento: Math.round(leads * cpl),
+    resgates: share('resgates'),
+    indicacoes: share('indicacoes'),
+    prospeccao_ativa: share('prospeccao_ativa'),
+    indicacao_parceria: share('indicacao_parceria'),
+    social_selling: share('social_selling'),
   };
 }
 
 const DERIVED: Partial<Record<GoalKey, keyof GoalLadder>> = {
   vendas: 'vendas', comparecimentos: 'comparecimentos', agendamentos: 'agendamentos',
   leads: 'leads', investimento: 'investimento',
+  resgates: 'resgates', indicacoes: 'indicacoes', prospeccao_ativa: 'prospeccao_ativa',
+  indicacao_parceria: 'indicacao_parceria', social_selling: 'social_selling',
 };
 
 /** Meta mensal (sem proporção). Metas de volume saem da escada do objetivo central. */

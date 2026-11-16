@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useBIDashboard, type BIPeriodFilter } from '@/hooks/useBIDashboard';
+import { useBIDashboard } from '@/hooks/useBIDashboard';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { cn } from '@/lib/utils';
 import {
   DollarSign,
@@ -22,8 +21,6 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -39,10 +36,10 @@ const formatBRL = (v: number) =>
 
 // Séries fixas do padrão; vermelho só como status (ROI negativo)
 const biColors = {
-  green: 'hsl(var(--chart-1))',
-  blue: 'hsl(var(--chart-2))',
+  green: 'hsl(var(--primary))',
+  blue: 'hsl(var(--chart-1))',
   orange: 'hsl(var(--chart-3))',
-  purple: 'hsl(var(--chart-4))',
+  purple: 'hsl(var(--chart-2))',
   red: 'hsl(var(--destructive))',
 };
 
@@ -63,8 +60,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [period, setPeriod] = useState<BIPeriodFilter>('todos');
-  const { data, isLoading } = useBIDashboard(period);
+  // período = filtro de data global (canto superior direito)
+  const { range } = usePeriodFilter();
+  const { data, isLoading } = useBIDashboard('mes', { start: range.start, end: range.end });
 
   const kpiCards = data
     ? [
@@ -73,7 +71,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
           value: data.kpis.faturamentoRecebido,
           icon: DollarSign,
           color: biColors.green,
-          subtitle: 'Mês atual (caixa)',
+          subtitle: `${range.label} (caixa)`,
         },
         {
           title: 'Faturamento Previsto',
@@ -141,15 +139,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
               Visão 360° da clínica — receita, LTV, CAC e performance
             </p>
           </div>
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as BIPeriodFilter)}>
-            <TabsList className="bg-card border shadow-sm">
-              <TabsTrigger value="mes" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mês</TabsTrigger>
-              <TabsTrigger value="trimestre" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Trimestre</TabsTrigger>
-              <TabsTrigger value="semestre" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Semestre</TabsTrigger>
-              <TabsTrigger value="ano" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Ano</TabsTrigger>
-              <TabsTrigger value="todos" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Tudo</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
         </div>
 
         {/* KPI Cards */}
@@ -171,7 +161,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                         <p className="text-xs font-medium text-muted-foreground truncate">
                           {kpi.title}
                         </p>
-                        <p className="text-xl sm:text-2xl font-bold truncate">
+                        <p className="hero-number text-2xl sm:text-[1.75rem] leading-tight truncate">
                           {kpi.formatAsNumber
                             ? kpi.value.toFixed(1)
                             : kpi.formatAsPercent
@@ -181,8 +171,8 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                         <p className="text-[10px] text-muted-foreground">{kpi.subtitle}</p>
                       </div>
                       <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: kpi.color }}
+                        className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `color-mix(in srgb, ${kpi.color} 12%, transparent)`, color: kpi.color }}
                       >
                         <kpi.icon className="h-5 w-5" />
                       </div>
@@ -239,7 +229,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                   { label: 'Próximos 90 dias', value: data.projection90 },
                 ].map((p) => (
                   <div key={p.label} className="rounded-xl bg-muted/40 p-4 text-center">
-                    <p className="text-lg sm:text-2xl font-bold text-primary">{formatBRL(p.value)}</p>
+                    <p className="hero-number text-xl sm:text-3xl text-primary">{formatBRL(p.value)}</p>
                     <p className="text-xs text-muted-foreground mt-1">{p.label}</p>
                   </div>
                 ))}
@@ -263,13 +253,19 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                   <Skeleton className="w-full h-full rounded-lg" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data?.monthlyData || []}>
+                    <AreaChart data={data?.monthlyData || []}>
+                      <defs>
+                        <linearGradient id="gradReal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={biColors.green} stopOpacity={0.24} />
+                          <stop offset="100%" stopColor={biColors.green} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
                       <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="faturamentoReal" name="Faturamento Real" fill={biColors.green} radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Area type="monotone" dataKey="faturamentoReal" name="Faturamento Real" stroke={biColors.green} strokeWidth={2.5} fill="url(#gradReal)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }} />
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
@@ -300,7 +296,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                       <XAxis {...chartAxis} dataKey="label" />
                       <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Area type="monotone" dataKey="faturamentoFuturo" name="Faturamento Futuro" stroke={biColors.orange} strokeWidth={2} fill="url(#gradFuturo)" />
+                      <Area type="monotone" dataKey="faturamentoFuturo" name="Faturamento Futuro" stroke={biColors.orange} strokeWidth={2.5} fill="url(#gradFuturo)" dot={false} />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -324,13 +320,19 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                   <Skeleton className="w-full h-full rounded-lg" />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data?.monthlyData || []}>
+                    <AreaChart data={data?.monthlyData || []}>
+                      <defs>
+                        <linearGradient id="gradCac" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={biColors.blue} stopOpacity={0.22} />
+                          <stop offset="100%" stopColor={biColors.blue} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid {...chartGrid} />
                       <XAxis {...chartAxis} dataKey="label" />
                       <YAxis {...chartAxis} tickFormatter={(v) => `R$ ${Math.round(v)}`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="cac" name="CAC" fill={biColors.blue} radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Area type="monotone" dataKey="cac" name="CAC" stroke={biColors.blue} strokeWidth={2.5} fill="url(#gradCac)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }} />
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
@@ -361,7 +363,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                       <XAxis {...chartAxis} dataKey="label" />
                       <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Area type="monotone" dataKey="ltv" name="LTV (Recompras)" stroke={biColors.purple} strokeWidth={2} fill="url(#gradLTV)" />
+                      <Area type="monotone" dataKey="ltv" name="LTV (Recompras)" stroke={biColors.purple} strokeWidth={2.5} fill="url(#gradLTV)" dot={false} />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -388,7 +390,7 @@ const DashboardBI = ({ embedded = false }: { embedded?: boolean } = {}) => {
                     <XAxis {...chartAxis} dataKey="stage" />
                     <YAxis {...chartAxis} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={3} dot={{ r: 6, fill: biColors.purple, strokeWidth: 2, stroke: 'hsl(var(--card))' }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="value" name="LTV Médio" stroke={biColors.purple} strokeWidth={2.5} dot={{ r: 4, fill: biColors.purple, strokeWidth: 2, stroke: 'hsl(var(--card))' }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               )}

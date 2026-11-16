@@ -40,7 +40,7 @@ export function HubCard({ icon: Icon, label, rule, count, caption, onClick }: Hu
       </div>
       <p className="mt-3 font-semibold leading-snug">{label}</p>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tabular-nums">{count ?? '–'}</span>
+        <span className="hero-number text-3xl leading-none">{count ?? '–'}</span>
         <span className="text-xs text-muted-foreground">{caption}</span>
       </div>
     </button>

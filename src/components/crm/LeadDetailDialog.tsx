@@ -1,3 +1,4 @@
+import { CLINICA_OPTIONS } from '@/lib/clinicas';
 import { useState, useEffect, useRef } from 'react';
 import { toLocalInputValue } from '@/lib/datetime';
 import { describeError } from '@/lib/errors';
@@ -75,7 +76,9 @@ interface LeadDetailDialogProps {
 }
 
 export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogProps) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, access } = useAuth();
+  // quem não pode editar os dados do card só visualiza (fieldset desabilita todos os campos)
+  const readOnlyData = !access.canEditLeadData;
   const queryClient = useQueryClient();
   const updateLead = useUpdateLead();
   const updateStatus = useUpdateLeadStatus();
@@ -102,6 +105,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
     loss_reason: '',
     lead_arrival_source: '' as string,
     campaign: '',
+    clinica: '' as string,
   });
   const [budgetValue, setBudgetValue] = useState(0);
   const [newStatus, setNewStatus] = useState<LeadStatus | ''>('');
@@ -138,6 +142,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
         loss_reason: (lead as any).loss_reason || '',
         lead_arrival_source: (lead as any).lead_arrival_source || '',
         campaign: lead.campaign || '',
+        clinica: (lead as { clinica?: string | null }).clinica || '',
       });
       setBudgetValue(lead.budget_value || 0);
       setNewStatus('');
@@ -274,6 +279,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
       (updates as any).lead_arrival_source = formData.lead_arrival_source;
     }
     updates.campaign = formData.campaign.trim() || null;
+    (updates as { clinica?: string | null }).clinica = formData.clinica || null;
     if (formData.scheduled_appointment_at) {
       updates.scheduled_appointment_at = new Date(formData.scheduled_appointment_at).toISOString();
     }
@@ -507,10 +513,12 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                     <Gift className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Indicação</span>
                   </TabsTrigger>
-                  <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Retorno</span>
-                  </TabsTrigger>
+                  {access.perfil !== 'comparecimento' && (
+                    <TabsTrigger value="task" className="text-xs sm:text-sm gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Retorno</span>
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="funnel" className="text-xs sm:text-sm gap-1">
                     <Clock className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Funil</span>
@@ -529,6 +537,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             <LeadAlertsBanner lead={lead} />
             {/* Info Tab */}
             <TabsContent value="info" className="space-y-4 m-0">
+              <fieldset disabled={readOnlyData} className={cn('space-y-4 min-w-0', readOnlyData && 'opacity-80')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lead_name">Nome</Label>
@@ -614,18 +623,35 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       <SelectItem value="prospeccao_ativa">Prospecção Ativa</SelectItem>
                       <SelectItem value="indicacao_parceria">Indicação de Parceria</SelectItem>
                       <SelectItem value="social_selling">Social Selling</SelectItem>
+                      <SelectItem value="resgate">Resgate</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] text-muted-foreground">
-                    Alimenta os cards de Origens Estratégicas e o ROI Inteligente.
+                    Alimenta o ROI Inteligente, as metas e o plano de incentivo. "Resgate" conta como resgate na data em que for marcado.
                   </p>
                 </div>
               </div>
 
-              <CampaignInput
-                value={formData.campaign}
-                onChange={(v) => setFormData(prev => ({ ...prev, campaign: v }))}
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CampaignInput
+                  value={formData.campaign}
+                  onChange={(v) => setFormData(prev => ({ ...prev, campaign: v }))}
+                />
+                <div className="space-y-2">
+                  <Label htmlFor="lead_clinica">Clínica</Label>
+                  <Select
+                    value={formData.clinica || undefined}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, clinica: v }))}
+                    key={formData.clinica || 'empty-clinica'}
+                  >
+                    <SelectTrigger id="lead_clinica"><SelectValue placeholder="Selecione a clínica" /></SelectTrigger>
+                    <SelectContent>
+                      {CLINICA_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">Vai para a Planilha de Controle Geral (ASCENSION).</p>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
@@ -637,6 +663,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   rows={3}
                 />
               </div>
+              </fieldset>
             </TabsContent>
 
             {/* Status Tab */}
@@ -864,6 +891,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                         O orçamento é apenas informativo e <strong>não conta como faturamento</strong>. O valor só entra no financeiro ao registrar um pagamento.
                       </p>
                       <CurrencyInput
+                        disabled={!access.canFinance}
                         value={budgetValue}
                         onChange={(value) => setBudgetValue(value)}
                         onBlur={() => {
@@ -885,14 +913,14 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                       </h4>
                       {/* total do orçamento, quanto já foi pago, o que está em aberto e o histórico */}
                       <PaymentSummary leadId={lead.id} total={budgetValue || lead.budget_value || lead.treatment_value || 0} />
-                      <Button
+                      {access.canFinance && <Button
                         variant="outline"
                         className="w-full border-success/30 text-success hover:bg-success/10"
                         onClick={() => setPaymentOpen(true)}
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
                         Registrar pagamento
-                      </Button>
+                      </Button>}
                     </div>
                   </>
                 );
@@ -1239,7 +1267,7 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
             </TabsContent>
 
             {/* Task Tab */}
-            <TabsContent value="task" className="space-y-4 m-0">
+            {access.perfil !== 'comparecimento' && <TabsContent value="task" className="space-y-4 m-0">
               <div className="space-y-2">
                 <Label htmlFor="task_title">Título do retorno</Label>
                 <Input
@@ -1297,14 +1325,15 @@ export function LeadDetailDialog({ lead, open, onOpenChange }: LeadDetailDialogP
                   {createTask.isPending ? 'Criando retorno...' : 'Criar retorno'}
                 </Button>
               </div>
-            </TabsContent>
+            </TabsContent>}
 
-            {/* Triage Tab - always visible, editable only when status = compareceu */}
+            {/* Triagem: o administrador e o acesso Comparecimento editam em qualquer etapa;
+                os demais, só com o lead em "Compareceu" */}
             <TabsContent value="triage" className="m-0">
               <TriageFormDialog
                 lead={lead}
                 inline
-                readOnly={statusForView !== 'compareceu'}
+                readOnly={!(access.isAdmin || access.perfil === 'comparecimento') && statusForView !== 'compareceu'}
               />
             </TabsContent>
 

@@ -7,7 +7,6 @@ import { formatCurrency } from '@/lib/currency';
 import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { WidgetPeriodTabs } from '@/components/dashboard/WidgetPeriodTabs';
 import { chartGrid, chartAxis, chartTooltipProps } from '@/lib/chartStyle';
 
 export function ROIAnalyticsWidget() {
@@ -25,7 +24,6 @@ export function ROIAnalyticsWidget() {
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">Retorno sobre investimento com análise multidimensional · {range.label}</p>
           </div>
-          <WidgetPeriodTabs value={period} onChange={setPeriod} variant="week-month-year" />
         </div>
       </CardHeader>
       <CardContent>

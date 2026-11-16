@@ -1,3 +1,6 @@
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { canWorkStatus } from '@/lib/access';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { normalizeStatus } from '@/lib/metrics/stages';
 import { KanbanScrollbar } from '@/components/ui/KanbanScrollbar';
@@ -14,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react';
+import { Lock, Loader2, Plus, Search, X, Rows2, LayoutList, ChevronDown, ChevronsLeftRight, ChevronsRightLeft } from 'lucide-react';
 import { useCRMLeads, useUpdateLeadStatus } from '@/hooks/useCRMLeads';
 import { LeadCard } from '@/components/crm/LeadCard';
 import { LeadDetailDialog } from '@/components/crm/LeadDetailDialog';
@@ -65,7 +68,8 @@ function KanbanBoard({
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   useDragToPan(bottomScrollRef);
-  const [dense, setDense] = useState<boolean>(() => localStorage.getItem('funil-dense') === '1');
+  const { access } = useAuth();
+  const dense = false;
   // Desenha os cards aos poucos: colunas com centenas de leads travavam o navegador
   const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
@@ -90,54 +94,8 @@ function KanbanBoard({
     });
   }, [persistCollapsed]);
 
-  const collapseAll = useCallback(() => {
-    setCollapsed(persistCollapsed(new Set(stages.map(s => s.key))));
-  }, [stages, persistCollapsed]);
-
-  const expandAll = useCallback(() => {
-    setCollapsed(persistCollapsed(new Set()));
-  }, [persistCollapsed]);
-
-  const toggleDense = useCallback(() => {
-    setDense((prev) => {
-      localStorage.setItem('funil-dense', prev ? '0' : '1');
-      return !prev;
-    });
-  }, []);
-
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      {/* Densidade da visualização */}
-      <div className="shrink-0 flex justify-end gap-1.5 px-1 pb-1">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={collapseAll}
-          className="h-7 text-[11px] gap-1.5"
-        >
-          <ChevronsLeftRight className="h-3.5 w-3.5" />
-          Recolher tudo
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={expandAll}
-          className="h-7 text-[11px] gap-1.5"
-        >
-          <ChevronsRightLeft className="h-3.5 w-3.5" />
-          Expandir tudo
-        </Button>
-        <Button
-          variant={dense ? 'default' : 'outline'}
-          size="sm"
-          onClick={toggleDense}
-          className="h-7 text-[11px] gap-1.5"
-        >
-          {dense ? <Rows2 className="h-3.5 w-3.5" /> : <LayoutList className="h-3.5 w-3.5" />}
-          {dense ? 'Modo compacto ativo' : 'Modo compacto'}
-        </Button>
-      </div>
-
       {/* Top custom scrollbar */}
       <KanbanScrollbar targetRef={bottomScrollRef} className="mb-2" />
 
@@ -156,6 +114,8 @@ function KanbanBoard({
             const isFirstFollowUp = stage.key === 'followup_1';
             const isLastFollowUp = stage.key === 'followup_14';
             const isCollapsed = collapsed.has(stage.key);
+            // coluna fora do acesso desta pessoa: em preto e branco, cards só para olhar de fora
+            const locked = !canWorkStatus(access, stage.key);
 
             return (
               <div key={stage.key} className="flex gap-2 h-full">
@@ -180,6 +140,7 @@ function KanbanBoard({
                     title={`${stage.label} — clique para expandir`}
                     className={cn(
                       "w-10 flex-shrink-0 h-full rounded-xl bg-card border shadow-sm flex flex-col items-center gap-2 py-2 hover:bg-accent transition-colors",
+                      locked && 'grayscale opacity-50',
                       isFollowUp ? 'border-warning/30' : 'border-border/50',
                       isDropTarget && 'ring-2 ring-primary ring-offset-2'
                     )}
@@ -199,14 +160,16 @@ function KanbanBoard({
                 <div
                   className={cn(
                     "w-56 lg:w-64 flex-shrink-0 flex flex-col min-h-0 h-full [content-visibility:auto] [contain-intrinsic-size:256px_600px]",
+                    locked && 'grayscale opacity-50',
                   )}
+                  title={locked ? 'Seu acesso não inclui esta coluna' : undefined}
                   onDragOver={(e) => handleDragOver(e, stage.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, stage.key)}
                 >
                   <div className={cn(
-                    "flex flex-col min-h-0 h-full rounded-xl bg-card border transition-all duration-200",
-                    isFollowUp ? 'border-warning/30' : 'border-border',
+                    "flex flex-col min-h-0 h-full rounded-2xl bg-muted/40 border transition-all duration-200",
+                    isFollowUp ? 'border-warning/30' : 'border-border/60',
                     isDropTarget && 'ring-2 ring-primary ring-offset-2'
                   )}>
                     {/* Cabeçalho da coluna (mesmo formato do CRC) */}
@@ -227,6 +190,7 @@ function KanbanBoard({
                         >
                           {stage.label}
                         </span>
+                        {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-label="Sem acesso" />}
                         {isFollowUp && (
                           <FollowUpCopyPopover stageKey={stage.key} />
                         )}
@@ -284,11 +248,11 @@ function KanbanBoard({
                               rendered.push(
                                 <div
                                   key={lead.id}
-                                  draggable
+                                  draggable={!locked}
                                   onDragStart={(e) => handleDragStart(e, lead)}
                                   onDragEnd={handleDragEnd}
                                   className={cn(
-                                    "cursor-grab active:cursor-grabbing",
+                                    locked ? 'cursor-not-allowed pointer-events-none' : "cursor-grab active:cursor-grabbing",
                                     draggedLeadId === lead.id && 'opacity-40'
                                   )}
                                 >
@@ -370,6 +334,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   const leadsById = useMemo(() => new Map((leads ?? []).map(l => [l.id, l])), [leads]);
   const updateStatus = useUpdateLeadStatus();
   
+  const { access } = useAuth();
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dropTargetStatus, setDropTargetStatus] = useState<LeadStatus | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -381,7 +346,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     const leadId = searchParams.get('leadId');
     if (leadId && leads && leads.length > 0) {
       const lead = leads.find(l => l.id === leadId);
-      if (lead) {
+      if (lead && canWorkStatus(access, lead.status)) {
         setSelectedLead(lead);
         setDialogOpen(true);
         // Clean up the URL param
@@ -389,7 +354,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
         setSearchParams(searchParams, { replace: true });
       }
     }
-  }, [leads, searchParams, setSearchParams]);
+  }, [leads, searchParams, setSearchParams, access]);
 
   useEffect(() => {
     if (!selectedLead?.id || !leads) return;
@@ -409,20 +374,14 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   const [searchQuery, setSearchQuery] = useState('');
   const [treatmentFilter, setTreatmentFilter] = useState<string>('all');
   // Filtro de período padronizado com a Dashboard: all | hoje | semana | mes
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [smartCategory, setSmartCategory] = useState<string>('all');
+  const smartCategory = 'all';
 
-  // Stages affected by date filter (agendamento e comparecimento)
-  const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
-
-  const getFilterRange = useCallback((): { start: Date; end: Date } | null => {
-    if (dateFilter === 'all') return null;
-    const now = new Date();
-    if (dateFilter === 'hoje') return { start: startOfDay(now), end: endOfDay(now) };
-    if (dateFilter === 'semana') return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    if (dateFilter === 'mes') return { start: startOfMonth(now), end: endOfMonth(now) };
-    return null;
-  }, [dateFilter]);
+  // Filtro de datas único (topo da tela): vale para Agendado / Consulta / Compareceu
+  const { range: globalRange } = usePeriodFilter();
+  const getFilterRange = useCallback(
+    (): { start: Date; end: Date } | null => (globalRange ? { start: globalRange.start, end: globalRange.end } : null),
+    [globalRange],
+  );
 
   // Smart visual categorization helpers (apenas hoje/ontem/semana — sem alertas)
   const matchesSmartCategory = useCallback((lead: Lead, cat: string): boolean => {
@@ -440,6 +399,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
 
   const filteredLeads = useMemo(() => {
     if (!leads) return [];
+    const dateFilteredStages: LeadStatus[] = ['agendou', 'consulta_agendada', 'compareceu'];
     const range = getFilterRange();
 
     return leads.filter(lead => {
@@ -469,30 +429,14 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     });
   }, [leads, searchQuery, treatmentFilter, getFilterRange, smartCategory, matchesSmartCategory]);
 
-  // Counts per smart category (against base + search/treatment but ignoring smart filter)
-  const smartCounts = useMemo(() => {
-    const base = (leads || []).filter(lead => {
-      const query = searchQuery.trim();
-      const digitsQ = query.replace(/\D/g, '');
-      const matchesSearch = !query ||
-        fuzzyMatch(lead.name, query) ||
-        (digitsQ.length > 0 && lead.phone.replace(/\D/g, '').includes(digitsQ)) ||
-        (lead.interest_product && fuzzyMatch(lead.interest_product, query));
-      const matchesTreatment = treatmentFilter === 'all' || lead.interest_product === treatmentFilter;
-      return matchesSearch && matchesTreatment;
-    });
-    const cats = ['hoje','ontem','semana'];
-    const out: Record<string, number> = { all: base.length };
-    cats.forEach(c => { out[c] = base.filter(l => matchesSmartCategory(l, c)).length; });
-    return out;
-  }, [leads, searchQuery, treatmentFilter, matchesSmartCategory]);
 
 
   const handleDragStart = useCallback((e: React.DragEvent, lead: Lead) => {
+    if (!canWorkStatus(access, lead.status)) { e.preventDefault(); return; }
     setDraggedLeadId(lead.id);
     e.dataTransfer.setData('text/plain', lead.id);
     e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  }, [access]);
 
   const handleDragOver = useCallback((e: React.DragEvent, stageKey: LeadStatus) => {
     e.preventDefault();
@@ -514,6 +458,11 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     
     const leadId = e.dataTransfer.getData('text/plain');
     const lead = leads?.find(l => l.id === leadId);
+    if (lead && !canWorkStatus(access, lead.status)) { setDraggedLeadId(null); setDropTargetStatus(null); return; }
+    if (lead && newStatus === 'fechado' && !access.canFinance) {
+      toast.error('Fechar venda envolve pagamento: peça ao administrador.');
+      setDraggedLeadId(null); setDropTargetStatus(null); return;
+    }
     
     if (lead && lead.status !== newStatus) {
       if (newStatus === 'fechado') {
@@ -562,7 +511,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
     
     setDraggedLeadId(null);
     setDropTargetStatus(null);
-  }, [leads, updateStatus]);
+  }, [leads, updateStatus, access]);
 
   const handleScheduleConfirm = useCallback((scheduledAt: string) => {
     if (!pendingScheduleLead) return;
@@ -584,9 +533,10 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
   }, []);
 
   const handleOpenDetail = useCallback((lead: Lead) => {
+    if (!canWorkStatus(access, lead.status)) { toast.info('Seu acesso não inclui esta coluna.'); return; }
     setSelectedLead(lead);
     setDialogOpen(true);
-  }, []);
+  }, [access]);
 
   const getLeadsByStatus = useCallback((status: LeadStatus) => {
     // "consulta_agendada" (telas antigas) aparece na coluna "Agendado" (agendou)
@@ -621,10 +571,10 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
               {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
             </p>
             <div className="flex items-center gap-2">
-              <Button onClick={() => setAddLeadOpen(true)} size="sm">
+              {access.canEditLeadData && <Button onClick={() => setAddLeadOpen(true)} size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Lead
-              </Button>
+              </Button>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -696,52 +646,14 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
               </SelectContent>
             </Select>
 
-            {/* Date Filter — padrão Dashboard: Hoje / Semana / Mês */}
-            <Tabs value={dateFilter} onValueChange={setDateFilter}>
-              <TabsList className="h-9">
-                <TabsTrigger value="all" className="h-7 text-xs px-3">Todos</TabsTrigger>
-                <TabsTrigger value="hoje" className="h-7 text-xs px-3">Hoje</TabsTrigger>
-                <TabsTrigger value="semana" className="h-7 text-xs px-3">Semana</TabsTrigger>
-                <TabsTrigger value="mes" className="h-7 text-xs px-3">Mês</TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
 
-          {/* Smart visual category chips — apenas Hoje / Ontem / Esta Semana */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {[
-              { key: 'all', label: 'Todos', cls: 'bg-muted text-foreground' },
-              { key: 'hoje', label: 'Hoje', cls: 'bg-success/10 text-success'},
-              { key: 'ontem', label: 'Ontem', cls: 'bg-warning/10 text-warning-strong'},
-              { key: 'semana', label: 'Esta Semana', cls: 'bg-primary/10 text-primary'},
-            ].map(c => {
-              const active = smartCategory === c.key;
-              const count = smartCounts[c.key] ?? 0;
-              return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => setSmartCategory(c.key)}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-all",
-                    active ? "border-primary ring-1 ring-primary shadow-sm" : "border-border hover:border-primary/50",
-                    c.cls
-                  )}
-                >
-                  {c.label}
-                  <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-background/70 px-1.5 text-[10px] font-bold min-w-[18px]">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Kanban board with synced top scrollbar */}
         <KanbanBoard
           stages={(() => {
-            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || dateFilter !== 'all' || smartCategory !== 'all';
+            const anyFilterActive = !!searchQuery.trim() || treatmentFilter !== 'all' || smartCategory !== 'all';
             if (!anyFilterActive) return boardStages;
             return boardStages.filter(s => getLeadsByStatus(s.key).length > 0);
           })()}
@@ -755,7 +667,15 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
           handleDragStart={handleDragStart}
           handleDragEnd={handleDragEnd}
           handleOpenDetail={handleOpenDetail}
-          leading={!isFollowUpMode ? <ReturnColumn leadsById={leadsById} onOpen={handleOpenDetail} /> : undefined}
+          leading={!isFollowUpMode ? (
+            access.perfil === 'comparecimento' ? (
+              // Retorno fica bloqueado para o acesso Comparecimento: em preto e branco, sem abrir
+              <div className="relative h-full grayscale opacity-45 pointer-events-none select-none" aria-disabled="true" title="Seu acesso não inclui Retorno">
+                <ReturnColumn leadsById={leadsById} onOpen={() => {}} />
+                <Lock className="absolute top-3 right-3 h-3.5 w-3.5 text-muted-foreground" aria-label="Sem acesso" />
+              </div>
+            ) : <ReturnColumn leadsById={leadsById} onOpen={handleOpenDetail} />
+          ) : undefined}
         />
 
         {/* Loss Analysis Panel */}

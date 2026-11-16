@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { chartTooltipProps } from '@/lib/chartStyle';
 import { ptBR } from 'date-fns/locale';
 import { ExternalLink, Image as ImageIcon, MessageCircle, Mic, Search, TrendingDown, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,15 +23,6 @@ const STAGE_LABEL = new Map(FUNNEL_STAGES.map(s => [s.key as string, s.label]));
 const stageLabel = (k: string | null) => (k ? STAGE_LABEL.get(k) ?? k : 'Não registrado');
 const originLabel = (k: string | null) => ARRIVAL_SOURCE_LABELS[k || 'passou_na_frente'] ?? k ?? 'Não informado';
 
-type Period = 'mes' | 'mes_passado' | '3m' | '12m' | 'tudo';
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'mes', label: 'Este mês' },
-  { key: 'mes_passado', label: 'Mês passado' },
-  { key: '3m', label: '3 meses' },
-  { key: '12m', label: '12 meses' },
-  { key: 'tudo', label: 'Tudo' },
-];
-
 interface Loss {
   id: string;
   name: string;
@@ -43,15 +37,6 @@ interface Loss {
 }
 
 type Filter = { kind: 'categoria' | 'etapa' | 'origem'; value: string; label: string } | null;
-
-function periodRange(p: Period): [Date, Date] | null {
-  const now = new Date();
-  if (p === 'tudo') return null;
-  if (p === 'mes') return [startOfMonth(now), now];
-  if (p === 'mes_passado') return [startOfMonth(subMonths(now, 1)), endOfMonth(subMonths(now, 1))];
-  if (p === '3m') return [startOfMonth(subMonths(now, 2)), now];
-  return [startOfMonth(subMonths(now, 11)), now];
-}
 
 function useLossData() {
   return useQuery({
@@ -179,7 +164,8 @@ function Bars({
 export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string) => void }) {
   const { data, isLoading } = useLossData();
   const { data: allAttachments = [] } = useLossAttachments();
-  const [period, setPeriod] = useState<Period>('3m');
+  // período = filtro de data global (canto superior direito)
+  const { range: globalRange } = usePeriodFilter();
   const [filter, setFilter] = useState<Filter>(null);
   const [query, setQuery] = useState('');
 
@@ -189,10 +175,10 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
     return map;
   }, [allAttachments]);
 
-  const range = periodRange(period);
-  const inRange = (d: Date) => !range || (d >= range[0] && d <= range[1]);
-  const losses = useMemo(() => (data?.losses ?? []).filter(l => inRange(l.lostAt)), [data, period]); // eslint-disable-line react-hooks/exhaustive-deps
-  const salesCount = useMemo(() => (data?.sales ?? []).filter(inRange).length, [data, period]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inRange = (d: Date) => d >= globalRange.start && d <= globalRange.end;
+  const losses = useMemo(() => (data?.losses ?? []).filter(l => inRange(l.lostAt)), [data, globalRange]); // eslint-disable-line react-hooks/exhaustive-deps
+  const salesCount = useMemo(() => (data?.sales ?? []).filter(inRange).length, [data, globalRange]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setFilter(null); }, [globalRange.start, globalRange.end]);
 
   const byCategory = count(losses, l => l.category).map(([k, v]) => ({
     key: k, label: categoryLabel(k as LossCategory), value: v, hint: LOSS_CATEGORIES.find(c => c.key === k)?.hint,
@@ -206,15 +192,14 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
 
   // Últimos 6 meses (sempre, para ver a tendência)
   const months = useMemo(() => {
-    const now = new Date();
+    const now = globalRange.end;
     return Array.from({ length: 6 }, (_, i) => {
       const start = startOfMonth(subMonths(now, 5 - i));
       const end = endOfMonth(start);
       const n = (data?.losses ?? []).filter(l => l.lostAt >= start && l.lostAt <= end).length;
       return { label: format(start, 'MMM', { locale: ptBR }), n };
     });
-  }, [data]);
-  const monthMax = Math.max(1, ...months.map(m => m.n));
+  }, [data, globalRange.end]);
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -239,37 +224,21 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
           </h2>
           <p className="text-sm text-muted-foreground">Por que os leads não fecharam, em que etapa e de onde vieram.</p>
         </div>
-        <div className="inline-flex rounded-lg bg-muted p-1" role="tablist" aria-label="Período">
-          {PERIODS.map(p => (
-            <button
-              key={p.key}
-              type="button"
-              role="tab"
-              aria-selected={period === p.key}
-              onClick={() => { setPeriod(p.key); setFilter(null); }}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                period === p.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{globalRange.label}</span>
       </div>
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Perdas no período</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{isLoading ? '–' : losses.length}</p>
+          <p className="hero-number text-3xl mt-1">{isLoading ? '–' : losses.length}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Valor em orçamentos perdidos</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{isLoading ? '–' : formatCurrency(lostValue)}</p>
+          <p className="hero-number text-3xl mt-1">{isLoading ? '–' : formatCurrency(lostValue)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Taxa de perda</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{lossRate === null ? '–' : `${Math.round(lossRate * 100)}%`}</p>
+          <p className="hero-number text-3xl mt-1">{lossRate === null ? '–' : `${Math.round(lossRate * 100)}%`}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{losses.length} perdas · {salesCount} vendas</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
@@ -285,14 +254,22 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
         <Bars title="Por origem" rows={byOrigin} active={filter?.kind === 'origem' ? filter.value : undefined} onPick={pick('origem')} />
         <div className="rounded-xl border bg-card p-4">
           <h4 className="text-sm font-semibold mb-3">Últimos 6 meses</h4>
-          <div className="flex items-end gap-2 h-28" role="img" aria-label={months.map(m => `${m.label}: ${m.n}`).join(', ')}>
-            {months.map((m, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${m.label}: ${m.n} perdas`}>
-                <span className="text-[11px] tabular-nums text-muted-foreground">{m.n || ''}</span>
-                <div className="w-full rounded-t-md bg-primary/70" style={{ height: `${(m.n / monthMax) * 100}%`, minHeight: m.n ? 4 : 0 }} />
-                <span className="text-[11px] text-muted-foreground capitalize">{m.label}</span>
-              </div>
-            ))}
+          <div className="h-28" role="img" aria-label={months.map(m => `${m.label}: ${m.n}`).join(', ')}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={months} margin={{ top: 14, right: 6, left: 6, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="loss-trend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} interval={0} />
+                <Tooltip {...chartTooltipProps} formatter={(v: number) => [`${v} perdas`, '']} />
+                <Area type="monotone" dataKey="n" stroke="hsl(var(--destructive))" strokeWidth={2.25} fill="url(#loss-trend)"
+                  dot={{ r: 3, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: 'hsl(var(--destructive))' }} isAnimationActive={false}
+                  label={{ position: 'top', fontSize: 11, fill: 'hsl(var(--muted-foreground))', formatter: (v: number) => (v ? v : '') }} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

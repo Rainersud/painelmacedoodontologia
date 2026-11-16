@@ -1,3 +1,4 @@
+import { PeriodFilterProvider } from "@/components/dashboard/PeriodFilterContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,12 +15,15 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 const Login = lazy(() => import("./pages/Login"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const Cadastro = lazy(() => import("./pages/Cadastro"));
 const Funil = lazy(() => import("./pages/Funil"));
 const CRC = lazy(() => import("./pages/CRC"));
 import { MovedToCRC } from "@/components/layout/MovedToCRC";
 import { HomeRedirect, MovedTo } from "@/components/layout/MovedTo";
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Perfil = lazy(() => import("./pages/Perfil"));
+const Ascension = lazy(() => import("./pages/Ascension"));
 const Reunioes = lazy(() => import("./pages/Reunioes"));
 const Objetivos = lazy(() => import("./pages/Objetivos"));
 const DadosMetricas = lazy(() => import("./pages/DadosMetricas"));
@@ -73,17 +77,20 @@ function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <AuthProvider>
         <RealtimeProvider>
         <ErrorBoundary>
           <TooltipProvider>
+          <PeriodFilterProvider>
           <LeadDetailProvider>
             <Toaster />
             <Sonner />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+                <Route path="/cadastro" element={<Cadastro />} />
                 <Route path="/" element={<ProtectedRoute><HomeRedirect /></ProtectedRoute>} />
                 <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
                 <Route path="/dados" element={<ProtectedRoute><DadosMetricas /></ProtectedRoute>} />
@@ -96,7 +103,7 @@ const App = () => (
                 <Route path="/credito-liberado" element={<MovedToCRC tab="credito" />} />
                 <Route path="/metas" element={<MovedTo path="/objetivos" tab="metas" />} />
                 <Route path="/metas-clinica" element={<MovedTo path="/objetivos" tab="metas" />} />
-                <Route path="/bonus-metas" element={<MovedTo path="/objetivos" tab="bonus" />} />
+                <Route path="/bonus-metas" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/plano-incentivo" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/incentivos" element={<MovedTo path="/objetivos" tab="incentivo" />} />
                 <Route path="/alertas" element={<MovedTo path="/objetivos" tab="metas" />} />
@@ -104,6 +111,7 @@ const App = () => (
                 <Route path="/cac" element={<MovedTo path="/dados" tab="cac" />} />
                 <Route path="/metricas-vendas" element={<MovedTo path="/dados" tab="vendas" />} />
                 <Route path="/reunioes" element={<ProtectedRoute><Reunioes /></ProtectedRoute>} />
+                <Route path="/ascension" element={<ProtectedRoute><Ascension /></ProtectedRoute>} />
                 <Route path="/funil-trafego" element={<MovedTo path="/dados" tab="trafego" />} />
                 <Route path="/central-funis" element={<MovedTo path="/dados" tab="funil" />} />
                 <Route path="/funil-vendas" element={<MovedTo path="/dados" tab="funil" />} />
@@ -118,6 +126,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </LeadDetailProvider>
+          </PeriodFilterProvider>
           </TooltipProvider>
         </ErrorBoundary>
         </RealtimeProvider>

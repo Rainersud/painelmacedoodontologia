@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { endOfMonth, startOfMonth } from 'date-fns';
+import { MetricSpark } from '@/components/charts/SmoothCharts';
+import type { DateRange, SeriesKey } from '@/lib/metrics';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
-import { format, addMonths, subMonths } from 'date-fns';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
+import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { MonthNotice } from '@/components/layout/MonthNotice';
 import { useSalesMetrics, type SaleTypeMetrics } from '@/hooks/useSalesMetrics';
 import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { chartGrid, chartAxis, chartTooltipProps, chartLegend } from '@/lib/chartStyle';
 
 const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
-  const [month, setMonth] = useState(new Date());
+  // mês = filtro de data global (canto superior direito)
+  const { month, exact } = useGlobalMonth();
+  const monthRange = { start: startOfMonth(month), end: endOfMonth(month) };
   const { data, isLoading } = useSalesMetrics(month);
 
   if (isLoading) {
@@ -65,19 +70,8 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   return (
     <PageShell embedded={embedded} title="Métricas de Vendas">
       <div className="space-y-6 pb-8">
-        {/* Month selector */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setMonth(m => subMonths(m, 1))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-[140px] text-center capitalize">
-              {format(month, 'MMMM yyyy', { locale: ptBR })}
-            </span>
-            <Button variant="outline" size="icon" onClick={() => setMonth(m => addMonths(m, 1))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <MonthNotice month={month} exact={exact} />
         </div>
 
         {/* Alerts */}
@@ -97,10 +91,10 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
 
         {/* Executive Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard label="Total Vendas" value={String(general.salesCount)} />
-          <SummaryCard label="Vendas 1 Etapa" value={String(oneStep.salesCount)} subtitle={general.salesCount > 0 ? `${((oneStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
-          <SummaryCard label="Vendas 2 Etapas" value={String(twoStep.salesCount)} subtitle={general.salesCount > 0 ? `${((twoStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
-          <SummaryCard label="Faturamento Total" value={formatCurrency(general.totalRevenue)} />
+          <SummaryCard label="Total Vendas" value={String(general.salesCount)} spark="vendas" range={monthRange} />
+          <SummaryCard spark="conversao" range={monthRange} label="Vendas 1 Etapa" value={String(oneStep.salesCount)} subtitle={general.salesCount > 0 ? `${((oneStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
+          <SummaryCard spark="taxaFechamento" range={monthRange} label="Vendas 2 Etapas" value={String(twoStep.salesCount)} subtitle={general.salesCount > 0 ? `${((twoStep.salesCount / general.salesCount) * 100).toFixed(0)}%` : '0%'} />
+          <SummaryCard label="Faturamento Total" value={formatCurrency(general.totalRevenue)} spark="faturamento" range={monthRange} />
         </div>
 
         {/* Side by side metrics */}
@@ -181,13 +175,14 @@ const MetricasVendas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   );
 };
 
-function SummaryCard({ label, value, subtitle }: { label: string; value: string; subtitle?: string }) {
+function SummaryCard({ label, value, subtitle, spark, range }: { label: string; value: string; subtitle?: string; spark?: SeriesKey; range?: DateRange }) {
   return (
     <Card className="monday-card">
       <CardContent className="p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold mt-1">{value}</p>
+        <p className="hero-number text-3xl mt-1">{value}</p>
         {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        {spark && <div className="mt-2 -mx-1"><MetricSpark metric={spark} height={30} range={range} /></div>}
       </CardContent>
     </Card>
   );

@@ -143,7 +143,7 @@ export function CRCAlertsView({ level, onLevel, onBack }: { level: SmartAlertLev
             const limit = visible[col.key] ?? PAGE;
             const value = items.reduce((s, a) => s + a.potentialValue, 0);
             return (
-              <div key={col.key} className="w-64 shrink-0 rounded-xl border bg-card flex flex-col max-h-[calc(100vh-280px)]">
+              <div key={col.key} className="w-64 shrink-0 rounded-2xl border border-border/60 bg-muted/40 flex flex-col max-h-[calc(100vh-280px)]">
                 <div className="px-3 pt-3 pb-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold">{col.label}</span>

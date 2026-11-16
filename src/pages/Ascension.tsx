@@ -17,7 +17,7 @@ const SECTIONS: HubSection[] = [
     description: 'Leads de cada mês com origem, agendamento, comparecimento e fechamento; métricas por origem e por dia. Baixe em XLSX.',
   },
   {
-    key: 'suporte', title: 'Suporte', icon: LifeBuoy, module: 'ascension', Component: AscensionSuporte,
+    key: 'suporte', title: 'SCRIPTS CRC', icon: LifeBuoy, module: 'ascension', Component: AscensionSuporte,
     description: 'Guia da CRC: scripts de primeiro contato, régua dos não agendados, comparecimento, faltosos e Comercial 2, com busca e quebra de objeção.',
   },
   {

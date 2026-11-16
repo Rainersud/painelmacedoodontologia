@@ -1,4 +1,4 @@
-// Guia da CRC (ASCENSION → Suporte), montado a partir de dois PDFs do Rainer (15/11/2026):
+// Guia da CRC (ASCENSION → SCRIPTS CRC), montado a partir de dois PDFs do Rainer (15/11/2026):
 // "Manual Oficial de Materiais e Scripts de Abordagem" e
 // "Guia Tático Operacional — Scripts Padronizados de Primeiro Contato e Follow-up".
 // Quando os dois PDFs trazem versões diferentes do mesmo script, as duas ficam como variações.

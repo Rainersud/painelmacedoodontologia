@@ -58,17 +58,19 @@ interface Row {
   /** como sai do degrau anterior (ex.: "÷ ticket R$ 3.700") */
   via?: string;
   bloco?: 'relacionamento' | 'origem';
+  /** o objetivo central, em destaque */
+  destaque?: boolean;
 }
 
 function ladderRows(l: GoalLadder, s: MetaSettingsMap, owner: (k: string) => string | undefined): Row[] {
   const share = (k: LadderShareKey) => `${PCT(ladderShare(s, k))} dos leads`;
   return [
-    { label: 'Faturamento', month: l.faturamento, fmt: BRL, note: 'objetivo central', actual: 'faturamento', step: true },
-    { label: 'Vendas realizadas', month: l.vendas, fmt: NUM, note: `faturamento ÷ ticket de ${BRL(l.ticket)}`, owner: owner('comercial'), actual: 'vendas', step: true, via: `÷ ticket ${BRL(l.ticket)}` },
-    { label: 'Comparecimentos', month: l.comparecimentos, fmt: NUM, note: `vendas ÷ ${l.taxaFechamento}% de fechamento`, owner: owner('atendimento'), actual: 'comparecimentos', step: true, via: `÷ ${l.taxaFechamento}% fecham` },
-    { label: 'Agendamentos', month: l.agendamentos, fmt: NUM, note: `comparecimentos ÷ ${l.taxaComparecimento}% de comparecimento`, owner: owner('atendimento'), actual: 'agendamentos', step: true, via: `÷ ${l.taxaComparecimento}% comparecem` },
-    { label: 'Novos leads', month: l.leads, fmt: NUM, note: `agendamentos ÷ ${l.taxaAgendamento}% de agendamento`, owner: owner('comercial'), actual: 'leads', step: true, via: `÷ ${l.taxaAgendamento}% agendam` },
-    { label: 'Investimento em tráfego', month: l.investimento, fmt: BRL, note: `leads × CPL de ${BRL(l.cpl)}`, step: true, via: `× CPL ${BRL(l.cpl)}` },
+    { label: 'Investimento em tráfego', month: l.investimento, fmt: BRL, note: `${BRL(l.cpl)} por lead (CPL)`, step: true },
+    { label: 'Novos leads', month: l.leads, fmt: NUM, note: `investimento ÷ CPL de ${BRL(l.cpl)}`, owner: owner('comercial'), actual: 'leads', step: true, via: `÷ CPL ${BRL(l.cpl)}` },
+    { label: 'Agendamentos', month: l.agendamentos, fmt: NUM, note: `${l.taxaAgendamento}% dos leads agendam`, owner: owner('atendimento'), actual: 'agendamentos', step: true, via: `${l.taxaAgendamento}% dos leads agendam` },
+    { label: 'Comparecimentos', month: l.comparecimentos, fmt: NUM, note: `${l.taxaComparecimento}% dos agendados comparecem`, owner: owner('atendimento'), actual: 'comparecimentos', step: true, via: `${l.taxaComparecimento}% dos agendados comparecem` },
+    { label: 'Vendas realizadas', month: l.vendas, fmt: NUM, note: `${l.taxaFechamento}% dos que comparecem fecham`, owner: owner('comercial'), actual: 'vendas', step: true, via: `${l.taxaFechamento}% dos que comparecem fecham` },
+    { label: 'Faturamento', month: l.faturamento, fmt: BRL, note: `vendas × ticket de ${BRL(l.ticket)} · objetivo central`, actual: 'faturamento', step: true, via: `vendas × ticket ${BRL(l.ticket)}`, destaque: true },
     { label: 'Resgates', month: l.resgates, fmt: NUM, note: share('resgates'), owner: owner('atendimento'), actual: 'resgates', group: true, bloco: 'relacionamento' },
     { label: 'Indicações coletadas', month: l.indicacoes, fmt: NUM, note: share('indicacoes'), owner: owner('indicacoes'), actual: 'indicacoes', bloco: 'relacionamento' },
     { label: 'Prospecção Ativa', month: l.prospeccao_ativa, fmt: NUM, note: share('prospeccao_ativa'), actual: 'prospeccao_ativa', group: true, bloco: 'origem' },
@@ -133,7 +135,7 @@ function StepCard({ r, changed, plano, periodo, index }: {
   const meta = r.month * periodo.share;
   const pct = actual !== undefined && meta > 0 ? (actual / meta) * 100 : undefined;
   return (
-    <div className={cn('h-full rounded-2xl border bg-card p-4 flex flex-col gap-3', index === 1 && 'border-primary/40 bg-primary/5')}>
+    <div className={cn('h-full rounded-2xl border bg-card p-4 flex flex-col gap-3', r.destaque && 'border-primary/40 bg-primary/5')}>
       <div className="min-w-0 space-y-1">
         {r.via && <p className="text-[11px] text-muted-foreground">{r.via}</p>}
         <p className="text-sm font-semibold leading-tight">
@@ -495,7 +497,7 @@ export function GoalLadderCard() {
                 <div>
                   <h3 className="text-base font-semibold">Escada de crescimento</h3>
                   <p className="text-sm text-muted-foreground">
-                    Realizado contra a meta de <b className="font-medium text-foreground">{periodo.label}</b>. Cada degrau sai do anterior: faturamento → vendas → comparecimentos → agendamentos → leads → investimento.
+                    Realizado contra a meta de <b className="font-medium text-foreground">{periodo.label}</b>. Do investimento ao faturamento: tráfego → leads → agendamentos → comparecimentos → vendas → faturamento.
                   </p>
                 </div>
                 <div className="inline-flex rounded-lg border p-0.5 text-xs" role="group" aria-label="Forma de ver as metas">

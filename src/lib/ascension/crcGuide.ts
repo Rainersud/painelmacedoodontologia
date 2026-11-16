@@ -334,36 +334,36 @@ export const METAS_BANCADA: { valor: string; texto: string }[] = [
   { valor: '20%', texto: 'do faturamento bruto vindo do Comercial 2' },
 ];
 
-export const REGUAS: { titulo: string; passos: { quando: string; oque: string }[] }[] = [
+export const REGUAS: { titulo: string; passos: { quando: string; oque: string; scripts?: string[] }[] }[] = [
   {
     titulo: 'Régua dos não agendados',
     passos: [
-      { quando: 'Dia 1', oque: '3 ligações + mensagem com pergunta aberta' },
-      { quando: 'Dia 2', oque: '1 ligação + prova social' },
-      { quando: 'Dia 3', oque: '1 ligação + desapego elegante' },
-      { quando: 'Após 10 a 15 dias', oque: 'Nutrição leve, a cada 15 dias' },
+      { quando: 'Dia 1', oque: '3 ligações + mensagem com pergunta aberta', scripts: ['na-dia1'] },
+      { quando: 'Dia 2', oque: '1 ligação + prova social', scripts: ['na-dia2'] },
+      { quando: 'Dia 3', oque: '1 ligação + desapego elegante', scripts: ['na-dia3'] },
+      { quando: 'Após 10 a 15 dias', oque: 'Nutrição leve, a cada 15 dias', scripts: ['na-quinzenal'] },
     ],
   },
   {
     titulo: 'Jornada do comparecimento',
     passos: [
-      { quando: '–48h', oque: 'Texto + vídeo institucional' },
-      { quando: '–24h', oque: 'Vídeo da Dra. + depoimento' },
-      { quando: 'Dia, até 11h', oque: 'Lembrete + confirmação ativa' },
-      { quando: '–1h', oque: 'Reforço da espera' },
-      { quando: '+20–30 min', oque: 'Se faltar: preocupação genuína' },
+      { quando: '–48h', oque: 'Texto + vídeo institucional', scripts: ['comp-48h'] },
+      { quando: '–24h', oque: 'Vídeo da Dra. + depoimento', scripts: ['comp-24h'] },
+      { quando: 'Dia, até 11h', oque: 'Lembrete + confirmação ativa', scripts: ['comp-dia'] },
+      { quando: '–1h', oque: 'Reforço da espera', scripts: ['comp-1h'] },
+      { quando: '+20–30 min', oque: 'Se faltar: preocupação genuína', scripts: ['falta-30min', 'falta-24h'] },
       { quando: 'Lembre', oque: 'Confirmação não é cobrança fria; é construção de valor e quebra de inseguranças.' },
     ],
   },
   {
     titulo: 'GPS do follow-up (Comercial 2)',
     passos: [
-      { quando: 'Dia da consulta', oque: 'Acolhimento, sem falar de dinheiro' },
-      { quando: 'Dia combinado', oque: 'Alinhamento com o decisor' },
-      { quando: 'Dia +2', oque: 'Prova social' },
-      { quando: 'Dia +5', oque: 'Autoridade' },
-      { quando: 'Dia +8', oque: 'Escassez e dor' },
-      { quando: 'Depois', oque: 'Mensagem matadora' },
+      { quando: 'Dia da consulta', oque: 'Acolhimento, sem falar de dinheiro', scripts: ['c2-dia0'] },
+      { quando: 'Dia combinado', oque: 'Alinhamento com o decisor', scripts: ['c2-combinado-decisor', 'c2-combinado-sem-resposta'] },
+      { quando: 'Dia +2', oque: 'Prova social', scripts: ['c2-d2'] },
+      { quando: 'Dia +5', oque: 'Autoridade', scripts: ['c2-d5'] },
+      { quando: 'Dia +8', oque: 'Escassez e dor', scripts: ['c2-d8'] },
+      { quando: 'Depois', oque: 'Mensagem matadora', scripts: ['c2-matadora'] },
     ],
   },
 ];

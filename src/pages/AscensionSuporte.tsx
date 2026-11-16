@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Check, ChevronDown, Copy, Lightbulb, Phone, MessageCircle, Mic, Video, Search, X, ShieldQuestion } from 'lucide-react';
+import { Check, ChevronDown, Copy, FileText, Lightbulb, Phone, MessageCircle, Mic, Video, Search, X, ShieldQuestion } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -95,7 +96,7 @@ function ScriptCard({ s, fill, highlighted }: { s: Script; fill: Partial<Preench
   );
 }
 
-function GuiaRapido() {
+function GuiaRapido({ onOpen }: { onOpen: (titulo: string, ids: string[]) => void }) {
   return (
     <aside className="space-y-4">
       <section className="monday-card p-4 space-y-3">
@@ -122,13 +123,34 @@ function GuiaRapido() {
       </section>
       {REGUAS.map(r => (
         <section key={r.titulo} className="monday-card p-4 space-y-3">
-          <h3 className="font-semibold">{r.titulo}</h3>
-          <ol className="relative space-y-3 border-l-2 border-primary/25 pl-4">
+          <div>
+            <h3 className="font-semibold">{r.titulo}</h3>
+            <p className="text-xs text-muted-foreground">Clique numa etapa para abrir a copy.</p>
+          </div>
+          <ol className="relative space-y-1 border-l-2 border-primary/25 pl-4">
             {r.passos.map(p => (
-              <li key={p.quando} className="relative text-sm">
-                <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
-                <p className="font-medium">{p.quando}</p>
-                <p className="text-muted-foreground">{p.oque}</p>
+              <li key={p.quando} className="relative">
+                <span className="absolute -left-[21px] top-3 h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
+                {p.scripts?.length ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpen(`${r.titulo} · ${p.quando}`, p.scripts!)}
+                    className="group w-full rounded-lg px-2 py-1.5 -mx-2 text-left text-sm transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{p.quando}</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-primary opacity-70 group-hover:opacity-100">
+                        <FileText className="h-3.5 w-3.5" aria-hidden /> Copy
+                      </span>
+                    </span>
+                    <span className="block text-muted-foreground">{p.oque}</span>
+                  </button>
+                ) : (
+                  <div className="px-2 py-1.5 -mx-2 text-sm">
+                    <p className="font-medium">{p.quando}</p>
+                    <p className="text-muted-foreground">{p.oque}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ol>
@@ -154,6 +176,7 @@ export default function AscensionSuporte() {
   const [fill, setFill] = useState<Partial<Preenchimento>>(loadFill);
   const [fillOpen, setFillOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [aberto, setAberto] = useState<{ titulo: string; ids: string[] } | null>(null);
 
   useEffect(() => { try { localStorage.setItem(FILL_KEY, JSON.stringify(fill)); } catch { /* sem storage */ } }, [fill]);
 
@@ -169,10 +192,10 @@ export default function AscensionSuporte() {
   const dica = objecao ? OBJECOES.find(o => o.key === objecao) : null;
   const filtrando = !!termo || etapa !== 'todas' || !!objecao;
 
-  const F = ({ k, label, ph }: { k: keyof Preenchimento; label: string; ph: string }) => (
+  const F = ({ k, label, ph, pre = 'fill' }: { k: keyof Preenchimento; label: string; ph: string; pre?: string }) => (
     <div className="space-y-1">
-      <Label htmlFor={`fill-${k}`} className="text-xs">{label}</Label>
-      <Input id={`fill-${k}`} value={fill[k] ?? ''} placeholder={ph} className="h-9"
+      <Label htmlFor={`${pre}-${k}`} className="text-xs">{label}</Label>
+      <Input id={`${pre}-${k}`} value={fill[k] ?? ''} placeholder={ph} className="h-9"
         onChange={e => setFill(f => ({ ...f, [k]: e.target.value }))} />
     </div>
   );
@@ -288,7 +311,26 @@ export default function AscensionSuporte() {
           </div>
         )}
       </div>
-      <GuiaRapido />
+      <GuiaRapido onOpen={(titulo, ids) => setAberto({ titulo, ids })} />
+      <Dialog open={!!aberto} onOpenChange={o => !o && setAberto(null)}>
+        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{aberto?.titulo}</DialogTitle>
+            <DialogDescription>Copie a fala pronta. O nome do paciente e os outros campos entram direto no texto.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 rounded-xl bg-muted/40 p-3">
+            {F({ k: 'paciente', label: 'Paciente', ph: 'Maria', pre: 'dlg' })}
+            {F({ k: 'crc', label: 'Seu nome', ph: 'Ariane', pre: 'dlg' })}
+            {F({ k: 'horario', label: 'Horário', ph: '14h30', pre: 'dlg' })}
+          </div>
+          <div className="space-y-4">
+            {aberto?.ids.map(id => {
+              const sc = SCRIPTS.find(x => x.id === id);
+              return sc ? <ScriptCard key={id} s={sc} fill={fill} highlighted={false} /> : null;
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

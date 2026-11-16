@@ -49,6 +49,12 @@ export interface PlanoIncentivoData {
   seriesUnit: ChartUnit;
   /** dia a dia do mês (até hoje), com a mesma contagem do realizado — para os mini gráficos */
   monthSeries: Record<CountKey, number[]>;
+  /** realizado no recorte do filtro de data (dia, semana, mês, ano ou personalizado) */
+  periodActuals: Record<CountKey, number>;
+  /** curva do recorte: por dia (até ~2 meses) ou por mês, até hoje */
+  periodSeries: Record<CountKey, number[]>;
+  /** dias úteis do recorte (para a meta proporcional) */
+  periodBizDays: number;
 }
 
 export type ChartUnit = 'dia' | 'semana' | 'mes';
@@ -223,7 +229,16 @@ export function usePlanoIncentivo(month: Date, period: IncentivePeriod = 'mes', 
         .map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
       const monthSeries = Object.fromEntries(keys.map(k => [k, monthDays.map(d => count(k, d))])) as Record<CountKey, number[]>;
 
-      return { weeks, settings, groups, monthActuals, seriesUnit, monthSeries };
+      const periodActuals = Object.fromEntries(keys.map(k => [k, count(k, sel)])) as Record<CountKey, number>;
+      const selEnd = sel.end > now ? endOfDay(now) : sel.end;
+      const longo = (sel.end.getTime() - sel.start.getTime()) / 86400000 > 62;
+      const periodParts: Week[] = sel.start > now ? [] : longo
+        ? eachMonthOfInterval({ start: sel.start, end: selEnd }).map(m => ({ start: maxD(startOfMonth(m), sel.start), end: minD(endOfMonth(m), selEnd) }))
+        : eachDayOfInterval({ start: sel.start, end: selEnd }).map(d => ({ start: startOfDay(d), end: endOfDay(d) }));
+      const periodSeries = Object.fromEntries(keys.map(k => [k, periodParts.map(p => count(k, p))])) as Record<CountKey, number[]>;
+      const periodBizDays = data.calendar.countBusinessDays(sel.start, sel.end);
+
+      return { weeks, settings, groups, monthActuals, seriesUnit, monthSeries, periodActuals, periodSeries, periodBizDays };
     },
   });
 }

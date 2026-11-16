@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMetaSettings } from '@/hooks/useMetaSettings';
 import { usePlanoIncentivo, type CountKey } from '@/hooks/usePlanoIncentivo';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
+import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { MetricSpark, Sparkline } from '@/components/charts/SmoothCharts';
 import { ptBR } from 'date-fns/locale';
@@ -77,7 +78,8 @@ function ladderRows(l: GoalLadder, s: MetaSettingsMap, owner: (k: string) => str
 
 
 type Plano = ReturnType<typeof usePlanoIncentivo>['data'];
-type MonthRange = { start: Date; end: Date };
+/** recorte do filtro de data: nome, dias úteis e datas */
+type Periodo = { label: string; bizDays: number; range: { start: Date; end: Date } };
 
 function Progress({ pct }: { pct: number }) {
   const p = Math.max(0, Math.min(100, pct));
@@ -99,11 +101,12 @@ function OwnerChip({ name }: { name?: string }) {
 }
 
 /** Um degrau: meta do mês grande, semana/dia, realizado com barra e curva. */
-function StepCard({ r, days, changed, plano, monthRange, index, compact }: {
-  r: Row; days: number; changed: boolean; plano: Plano; monthRange: MonthRange; index?: number; compact?: boolean;
+function StepCard({ r, days, changed, plano, periodo, index, compact }: {
+  r: Row; days: number; changed: boolean; plano: Plano; periodo: Periodo; index?: number; compact?: boolean;
 }) {
-  const actual = r.actual && plano ? plano.monthActuals[r.actual] : undefined;
-  const pct = actual !== undefined && r.month > 0 ? (actual / r.month) * 100 : undefined;
+  const actual = r.actual && plano ? plano.periodActuals[r.actual] : undefined;
+  const meta = (r.month * periodo.bizDays) / days;
+  const pct = actual !== undefined && meta > 0 ? (actual / meta) * 100 : undefined;
   return (
     <div className={cn('h-full rounded-2xl border bg-card p-3.5 flex flex-col gap-2', index === 1 && 'border-primary/40 bg-primary/5')}>
       <div className="flex items-start justify-between gap-2">
@@ -124,12 +127,12 @@ function StepCard({ r, days, changed, plano, monthRange, index, compact }: {
       </div>
       <div className="mt-auto space-y-1.5">
         {r.actual && plano
-          ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={28} />
-          : <MetricSpark metric="investimento" height={28} range={monthRange} />}
+          ? <Sparkline data={plano.periodSeries[r.actual] ?? []} height={28} />
+          : <MetricSpark metric="investimento" height={28} range={periodo.range} />}
         {actual !== undefined && pct !== undefined ? (
           <>
-            <div className="flex items-baseline justify-between text-xs">
-              <span>Realizado <b className="tabular-nums">{r.fmt(actual)}</b></span>
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span>Realizado <b className="tabular-nums">{r.fmt(actual)}</b> <span className="text-muted-foreground">de {r.fmt(meta)}</span></span>
               <b className={cn('tabular-nums', pct >= 100 ? 'text-success' : 'text-foreground')}>{Math.round(pct)}%</b>
             </div>
             <Progress pct={pct} />
@@ -143,8 +146,8 @@ function StepCard({ r, days, changed, plano, monthRange, index, compact }: {
 }
 
 /** Faturamento do mês contra a meta, com o ritmo esperado pelos dias úteis. */
-function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasReal, serie, mes, days }: {
-  faturamentoMeta: number; faturamentoReal?: number; vendasMeta: number; vendasReal?: number; serie: number[]; mes: string; days: number;
+function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasReal, serie, mes, diaMeta, semanaMeta }: {
+  faturamentoMeta: number; faturamentoReal?: number; vendasMeta: number; vendasReal?: number; serie: number[]; mes: string; diaMeta: number; semanaMeta: number;
 }) {
   const real = faturamentoReal ?? 0;
   const pct = faturamentoMeta > 0 ? (real / faturamentoMeta) * 100 : 0;
@@ -156,7 +159,7 @@ function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasRea
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-semibold first-letter:uppercase">{mes}</p>
         <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', pct >= 100 ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground')}>
-          {Math.round(pct)}% do objetivo
+          {Math.round(pct)}% da meta do período
         </span>
       </div>
       <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -177,11 +180,11 @@ function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasRea
           <p className="text-[11px] text-muted-foreground">vendas</p>
         </div>
         <div className="rounded-xl bg-muted/40 p-2">
-          <p className="hero-number text-xl">{BRL(faturamentoMeta / days)}</p>
+          <p className="hero-number text-xl">{BRL(diaMeta)}</p>
           <p className="text-[11px] text-muted-foreground">por dia útil</p>
         </div>
         <div className="rounded-xl bg-muted/40 p-2">
-          <p className="hero-number text-xl">{BRL((faturamentoMeta * 5) / days)}</p>
+          <p className="hero-number text-xl">{BRL(semanaMeta)}</p>
           <p className="text-[11px] text-muted-foreground">por semana</p>
         </div>
       </div>
@@ -190,8 +193,8 @@ function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasRea
 }
 
 /** A mesma escada em tabela, para quem prefere ver tudo de uma vez. */
-function LadderTable({ rows, days, changed, plano, monthRange, planoMonth }: {
-  rows: Row[]; days: number; changed: boolean; plano: Plano; monthRange: MonthRange; planoMonth: Date;
+function LadderTable({ rows, days, changed, plano, periodo }: {
+  rows: Row[]; days: number; changed: boolean; plano: Plano; periodo: Periodo;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -203,14 +206,15 @@ function LadderTable({ rows, days, changed, plano, monthRange, planoMonth }: {
             <th className="font-medium py-2 px-3 text-right">Mês</th>
             <th className="font-medium py-2 px-3 text-right">Semana</th>
             <th className="font-medium py-2 px-3 text-right">Dia útil</th>
-            <th className="font-medium py-2 pl-3 text-right first-letter:uppercase">Realizado · {format(planoMonth, 'MMM yyyy', { locale: ptBR })}</th>
+            <th className="font-medium py-2 pl-3 text-right">Realizado · {periodo.label}</th>
             <th className="font-medium py-2 pl-3 w-28">Tendência</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => {
-            const actual = r.actual && plano ? plano.monthActuals[r.actual] : undefined;
-            const pct = actual !== undefined && r.month > 0 ? Math.round((actual / r.month) * 100) : undefined;
+            const actual = r.actual && plano ? plano.periodActuals[r.actual] : undefined;
+            const meta = (r.month * periodo.bizDays) / days;
+            const pct = actual !== undefined && meta > 0 ? Math.round((actual / meta) * 100) : undefined;
             return (
               <tr key={r.label} className={cn('border-b last:border-0', r.group && 'border-t-2 border-t-border')}>
                 <td className="py-2 pr-3">
@@ -234,8 +238,8 @@ function LadderTable({ rows, days, changed, plano, monthRange, planoMonth }: {
                 </td>
                 <td className="py-2 pl-3 w-28">
                   {r.actual && plano
-                    ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={26} />
-                    : <MetricSpark metric="investimento" height={26} range={monthRange} />}
+                    ? <Sparkline data={plano.periodSeries[r.actual] ?? []} height={26} />
+                    : <MetricSpark metric="investimento" height={26} range={periodo.range} />}
                 </td>
               </tr>
             );
@@ -265,13 +269,16 @@ export function GoalLadderCard() {
   const { month: globalMonth } = useGlobalMonth();
   const monthKey = `${globalMonth.getFullYear()}-${globalMonth.getMonth()}`;
   const planoMonth = useMemo(() => new Date(globalMonth.getFullYear(), globalMonth.getMonth(), 15), [monthKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const { data: plano } = usePlanoIncentivo(planoMonth);
-  const monthRange = useMemo(() => ({ start: startOfMonth(planoMonth), end: endOfMonth(planoMonth) }), [planoMonth]);
+  // realizado, % e curvas seguem o filtro de data do topo (dia, semana, mês, ano ou personalizado)
+  const { range: gRange, period: gPeriod } = usePeriodFilter();
+  const sel = useMemo(() => ({ start: gRange.start, end: gRange.end }), [gRange.start.getTime(), gRange.end.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data: plano } = usePlanoIncentivo(planoMonth, gPeriod === 'hoje' ? 'dia' : gPeriod === 'semana' ? 'semana' : 'mes', sel);
   const { user, canManage: isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const s = (settings ?? {}) as MetaSettingsMap;
   const ladder = useMemo(() => deriveGoalLadder(s), [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   const days = businessDaysPerMonth(s);
+  const periodo: Periodo = { label: gRange.label, bizDays: plano?.periodBizDays ?? days, range: sel };
 
   // edição direta do faturamento e do ticket: a escada mostra o resultado antes de salvar
   const [fatN, setFat] = useState(0);
@@ -405,13 +412,14 @@ export function GoalLadderCard() {
               </div>
 
               <MonthProgress
-                faturamentoMeta={shown.faturamento}
-                faturamentoReal={plano?.monthActuals.faturamento}
-                vendasMeta={shown.vendas}
-                vendasReal={plano?.monthActuals.vendas}
-                serie={plano?.monthSeries.faturamento ?? []}
-                mes={format(planoMonth, "MMMM 'de' yyyy", { locale: ptBR })}
-                days={days}
+                faturamentoMeta={(shown.faturamento * periodo.bizDays) / days}
+                faturamentoReal={plano?.periodActuals.faturamento}
+                vendasMeta={(shown.vendas * periodo.bizDays) / days}
+                vendasReal={plano?.periodActuals.vendas}
+                serie={plano?.periodSeries.faturamento ?? []}
+                mes={periodo.label}
+                diaMeta={shown.faturamento / days}
+                semanaMeta={(shown.faturamento * 5) / days}
               />
             </div>
 
@@ -437,7 +445,7 @@ export function GoalLadderCard() {
                   <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" aria-label="Escada de crescimento">
                     {rows.filter(r => r.step).map((r, i, arr) => (
                       <li key={r.label} className="relative">
-                        <StepCard r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} index={i + 1} />
+                        <StepCard r={r} days={days} changed={changed} plano={plano} periodo={periodo} index={i + 1} />
                         {i < arr.length - 1 && arr[i + 1].via && (
                           <span className="hidden 2xl:flex absolute -right-3 top-8 z-10 h-6 w-6 items-center justify-center rounded-full border bg-card text-muted-foreground" aria-hidden>
                             <ChevronRight className="h-3.5 w-3.5" />
@@ -452,7 +460,7 @@ export function GoalLadderCard() {
                       <p className="text-sm font-semibold">Resgates e indicações</p>
                       <div className="grid gap-3 sm:grid-cols-2">
                         {rows.filter(r => r.bloco === 'relacionamento').map(r => (
-                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} compact />
+                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} periodo={periodo} compact />
                         ))}
                       </div>
                     </div>
@@ -460,17 +468,17 @@ export function GoalLadderCard() {
                       <p className="text-sm font-semibold">Origens estratégicas <span className="font-normal text-muted-foreground">(leads por origem)</span></p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {rows.filter(r => r.bloco === 'origem').map(r => (
-                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} compact />
+                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} periodo={periodo} compact />
                         ))}
                       </div>
                     </div>
                   </div>
                 </>
               ) : (
-                <LadderTable rows={rows} days={days} changed={changed} plano={plano} monthRange={monthRange} planoMonth={planoMonth} />
+                <LadderTable rows={rows} days={days} changed={changed} plano={plano} periodo={periodo} />
               )}
               <p className="text-[11px] text-muted-foreground">
-                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Realizado e curvas: {format(planoMonth, "MMMM 'de' yyyy", { locale: ptBR })}.
+                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Realizado, % e curvas seguem o filtro de data ({periodo.label}); a meta do período é proporcional aos {periodo.bizDays} dias úteis dele.
                 Origens contam o campo "Como o lead chegou?". O Plano de Incentivo, o painel e as Reuniões usam estes números.
               </p>
             </div>

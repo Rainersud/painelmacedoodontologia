@@ -1,19 +1,17 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useClinicGoalsPanel, type Period, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
+import { useClinicGoalsPanel, type PanelMetric } from '@/hooks/useClinicGoalsPanel';
 import { useLTVData } from '@/hooks/useLTVData';
 import { summarize } from '@/lib/ltv';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
-import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
 import { type ReactNode } from 'react';
 import { Sparkline } from '@/components/charts/SmoothCharts';
-import { Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
 const formatWhole = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
 
-const PERIOD_NOUN: Record<Period, string> = { hoje: 'hoje', semana: 'nesta semana', mes: 'neste mês', ano: 'no período' };
 
 /** Etapas do funil, na ordem em que o paciente passa por elas. */
 /** Indicadores de eficiência, mostrados em lista compacta. */
@@ -51,19 +49,6 @@ function buildLTVMetric(overallLTV: number): PanelMetric {
   };
 }
 
-function Delta({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
-  if (m.delta === 0) {
-    return <span className="inline-flex items-center gap-1 text-muted-foreground"><Minus className="h-3 w-3" />igual {prevLabel === 'ontem' ? 'a ontem' : `ao ${prevLabel}`}</span>;
-  }
-  const good = m.lowerIsBetter ? m.delta < 0 : m.delta > 0;
-  const Icon = m.delta > 0 ? TrendingUp : TrendingDown;
-  return (
-    <span className={cn('inline-flex items-center gap-1', good ? 'text-success' : 'text-destructive')}>
-      <Icon className="h-3 w-3" aria-hidden />
-      {m.delta > 0 ? '+' : ''}{m.delta}% <span className="text-muted-foreground">vs {prevLabel}</span>
-    </span>
-  );
-}
 
 function StatusTag({ status, paced = true }: { status: PanelMetric['status']; paced?: boolean }) {
   const st = STATUS[status];
@@ -83,65 +68,20 @@ function StatusTag({ status, paced = true }: { status: PanelMetric['status']; pa
 /** `afterRevenue`: bloco mostrado entre o faturamento do período e o funil (ex.: Previsão de Faturamento). */
 export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } = {}) {
   const { period, customRange, range, anchor } = useLocalPeriod('mes');
-  const prevLabel = range.prevLabel ?? 'período anterior';
-  const { data, isLoading } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd }, anchor);
+  const { data } = useClinicGoalsPanel(period, customRange, { prevStart: range.prevStart, prevEnd: range.prevEnd }, anchor);
   // LTV oficial vem do Comercial 2 — apenas replicamos o valor
   const ltvData = useLTVData();
   const ltv = ltvData.isLoading ? null : summarize(ltvData.patients);
 
   const metrics = data?.metrics ?? [];
   const byKey = (k: string) => metrics.find(m => m.key === k);
-  const revenue = byKey('faturamento');
   const efficiency = [
     ...EFFICIENCY_KEYS.map(byKey).filter((m): m is PanelMetric => !!m),
     ...(ltv ? [buildLTVMetric(ltv.avgLtv)] : []),
   ];
 
   return (
-    <section className="space-y-4" aria-labelledby="metas-titulo">
-      {/* Cabeçalho + faturamento do período: o número que a clínica persegue */}
-      <Card className="monday-card">
-        <CardContent className="p-5 sm:p-6 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div>
-              <h2 id="metas-titulo" className="text-lg font-semibold">Metas da clínica</h2>
-              {data && (
-                <p className="text-sm text-muted-foreground">
-                  Dia útil {data.businessDays} de {data.totalBusinessDays}
-                </p>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground rounded-full border px-2.5 py-1">{range.label}</span>
-          </div>
-
-          {isLoading && <div className="h-24 rounded-md bg-muted/60 animate-pulse" />}
-          {revenue && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-                <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Faturamento {/^(Hoje|Esta semana|Este mês|Este ano)$/.test(range.label) ? PERIOD_NOUN[period] : `em ${range.label}`}</p>
-                  <p className="hero-number text-5xl sm:text-6xl leading-none mt-1">{formatWhole(revenue.current)}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    de {formatWhole(revenue.target)} · <Delta m={revenue} prevLabel={prevLabel} />
-                  </p>
-                </div>
-                <div className="flex flex-col items-start sm:items-end gap-1.5 text-sm">
-                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-                    revenue.status === 'healthy' ? 'bg-success/10 text-success' : revenue.status === 'warning' ? 'bg-warning/15 text-warning-strong' : 'bg-destructive/10 text-destructive')}>
-                    {revenue.status === 'healthy' ? 'No ritmo' : revenue.status === 'warning' ? 'Atenção ao ritmo' : 'Abaixo do ritmo'}
-                  </span>
-                  {period === 'mes' && data && data.projectedRevenue > 0 && (
-                    <span className="text-muted-foreground">
-                      No ritmo atual, o mês fecha em <span className="font-semibold text-foreground">{formatWhole(data.projectedRevenue)}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+    <section className="space-y-4" aria-label="Eficiência e o que olhar agora">
       {afterRevenue}
 
       {/* Eficiência: um cartão por indicador, os que pedem atenção primeiro */}

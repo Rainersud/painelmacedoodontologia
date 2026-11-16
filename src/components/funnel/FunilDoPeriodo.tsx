@@ -204,6 +204,7 @@ export function FunilConversao({ bare = false }: { bare?: boolean }) {
   const t = data.target;
   const r = funnelRates(a);
   const tr = data.targetRates;
+  const metaConversao = (tr.agendamento * tr.comparecimento * tr.fechamento) / 10000;
   const stages: FunnelStage[] = [
     { label: 'Novos leads', value: a.leads, sub: 'entraram no funil', target: t.leads },
     { label: 'Agendamentos', value: a.agendamentos, sub: 'consultas marcadas', rate: r.agendamento, meta: tr.agendamento, rateLabel: 'agendaram', target: t.agendamentos },
@@ -218,6 +219,11 @@ export function FunilConversao({ bare = false }: { bare?: boolean }) {
       </div>
       <p className="mt-1 mb-5 text-sm text-muted-foreground">Leads → agendados → compareceram → vendas: a passagem entre as etapas e, ao lado, a % da meta e quanto falta.</p>
       <FunnelDrawing stages={stages} />
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <Kpi spark="conversao" label="Conversão" value={pct(r.conversao)} sub="de lead para venda" meta={pct(metaConversao)} progress={(r.conversao / Math.max(0.01, metaConversao)) * 100} />
+        <Kpi spark="ticket" label="Ticket médio" value={brl(a.ticket)} sub={`${a.vendas} venda(s) no período`} meta={brl(t.ticket)} progress={(a.ticket / Math.max(1, t.ticket)) * 100} />
+        <Kpi spark="faturamento" label="Faturamento" value={brl(a.faturamento)} sub={a.faturamento >= t.faturamento ? 'meta batida' : `faltam ${brl(t.faturamento - a.faturamento)}`} meta={brl(t.faturamento)} progress={(a.faturamento / Math.max(1, t.faturamento)) * 100} />
+      </div>
     </section>
   );
 }

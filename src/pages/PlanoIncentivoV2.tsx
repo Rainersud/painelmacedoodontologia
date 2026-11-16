@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
 import { Label } from '@/components/ui/label';
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,11 +31,34 @@ const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 const dm = (d: Date) => format(d, 'dd/MM');
 
 /** Cor fixa de cada responsável (identidade, igual no card, no gráfico e na legenda). */
+// Cores seguras para daltonismo (paleta Okabe-Ito: azul, laranja, rosa-púrpura), validadas para
+// protanopia, deuteranopia e tritanopia. No gráfico, cada pessoa tem também traço, marcador e
+// nome na ponta da linha, para nunca depender só da cor.
 const PERSON_COLOR: Record<BonusGroup, string> = {
-  comercial: 'hsl(var(--chart-2))',
-  atendimento: 'hsl(var(--chart-1))',
-  indicacoes: 'hsl(var(--chart-3))',
+  comercial: '#0072B2',
+  atendimento: '#E69F00',
+  indicacoes: '#CC79A7',
 };
+const PERSON_DASH: Record<BonusGroup, string | undefined> = { comercial: undefined, atendimento: '9 5', indicacoes: '2 4' };
+const PERSON_SHAPE: Record<BonusGroup, 'circle' | 'square' | 'triangle'> = { comercial: 'circle', atendimento: 'square', indicacoes: 'triangle' };
+
+function Marker({ cx, cy, shape, color, r = 4 }: { cx?: number; cy?: number; shape: 'circle' | 'square' | 'triangle'; color: string; r?: number }) {
+  if (cx === undefined || cy === undefined) return null;
+  const common = { fill: color, stroke: 'hsl(var(--card))', strokeWidth: 1.5 };
+  if (shape === 'square') return <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} {...common} />;
+  if (shape === 'triangle') return <polygon points={`${cx},${cy - r - 1} ${cx + r + 1},${cy + r} ${cx - r - 1},${cy + r}`} {...common} />;
+  return <circle cx={cx} cy={cy} r={r} {...common} />;
+}
+
+function LegendSwatch({ group }: { group: BonusGroup }) {
+  const color = PERSON_COLOR[group];
+  return (
+    <svg width="34" height="12" aria-hidden>
+      <line x1="2" y1="6" x2="32" y2="6" stroke={color} strokeWidth="3" strokeDasharray={PERSON_DASH[group]} strokeLinecap="round" />
+      <Marker cx={17} cy={6} shape={PERSON_SHAPE[group]} color={color} r={3.5} />
+    </svg>
+  );
+}
 
 const WEEK_STATE: Record<WeekState, { label: string; cls: string; Icon: React.ElementType }> = {
   batida: { label: 'Batida', cls: 'border-success/40 bg-success/10 text-success', Icon: CheckCircle2 },
@@ -181,7 +204,7 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string 
           <p className="text-xs text-muted-foreground">% médio das metas de cada responsável · a linha marca 100% (meta batida)</p>
         </div>
         <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
-          <LineChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+          <LineChart data={rows} margin={{ top: 8, right: 72, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="label" tickLine={false} axisLine={false} className="capitalize" />
             <YAxis tickLine={false} axisLine={false} width={40} domain={[0, top]} ticks={ticks} tickFormatter={v => `${v}%`} />
@@ -189,13 +212,26 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string 
             <ChartTooltip cursor={{ stroke: 'hsl(var(--border))' }} content={<ChartTooltipContent formatter={(v, name) => (
               <span className="flex w-full justify-between gap-3"><span>{config[String(name)]?.label}</span><b className="tabular-nums">{v}%</b></span>
             )} />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            {data.groups.map(g => (
-              <Line key={g.group} type="monotone" dataKey={g.group} stroke={`var(--color-${g.group})`} strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: `var(--color-${g.group})` }} activeDot={{ r: 5 }} isAnimationActive={false} />
-            ))}
+            {data.groups.map(g => {
+              const last = rows.length - 1;
+              return (
+                <Line key={g.group} type="monotone" dataKey={g.group} stroke={PERSON_COLOR[g.group]} strokeWidth={3}
+                  strokeDasharray={PERSON_DASH[g.group]}
+                  dot={(p: { cx?: number; cy?: number; index?: number }) => <Marker key={`${g.group}-${p.index}`} cx={p.cx} cy={p.cy} shape={PERSON_SHAPE[g.group]} color={PERSON_COLOR[g.group]} />}
+                  activeDot={(p: { cx?: number; cy?: number }) => <Marker cx={p.cx} cy={p.cy} shape={PERSON_SHAPE[g.group]} color={PERSON_COLOR[g.group]} r={6} />}
+                  label={(p: { x?: number; y?: number; index?: number }) => p.index === last && p.x !== undefined && p.y !== undefined
+                    ? <text key={`lbl-${g.group}`} x={p.x + 8} y={p.y + 4} fontSize={12} fontWeight={600} fill="hsl(var(--foreground))">{g.owner}</text>
+                    : <g key={`lbl-${g.group}-${p.index}`} />}
+                  isAnimationActive={false} />
+              );
+            })}
           </LineChart>
         </ChartContainer>
+        <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm" aria-label="Legenda">
+          {data.groups.map(g => (
+            <li key={g.group} className="flex items-center gap-2"><LegendSwatch group={g.group} /><span className="font-medium">{g.owner}</span></li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );

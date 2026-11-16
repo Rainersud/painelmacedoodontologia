@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, Loader2, SlidersHorizontal, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
+import { FunilDoPeriodo } from '@/components/funnel/FunilDoPeriodo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
@@ -281,6 +282,8 @@ export function GoalLadderCard() {
             </div>
           </div>
         )}
+
+        <FunilDoPeriodo bare />
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-lg">

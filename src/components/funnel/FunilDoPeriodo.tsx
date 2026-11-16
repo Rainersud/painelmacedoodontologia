@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { cn } from '@/lib/utils';
 import { fetchMetricsData, monthlyGoal, periodGoal, revenue, summarize, type SeriesKey } from '@/lib/metrics';
-import { GoalCurve, GoalCurveLegend, MetricSpark } from '@/components/charts/SmoothCharts';
+import { MetricSpark } from '@/components/charts/SmoothCharts';
 import { funnelRates, type FunnelNumbers } from '@/lib/funnelInsights';
 
 const brl = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
@@ -104,7 +104,6 @@ export function FunilDoPeriodo({ bare = false }: { bare?: boolean }) {
   const r = funnelRates(a);
   const tr = data.targetRates;
   const metaConversao = (tr.agendamento * tr.comparecimento * tr.fechamento) / 10000;
-  const { curve, pace } = data;
   return (
       <section aria-labelledby="funil-periodo" className={cn(bare ? 'border-t pt-5' : 'monday-card rounded-2xl border bg-card p-5 sm:p-6')}>
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-5">
@@ -114,21 +113,6 @@ export function FunilDoPeriodo({ bare = false }: { bare?: boolean }) {
               <h2 id="funil-periodo" className="text-base font-semibold leading-tight">Funil do período</h2>
               <p className="text-xs text-muted-foreground truncate">{range.label} · comparando com {range.prevLabel}</p>
             </div>
-          </div>
-        </div>
-        <div className="grid gap-5 lg:grid-cols-[minmax(220px,1fr)_2.6fr] items-center mb-5">
-          <div>
-            <p className="text-sm text-muted-foreground">Faturamento</p>
-            <p className="hero-number text-5xl leading-none mt-1">{brl(a.faturamento)}</p>
-            <p className="mt-2 text-sm text-muted-foreground">de {brl(t.faturamento)} · {t.faturamento > 0 ? Math.round((a.faturamento / t.faturamento) * 100) : 0}% da meta</p>
-            <span className={cn('mt-3 inline-flex rounded-full px-3 py-1 text-xs font-medium',
-              a.faturamento >= t.faturamento * pace ? 'bg-success/10 text-success' : 'bg-warning/15 text-warning-strong')}>
-              {a.faturamento >= t.faturamento * pace ? 'No ritmo da meta' : 'Abaixo do ritmo da meta'}
-            </span>
-          </div>
-          <div className="space-y-2 min-w-0">
-            <GoalCurve points={curve} height={190} format={brl} />
-            <GoalCurveLegend />
           </div>
         </div>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">

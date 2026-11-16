@@ -6,8 +6,8 @@ import { summarize } from '@/lib/ltv';
 import { useLocalPeriod } from '@/components/dashboard/PeriodFilterContext';
 import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
-import { Fragment, type ReactNode } from 'react';
-import { GoalCurve, GoalCurveLegend, Sparkline } from '@/components/charts/SmoothCharts';
+import { type ReactNode } from 'react';
+import { Sparkline } from '@/components/charts/SmoothCharts';
 import { Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
@@ -137,26 +137,6 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
                   )}
                 </div>
               </div>
-              {data && revenue.trend.length > 1 && (() => {
-                // curva acumulada do período contra o ritmo da meta (linha tracejada)
-                const now = Date.now();
-                let acc = 0;
-                const n = revenue.trend.length;
-                const points = revenue.trend.map((v, i) => {
-                  acc += v;
-                  return { label: data.bucketLabels[i] ?? String(i + 1), value: acc, goal: Math.round((revenue.target * (i + 1)) / n) };
-                });
-                // não desenha o realizado no futuro (dias que ainda não chegaram)
-                const elapsed = range.end.getTime() <= now ? n
-                  : Math.max(1, Math.min(n, Math.ceil(((now - range.start.getTime()) / (range.end.getTime() - range.start.getTime())) * n)));
-                const shown = points.map((p, i) => (i < elapsed ? p : { ...p, value: undefined as unknown as number }));
-                return (
-                  <div className="space-y-2">
-                    <GoalCurve points={shown} height={210} format={v => formatWhole(v)} />
-                    <GoalCurveLegend />
-                  </div>
-                );
-              })()}
             </div>
           )}
         </CardContent>
@@ -164,59 +144,56 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
 
       {afterRevenue}
 
-      {/* Eficiência: lista compacta, um indicador por linha */}
-      {efficiency.length > 0 && (
-        <Card className="monday-card">
-          <CardContent className="p-0">
-            <h3 className="px-5 pt-4 pb-2 text-sm font-semibold">Eficiência</h3>
-            <table className="w-full text-sm sm:[&_th:first-child]:w-1/3">
-              <caption className="sr-only">Indicadores de eficiência do período</caption>
-              <thead>
-                <tr className="text-xs text-muted-foreground border-b border-border">
-                  <th scope="col" className="text-left font-medium px-5 py-2">Indicador</th>
-                  <th scope="col" className="text-right font-medium px-3 py-2">Atual</th>
-                  <th scope="col" className="text-right font-medium px-3 py-2 hidden sm:table-cell">Meta</th>
-                  <th scope="col" className="text-left font-medium px-3 py-2 hidden md:table-cell w-32">Tendência</th>
-                  <th scope="col" className="text-left font-medium px-5 py-2">Situação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {efficiency.map(m => {
+      {/* Eficiência: um cartão por indicador, os que pedem atenção primeiro */}
+      {efficiency.length > 0 && (() => {
+        const ordem = { critical: 0, warning: 1, healthy: 2 } as const;
+        const lista = [...efficiency].sort((a, b) => ordem[a.status] - ordem[b.status]);
+        const conta = (st: PanelMetric['status']) => efficiency.filter(m => m.status === st).length;
+        return (
+          <Card className="monday-card">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-semibold">Eficiência</h3>
+                  <p className="text-sm text-muted-foreground">Quanto custa e quanto rende cada venda. Os que pedem atenção aparecem primeiro.</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-xs" aria-label="Resumo">
+                  {(['critical', 'warning', 'healthy'] as const).map(st => conta(st) > 0 && (
+                    <span key={st} className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium', STATUS[st].soft, STATUS[st].text)}>
+                      {conta(st)} {st === 'healthy' ? (conta(st) === 1 ? 'saudável' : 'saudáveis') : st === 'warning' ? 'em atenção' : (conta(st) === 1 ? 'crítico' : 'críticos')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {lista.map(m => {
                   const tip = m.status !== 'healthy' ? SUGGESTIONS[m.key]?.(m) : undefined;
+                  const st = STATUS[m.status];
                   return (
-                  <Fragment key={m.key}>
-                  <tr className={cn('border-border', tip ? '' : 'border-b last:border-0')}>
-                    <th scope="row" className="text-left font-normal px-5 py-2.5">{m.label}</th>
-                    <td className="text-right font-semibold px-3 py-2.5">{m.display}</td>
-                    <td className="text-right text-muted-foreground px-3 py-2.5 hidden sm:table-cell">{m.targetDisplay}</td>
-                    <td className="px-3 py-1.5 hidden md:table-cell">
-                      {m.trend.length > 1 && (
-                        <Sparkline data={m.trend} height={22} />
+                    <li key={m.key} className={cn('rounded-2xl border p-4 flex flex-col gap-2', m.status === 'critical' ? 'border-destructive/30' : m.status === 'warning' ? 'border-warning/40' : '')}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium leading-tight">{m.label}</p>
+                        <StatusTag status={m.status} paced={false} />
+                      </div>
+                      <p className="hero-number text-3xl leading-none">{m.display}</p>
+                      <p className="text-xs text-muted-foreground">meta {m.targetDisplay}</p>
+                      {m.trend.length > 1 && <Sparkline data={m.trend} height={30} tone={m.status === 'critical' ? 'danger' : 'brand'} />}
+                      {tip && (
+                        <details className={cn('mt-auto rounded-lg px-3 py-2 text-xs', st.soft)}>
+                          <summary className="cursor-pointer font-medium flex items-center gap-1.5 list-none">
+                            <Lightbulb className={cn('h-3.5 w-3.5 shrink-0', st.text)} aria-hidden /> Como melhorar
+                          </summary>
+                          <p className="mt-1.5 leading-relaxed text-foreground">{tip}</p>
+                        </details>
                       )}
-                    </td>
-                    <td className="px-5 py-2.5"><StatusTag status={m.status} paced={false} /></td>
-                  </tr>
-                  {tip && (
-                    <tr className="border-b border-border last:border-0">
-                      <td colSpan={5} className="px-5 pb-3 pt-0">
-                        <p className={cn(
-                          'flex gap-2 rounded-lg px-3 py-2 text-xs leading-relaxed',
-                          m.status === 'critical' ? 'bg-destructive/5 text-foreground' : 'bg-warning/10 text-foreground',
-                        )}>
-                          <Lightbulb className={cn('h-4 w-4 shrink-0 mt-0.5', m.status === 'critical' ? 'text-destructive' : 'text-warning-strong')} aria-hidden />
-                          <span><span className="font-semibold">Como melhorar: </span>{tip}</span>
-                        </p>
-                      </td>
-                    </tr>
-                  )}
-                  </Fragment>
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
+              </ul>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {data && data.insights.length > 0 && (
         <Card className="monday-card">

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ChevronRight, Loader2, SlidersHorizontal, Target } from 'lucide-react';
+import { ArrowDown, ChevronRight, Loader2, SlidersHorizontal, Target, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
-import { FunilConversao, FunilDoPeriodo } from '@/components/funnel/FunilDoPeriodo';
+import { FunilConversao } from '@/components/funnel/FunilDoPeriodo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/crm/CurrencyInput';
@@ -15,8 +15,9 @@ import { useMetaSettings } from '@/hooks/useMetaSettings';
 import { usePlanoIncentivo, type CountKey } from '@/hooks/usePlanoIncentivo';
 import { useGlobalMonth } from '@/hooks/useGlobalPeriodText';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
-import { MetricSpark, Sparkline } from '@/components/charts/SmoothCharts';
+import { useStrategicInsights } from '@/hooks/useStrategicInsights';
+import { eachDayOfInterval, eachMonthOfInterval, format } from 'date-fns';
+import { GoalCurve, MetricSpark, Sparkline } from '@/components/charts/SmoothCharts';
 import { ptBR } from 'date-fns/locale';
 import { refreshAfterSettingsChange } from '@/lib/refresh';
 import { describeError } from '@/lib/errors';
@@ -168,14 +169,32 @@ function StepCard({ r, changed, plano, periodo, index }: {
 }
 
 /** Faturamento do mês contra a meta, com o ritmo esperado pelos dias úteis. */
-function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasReal, serie, mes, diaMeta, semanaMeta }: {
-  faturamentoMeta: number; faturamentoReal?: number; vendasMeta: number; vendasReal?: number; serie: number[]; mes: string; diaMeta: number; semanaMeta: number;
+function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasReal, serie, mes, diaMeta, semanaMeta, range, forecast }: {
+  faturamentoMeta: number; faturamentoReal?: number; vendasMeta: number; vendasReal?: number; serie: number[]; mes: string;
+  diaMeta: number; semanaMeta: number; range: { start: Date; end: Date }; forecast?: number;
 }) {
   const real = faturamentoReal ?? 0;
   const pct = faturamentoMeta > 0 ? (real / faturamentoMeta) * 100 : 0;
   const falta = Math.max(0, faturamentoMeta - real);
+  // eixo do período inteiro (dias até ~2 meses, senão meses): realizado até hoje,
+  // projeção até o fim do período (previsão) e o ritmo da meta
+  const longo = (range.end.getTime() - range.start.getTime()) / 86400000 > 62;
+  const eixo = longo
+    ? eachMonthOfInterval(range).map(m => format(m, 'MMM/yy', { locale: ptBR }))
+    : eachDayOfInterval(range).map(d => format(d, 'dd/MM'));
   let acc = 0;
-  const acumulado = serie.map(v => (acc += v));
+  const feito = serie.map(v => (acc += v));
+  const ultimo = feito[feito.length - 1] ?? 0;
+  const restante = Math.max(1, eixo.length - feito.length);
+  const temPrevisao = forecast !== undefined && forecast > 0 && feito.length > 0 && feito.length < eixo.length;
+  const pontos = eixo.map((label, i) => ({
+    label,
+    value: i < feito.length ? feito[i] : (undefined as unknown as number),
+    projection: temPrevisao && i >= feito.length - 1
+      ? Math.round(ultimo + ((forecast! - ultimo) * (i - feito.length + 1)) / restante) : undefined,
+    goal: Math.round((faturamentoMeta * (i + 1)) / eixo.length),
+  }));
+  const pctPrev = temPrevisao && faturamentoMeta > 0 ? Math.round((forecast! / faturamentoMeta) * 100) : 0;
   return (
     <div className="rounded-2xl border p-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -195,7 +214,24 @@ function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasRea
         </div>
       </div>
       <Progress pct={pct} />
-      <Sparkline data={acumulado} height={56} />
+      {temPrevisao && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-muted/40 px-3 py-2">
+          <TrendingUp className="h-4 w-4 text-success shrink-0" aria-hidden />
+          <span className="text-sm">Previsão para o fim do período no ritmo atual:</span>
+          <b className="hero-number text-lg text-success">{BRL(forecast!)}</b>
+          <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', pctPrev >= 100 ? 'bg-success/10 text-success' : 'bg-warning/15 text-warning-strong')}>
+            {pctPrev}% da meta
+          </span>
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <GoalCurve points={pontos} height={170} format={BRL} />
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><span className="h-[3px] w-4 rounded bg-primary" />Realizado</span>
+          {temPrevisao && <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dotted border-primary/60" />Previsão</span>}
+          <span className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-muted-foreground" />Meta</span>
+        </div>
+      </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-xl bg-muted/40 p-2">
           <p className="hero-number text-xl">{vendasReal ?? 0}<span className="text-sm text-muted-foreground"> / {NUM(vendasMeta)}</span></p>
@@ -295,6 +331,7 @@ export function GoalLadderCard() {
   const { range: gRange, period: gPeriod } = usePeriodFilter();
   const sel = useMemo(() => ({ start: gRange.start, end: gRange.end }), [gRange.start.getTime(), gRange.end.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data: plano } = usePlanoIncentivo(planoMonth, gPeriod === 'hoje' ? 'dia' : gPeriod === 'semana' ? 'semana' : 'mes', sel);
+  const { data: insights } = useStrategicInsights();
   const { user, canManage: isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const s = (settings ?? {}) as MetaSettingsMap;
@@ -447,6 +484,8 @@ export function GoalLadderCard() {
                 mes={periodo.label}
                 diaMeta={shown.faturamento / days}
                 semanaMeta={(shown.faturamento * 5) / days}
+                range={sel}
+                forecast={insights?.forecast}
               />
             </div>
 
@@ -513,8 +552,6 @@ export function GoalLadderCard() {
             </div>
           </div>
         )}
-
-        <FunilDoPeriodo bare />
 
         <FunilConversao bare />
 

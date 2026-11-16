@@ -3,7 +3,6 @@ import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { GoalLadderCard } from '@/components/clinic-goals/GoalLadderCard';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
-import { RevenueForecastWidget } from '@/components/dashboard/StrategicInsightsWidget';
 import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
@@ -20,7 +19,7 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
     <PageShell embedded={embedded} title="Metas da Clínica">
         <div className="space-y-6">
           <GoalLadderCard />
-          <ClinicGoalsPanel afterRevenue={<RevenueForecastWidget />} />
+          <ClinicGoalsPanel />
           <ROIAnalyticsWidget />
           <div className="grid gap-6 lg:grid-cols-2">
             <LeadOriginsWidget />

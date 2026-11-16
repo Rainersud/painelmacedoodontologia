@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buscarScripts, preencher, ROTINA_CRC, SCRIPTS } from './crcGuide';
+import { buscarScripts, preencher, REGUAS, ROTINA_CRC, SCRIPTS } from './crcGuide';
 
 describe('guia da CRC', () => {
   it('busca sem acento e por várias palavras', () => {
@@ -21,5 +21,6 @@ describe('guia da CRC', () => {
     expect(new Set(tarefas.map(t => t.id)).size).toBe(tarefas.length);
     for (const t of tarefas) if (t.script) expect(SCRIPTS.some(s => s.id === t.script)).toBe(true);
     expect(new Set(SCRIPTS.map(s => s.id)).size).toBe(SCRIPTS.length);
+    for (const r of REGUAS) for (const p of r.passos) for (const id of p.scripts ?? []) expect(SCRIPTS.some(s => s.id === id)).toBe(true);
   });
 });

@@ -100,46 +100,68 @@ function OwnerChip({ name }: { name?: string }) {
   );
 }
 
-/** Um degrau: meta do mês grande, semana/dia, realizado com barra e curva. */
-function StepCard({ r, days, changed, plano, periodo, index, compact }: {
-  r: Row; days: number; changed: boolean; plano: Plano; periodo: Periodo; index?: number; compact?: boolean;
+/** Anel de progresso: quanto da meta do período já foi feito. */
+function Ring({ pct, size = 64 }: { pct?: number; size?: number }) {
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = pct === undefined ? 0 : Math.max(0, Math.min(100, pct));
+  const done = (pct ?? 0) >= 100;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+        {p > 0 && (
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeLinecap="round" strokeWidth={stroke}
+            stroke={done ? 'hsl(var(--success))' : 'hsl(var(--primary))'}
+            strokeDasharray={`${(p / 100) * c} ${c}`} className="transition-all duration-500" />
+        )}
+      </svg>
+      <span className={cn('absolute inset-0 flex items-center justify-center text-sm font-semibold tabular-nums', done && 'text-success')}>
+        {pct === undefined ? '—' : `${Math.round(pct)}%`}
+      </span>
+    </div>
+  );
+}
+
+/** Um degrau: anel com a % da meta do período, realizado contra a meta e a curva do período. */
+function StepCard({ r, changed, plano, periodo, index }: {
+  r: Row; changed: boolean; plano: Plano; periodo: Periodo; index?: number; days?: number; compact?: boolean;
 }) {
   const actual = r.actual && plano ? plano.periodActuals[r.actual] : undefined;
   const meta = r.month * periodo.share;
   const pct = actual !== undefined && meta > 0 ? (actual / meta) * 100 : undefined;
   return (
-    <div className={cn('h-full rounded-2xl border bg-card p-3.5 flex flex-col gap-2', index === 1 && 'border-primary/40 bg-primary/5')}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          {r.via && <p className="text-[11px] text-muted-foreground">{r.via}</p>}
-          <p className="text-sm font-semibold leading-tight">
-            {index !== undefined && <span className="text-muted-foreground font-normal mr-1">{index}.</span>}{r.label}
-          </p>
-        </div>
+    <div className={cn('h-full rounded-2xl border bg-card p-4 flex flex-col gap-3', index === 1 && 'border-primary/40 bg-primary/5')}>
+      <div className="min-w-0 space-y-1">
+        {r.via && <p className="text-[11px] text-muted-foreground">{r.via}</p>}
+        <p className="text-sm font-semibold leading-tight">
+          {index !== undefined && <span className="text-muted-foreground font-normal mr-1">{index}.</span>}{r.label}
+        </p>
         <OwnerChip name={r.owner} />
       </div>
-      <div>
-        <p className={cn('hero-number leading-none', compact ? 'text-2xl' : 'text-3xl', changed && 'text-primary')}>{r.fmt(r.month)}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          meta do mês · {r.fmt((r.month * 5) / days)}/semana · {r.fmt(r.month / days)}/dia
-        </p>
-        {compact && <p className="text-[11px] text-muted-foreground">{r.note}</p>}
+      <div className="flex items-center gap-3">
+        <Ring pct={pct} />
+        <div className="min-w-0">
+          {actual !== undefined ? (
+            <>
+              <p className="hero-number text-3xl leading-none tabular-nums">{r.fmt(actual)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                de <b className={cn('font-semibold text-foreground', changed && 'text-primary')}>{r.fmt(meta)}</b>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={cn('hero-number text-2xl leading-none tabular-nums', changed && 'text-primary')}>{r.fmt(meta)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">meta · realizado no CAC</p>
+            </>
+          )}
+        </div>
       </div>
-      <div className="mt-auto space-y-1.5">
+      <div className="mt-auto">
         {r.actual && plano
-          ? <Sparkline data={plano.periodSeries[r.actual] ?? []} height={28} />
-          : <MetricSpark metric="investimento" height={28} range={periodo.range} />}
-        {actual !== undefined && pct !== undefined ? (
-          <>
-            <div className="flex items-baseline justify-between gap-2 text-xs">
-              <span>Realizado <b className="tabular-nums">{r.fmt(actual)}</b> <span className="text-muted-foreground">de {r.fmt(meta)}</span></span>
-              <b className={cn('tabular-nums', pct >= 100 ? 'text-success' : 'text-foreground')}>{Math.round(pct)}%</b>
-            </div>
-            <Progress pct={pct} />
-          </>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">Realizado no CAC & Financeiro</p>
-        )}
+          ? <Sparkline data={plano.periodSeries[r.actual] ?? []} height={30} />
+          : <MetricSpark metric="investimento" height={30} range={periodo.range} />}
       </div>
     </div>
   );
@@ -432,7 +454,9 @@ export function GoalLadderCard() {
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h3 className="text-base font-semibold">Escada de crescimento</h3>
-                  <p className="text-sm text-muted-foreground">Cada degrau sai do anterior: o faturamento vira vendas, que viram comparecimentos, agendamentos, leads e investimento.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Realizado contra a meta de <b className="font-medium text-foreground">{periodo.label}</b>. Cada degrau sai do anterior: faturamento → vendas → comparecimentos → agendamentos → leads → investimento.
+                  </p>
                 </div>
                 <div className="inline-flex rounded-lg border p-0.5 text-xs" role="group" aria-label="Forma de ver as metas">
                   {(['cartoes', 'tabela'] as const).map(v => (

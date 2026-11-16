@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, Loader2, SlidersHorizontal, Target } from 'lucide-react';
+import { ArrowDown, ChevronRight, Loader2, SlidersHorizontal, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { FunilConversao, FunilDoPeriodo } from '@/components/funnel/FunilDoPeriodo';
@@ -51,23 +51,199 @@ interface Row {
   actual?: CountKey;
   /** começa um bloco novo (sem seta) */
   group?: boolean;
+  /** degrau da escada principal */
+  step?: boolean;
+  /** como sai do degrau anterior (ex.: "÷ ticket R$ 3.700") */
+  via?: string;
+  bloco?: 'relacionamento' | 'origem';
 }
 
 function ladderRows(l: GoalLadder, s: MetaSettingsMap, owner: (k: string) => string | undefined): Row[] {
   const share = (k: LadderShareKey) => `${PCT(ladderShare(s, k))} dos leads`;
   return [
-    { label: 'Faturamento', month: l.faturamento, fmt: BRL, note: 'objetivo central', actual: 'faturamento' },
-    { label: 'Vendas realizadas', month: l.vendas, fmt: NUM, note: `faturamento ÷ ticket de ${BRL(l.ticket)}`, owner: owner('comercial'), actual: 'vendas' },
-    { label: 'Comparecimentos', month: l.comparecimentos, fmt: NUM, note: `vendas ÷ ${l.taxaFechamento}% de fechamento`, owner: owner('atendimento'), actual: 'comparecimentos' },
-    { label: 'Agendamentos', month: l.agendamentos, fmt: NUM, note: `comparecimentos ÷ ${l.taxaComparecimento}% de comparecimento`, owner: owner('atendimento'), actual: 'agendamentos' },
-    { label: 'Novos leads', month: l.leads, fmt: NUM, note: `agendamentos ÷ ${l.taxaAgendamento}% de agendamento`, owner: owner('comercial'), actual: 'leads' },
-    { label: 'Investimento em tráfego', month: l.investimento, fmt: BRL, note: `leads × CPL de ${BRL(l.cpl)}` },
-    { label: 'Resgates', month: l.resgates, fmt: NUM, note: share('resgates'), owner: owner('atendimento'), actual: 'resgates', group: true },
-    { label: 'Indicações coletadas', month: l.indicacoes, fmt: NUM, note: share('indicacoes'), owner: owner('indicacoes'), actual: 'indicacoes' },
-    { label: 'Prospecção Ativa', month: l.prospeccao_ativa, fmt: NUM, note: `leads de origem · ${share('prospeccao_ativa')}`, actual: 'prospeccao_ativa', group: true },
-    { label: 'Indicação de Parceria', month: l.indicacao_parceria, fmt: NUM, note: `leads de origem · ${share('indicacao_parceria')}`, actual: 'indicacao_parceria' },
-    { label: 'Social Selling', month: l.social_selling, fmt: NUM, note: `leads de origem · ${share('social_selling')}`, actual: 'social_selling' },
+    { label: 'Faturamento', month: l.faturamento, fmt: BRL, note: 'objetivo central', actual: 'faturamento', step: true },
+    { label: 'Vendas realizadas', month: l.vendas, fmt: NUM, note: `faturamento ÷ ticket de ${BRL(l.ticket)}`, owner: owner('comercial'), actual: 'vendas', step: true, via: `÷ ticket ${BRL(l.ticket)}` },
+    { label: 'Comparecimentos', month: l.comparecimentos, fmt: NUM, note: `vendas ÷ ${l.taxaFechamento}% de fechamento`, owner: owner('atendimento'), actual: 'comparecimentos', step: true, via: `÷ ${l.taxaFechamento}% fecham` },
+    { label: 'Agendamentos', month: l.agendamentos, fmt: NUM, note: `comparecimentos ÷ ${l.taxaComparecimento}% de comparecimento`, owner: owner('atendimento'), actual: 'agendamentos', step: true, via: `÷ ${l.taxaComparecimento}% comparecem` },
+    { label: 'Novos leads', month: l.leads, fmt: NUM, note: `agendamentos ÷ ${l.taxaAgendamento}% de agendamento`, owner: owner('comercial'), actual: 'leads', step: true, via: `÷ ${l.taxaAgendamento}% agendam` },
+    { label: 'Investimento em tráfego', month: l.investimento, fmt: BRL, note: `leads × CPL de ${BRL(l.cpl)}`, step: true, via: `× CPL ${BRL(l.cpl)}` },
+    { label: 'Resgates', month: l.resgates, fmt: NUM, note: share('resgates'), owner: owner('atendimento'), actual: 'resgates', group: true, bloco: 'relacionamento' },
+    { label: 'Indicações coletadas', month: l.indicacoes, fmt: NUM, note: share('indicacoes'), owner: owner('indicacoes'), actual: 'indicacoes', bloco: 'relacionamento' },
+    { label: 'Prospecção Ativa', month: l.prospeccao_ativa, fmt: NUM, note: share('prospeccao_ativa'), actual: 'prospeccao_ativa', group: true, bloco: 'origem' },
+    { label: 'Indicação de Parceria', month: l.indicacao_parceria, fmt: NUM, note: share('indicacao_parceria'), actual: 'indicacao_parceria', bloco: 'origem' },
+    { label: 'Social Selling', month: l.social_selling, fmt: NUM, note: share('social_selling'), actual: 'social_selling', bloco: 'origem' },
   ];
+}
+
+
+type Plano = ReturnType<typeof usePlanoIncentivo>['data'];
+type MonthRange = { start: Date; end: Date };
+
+function Progress({ pct }: { pct: number }) {
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="h-1.5 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={Math.round(p)} aria-valuemin={0} aria-valuemax={100}>
+      <div className={cn('h-full rounded-full transition-all', p >= 100 ? 'bg-success' : 'bg-primary')} style={{ width: `${p}%` }} />
+    </div>
+  );
+}
+
+function OwnerChip({ name }: { name?: string }) {
+  if (!name) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+      <span className="h-4 w-4 rounded-full bg-primary/15 text-primary text-[10px] flex items-center justify-center">{name.charAt(0)}</span>
+      {name}
+    </span>
+  );
+}
+
+/** Um degrau: meta do mês grande, semana/dia, realizado com barra e curva. */
+function StepCard({ r, days, changed, plano, monthRange, index, compact }: {
+  r: Row; days: number; changed: boolean; plano: Plano; monthRange: MonthRange; index?: number; compact?: boolean;
+}) {
+  const actual = r.actual && plano ? plano.monthActuals[r.actual] : undefined;
+  const pct = actual !== undefined && r.month > 0 ? (actual / r.month) * 100 : undefined;
+  return (
+    <div className={cn('h-full rounded-2xl border bg-card p-3.5 flex flex-col gap-2', index === 1 && 'border-primary/40 bg-primary/5')}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          {r.via && <p className="text-[11px] text-muted-foreground">{r.via}</p>}
+          <p className="text-sm font-semibold leading-tight">
+            {index !== undefined && <span className="text-muted-foreground font-normal mr-1">{index}.</span>}{r.label}
+          </p>
+        </div>
+        <OwnerChip name={r.owner} />
+      </div>
+      <div>
+        <p className={cn('hero-number leading-none', compact ? 'text-2xl' : 'text-3xl', changed && 'text-primary')}>{r.fmt(r.month)}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          meta do mês · {r.fmt((r.month * 5) / days)}/semana · {r.fmt(r.month / days)}/dia
+        </p>
+        {compact && <p className="text-[11px] text-muted-foreground">{r.note}</p>}
+      </div>
+      <div className="mt-auto space-y-1.5">
+        {r.actual && plano
+          ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={28} />
+          : <MetricSpark metric="investimento" height={28} range={monthRange} />}
+        {actual !== undefined && pct !== undefined ? (
+          <>
+            <div className="flex items-baseline justify-between text-xs">
+              <span>Realizado <b className="tabular-nums">{r.fmt(actual)}</b></span>
+              <b className={cn('tabular-nums', pct >= 100 ? 'text-success' : 'text-foreground')}>{Math.round(pct)}%</b>
+            </div>
+            <Progress pct={pct} />
+          </>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">Realizado no CAC & Financeiro</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Faturamento do mês contra a meta, com o ritmo esperado pelos dias úteis. */
+function MonthProgress({ faturamentoMeta, faturamentoReal, vendasMeta, vendasReal, serie, mes, days }: {
+  faturamentoMeta: number; faturamentoReal?: number; vendasMeta: number; vendasReal?: number; serie: number[]; mes: string; days: number;
+}) {
+  const real = faturamentoReal ?? 0;
+  const pct = faturamentoMeta > 0 ? (real / faturamentoMeta) * 100 : 0;
+  const falta = Math.max(0, faturamentoMeta - real);
+  let acc = 0;
+  const acumulado = serie.map(v => (acc += v));
+  return (
+    <div className="rounded-2xl border p-4 flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-semibold first-letter:uppercase">{mes}</p>
+        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', pct >= 100 ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground')}>
+          {Math.round(pct)}% do objetivo
+        </span>
+      </div>
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Faturado</p>
+          <p className="hero-number text-4xl leading-none">{BRL(real)}</p>
+        </div>
+        <div className="text-sm text-muted-foreground pb-0.5">
+          de <b className="text-foreground">{BRL(faturamentoMeta)}</b>
+          {falta > 0 ? <> · faltam <b className="text-foreground">{BRL(falta)}</b></> : ' · objetivo batido'}
+        </div>
+      </div>
+      <Progress pct={pct} />
+      <Sparkline data={acumulado} height={56} />
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-xl bg-muted/40 p-2">
+          <p className="hero-number text-xl">{vendasReal ?? 0}<span className="text-sm text-muted-foreground"> / {NUM(vendasMeta)}</span></p>
+          <p className="text-[11px] text-muted-foreground">vendas</p>
+        </div>
+        <div className="rounded-xl bg-muted/40 p-2">
+          <p className="hero-number text-xl">{BRL(faturamentoMeta / days)}</p>
+          <p className="text-[11px] text-muted-foreground">por dia útil</p>
+        </div>
+        <div className="rounded-xl bg-muted/40 p-2">
+          <p className="hero-number text-xl">{BRL((faturamentoMeta * 5) / days)}</p>
+          <p className="text-[11px] text-muted-foreground">por semana</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A mesma escada em tabela, para quem prefere ver tudo de uma vez. */
+function LadderTable({ rows, days, changed, plano, monthRange, planoMonth }: {
+  rows: Row[]; days: number; changed: boolean; plano: Plano; monthRange: MonthRange; planoMonth: Date;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[11px] text-muted-foreground text-left border-b">
+            <th className="font-medium py-2 pr-3">Meta</th>
+            <th className="font-medium py-2 px-3">Responsável</th>
+            <th className="font-medium py-2 px-3 text-right">Mês</th>
+            <th className="font-medium py-2 px-3 text-right">Semana</th>
+            <th className="font-medium py-2 px-3 text-right">Dia útil</th>
+            <th className="font-medium py-2 pl-3 text-right first-letter:uppercase">Realizado · {format(planoMonth, 'MMM yyyy', { locale: ptBR })}</th>
+            <th className="font-medium py-2 pl-3 w-28">Tendência</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const actual = r.actual && plano ? plano.monthActuals[r.actual] : undefined;
+            const pct = actual !== undefined && r.month > 0 ? Math.round((actual / r.month) * 100) : undefined;
+            return (
+              <tr key={r.label} className={cn('border-b last:border-0', r.group && 'border-t-2 border-t-border')}>
+                <td className="py-2 pr-3">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    {i > 0 && !r.group && <ArrowDown className="h-3 w-3 text-muted-foreground" aria-hidden />}
+                    {r.label}
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">{r.note}</span>
+                </td>
+                <td className="py-2 px-3 text-xs">{r.owner ?? <span className="text-muted-foreground">—</span>}</td>
+                <td className={cn('py-2 px-3 text-right tabular-nums font-semibold', changed && 'text-primary')}>{r.fmt(r.month)}</td>
+                <td className="py-2 px-3 text-right tabular-nums">{r.fmt((r.month * 5) / days)}</td>
+                <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{r.fmt(r.month / days)}</td>
+                <td className="py-2 pl-3 text-right tabular-nums">
+                  {actual === undefined ? <span className="text-muted-foreground">—</span> : (
+                    <>
+                      {r.fmt(actual)}
+                      <span className={cn('block text-[11px]', (pct ?? 0) >= 100 ? 'text-success' : 'text-muted-foreground')}>{pct}%</span>
+                    </>
+                  )}
+                </td>
+                <td className="py-2 pl-3 w-28">
+                  {r.actual && plano
+                    ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={26} />
+                    : <MetricSpark metric="investimento" height={26} range={monthRange} />}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 const RATE_FIELDS = [
@@ -159,6 +335,10 @@ export function GoalLadderCard() {
 
   const ownerOf = (k: string) => plano?.groups.find(g => g.group === k)?.owner;
   const rows = ladderRows(shown, changed ? draft : s, ownerOf);
+  const [view, setView] = useState<'cartoes' | 'tabela'>(() => {
+    try { return localStorage.getItem('escada-view') === 'tabela' ? 'tabela' : 'cartoes'; } catch { return 'cartoes'; }
+  });
+  useEffect(() => { try { localStorage.setItem('escada-view', view); } catch { /* sem storage */ } }, [view]);
 
   return (
     <Card className="monday-card">
@@ -183,101 +363,115 @@ export function GoalLadderCard() {
         {isLoading ? (
           <div className="h-40 rounded-md bg-muted/60 animate-pulse" />
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[1fr_2.4fr]">
-            <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 space-y-3 self-start">
-              <div className="space-y-1">
-                <Label htmlFor="obj-fat" className="text-xs text-muted-foreground">Faturamento do mês (R$)</Label>
-                {isAdmin ? (
-                  <CurrencyInput id="obj-fat" value={fatN} onChange={setFat}
-                    className="h-11 text-2xl font-bold tabular-nums bg-card" />
-                ) : <p className="text-3xl font-bold tabular-nums">{BRL(ladder.faturamento)}</p>}
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="obj-ticket" className="text-xs text-muted-foreground">Ticket médio (R$)</Label>
-                {isAdmin ? (
-                  <CurrencyInput id="obj-ticket" value={ticketN} onChange={setTicket}
-                    className="h-10 text-lg font-semibold tabular-nums bg-card" />
-                ) : <p className="text-xl font-semibold tabular-nums">{BRL(ladder.ticket)}</p>}
-              </div>
-              {changed && (
-                <div className="space-y-2 rounded-lg bg-card border p-2.5 text-xs">
-                  <p>
-                    Prévia ao lado: todas as metas {factor >= 1 ? 'sobem' : 'descem'}{' '}
-                    <b>{Math.abs(Math.round((factor - 1) * 100))}%</b>.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={saveObjective} disabled={saving} className="flex-1">
-                      {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Salvar objetivo
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setFat(ladder.faturamento); setTicket(ladder.ticket); }}>
-                      Desfazer
-                    </Button>
-                  </div>
+          <div className="space-y-6">
+            {/* 1. Objetivo do mês: o que se edita e quanto já foi feito */}
+            <div className="grid gap-4 lg:grid-cols-[minmax(260px,1fr)_2fr]">
+              <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-3">
+                <p className="text-sm font-semibold">Objetivo do mês</p>
+                <div className="space-y-1">
+                  <Label htmlFor="obj-fat" className="text-xs text-muted-foreground">Faturamento do mês (R$)</Label>
+                  {isAdmin ? (
+                    <CurrencyInput id="obj-fat" value={fatN} onChange={setFat}
+                      className="h-11 text-2xl font-bold tabular-nums bg-card" />
+                  ) : <p className="text-3xl font-bold tabular-nums">{BRL(ladder.faturamento)}</p>}
                 </div>
-              )}
-              {isAdmin && !changed && (
-                <p className="text-[11px] text-muted-foreground">Digite o novo valor: a escada ao lado mostra as metas novas antes de salvar.</p>
-              )}
-              {!draftValid && isAdmin && <p className="text-xs text-destructive">Use valores maiores que zero.</p>}
-              <div className="pt-2 border-t border-primary/15 text-xs space-y-1">
-                <p className="font-medium">Raízes do funil</p>
-                <p>Agendamento: no mínimo <b>{ladder.taxaAgendamento}%</b> dos leads</p>
-                <p>Comparecimento: no mínimo <b>{ladder.taxaComparecimento}%</b> dos agendados</p>
-                <p>Fechamento: no mínimo <b>{ladder.taxaFechamento}%</b> dos que compareceram</p>
+                <div className="space-y-1">
+                  <Label htmlFor="obj-ticket" className="text-xs text-muted-foreground">Ticket médio (R$)</Label>
+                  {isAdmin ? (
+                    <CurrencyInput id="obj-ticket" value={ticketN} onChange={setTicket}
+                      className="h-10 text-lg font-semibold tabular-nums bg-card" />
+                  ) : <p className="text-xl font-semibold tabular-nums">{BRL(ladder.ticket)}</p>}
+                </div>
+                {changed && (
+                  <div className="space-y-2 rounded-lg bg-card border p-2.5 text-xs">
+                    <p>
+                      Prévia abaixo: todas as metas {factor >= 1 ? 'sobem' : 'descem'}{' '}
+                      <b>{Math.abs(Math.round((factor - 1) * 100))}%</b>.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={saveObjective} disabled={saving} className="flex-1">
+                        {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Salvar objetivo
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setFat(ladder.faturamento); setTicket(ladder.ticket); }}>
+                        Desfazer
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {isAdmin && !changed && (
+                  <p className="text-[11px] text-muted-foreground">Digite o novo valor: as metas abaixo mudam na hora, antes de salvar.</p>
+                )}
+                {!draftValid && isAdmin && <p className="text-xs text-destructive">Use valores maiores que zero.</p>}
               </div>
+
+              <MonthProgress
+                faturamentoMeta={shown.faturamento}
+                faturamentoReal={plano?.monthActuals.faturamento}
+                vendasMeta={shown.vendas}
+                vendasReal={plano?.monthActuals.vendas}
+                serie={plano?.monthSeries.faturamento ?? []}
+                mes={format(planoMonth, "MMMM 'de' yyyy", { locale: ptBR })}
+                days={days}
+              />
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[11px] text-muted-foreground text-left border-b">
-                    <th className="font-medium py-2 pr-3">Meta</th>
-                    <th className="font-medium py-2 px-3">Responsável</th>
-                    <th className="font-medium py-2 px-3 text-right">Mês</th>
-                    <th className="font-medium py-2 px-3 text-right">Semana</th>
-                    <th className="font-medium py-2 px-3 text-right">Dia útil</th>
-                    <th className="font-medium py-2 pl-3 text-right capitalize">Realizado · {format(planoMonth, 'MMM yyyy', { locale: ptBR })}</th>
-                    <th className="font-medium py-2 pl-3 w-28">Tendência</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => {
-                    const actual = r.actual && plano ? plano.monthActuals[r.actual] : undefined;
-                    const pct = actual !== undefined && r.month > 0 ? Math.round((actual / r.month) * 100) : undefined;
-                    return (
-                      <tr key={r.label} className={cn('border-b last:border-0', r.group && 'border-t-2 border-t-border')}>
-                        <td className="py-2 pr-3">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            {i > 0 && !r.group && <ArrowDown className="h-3 w-3 text-muted-foreground" aria-hidden />}
-                            {r.label}
+            {/* 2. Escada de crescimento: do faturamento até o investimento */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-semibold">Escada de crescimento</h3>
+                  <p className="text-sm text-muted-foreground">Cada degrau sai do anterior: o faturamento vira vendas, que viram comparecimentos, agendamentos, leads e investimento.</p>
+                </div>
+                <div className="inline-flex rounded-lg border p-0.5 text-xs" role="group" aria-label="Forma de ver as metas">
+                  {(['cartoes', 'tabela'] as const).map(v => (
+                    <button key={v} onClick={() => setView(v)} aria-pressed={view === v}
+                      className={cn('rounded-md px-2.5 py-1 font-medium', view === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+                      {v === 'cartoes' ? 'Cartões' : 'Tabela'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {view === 'cartoes' ? (
+                <>
+                  <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" aria-label="Escada de crescimento">
+                    {rows.filter(r => r.step).map((r, i, arr) => (
+                      <li key={r.label} className="relative">
+                        <StepCard r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} index={i + 1} />
+                        {i < arr.length - 1 && arr[i + 1].via && (
+                          <span className="hidden 2xl:flex absolute -right-3 top-8 z-10 h-6 w-6 items-center justify-center rounded-full border bg-card text-muted-foreground" aria-hidden>
+                            <ChevronRight className="h-3.5 w-3.5" />
                           </span>
-                          <span className="block text-[11px] text-muted-foreground">{r.note}</span>
-                        </td>
-                        <td className="py-2 px-3 text-xs">{r.owner ?? <span className="text-muted-foreground">—</span>}</td>
-                        <td className={cn('py-2 px-3 text-right tabular-nums font-semibold', changed && 'text-primary')}>{r.fmt(r.month)}</td>
-                        <td className="py-2 px-3 text-right tabular-nums">{r.fmt((r.month * 5) / days)}</td>
-                        <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{r.fmt(r.month / days)}</td>
-                        <td className="py-2 pl-3 text-right tabular-nums">
-                          {actual === undefined ? <span className="text-muted-foreground">—</span> : (
-                            <>
-                              {r.fmt(actual)}
-                              <span className={cn('block text-[11px]', (pct ?? 0) >= 100 ? 'text-success' : 'text-muted-foreground')}>{pct}%</span>
-                            </>
-                          )}
-                        </td>
-                        <td className="py-2 pl-3 w-28">
-                          {r.actual && plano
-                            ? <Sparkline data={plano.monthSeries[r.actual] ?? []} height={26} />
-                            : <MetricSpark metric="investimento" height={26} range={monthRange} />}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Origens contam os leads recebidos pelo campo
-                "Como o lead chegou?" (Comercial 1, CRC e Comercial 2). O Plano de Incentivo, o painel e as Reuniões usam estes números.
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+
+                  <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">Resgates e indicações</p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {rows.filter(r => r.bloco === 'relacionamento').map(r => (
+                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} compact />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">Origens estratégicas <span className="font-normal text-muted-foreground">(leads por origem)</span></p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {rows.filter(r => r.bloco === 'origem').map(r => (
+                          <StepCard key={r.label} r={r} days={days} changed={changed} plano={plano} monthRange={monthRange} compact />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <LadderTable rows={rows} days={days} changed={changed} plano={plano} monthRange={monthRange} planoMonth={planoMonth} />
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Semana = 5 dias úteis e dia = 1 dia útil, sobre {days} dias úteis no mês. Realizado e curvas: {format(planoMonth, "MMMM 'de' yyyy", { locale: ptBR })}.
+                Origens contam o campo "Como o lead chegou?". O Plano de Incentivo, o painel e as Reuniões usam estes números.
               </p>
             </div>
           </div>

@@ -14,7 +14,7 @@ const SECTIONS: HubSection[] = [
   },
   {
     key: 'tarefas', title: 'Tarefas CRC', icon: ListTodo, module: 'ascension', Component: AscensionTarefas,
-    description: 'Material CRC: rotina diária, PROJETO - CRC e PROJETO - COMERCIAL 2 num lugar só, marcados por dia.',
+    description: 'Material CRC: todos os afazeres diários da CRC, marcados por dia, com os números do sistema e o atalho para o script.',
   },
   {
     key: 'acompanhamento', title: 'Acompanhamento', icon: FileSpreadsheet, module: 'ascension', Component: AscensionAcompanhamento,

@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import {
   Filter, Target, Settings, LogOut, UserCircle, CalendarCheck, BarChart3, HeartHandshake, Headphones, type LucideIcon,
 } from 'lucide-react';
@@ -28,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, FileSpreadsheet, ListTodo, Lock, MessageSquareQuote, Sheet } from 'lucide-react';
+import { BookOpenCheck, ChevronDown, FileSpreadsheet, FolderKanban, ListTodo, Lock, MessageSquareQuote, Sheet } from 'lucide-react';
 import { canOpenPath } from '@/lib/access';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -98,9 +97,10 @@ const managementNavItems: NavItemDef[] = [
 ];
 
 // ASCENSION: material da CRC e as planilhas da clínica (alimentadas pelo painel)
-const ascensionSections: { label: string; items: NavItemDef[] }[] = [
+const ascensionSections: { label: string; icon: LucideIcon; items: NavItemDef[] }[] = [
   {
     label: 'Material CRC',
+    icon: BookOpenCheck,
     items: [
       { title: 'Scripts CRC', url: '/ascension?aba=suporte', icon: MessageSquareQuote, module: 'ascension' },
       { title: 'Tarefas CRC', url: '/ascension?aba=tarefas', icon: ListTodo, module: 'ascension' },
@@ -108,6 +108,7 @@ const ascensionSections: { label: string; items: NavItemDef[] }[] = [
   },
   {
     label: 'Planilhas',
+    icon: FolderKanban,
     items: [
       { title: 'Acompanhamento', url: '/ascension?aba=acompanhamento', icon: FileSpreadsheet, module: 'ascension' },
       { title: 'Controle Geral', url: '/ascension?aba=controle', icon: Sheet, module: 'ascension' },
@@ -154,6 +155,8 @@ export function AppSidebar() {
   const filterVisible = (items: NavItemDef[]) => items;
   const allowed = (item: NavItemDef) => canOpenPath(access, item.url.split('?')[0]);
   const currentTitle = (items: NavItemDef[]) => items.find(i => isActive(i.url))?.title;
+  // subgrupos da ASCENSION (Material CRC, Planilhas): abertos quando contêm a tela atual
+  const [subOpen, setSubOpen] = useState<Record<string, boolean>>({});
 
   const handleSignOut = async () => {
     await signOut();
@@ -262,12 +265,33 @@ export function AppSidebar() {
             open={openGroup === 'ascension'}
             onToggle={() => setOpenGroup(openGroup === 'ascension' ? null : 'ascension')}
           >
-            {ascensionSections.map(sec => (
-              <Fragment key={sec.label}>
-                <li className="px-3 pt-2 pb-0.5 text-[11px] font-semibold text-sidebar-muted" role="presentation">{sec.label}</li>
-                {filterVisible(sec.items).map(item => <NavItem key={item.title} item={item} />)}
-              </Fragment>
-            ))}
+            {ascensionSections.map(sec => {
+              const aberta = subOpen[sec.label] ?? sec.items.some(i => isActive(i.url));
+              const atual = currentTitle(sec.items);
+              return (
+                <SidebarMenuItem key={sec.label}>
+                  <Collapsible open={aberta} onOpenChange={o => setSubOpen(m => ({ ...m, [sec.label]: o }))}>
+                    <CollapsibleTrigger
+                      className="flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      aria-label={`${sec.label}, ${sec.items.length} telas`}
+                    >
+                      <sec.icon className="h-5 w-5 shrink-0" aria-hidden />
+                      <span className="flex flex-col min-w-0 flex-1">
+                        <span>{sec.label}</span>
+                        {!aberta && atual && <span className="text-xs text-sidebar-muted truncate">Aberta: {atual}</span>}
+                      </span>
+                      {!aberta && <span className="text-xs text-sidebar-muted">{sec.items.length}</span>}
+                      <ChevronDown className={cn('h-4 w-4 text-sidebar-muted transition-transform duration-200', aberta && 'rotate-180')} aria-hidden />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                      <ul className="ml-5 mt-1 space-y-1 border-l border-sidebar-border pl-2">
+                        {filterVisible(sec.items).map(item => <NavItem key={item.title} item={item} />)}
+                      </ul>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              );
+            })}
           </CollapsibleGroup>
         )}
 

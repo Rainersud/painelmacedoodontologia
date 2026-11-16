@@ -8,7 +8,7 @@ import { PaceBar } from '@/components/metrics/PaceBar';
 import { STATUS } from '@/components/metrics/status';
 import { Fragment, type ReactNode } from 'react';
 import { GoalCurve, GoalCurveLegend, Sparkline } from '@/components/charts/SmoothCharts';
-import { ChevronRight, Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Lightbulb, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /** Reais sem centavos, para valores grandes. */
 const formatWhole = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
@@ -16,7 +16,6 @@ const formatWhole = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`
 const PERIOD_NOUN: Record<Period, string> = { hoje: 'hoje', semana: 'nesta semana', mes: 'neste mês', ano: 'no período' };
 
 /** Etapas do funil, na ordem em que o paciente passa por elas. */
-const FUNNEL_KEYS = ['leads', 'agendamentos', 'resgates', 'comparecimentos', 'vendas'];
 /** Indicadores de eficiência, mostrados em lista compacta. */
 const EFFICIENCY_KEYS = ['ticket_medio', 'tempo_resposta', 'cpl', 'cac', 'roas', 'roi', 'investimento', 'ltv'];
 
@@ -80,31 +79,6 @@ function StatusTag({ status, paced = true }: { status: PanelMetric['status']; pa
 }
 
 /** Cartão de uma etapa do funil: valor grande, régua de ritmo e taxa da etapa. */
-function FunnelStep({ m, prevLabel }: { m: PanelMetric; prevLabel: string }) {
-  return (
-    <div className="flex flex-col gap-3 p-4 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-muted-foreground truncate">{m.label}</h3>
-        <StatusTag status={m.status} />
-      </div>
-      <p className="flex items-baseline gap-1.5">
-        <span className="hero-number text-4xl leading-none">{m.display}</span>
-        <span className="text-sm text-muted-foreground">de {m.targetDisplay}</span>
-      </p>
-      <Sparkline data={m.trend} height={36} tone={m.status === 'critical' && m.delta < 0 ? 'danger' : 'brand'} />
-      <PaceBar percentage={m.percentage} expected={m.expectedPercentage} status={m.status} />
-      <div className="space-y-1 text-xs">
-        {m.rate && (
-          <p className="text-foreground">
-            {m.rate.label}: <span className="font-semibold">{m.rate.display}</span>
-            <span className="text-muted-foreground"> (meta {m.rate.targetDisplay})</span>
-          </p>
-        )}
-        <p><Delta m={m} prevLabel={prevLabel} /></p>
-      </div>
-    </div>
-  );
-}
 
 /** `afterRevenue`: bloco mostrado entre o faturamento do período e o funil (ex.: Previsão de Faturamento). */
 export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } = {}) {
@@ -118,7 +92,6 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
   const metrics = data?.metrics ?? [];
   const byKey = (k: string) => metrics.find(m => m.key === k);
   const revenue = byKey('faturamento');
-  const funnel = FUNNEL_KEYS.map(byKey).filter((m): m is PanelMetric => !!m);
   const efficiency = [
     ...EFFICIENCY_KEYS.map(byKey).filter((m): m is PanelMetric => !!m),
     ...(ltv ? [buildLTVMetric(ltv.avgLtv)] : []),
@@ -190,30 +163,6 @@ export function ClinicGoalsPanel({ afterRevenue }: { afterRevenue?: ReactNode } 
       </Card>
 
       {afterRevenue}
-
-      {/* Metas chave: as etapas em sequência, com os resgates */}
-      <Card className="monday-card overflow-hidden">
-        <div className="flex items-baseline justify-between gap-2 px-5 pt-4">
-          <h3 className="text-sm font-semibold tracking-wide">METAS CHAVE</h3>
-          <span className="text-xs text-muted-foreground">{range.label}</span>
-        </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 xl:divide-x divide-border">
-          {isLoading && Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-44 m-4 rounded-md bg-muted/60 animate-pulse" />
-          ))}
-          {funnel.map((m, i) => (
-            <div key={m.key} className="relative">
-              <FunnelStep m={m} prevLabel={prevLabel} />
-              {i < funnel.length - 1 && (
-                <ChevronRight
-                  className="hidden xl:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card text-muted-foreground z-10"
-                  aria-hidden
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {/* Eficiência: lista compacta, um indicador por linha */}
       {efficiency.length > 0 && (

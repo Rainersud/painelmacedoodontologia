@@ -212,15 +212,19 @@ function TeamChart({ data, period }: { data: PlanoIncentivoData; period: string 
             <ChartTooltip cursor={{ stroke: 'hsl(var(--border))' }} content={<ChartTooltipContent formatter={(v, name) => (
               <span className="flex w-full justify-between gap-3"><span>{config[String(name)]?.label}</span><b className="tabular-nums">{v}%</b></span>
             )} />} />
-            {data.groups.map(g => {
+            {data.groups.map((g, gi) => {
               const last = rows.length - 1;
+              // nomes na ponta: se as linhas terminam juntas, empilha os nomes para não sobrepor
+              const endOf = (k: string) => Number((rows[last] as Record<string, unknown> | undefined)?.[k]) || 0;
+              const mine = endOf(g.group);
+              const shift = data.groups.slice(0, gi).filter(o => Math.abs(endOf(o.group) - mine) < top * 0.08).length * 14;
               return (
                 <Line key={g.group} type="monotone" dataKey={g.group} stroke={PERSON_COLOR[g.group]} strokeWidth={3}
                   strokeDasharray={PERSON_DASH[g.group]}
                   dot={(p: { cx?: number; cy?: number; index?: number }) => <Marker key={`${g.group}-${p.index}`} cx={p.cx} cy={p.cy} shape={PERSON_SHAPE[g.group]} color={PERSON_COLOR[g.group]} />}
                   activeDot={(p: { cx?: number; cy?: number }) => <Marker cx={p.cx} cy={p.cy} shape={PERSON_SHAPE[g.group]} color={PERSON_COLOR[g.group]} r={6} />}
                   label={(p: { x?: number; y?: number; index?: number }) => p.index === last && p.x !== undefined && p.y !== undefined
-                    ? <text key={`lbl-${g.group}`} x={p.x + 8} y={p.y + 4} fontSize={12} fontWeight={600} fill="hsl(var(--foreground))">{g.owner}</text>
+                    ? <text key={`lbl-${g.group}`} x={p.x + 8} y={p.y + 4 - shift} fontSize={12} fontWeight={600} fill={PERSON_COLOR[g.group]}>{g.owner}</text>
                     : <g key={`lbl-${g.group}-${p.index}`} />}
                   isAnimationActive={false} />
               );

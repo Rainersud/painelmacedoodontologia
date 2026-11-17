@@ -31,6 +31,8 @@ export type LeadStatus =
   | 'compareceu'
   | 'quase_cliente'
   | 'nao_cliente'
+  | 'retornar_futuramente'
+  | 'nao_contatar'
   | 'potencial'
   | 'acompanhamento'
   | 'fechado'
@@ -195,6 +197,8 @@ export const FUNNEL_STAGES: FunnelStage[] = [
   { key: 'potencial', label: 'Potencial', color: 'bg-chart-2', bgColor: 'bg-chart-2/10' },
   { key: 'nao_cliente', label: 'Não Cliente', color: 'bg-chart-5', bgColor: 'bg-chart-5/10' },
   { key: 'fechado', label: 'Venda Realizada', color: 'bg-success', bgColor: 'bg-success/20' },
+  { key: 'retornar_futuramente', label: 'Retornar futuramente', color: 'bg-chart-1', bgColor: 'bg-chart-1/10' },
+  { key: 'nao_contatar', label: 'Não entrar mais em contato', color: 'bg-muted-foreground', bgColor: 'bg-muted' },
 ];
 
 // Follow-up copy templates

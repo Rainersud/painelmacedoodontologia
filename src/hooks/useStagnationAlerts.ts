@@ -19,7 +19,7 @@ export function useStagnationAlerts() {
       const { data, error } = await allPages(supabase
         .from('leads')
         .select('id, name, status, stage_entered_at')
-        .not('status', 'in', '(fechado,concluido,pos_venda,descartados,sem_interesse)')
+        .not('status', 'in', '(fechado,concluido,pos_venda,descartados,sem_interesse,retornar_futuramente,nao_contatar)')
         .order('id'));
       if (error) throw error;
       return data || [];

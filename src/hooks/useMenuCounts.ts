@@ -5,7 +5,7 @@ import { isSoldStatus } from '@/lib/metrics/stages';
 import { useCreditApprovedPatients } from '@/hooks/useCreditApprovedPatients';
 import { useDueReturns } from '@/components/crm/ReturnColumn';
 
-const LOST = new Set(['sem_interesse', 'descartados']);
+const LOST = new Set(['sem_interesse', 'descartados', 'nao_contatar']);
 const REFERRAL_ORIGINS = new Set(['indicacao_pac', 'indicacao_parceria']);
 
 export interface OpenReferral {

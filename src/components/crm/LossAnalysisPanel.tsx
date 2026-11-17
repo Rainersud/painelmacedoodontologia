@@ -18,7 +18,7 @@ import { LOSS_CATEGORIES, categoryLabel, lossCategory, type LossCategory } from 
 import { FUNNEL_STAGES } from '@/types/crm';
 import { useLossAttachments, getSignedUrl, type LossAttachment } from './LossAttachments';
 
-const LOST_STATUSES = ['nao_cliente', 'sem_interesse', 'descartados'];
+const LOST_STATUSES = ['nao_cliente', 'sem_interesse', 'descartados', 'nao_contatar'];
 const STAGE_LABEL = new Map(FUNNEL_STAGES.map(s => [s.key as string, s.label]));
 const stageLabel = (k: string | null) => (k ? STAGE_LABEL.get(k) ?? k : 'Não registrado');
 const originLabel = (k: string | null) => ARRIVAL_SOURCE_LABELS[k || 'passou_na_frente'] ?? k ?? 'Não informado';

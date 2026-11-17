@@ -16,6 +16,8 @@ const SCORE_RULES = {
   inativo_3_dias: -15,
   nao_compareceu: -25,
   sem_interesse: -40,
+  retornar_futuramente: -10,
+  nao_contatar: -60,
 } as const;
 
 // Score by source

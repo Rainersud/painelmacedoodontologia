@@ -12,7 +12,7 @@ export const TEMPERATURES: { value: 1 | 2 | 3; label: string; icon: LucideIcon; 
 
 /** Etapas em que o paciente já compareceu à consulta. */
 const AFTER_ATTENDANCE = new Set([
-  'compareceu', 'quase_cliente', 'potencial', 'nao_cliente', 'fechado',
+  'compareceu', 'quase_cliente', 'potencial', 'nao_cliente', 'fechado', 'retornar_futuramente',
   'pos_venda', 'tratamento_andamento', 'concluido',
 ]);
 

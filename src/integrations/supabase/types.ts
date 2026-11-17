@@ -2021,6 +2021,8 @@ export type Database = {
         | "followup_12"
         | "followup_13"
         | "followup_14"
+        | "retornar_futuramente"
+        | "nao_contatar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2241,6 +2243,8 @@ export const Constants = {
         "followup_12",
         "followup_13",
         "followup_14",
+        "retornar_futuramente",
+        "nao_contatar",
       ],
     },
   },

@@ -65,7 +65,7 @@ export function useSmartAlerts() {
         .select(
           'id, name, phone, status, stage_entered_at, treatment_value, budget_value, last_interaction_at',
         )
-        .not('status', 'in', '(concluido,pos_venda,descartados,sem_interesse,fechado)')
+        .not('status', 'in', '(concluido,pos_venda,descartados,sem_interesse,fechado,retornar_futuramente,nao_contatar)')
         .order('id'));
       if (error) throw error;
       return data || [];

@@ -1,5 +1,6 @@
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
-import { useState, useMemo, Fragment } from 'react';
+import { Calendar } from '@/components/ui/calendar';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -346,7 +347,9 @@ function TaskItem({
 
 const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
   // período = filtro de data global (canto superior direito)
-  const { range, anchor: selectedDate, period } = usePeriodFilter();
+  const { range, anchor: selectedDate, period, setPeriod, setAnchor, setCustomRange } = usePeriodFilter();
+  const [calMonth, setCalMonth] = useState<Date>(selectedDate);
+  useEffect(() => { setCalMonth(selectedDate); }, [selectedDate]);
   const viewMode: 'day' | 'week' | 'month' = period === 'hoje' ? 'day' : period === 'semana' ? 'week' : 'month';
   const [rescheduleTask, setRescheduleTask] = useState<Task | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -364,6 +367,21 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
     if (lead) setSelectedLead(lead);
     else toast.error('Lead não encontrado');
   };
+
+  // retornos por dia, para o calendário: pendentes (em atraso se o dia já passou) e concluídos
+  const countsByDay = useMemo(() => {
+    const m = new Map<string, { pendente: number; feito: number; atrasado: boolean }>();
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    for (const t of allTasks ?? []) {
+      const d = new Date(t.scheduled_at);
+      const k = format(d, 'yyyy-MM-dd');
+      const c = m.get(k) ?? { pendente: 0, feito: 0, atrasado: false };
+      if (t.status === 'pendente') { c.pendente++; if (d < hoje) c.atrasado = true; }
+      else if (t.status === 'concluido') c.feito++;
+      m.set(k, c);
+    }
+    return m;
+  }, [allTasks]);
 
   const filteredTasks = useMemo(() => {
     if (!allTasks) return [];
@@ -409,6 +427,51 @@ const Tarefas = ({ embedded = false }: { embedded?: boolean } = {}) => {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Calendar + Controls */}
         <div className="space-y-4">
+          <Card className="monday-card">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm font-medium">Calendário de retornos</CardTitle>
+              <p className="text-xs text-muted-foreground">Clique num dia para ver os retornos dele.</p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Calendar
+                mode="single"
+                month={calMonth}
+                onMonthChange={setCalMonth}
+                selected={viewMode === 'day' ? selectedDate : undefined}
+                onSelect={d => { if (!d) return; setCustomRange(undefined); setPeriod('hoje'); setAnchor(d); }}
+                modifiers={{ periodo: { from: range.start, to: range.end } }}
+                modifiersClassNames={{ periodo: 'bg-primary/10 rounded-md' }}
+                locale={ptBR}
+                className="p-0 mx-auto pointer-events-auto"
+                components={{
+                  DayContent: ({ date }) => {
+                    const c = countsByDay.get(format(date, 'yyyy-MM-dd'));
+                    return (
+                      <span className="relative flex h-full w-full items-center justify-center">
+                        {date.getDate()}
+                        {c && (c.pendente > 0 || c.feito > 0) && (
+                          <span
+                            className={cn(
+                              'absolute -bottom-0.5 left-1/2 -translate-x-1/2 min-w-[16px] rounded-full px-1 text-[9px] font-semibold leading-[14px]',
+                              c.pendente === 0 ? 'bg-success/20 text-success' : c.atrasado ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground',
+                            )}
+                            aria-label={`${c.pendente} pendente(s), ${c.feito} concluído(s)`}
+                          >
+                            {c.pendente > 0 ? c.pendente : '✓'}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  },
+                }}
+              />
+              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-primary" />pendentes</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-destructive" />em atraso</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-success/40" />tudo feito</span>
+              </div>
+            </CardContent>
+          </Card>
           <Card className="monday-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Resumo</CardTitle>

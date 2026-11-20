@@ -1,4 +1,3 @@
-import { CLINICA_OPTIONS } from '@/lib/clinicas';
 import { useState } from 'react';
 import { describeError } from '@/lib/errors';
 import {
@@ -252,16 +251,6 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                     {opt.label}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Clínica</Label>
-            <Select value={form.clinica} onValueChange={(value) => setForm(prev => ({ ...prev, clinica: value }))}>
-              <SelectTrigger><SelectValue placeholder="Selecione a clínica" /></SelectTrigger>
-              <SelectContent>
-                {CLINICA_OPTIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

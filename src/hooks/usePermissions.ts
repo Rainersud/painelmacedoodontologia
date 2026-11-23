@@ -45,7 +45,7 @@ export const MODULE_LABELS: Record<string, string> = {
 
 const FINANCE_MODULES = new Set(['credito_liberado']);
 const GOAL_MODULES = new Set(['metas_clinica', 'bonus_metas', 'plano_incentivo']);
-const MODULE_PATH: Record<string, string> = { funil: '/funil', perfil: '/perfil', configuracoes: '/configuracoes' };
+const MODULE_PATH: Record<string, string> = { funil: '/funil', reunioes: '/reunioes', perfil: '/perfil', configuracoes: '/configuracoes' };
 
 /** Permissões por módulo, derivadas do perfil de acesso (lib/access). */
 export function usePermissions() {

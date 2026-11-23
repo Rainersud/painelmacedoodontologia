@@ -63,7 +63,7 @@ export function buildAccess(isAdmin: boolean, perfil: Perfil | null): Access {
   if (p === 'comparecimento') {
     return {
       ...base, perfil: p, canEditLeadData: false,
-      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_WORK_STATUSES], allowedPaths: ['/funil', '/perfil'],
+      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_WORK_STATUSES], allowedPaths: ['/funil', '/reunioes', '/perfil'],
     };
   }
   return {
@@ -105,4 +105,7 @@ export function assertFinance(what = 'o financeiro') {
 }
 export function assertGoals(what = 'as metas') {
   if (!current.canEditGoals) throw new AccessDeniedError(what);
+}
+export function assertAdmin(what = 'isto') {
+  if (!current.isAdmin) throw new AccessDeniedError(what);
 }

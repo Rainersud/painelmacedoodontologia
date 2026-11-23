@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useTeamNames } from '@/hooks/useTeamNames';
 import { useCrcContagens, useCrcTarefas, useToggleCrcTarefa } from '@/hooks/useCrcTarefas';
 import { ROTINA_CRC, TOTAL_TAREFAS, type Contagem } from '@/lib/ascension/crcGuide';
+import { RegistrarObjecao } from '@/components/ascension/RegistrarObjecao';
 
 const CONTAGEM_LABEL: Record<Contagem, (n: number) => string> = {
   leads_hoje: n => `${n} ${n === 1 ? 'lead novo' : 'leads novos'}`,
@@ -102,6 +103,7 @@ export default function AscensionTarefas() {
                           </span>
                         )}
                       </div>
+                      {t.objecoes && <RegistrarObjecao dia={dia} />}
                     </div>
                   </li>
                 );

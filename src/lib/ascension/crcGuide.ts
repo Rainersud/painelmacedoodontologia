@@ -423,7 +423,7 @@ export function buscarScripts(scripts: Script[], termo: string, etapa: Etapa | '
 
 export type Contagem = 'leads_hoje' | 'consultas_hoje' | 'consultas_amanha' | 'consultas_48h' | 'faltas_ontem';
 
-export interface TarefaCRC { id: number; texto: string; script?: string; contagem?: Contagem }
+export interface TarefaCRC { id: number; texto: string; script?: string; contagem?: Contagem; /** mostra o campo para registrar objeções */ objecoes?: boolean }
 
 /** ids numéricos estáveis: são gravados em ascension_checklists (projeto 'crc_tarefas'). */
 export const ROTINA_CRC: { bloco: string; tarefas: TarefaCRC[] }[] = [
@@ -469,7 +469,7 @@ export const ROTINA_CRC: { bloco: string; tarefas: TarefaCRC[] }[] = [
   {
     bloco: 'Fechamento do dia',
     tarefas: [
-      { id: 14, texto: 'Registrar objeções, dores e detalhes familiares nas anotações de cada paciente' },
+      { id: 14, texto: 'Registrar objeções, dores e detalhes familiares nas anotações de cada paciente', objecoes: true },
       { id: 15, texto: 'Disparo quinzenal para os leads frios (quando for o dia)', script: 'na-quinzenal' },
       { id: 22, texto: 'Enviar como está fazendo o follow-up com quem não agendou ou faltou' },
     ],

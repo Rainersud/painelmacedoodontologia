@@ -1,3 +1,4 @@
+import { assertAdmin } from '@/lib/access';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { describeError } from '@/lib/errors';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +62,7 @@ export function useMeetings() {
 
   const createMeeting = useMutation({
     mutationFn: async (meeting: { meeting_date: string; period_type: string; general_notes?: string }) => {
+      assertAdmin('as reuniões');
       const { data, error } = await supabase
         .from('meetings' as any)
         .insert({ ...meeting, created_by: user?.id } as any)
@@ -78,6 +80,7 @@ export function useMeetings() {
 
   const updateMeeting = useMutation({
     mutationFn: async ({ id, ...data }: { id: string; general_notes?: string; period_type?: string }) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase
         .from('meetings' as any)
         .update(data as any)
@@ -93,6 +96,7 @@ export function useMeetings() {
 
   const deleteMeeting = useMutation({
     mutationFn: async (id: string) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase
         .from('meetings' as any)
         .delete()
@@ -129,6 +133,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
 
   const addPlan = useMutation({
     mutationFn: async (plan: Omit<MeetingActionPlan, 'id' | 'created_at' | 'updated_at'>) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_action_plans' as any).insert(plan as any);
       if (error) throw error;
     },
@@ -141,6 +146,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
 
   const updatePlan = useMutation({
     mutationFn: async ({ id, ...data }: { id: string; status?: string; completion_date?: string; description?: string; responsible?: string }) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_action_plans' as any).update(data as any).eq('id', id);
       if (error) throw error;
     },
@@ -153,6 +159,7 @@ export function useMeetingActionPlans(meetingId: string | undefined) {
 
   const deletePlan = useMutation({
     mutationFn: async (id: string) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_action_plans' as any).delete().eq('id', id);
       if (error) throw error;
     },
@@ -187,6 +194,7 @@ export function useMeetingAnnotations(meetingId: string | undefined) {
 
   const addAnnotation = useMutation({
     mutationFn: async (ann: { metric_key: string; content: string }) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_annotations' as any).insert({ ...ann, meeting_id: meetingId, created_by: user?.id } as any);
       if (error) throw error;
     },
@@ -220,6 +228,7 @@ export function useMeetingTrainingLinks(meetingId: string | undefined) {
 
   const addLink = useMutation({
     mutationFn: async (link: { title: string; url: string }) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_training_links' as any).insert({ ...link, meeting_id: meetingId } as any);
       if (error) throw error;
     },
@@ -232,6 +241,7 @@ export function useMeetingTrainingLinks(meetingId: string | undefined) {
 
   const deleteLink = useMutation({
     mutationFn: async (id: string) => {
+      assertAdmin('as reuniões');
       const { error } = await supabase.from('meeting_training_links' as any).delete().eq('id', id);
       if (error) throw error;
     },

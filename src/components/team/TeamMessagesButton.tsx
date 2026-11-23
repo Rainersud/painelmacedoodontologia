@@ -1,5 +1,6 @@
 import { MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeamMessages } from '@/hooks/useTeamMessages';
@@ -13,9 +14,10 @@ export function TeamMessagesButton() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9"
+        <Button variant="outline" className={cn('relative h-9 gap-2 rounded-full px-2.5 sm:px-3', pend > 0 && 'border-primary/40 bg-primary/10 text-primary')}
           aria-label={pend ? `Recados da equipe: ${pend} para você` : 'Recados da equipe'}>
-          <MessagesSquare className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+          <MessagesSquare className="h-4 w-4" />
+          <span className="hidden md:inline text-sm font-medium">Recados</span>
           {pend > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] rounded-full bg-destructive px-1 text-[10px] font-semibold leading-[18px] text-destructive-foreground">
               {pend > 9 ? '9+' : pend}

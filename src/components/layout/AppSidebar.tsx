@@ -27,8 +27,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { BookOpenCheck, ChevronDown, FileSpreadsheet, FolderKanban, ListTodo, Lock, MessageSquareQuote, Sheet } from 'lucide-react';
+import { BookOpenCheck, MessagesSquare, ChevronDown, FileSpreadsheet, FolderKanban, ListTodo, Lock, MessageSquareQuote, Sheet } from 'lucide-react';
 import { canOpenPath } from '@/lib/access';
+import { useTeamMessages } from '@/hooks/useTeamMessages';
 import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -124,7 +125,9 @@ const adminNavItems: NavItemDef[] = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fullName, role, signOut, access } = useAuth();
+  const { fullName, role, signOut, access, user } = useAuth();
+  const { data: recados = [] } = useTeamMessages();
+  const recadosPend = recados.filter(m => m.to_user === user?.id && !m.done_at).length;
   const { isMobile, setOpenMobile } = useSidebar();
   const groupForPath = (path: string): string => {
     if (adminNavItems.some((i) => i.url === path)) return 'admin';
@@ -227,6 +230,22 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-3 py-4">
+        {/* Comunicação da equipe: primeiro item do menu, para todos, com os recados pendentes */}
+        <NavLink
+          to="/recados"
+          className={({ isActive }) => cn(
+            'mb-3 flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors',
+            isActive ? 'border-primary bg-primary text-primary-foreground' : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15',
+          )}
+        >
+          <MessagesSquare className="h-5 w-5 shrink-0" aria-hidden />
+          <span className="flex-1">Comunicação da equipe</span>
+          {recadosPend > 0 && (
+            <span className="min-w-[22px] rounded-full bg-destructive px-1.5 text-center text-xs font-bold leading-[22px] text-destructive-foreground" aria-label={`${recadosPend} recados para você`}>
+              {recadosPend}
+            </span>
+          )}
+        </NavLink>
         {visibleMain.length > 0 && (
           <CollapsibleGroup
             label="Comercial / Vendas"

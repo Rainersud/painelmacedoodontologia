@@ -1,6 +1,7 @@
 import { PageShell } from '@/components/layout/PageShell';
 import { ClinicGoalsPanel } from '@/components/clinic-goals/ClinicGoalsPanel';
 import { GoalLadderCard } from '@/components/clinic-goals/GoalLadderCard';
+import { TeamMessagesWidget } from '@/components/team/TeamMessagesWidget';
 import { ROIAnalyticsWidget } from '@/components/dashboard/ROIAnalyticsWidget';
 import { LeadOriginsWidget, LossReasonsWidget } from '@/components/dashboard/LeadOriginsWidget';
 import { useStagnationAlerts } from '@/hooks/useStagnationAlerts';
@@ -18,6 +19,7 @@ export default function MetasClinica({ embedded = false }: { embedded?: boolean 
   return (
     <PageShell embedded={embedded} title="Metas da Clínica">
         <div className="space-y-6">
+          <TeamMessagesWidget />
           <GoalLadderCard />
           <ClinicGoalsPanel />
           <ROIAnalyticsWidget />

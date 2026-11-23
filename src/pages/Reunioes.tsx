@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { Sparkline } from '@/components/charts/SmoothCharts';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -117,6 +118,7 @@ export default function Reunioes() {
     });
   };
 
+  const readOnlyPage = useReadOnly();
   return (
     <AppLayout title="Reuniões Semanais">
       <div className="space-y-6">
@@ -126,6 +128,9 @@ export default function Reunioes() {
             <h2 className="text-lg font-semibold">Reuniões Semanais</h2>
             <p className="text-sm text-muted-foreground">Gestão estratégica e acompanhamento de métricas</p>
           </div>
+          {readOnlyPage ? (
+            <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">Somente visualização · edição pelo administrador</span>
+          ) : (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />Nova Reunião</Button>
@@ -163,6 +168,7 @@ export default function Reunioes() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Meeting selector */}
@@ -223,6 +229,7 @@ function MeetingContent({ meeting, cacMetrics, salesMetrics, goalsProgress, refe
 }) {
   const [activeTab, setActiveTab] = useState('metricas');
   const [notes, setNotes] = useState(meeting.general_notes || '');
+  const readOnly = useReadOnly();
 
   return (
     <div className="space-y-4">
@@ -232,7 +239,7 @@ function MeetingContent({ meeting, cacMetrics, salesMetrics, goalsProgress, refe
             Reunião {meeting.period_type === 'semanal' ? 'Semanal' : 'Mensal'} — {format(new Date(meeting.meeting_date + 'T12:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </h2>
         </div>
-        <Button variant="destructive" size="sm" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+        {!readOnly && <Button variant="destructive" size="sm" onClick={onDelete} aria-label="Apagar reunião"><Trash2 className="h-4 w-4" /></Button>}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -271,11 +278,12 @@ function MeetingContent({ meeting, cacMetrics, salesMetrics, goalsProgress, refe
             <CardContent className="space-y-3">
               <Textarea
                 value={notes}
+                readOnly={readOnly}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Registre o resumo da reunião, decisões tomadas, direcionamentos estratégicos e feedback da equipe..."
                 className="min-h-[200px]"
               />
-              <Button onClick={() => onUpdateNotes(notes)} size="sm">Salvar Anotações</Button>
+              {!readOnly && <Button onClick={() => onUpdateNotes(notes)} size="sm">Salvar Anotações</Button>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -425,8 +433,15 @@ function MetricsPanel({ cacMetrics, salesMetrics, goalsProgress, referralDashboa
   );
 }
 
+/** Reuniões: todos os acessos visualizam; só o administrador cria, edita e apaga. */
+function useReadOnly() {
+  const { isAdmin } = useAuth();
+  return !isAdmin;
+}
+
 function ActionPlansPanel({ meetingId }: { meetingId: string }) {
   const { plans, addPlan, updatePlan, deletePlan } = useMeetingActionPlans(meetingId);
+  const readOnly = useReadOnly();
   const [desc, setDesc] = useState('');
   const [responsible, setResponsible] = useState('');
   const [execDate, setExecDate] = useState('');
@@ -455,7 +470,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add form */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
+        {!readOnly && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
           <Input placeholder="Descrição da ação" value={desc} onChange={e => setDesc(e.target.value)} />
           <Input placeholder="Responsável" value={responsible} onChange={e => setResponsible(e.target.value)} />
           <Input type="date" placeholder="Data de execução" value={execDate} onChange={e => setExecDate(e.target.value)} />
@@ -468,7 +483,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
           <Button onClick={handleAdd} disabled={!desc || !responsible || addPlan.isPending} className="sm:col-span-2">
             <Plus className="h-4 w-4 mr-2" /> Adicionar Plano
           </Button>
-        </div>
+        </div>}
 
         <Separator />
 
@@ -490,7 +505,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select value={plan.status} onValueChange={(s) => updatePlan.mutate({ id: plan.id, status: s, ...(s === 'concluido' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
+                  <Select disabled={readOnly} value={plan.status} onValueChange={(s) => updatePlan.mutate({ id: plan.id, status: s, ...(s === 'concluido' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
                     <SelectTrigger className="w-[130px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -500,7 +515,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
                       <SelectItem value="concluido">Concluído</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deletePlan.mutate(plan.id)}>
+                  <Button variant="ghost" size="icon" className={cn('h-8 w-8', readOnly && 'hidden')} onClick={() => deletePlan.mutate(plan.id)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -515,6 +530,7 @@ function ActionPlansPanel({ meetingId }: { meetingId: string }) {
 
 function AnnotationsPanel({ meetingId }: { meetingId: string }) {
   const { annotations, addAnnotation } = useMeetingAnnotations(meetingId);
+  const readOnly = useReadOnly();
   const [metricKey, setMetricKey] = useState('');
   const [content, setContent] = useState('');
 
@@ -532,7 +548,7 @@ function AnnotationsPanel({ meetingId }: { meetingId: string }) {
         <CardDescription>Registre observações e comentários para cada métrica</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 p-4 border rounded-lg bg-muted/30">
+        {!readOnly && <div className="grid grid-cols-1 gap-3 p-4 border rounded-lg bg-muted/30">
           <Select value={metricKey} onValueChange={setMetricKey}>
             <SelectTrigger><SelectValue placeholder="Selecione a métrica" /></SelectTrigger>
             <SelectContent>
@@ -543,7 +559,7 @@ function AnnotationsPanel({ meetingId }: { meetingId: string }) {
           <Button onClick={handleAdd} disabled={!metricKey || !content || addAnnotation.isPending}>
             <Plus className="h-4 w-4 mr-2" /> Adicionar Anotação
           </Button>
-        </div>
+        </div>}
 
         <Separator />
 
@@ -567,6 +583,7 @@ function AnnotationsPanel({ meetingId }: { meetingId: string }) {
 
 function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
   const { links, addLink, deleteLink } = useMeetingTrainingLinks(meetingId);
+  const readOnly = useReadOnly();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
 
@@ -585,13 +602,13 @@ function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
         <CardDescription>Links de treinamentos, vídeos e documentos</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
+        {!readOnly && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
           <Input placeholder="Título do conteúdo" value={title} onChange={e => setTitle(e.target.value)} />
           <Input placeholder="URL (https://...)" value={url} onChange={e => setUrl(e.target.value)} />
           <Button onClick={handleAdd} disabled={!title || !url || addLink.isPending} className="sm:col-span-2">
             <Plus className="h-4 w-4 mr-2" /> Adicionar Link
           </Button>
-        </div>
+        </div>}
 
         <Separator />
 
@@ -607,7 +624,7 @@ function TrainingLinksPanel({ meetingId }: { meetingId: string }) {
                     {link.title}
                   </a>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteLink.mutate(link.id)}>
+                <Button variant="ghost" size="icon" className={cn('h-8 w-8', readOnly && 'hidden')} onClick={() => deleteLink.mutate(link.id)}>
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>

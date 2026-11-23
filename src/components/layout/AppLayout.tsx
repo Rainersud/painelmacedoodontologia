@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { TeamMessagesButton } from '@/components/team/TeamMessagesButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -35,10 +36,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                 <GlobalDateFilter />
 
-                <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9">
-                  <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
-                </Button>
+                <TeamMessagesButton />
 
                 <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
                   <div className="hidden sm:flex flex-col items-end">

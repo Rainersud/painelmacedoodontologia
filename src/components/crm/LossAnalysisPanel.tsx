@@ -17,6 +17,9 @@ import { ARRIVAL_SOURCE_LABELS, SOLD_STATUS_LIST } from '@/lib/metrics/stages';
 import { LOSS_CATEGORIES, categoryLabel, lossCategory, type LossCategory } from '@/lib/lossAnalysis';
 import { FUNNEL_STAGES } from '@/types/crm';
 import { useLossAttachments, getSignedUrl, type LossAttachment } from './LossAttachments';
+import { useLeadObjections } from '@/hooks/useLeadObjections';
+import { useTeamNames } from '@/hooks/useTeamNames';
+import { objecaoLabel } from '@/components/ascension/RegistrarObjecao';
 
 const LOST_STATUSES = ['nao_cliente', 'sem_interesse', 'descartados', 'nao_contatar'];
 const STAGE_LABEL = new Map(FUNNEL_STAGES.map(s => [s.key as string, s.label]));
@@ -365,6 +368,50 @@ export function LossAnalysisPanel({ onOpenLead }: { onOpenLead?: (leadId: string
           </ul>
         )}
       </div>
+
+      <ObjecoesRegistradas range={globalRange} onOpenLead={onOpenLead} />
     </section>
+  );
+}
+
+/** Objeções que a CRC registrou nas Tarefas CRC (Fechamento do dia), no mesmo período. */
+function ObjecoesRegistradas({ range, onOpenLead }: { range: { start: Date; end: Date }; onOpenLead?: (leadId: string) => void }) {
+  const { data: rows = [], isLoading } = useLeadObjections(range.start, range.end);
+  const { data: team } = useTeamNames();
+  const porTipo = count(rows, r => r.categoria).map(([k, v]) => ({ key: k, label: objecaoLabel(k), value: v }));
+  return (
+    <div className="space-y-3 border-t pt-4">
+      <div>
+        <h3 className="font-semibold">Objeções registradas pela CRC</h3>
+        <p className="text-sm text-muted-foreground">O que os pacientes disseram, anotado em Tarefas CRC → Fechamento do dia.</p>
+      </div>
+      {isLoading ? (
+        <div className="h-20 rounded-xl bg-muted/60 animate-pulse" />
+      ) : rows.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">Nenhuma objeção registrada no período.</p>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+          <Bars title={`${rows.length} ${rows.length === 1 ? 'objeção' : 'objeções'} por tipo`} rows={porTipo} onPick={() => {}} />
+          <ul className="divide-y rounded-xl border max-h-80 overflow-y-auto">
+            {rows.map(r => (
+              <li key={r.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+                <div className="min-w-0">
+                  <p><b className="font-medium">{r.lead_name ?? 'Sem paciente'}</b> · {objecaoLabel(r.categoria)}</p>
+                  {r.detalhe && <p className="text-xs text-muted-foreground">{r.detalhe}</p>}
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(r.created_at), 'dd/MM HH:mm')}{r.created_by && team?.[r.created_by] ? ` · ${team[r.created_by].name}` : ''}
+                  </p>
+                </div>
+                {onOpenLead && r.lead_id && (
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => onOpenLead(r.lead_id!)}>
+                    Abrir ficha <ExternalLink className="h-3 w-3" />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }

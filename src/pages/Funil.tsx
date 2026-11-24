@@ -1,3 +1,4 @@
+import { ExportPhonesButton } from '@/components/crm/ExportPhonesButton';
 import { usePeriodFilter } from '@/components/dashboard/PeriodFilterContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { canWorkStatus } from '@/lib/access';
@@ -571,6 +572,7 @@ const Funil = ({ mode = 'comercial1', embedded = false }: FunilProps) => { // v2
               {searchQuery || treatmentFilter !== 'all' ? ` (de ${leads?.length || 0})` : ''}
             </p>
             <div className="flex items-center gap-2">
+              {access.isAdmin && <ExportPhonesButton />}
               {access.canEditLeadData && <Button onClick={() => setAddLeadOpen(true)} size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Lead

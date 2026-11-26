@@ -4,6 +4,15 @@ import { useOpenReferrals } from '@/hooks/useMenuCounts';
 import { FUNNEL_STAGES } from '@/types/crm';
 
 const STAGE_LABEL = new Map(FUNNEL_STAGES.map(s => [s.key as string, s.label]));
+/** Dias inteiros (pelo calendário) desde o registro até hoje. */
+export function diasEmAguardo(createdAt: string, hoje = new Date()): number {
+  const d = new Date(createdAt);
+  const a = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const b = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+const diasTexto = (n: number) => (n === 0 ? 'Registrada hoje' : n === 1 ? '1 dia em aguardo' : `${n} dias em aguardo`);
+
 const LABEL_FIX: Record<string, string> = { potencial: 'Potencial', compareceu: 'Compareceu', faltou: 'Não compareceu', agendou: 'Agendou' };
 
 /** Indicações em aberto: as mesmas pessoas contadas no card e no balãozinho. */
@@ -25,6 +34,7 @@ export function OpenReferralsList({ onOpenLead }: { onOpenLead: (leadId: string)
       ) : (
         <ul className="divide-y">
           {data.map(r => {
+            const dias = diasEmAguardo(r.createdAt);
             const status = r.status ? STAGE_LABEL.get(r.status) ?? LABEL_FIX[r.status] ?? r.status : null;
             return (
               <li key={`${r.kind}-${r.id}`}>
@@ -40,7 +50,16 @@ export function OpenReferralsList({ onOpenLead }: { onOpenLead: (leadId: string)
                       {r.referrerName ? `Indicado por ${r.referrerName}` : 'Chegou por indicação'}
                       {r.phone ? ` · ${r.phone}` : ''}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      Registrada em {new Date(r.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
+                  <span
+                    className={`shrink-0 text-xs font-medium tabular-nums ${dias >= 7 ? 'text-destructive' : dias >= 3 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}
+                    title="Dias desde que a indicação foi registrada"
+                  >
+                    {diasTexto(dias)}
+                  </span>
                   {r.kind === 'triagem' ? (
                     <Badge variant="outline" className="shrink-0 gap-1"><UserPlus className="h-3 w-3" /> Ainda não é lead</Badge>
                   ) : status && (

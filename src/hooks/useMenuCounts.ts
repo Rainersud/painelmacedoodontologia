@@ -34,8 +34,8 @@ export function useOpenReferrals() {
       type L = { id: string; name: string; phone: string | null; status: string; lead_arrival_source: string | null; created_at: string };
       const [leads, refs, triageRefs] = await Promise.all([
         allPages<L>(supabase.from('leads').select('id, name, phone, status, lead_arrival_source, created_at').order('id')),
-        allPages<{ referred_lead_id: string; referrer_lead_id: string }>(
-          supabase.from('referrals').select('referred_lead_id, referrer_lead_id').order('id'),
+        allPages<{ referred_lead_id: string; referrer_lead_id: string; created_at: string }>(
+          supabase.from('referrals').select('referred_lead_id, referrer_lead_id, created_at').order('id'),
         ),
         allPages<{ id: string; referral_name: string; phone: string | null; lead_id: string | null; created_at: string }>(
           supabase.from('triage_referrals').select('id, referral_name, phone, lead_id, created_at').is('converted_lead_id', null).order('id'),
@@ -44,13 +44,14 @@ export function useOpenReferrals() {
       for (const r of [leads, refs, triageRefs]) if (r.error) throw r.error;
       const nameById = new Map(leads.data.map(l => [l.id, l.name]));
       const referrerOf = new Map(refs.data.map(r => [r.referred_lead_id, r.referrer_lead_id]));
+      const refCreated = new Map(refs.data.map(r => [r.referred_lead_id, r.created_at]));
       const fromLeads: OpenReferral[] = leads.data
         .filter(l =>
           (REFERRAL_ORIGINS.has(l.lead_arrival_source ?? '') || referrerOf.has(l.id) || l.status === 'indicacoes')
           && !isSoldStatus(l.status) && !LOST.has(l.status))
         .map(l => ({
           id: l.id, kind: 'lead', name: l.name.trim(), phone: l.phone, status: l.status, leadId: l.id,
-          referrerName: nameById.get(referrerOf.get(l.id) ?? '') ?? null, createdAt: l.created_at,
+          referrerName: nameById.get(referrerOf.get(l.id) ?? '') ?? null, createdAt: refCreated.get(l.id) ?? l.created_at,
         }));
       const fromTriage: OpenReferral[] = triageRefs.data.map(t => ({
         id: t.id, kind: 'triagem', name: t.referral_name, phone: t.phone, status: null, leadId: t.lead_id,

@@ -63,7 +63,7 @@ export function buildAccess(isAdmin: boolean, perfil: Perfil | null): Access {
   if (p === 'comparecimento') {
     return {
       ...base, perfil: p, canEditLeadData: false,
-      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_WORK_STATUSES], allowedPaths: ['/funil', '/reunioes', '/recados', '/perfil'],
+      lockedStatuses: [], onlyStatuses: [...COMPARECIMENTO_WORK_STATUSES], allowedPaths: ['/funil', '/reunioes', '/recados', '/ascension', '/perfil'],
     };
   }
   return {

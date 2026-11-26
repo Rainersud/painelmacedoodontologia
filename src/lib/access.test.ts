@@ -24,6 +24,7 @@ describe('acessos por pessoa', () => {
     expect(canOpenPath(a, '/funil')).toBe(true);
     expect(canOpenPath(a, '/objetivos')).toBe(false);
     expect(canOpenPath(a, '/crc')).toBe(false);
+    expect(canOpenPath(a, '/ascension')).toBe(true);
     expect(canWorkStatus(a, 'compareceu')).toBe(true);
     expect(canWorkStatus(a, 'faltou')).toBe(true);
     expect(canWorkStatus(a, 'agendou')).toBe(true);

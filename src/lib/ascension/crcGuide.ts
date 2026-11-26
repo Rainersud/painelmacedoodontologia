@@ -348,6 +348,12 @@ export const METAS_BANCADA: { valor: string; texto: string }[] = [
 
 export const REGUAS: { titulo: string; passos: { quando: string; oque: string; scripts?: string[] }[] }[] = [
   {
+    titulo: 'Indicações',
+    passos: [
+      { quando: 'Contato com o indicado', oque: 'Presente: avaliação com filmagem 3D + limpeza grátis nesta semana e 10% de desconto', scripts: ['indicacao-presente'] },
+    ],
+  },
+  {
     titulo: 'Régua dos não agendados',
     passos: [
       { quando: 'Dia 1', oque: '3 ligações + mensagem com pergunta aberta', scripts: ['na-dia1'] },

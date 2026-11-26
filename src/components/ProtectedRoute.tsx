@@ -47,10 +47,12 @@ function PendingScreen() {
 
 /** Exige login; telas fora do acesso da pessoa aparecem bloqueadas. */
 function ProtectedRoute({ children, requireAdmin }: ProtectedRouteProps) {
-  const { user, loading, roleLoading, access } = useAuth();
+  const { user, loading, ready, access } = useAuth();
   const location = useLocation();
 
-  if (loading || (user && roleLoading)) {
+  // Carregamento só na primeira entrada; depois disso a tela nunca é desmontada
+  // (ao trocar de aba e voltar, tudo continua de onde parou).
+  if (loading || (user && !ready)) {
     return (
       <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Carregando">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

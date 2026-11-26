@@ -18,6 +18,8 @@ interface AuthContextType {
   canManage: boolean;
   /** O que este usuário pode ver e fazer (lib/access). */
   access: Access;
+  /** Dados do usuário já carregados ao menos uma vez (depois disso nada mais mostra a tela de carregamento). */
+  ready: boolean;
   /** É administrador de verdade (mesmo enquanto visualiza como outra pessoa). */
   realIsAdmin: boolean;
   /** Administrador visualizando o sistema como um colaborador */
@@ -51,9 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPreviewState(p);
   };
   const initialized = useRef(false);
+  // usuário cujos dados (papel, nome, acesso) já foram carregados
+  const loadedUserId = useRef<string | null>(null);
+  const [readyId, setReadyId] = useState<string | null>(null);
 
   const fetchUserData = async (userId: string) => {
-    setRoleLoading(true);
+    // Mesmo usuário (ex.: ao voltar para a aba o login é renovado): atualiza em silêncio,
+    // sem tela de carregamento, para a página continuar exatamente onde estava.
+    const silent = loadedUserId.current === userId;
+    if (!silent) setRoleLoading(true);
     try {
       const { data: roleData } = await supabase
         .from('user_roles')
@@ -75,20 +83,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       setRole('agente');
     } finally {
+      loadedUserId.current = userId;
+      setReadyId(userId);
       setRoleLoading(false);
     }
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Skip the first event if getSession already handled it
       if (!initialized.current) return;
-      
+
       setSession(session);
-      setUser(session?.user ?? null);
+      // Mesmo usuário: mantém o mesmo objeto, para não recarregar as telas ao voltar para a aba
+      setUser(prev => (prev && session?.user && prev.id === session.user.id ? prev : session?.user ?? null));
       if (session?.user) {
-        setTimeout(() => fetchUserData(session.user.id), 0);
+        // renovação do login (TOKEN_REFRESHED / SIGNED_IN ao voltar para a aba) não recarrega nada
+        const mesmo = loadedUserId.current === session.user.id;
+        if (!mesmo || event === 'USER_UPDATED') setTimeout(() => fetchUserData(session.user.id), 0);
       } else {
+        loadedUserId.current = null;
         setRole('agente');
         setFullName('');
         setRoleLoading(false);
@@ -159,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin,
     canManage: isAdmin,
     access,
+    ready: !!user && readyId === user.id,
     realIsAdmin,
     previewAs: preview,
     setPreviewAs,

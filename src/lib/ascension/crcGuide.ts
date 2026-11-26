@@ -40,7 +40,7 @@ export interface Script {
   /** orientação interna (não é para o paciente) */
   acao?: string;
   /** de qual material veio */
-  fonte: 'Manual' | 'Guia Tático' | 'Os dois';
+  fonte: 'Manual' | 'Guia Tático' | 'Os dois' | 'Dr. Rainer';
 }
 
 export const SCRIPTS: Script[] = [
@@ -100,6 +100,18 @@ export const SCRIPTS: Script[] = [
     ],
   },
 
+  {
+    id: 'indicacao-presente',
+    etapa: 'primeiro_contato',
+    titulo: 'Script para indicação',
+    quando: 'Para o contato indicado por um paciente: avaliação com filmagem 3D e limpeza de presente, válidas para esta semana.',
+    canal: ['WhatsApp', 'Ligação'],
+    fonte: 'Dr. Rainer',
+    falas: [
+      { texto: 'Olá, aqui é do consultório do Dr. Rainer Macedo, dentista. Estou entrando em contato porque nosso paciente [NOME PACIENTE], que é seu(ua) [GRAU DE PARENTESCO], presenteou você com uma avaliação odontológica com filmagem 3D gratuita + uma limpeza gratuita válida para esta semana. Além disso, você ainda ganha 10% de desconto em qualquer tratamento que desejar realizar em nosso consultório.' },
+    ],
+    acao: 'Troque [NOME PACIENTE] pelo nome de quem indicou e [GRAU DE PARENTESCO] pelo vínculo (mãe, irmão, amiga…).',
+  },
   // ---------------- Não agendados ----------------
   {
     id: 'na-dia1',

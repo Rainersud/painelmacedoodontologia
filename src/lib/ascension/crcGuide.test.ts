@@ -7,6 +7,9 @@ describe('guia da CRC', () => {
     expect(r.map(s => s.id)).toContain('preco-whatsapp');
     expect(buscarScripts(SCRIPTS, 'cirurgia guiada', 'todas', null).map(s => s.id)).toEqual(['c2-d5']);
   });
+  it('acha o script de indicação', () => {
+    expect(buscarScripts(SCRIPTS, 'indicacao', 'todas', null).map(s => s.id)).toContain('indicacao-presente');
+  });
   it('filtra por objeção e etapa', () => {
     const decisor = buscarScripts(SCRIPTS, '', 'todas', 'decisor').map(s => s.id);
     expect(decisor).toContain('c2-combinado-decisor');
